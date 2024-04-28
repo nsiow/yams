@@ -28,8 +28,8 @@ type Statement struct {
 
 // Validate determines whether or not the Statement is valid; returning an error otherwise
 func (s *Statement) Validate() error {
-	if (s.Principal == nil) == (s.NotPrincipal == nil) {
-		return fmt.Errorf("must supply exactly one of (Principal | NotPrincipal)")
+	if (s.Principal != nil) && (s.NotPrincipal != nil) {
+		return fmt.Errorf("must supply exactly zero or one of (Principal | NotPrincipal)")
 	}
 	if (s.Action == nil) == (s.NotAction == nil) {
 		return fmt.Errorf("must supply exactly one of (Action | NotAction)")
