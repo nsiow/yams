@@ -10,7 +10,7 @@ type ManagedPolicyMap struct {
 // NewManagedPolicyMap creates and returns an initialized instance of ManagedPolicyMap
 func NewManagedPolicyMap() *ManagedPolicyMap {
 	m := ManagedPolicyMap{}
-	m.pmap := make(map[string]policy.Policy)
+	m.pmap = make(map[string]policy.Policy)
 	return &m
 }
 

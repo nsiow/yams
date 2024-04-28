@@ -2,7 +2,6 @@ package entities
 
 import (
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/tag"
 )
 
 // Resource defines the general shape of an AWS cloud resource
@@ -12,5 +11,5 @@ type Resource struct {
 	Region  string
 	Arn     string
 	Policy  policy.Policy
-	Tags    []tag.Tag
+	Tags    []Tag
 }
