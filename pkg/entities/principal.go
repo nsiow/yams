@@ -13,6 +13,6 @@ type Principal struct {
 	Arn     string
 	Tags    []tag.Tag
 	// FIXME(nsiow) this isn't really the right shape
-	InlinePolicies  []policy.Statement
-	ManagedPolicies []policy.Statement
+	InlinePolicies  []policy.Policy
+	ManagedPolicies []policy.Policy
 }

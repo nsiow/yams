@@ -11,6 +11,6 @@ type Resource struct {
 	Account string
 	Region  string
 	Arn     string
+	Policy  policy.Policy
 	Tags    []tag.Tag
-	Policy  []policy.Statement
 }
