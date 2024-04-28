@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/nsiow/yams/pkg/entities"
 )
@@ -20,13 +21,18 @@ type Loader struct {
 	managedPolicies *ManagedPolicyMap
 }
 
+// NewLoader provisions and returns a new `Loader` struct, ready to use
+func NewLoader() *Loader {
+	return &Loader{}
+}
+
 // Principals returns all principals loaded by the target loader
-func (l *Loader) Principals(data []byte) []entities.Principal {
+func (l *Loader) Principals() []entities.Principal {
 	return l.principals
 }
 
 // Resources returns all resources loaded by the target loader
-func (l *Loader) Resources(data []byte) []entities.Resource {
+func (l *Loader) Resources() []entities.Resource {
 	return l.resources
 }
 
@@ -41,6 +47,10 @@ func (a *Loader) LoadJson(data []byte) error {
 func (a *Loader) LoadJsonl(data []byte) error {
 	r := bytes.NewReader(data)
 	s := bufio.NewScanner(r)
+
+	// Some buffer customization, since these JSON blobs can get big
+	buf := make([]byte, 0, 64*1024)
+	s.Buffer(buf, 1024*1024)
 
 	var items []Item
 	for s.Scan() {
@@ -69,5 +79,26 @@ func (a *Loader) LoadJsonl(data []byte) error {
 
 // loadItems loads data from the provided AWS Config items
 func (a *Loader) loadItems(items []Item) error {
+	// Load policies first (required to load principals)
+	mp, err := loadPolicies(items)
+	if err != nil {
+		return fmt.Errorf("error loading managed policies: %v", err)
+	}
+	a.managedPolicies = mp
+
+	// Load principals
+	p, err := loadPrincipals(items, mp)
+	if err != nil {
+		return fmt.Errorf("error loading principals: %v", err)
+	}
+	a.principals = p
+
+	// Load resources
+	r, err := loadResources(items)
+	if err != nil {
+		return fmt.Errorf("error loading resources: %v", err)
+	}
+	a.resources = r
+
 	return nil
 }
