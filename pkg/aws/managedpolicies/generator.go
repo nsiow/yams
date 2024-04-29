@@ -116,13 +116,27 @@ func main() {
 
 type ManagedPolicyEntry struct {
 	Arn      string        `json:"arn"`
+	Name     string        `json:"name"`
 	Document policy.Policy `json:"document"`
 }
 
+func (m *ManagedPolicyEntry) NormalizedArn() string {
+	if m.Arn == "" {
+		return fmt.Sprintf("arn:aws:iam::aws:policy/%s", m.Name)
+	}
+
+	return m.Arn
+}
+
 func (m *ManagedPolicyEntry) EscapedName() string {
-	fragments := strings.Split(m.Arn, "/")
-	name := fragments[len(fragments)-1]
-	return strings.ReplaceAll(name, "-", "_")
+	esc := strings.ReplaceAll(m.Name, "-", "_")
+
+	// Sometimes our upstream data has extra .json-s; be defensive
+	if strings.HasSuffix(esc, ".json") {
+		esc = strings.ReplaceAll(esc, ".json", "")
+	}
+
+	return esc
 }
 
 func (m *ManagedPolicyEntry) VarName() string {

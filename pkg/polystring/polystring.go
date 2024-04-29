@@ -1,6 +1,9 @@
 package polystring
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // PolyString is a JSON-centric helper struct to facilitate one-or-more value representations
 type PolyString struct {
@@ -21,7 +24,10 @@ func (p *PolyString) UnmarshalJSON(data []byte) error {
 
 	// If it looks like an array; handle it as such
 	if data[0] == '[' && data[len(data)-1] == ']' {
-		return json.Unmarshal(data, &p.Values)
+		err := json.Unmarshal(data, &p.Values)
+		if err != nil {
+			return fmt.Errorf("error in array clause of polystring type")
+		}
 	}
 
 	// Otherwise handle it as a string

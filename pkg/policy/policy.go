@@ -31,7 +31,7 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 		stmt := Statement{}
 		err := json.Unmarshal(data, &stmt)
 		if err != nil {
-			return err
+			return fmt.Errorf("error in single-statement clause processing of Statement block: %v", err)
 		}
 
 		s.Values = []Statement{stmt}
@@ -40,7 +40,11 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 
 	// Handle list of statements
 	if data[0] == '[' && data[len(data)-1] == ']' {
-		return json.Unmarshal(data, &s.Values)
+		err := json.Unmarshal(data, &s.Values)
+		if err != nil {
+			return fmt.Errorf("error in multi-statement clause processing of Statement block: %v", err)
+		}
+		return nil
 	}
 
 	return fmt.Errorf("not sure how to handle statement block: %s", string(data))
@@ -100,17 +104,25 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 
 	// Handle normal case
 	var m map[string]json.RawMessage
-	if err := json.Unmarshal(m["AWS"], &p.AWS); err != nil {
-		return err
+	if v, ok := m["AWS"]; ok {
+		if err := json.Unmarshal(v, &p.AWS); err != nil {
+			return fmt.Errorf("error in 'AWS' clause processing of Principal block: %v", err)
+		}
 	}
-	if err := json.Unmarshal(m["Federated"], &p.Federated); err != nil {
-		return err
+	if v, ok := m["Federated"]; ok {
+		if err := json.Unmarshal(v, &p.Federated); err != nil {
+			return fmt.Errorf("error in 'Federated' clause processing of Principal block: %v", err)
+		}
 	}
-	if err := json.Unmarshal(m["Service"], &p.Service); err != nil {
-		return err
+	if v, ok := m["Service"]; ok {
+		if err := json.Unmarshal(v, &p.Service); err != nil {
+			return fmt.Errorf("error in 'Service' clause processing of Principal block: %v", err)
+		}
 	}
-	if err := json.Unmarshal(m["CanonicalUser"], &p.CanonicalUser); err != nil {
-		return err
+	if v, ok := m["CanonicalUser"]; ok {
+		if err := json.Unmarshal(v, &p.CanonicalUser); err != nil {
+			return fmt.Errorf("error in 'CanonicalUser' clause processing of Principal block: %v", err)
+		}
 	}
 	return nil
 }
@@ -140,7 +152,11 @@ type ConditionMap struct {
 
 // UnmarshalJSON instructs how to create ConditionMap fields from raw bytes
 func (c *ConditionMap) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &c.Map)
+	err := json.Unmarshal(data, &c.Map)
+	if err != nil {
+		return fmt.Errorf("error in 'ConditionMap' clause processing of Condition block: %v", err)
+	}
+	return nil
 }
 
 // Condition represents the grammar and structure of an AWS IAM Condition
@@ -150,5 +166,9 @@ type Condition struct {
 
 // UnmarshalJSON instructs how to create Condition fields from raw bytes
 func (c *Condition) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &c.Map)
+	err := json.Unmarshal(data, &c.Map)
+	if err != nil {
+		return fmt.Errorf("error in 'Condition' clause processing of Condition block: %v", err)
+	}
+	return nil
 }

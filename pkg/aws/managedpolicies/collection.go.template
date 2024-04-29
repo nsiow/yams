@@ -9,7 +9,7 @@ import (
 func All() map[string]policy.Policy {
   return map[string]policy.Policy{
     {{ range . -}}
-    "{{ .Arn }}": {{ .VarName }},
+    "{{ .NormalizedArn }}": {{ .VarName }},
     {{ end }}
   }
 }

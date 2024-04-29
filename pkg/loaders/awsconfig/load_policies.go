@@ -50,7 +50,7 @@ func loadPolicy(i Item) (*policy.Policy, error) {
 	// Attempt to decode our policy string; this _should_ always work
 	policy, err := decodePolicyString(defaultVersion.Document)
 	if err != nil {
-		return nil, fmt.Errorf("unable to decode policy string (%+v): %v", pic, err)
+		return nil, fmt.Errorf("unable to decode policy string: %v", err)
 	}
 
 	return &policy, nil

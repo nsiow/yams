@@ -44,7 +44,9 @@ func loadResource(i Item) (*entities.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
-	r.Policy = *p
+	if p != nil {
+		r.Policy = *p
+	}
 
 	return &r, nil
 }
@@ -83,10 +85,11 @@ func policyFromConfiguration(conf json.RawMessage, key string) (*policy.Policy, 
 			return nil, err
 		}
 
+		// TODO(nsiow) write a regression test per-resource for missing policy configuration
 		// Retrieve the requested key from our new map
 		cur, exists := m[path]
 		if !exists {
-			return nil, fmt.Errorf("key '%s' not present in configuration", key)
+			return nil, nil
 		}
 
 		// If we have reached the end of our key path, save our result back to our policy variable
@@ -101,7 +104,7 @@ func policyFromConfiguration(conf json.RawMessage, key string) (*policy.Policy, 
 	// Decode policy
 	decoded, err := decodePolicyString(string(policy))
 	if err != nil {
-		return nil, fmt.Errorf("unable to decode policy: %v", string(policy))
+		return nil, fmt.Errorf("unable to decode policy: %v", err)
 	}
 	return &decoded, err
 }

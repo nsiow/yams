@@ -83,7 +83,7 @@ $(DATA_IAM_DEFINITION):
 $(DATA_MANAGED_POLICIES):
 	@echo 'Generating managed policy dataset'
 	@cat $(REPO_LOCAL_PATH)/aws/managedpolicies/*.json \
-		| jq '. | select(.arn != null) | {arn, document}' \
+		| jq '. | {arn, name, document}' \
 		| jq -s '.' \
 		> $@
 
