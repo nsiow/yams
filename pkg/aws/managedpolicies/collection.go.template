@@ -6,10 +6,10 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-func AllManagedPolicies() []policy.Policy {
-  return []policy.Policy{
+func All() map[string]policy.Policy {
+  return map[string]policy.Policy{
     {{ range . -}}
-    {{ .VarName }},
+    "{{ .Arn }}": {{ .VarName }},
     {{ end }}
   }
 }

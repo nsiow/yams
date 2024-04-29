@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/nsiow/yams/pkg/aws/managedpolicies"
 	"github.com/nsiow/yams/pkg/entities"
 )
 
@@ -85,6 +86,12 @@ func (a *Loader) loadItems(items []Item) error {
 		return fmt.Errorf("error loading managed policies: %v", err)
 	}
 	a.managedPolicies = mp
+
+	// Load AWS-managed policies into the managed policy map
+	// (required because AWS Config does not report on them)
+	for arn, policy := range managedpolicies.All() {
+		mp.Add(arn, policy)
+	}
 
 	// Load principals
 	p, err := loadPrincipals(items, mp)
