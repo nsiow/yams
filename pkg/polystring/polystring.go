@@ -28,3 +28,13 @@ func (p *PolyString) UnmarshalJSON(data []byte) error {
 	p.Values = append(p.Values, string(data))
 	return nil
 }
+
+// Count returns the number of strings represented in the PolyString
+func (p *PolyString) Count() int {
+	return len(p.Values)
+}
+
+// Empty returns whether or not the PolyString contains any values
+func (p *PolyString) Empty() bool {
+	return p.Count() == 0
+}

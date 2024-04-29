@@ -49,24 +49,24 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 // Statement represents the grammar and structure of an AWS IAM Statement
 type Statement struct {
 	Sid          string
-	Principal    *Principal `json:",omitempty"`
-	NotPrincipal *Principal `json:",omitempty"`
-	Action       *Action    `json:",omitempty"`
-	NotAction    *Action    `json:",omitempty"`
-	Resource     *Resource  `json:",omitempty"`
-	NotResource  *Resource  `json:",omitempty"`
-	Condition    *Condition `json:",omitempty"`
+	Principal    Principal `json:",omitempty"`
+	NotPrincipal Principal `json:",omitempty"`
+	Action       Action    `json:",omitempty"`
+	NotAction    Action    `json:",omitempty"`
+	Resource     Resource  `json:",omitempty"`
+	NotResource  Resource  `json:",omitempty"`
+	Condition    Condition `json:",omitempty"`
 }
 
 // Validate determines whether or not the Statement is valid; returning an error otherwise
 func (s *Statement) Validate() error {
-	if (s.Principal != nil) && (s.NotPrincipal != nil) {
+	if !s.Principal.Empty() && !s.NotPrincipal.Empty() {
 		return fmt.Errorf("must supply exactly zero or one of (Principal | NotPrincipal)")
 	}
-	if (s.Action == nil) == (s.NotAction == nil) {
+	if s.Action.Empty() == s.NotAction.Empty() {
 		return fmt.Errorf("must supply exactly one of (Action | NotAction)")
 	}
-	if (s.Resource == nil) == (s.NotResource == nil) {
+	if s.Resource.Empty() == s.NotResource.Empty() {
 		return fmt.Errorf("must supply exactly one of (Resource | NotResource)")
 	}
 
@@ -113,6 +113,14 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	return nil
+}
+
+// Empty determines whether or not the specified Principal field is empty
+func (p *Principal) Empty() bool {
+	return p.AWS.Empty() &&
+		p.Service.Empty() &&
+		p.Federated.Empty() &&
+		p.CanonicalUser.Empty()
 }
 
 // Action represents the grammar and structure of an AWS IAM Action

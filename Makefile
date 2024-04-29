@@ -1,4 +1,10 @@
 # --------------------------------------------------------------------------------
+# General
+# --------------------------------------------------------------------------------
+
+GO_TOOL_TARGET ?= ./...
+
+# --------------------------------------------------------------------------------
 # Building
 # --------------------------------------------------------------------------------
 
@@ -24,16 +30,26 @@ GO_LINTER ?= go vet
 
 .PHONY: lint
 lint:
-	$(GO_LINTER) ./...
+	$(GO_LINTER) $(GO_TOOL_TARGET)
 
 GO_TEST_RUNNER ?= go test
 
 .PHONY: test
 test:
-	$(GO_TEST_RUNNER) ./...
+	$(GO_TEST_RUNNER) $(GO_TOOL_TARGET)
 
 # --------------------------------------------------------------------------------
-# Codegen
+# Codegen: generating code
+# --------------------------------------------------------------------------------
+
+GO_GENERATOR ?= go generate
+
+.PHONY: codegen
+codegen:
+	$(GO_GENERATOR) $(GO_TOOL_TARGET)
+
+# --------------------------------------------------------------------------------
+# Codegen: fetching data
 # --------------------------------------------------------------------------------
 
 BUILD_DATA_DIR        ?= ./builddata
@@ -55,7 +71,7 @@ $(DATA_IAM_DEFINITION):
 $(DATA_MANAGED_POLICIES):
 	@echo 'Generating managed policy dataset'
 	@cat $(REPO_LOCAL_PATH)/aws/managedpolicies/*.json \
-		| jq '. | {arn, document}' \
+		| jq '. | select(.arn != null) | {arn, document}' \
 		| jq -s '.' \
 		> $@
 
