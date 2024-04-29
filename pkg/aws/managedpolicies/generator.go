@@ -14,8 +14,13 @@ import (
 )
 
 const (
-	MANAGED_POLICY_TEMPLATE_NAME = "managed policy"
-	MANAGED_POLICY_TEMPLATE_FILE = "mp.go.template"
+	CODEGEN_FILE_PREFIX = "zzz_"
+
+	MP_TEMPLATE_NAME = "managed policy"
+	MP_TEMPLATE_FILE = "mp.go.template"
+
+	MP_COLLECTION_TEMPLATE_NAME = "managed policy collection"
+	MP_COLLECTION_TEMPLATE_FILE = "collection.go.template"
 )
 
 func main() {
@@ -55,19 +60,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Generated managed policies
-	data, err = os.ReadFile(MANAGED_POLICY_TEMPLATE_FILE)
+	// Generate managed policies
+	data, err = os.ReadFile(MP_TEMPLATE_FILE)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error reading template file '%s': %v\n", MANAGED_POLICY_TEMPLATE_FILE, err)
+		fmt.Fprintf(os.Stderr, "error reading template file '%s': %v\n", MP_TEMPLATE_FILE, err)
 		os.Exit(1)
 	}
-	tmpl, err := template.New(MANAGED_POLICY_TEMPLATE_NAME).Parse(string(data))
+	tmpl, err := template.New(MP_TEMPLATE_NAME).Parse(string(data))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error parsing template file '%s': %v\n", MANAGED_POLICY_TEMPLATE_FILE, err)
+		fmt.Fprintf(os.Stderr, "error parsing template file '%s': %v\n", MP_TEMPLATE_FILE, err)
 		os.Exit(1)
 	}
 	for _, policy := range policies {
-		fn := fmt.Sprintf("gen__%s.go", policy.EscapedName())
+		fn := fmt.Sprintf("%s%s.go", CODEGEN_FILE_PREFIX, policy.EscapedName())
 		f, err := os.Create(fn)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error opening file for writing '%s': %v\n", fn, err)
@@ -75,12 +80,36 @@ func main() {
 		}
 		err = tmpl.Execute(f, &policy)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error rendering template file '%s': %v\n", MANAGED_POLICY_TEMPLATE_FILE, err)
+			fmt.Fprintf(os.Stderr, "error rendering template file '%s': %v\n", MP_TEMPLATE_FILE, err)
 			os.Exit(1)
 		}
 		fmt.Printf("-> successfully rendered template to '%s'\n", fn)
 
 	}
+
+	// Generate managed policy collection
+	data, err = os.ReadFile(MP_COLLECTION_TEMPLATE_FILE)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error reading template file '%s': %v\n", MP_COLLECTION_TEMPLATE_FILE, err)
+		os.Exit(1)
+	}
+	tmpl, err = template.New(MP_COLLECTION_TEMPLATE_NAME).Parse(string(data))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error parsing template file '%s': %v\n", MP_COLLECTION_TEMPLATE_FILE, err)
+		os.Exit(1)
+	}
+	fn := CODEGEN_FILE_PREFIX + strings.ReplaceAll(MP_COLLECTION_TEMPLATE_FILE, ".template", "")
+	f, err := os.Create(fn)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error opening file for writing '%s': %v\n", fn, err)
+		os.Exit(1)
+	}
+	err = tmpl.Execute(f, &policies)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error rendering template file '%s': %v\n", MP_COLLECTION_TEMPLATE_FILE, err)
+		os.Exit(1)
+	}
+	fmt.Printf("-> successfully rendered template to '%s'\n", fn)
 
 	fmt.Printf("-> generated code from %d managed policies\n", len(policies))
 }

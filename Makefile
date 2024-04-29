@@ -53,10 +53,12 @@ GO_GENERATOR ?= go generate
 .PHONY: codegen
 codegen: clean-codegen
 	$(GO_GENERATOR) $(GO_TOOL_TARGET)
+	$(MAKE) format
+	@echo 'code generation complete'
 
 .PHONY: clean-codegen
 clean-codegen:
-	rm -f ./pkg/aws/managedpolicies/gen__*.go
+	rm -f ./pkg/aws/managedpolicies/zzz_*.go
 
 # --------------------------------------------------------------------------------
 # Codegen: fetching data
