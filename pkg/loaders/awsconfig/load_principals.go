@@ -38,7 +38,7 @@ func loadPrincipals(items []Item, mpm *ManagedPolicyMap) ([]entities.Principal, 
 	return ps, nil
 }
 
-// loadPrincipal takes a single AWS Config items and returns a parsed principal object
+// loadPrincipal takes a single AWS Config item and returns a parsed principal object
 func loadPrincipal(i Item, mpm *ManagedPolicyMap) (*entities.Principal, error) {
 	// Construct basic fields
 	p := entities.Principal{

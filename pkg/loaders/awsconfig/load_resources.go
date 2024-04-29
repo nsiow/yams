@@ -11,31 +11,42 @@ import (
 
 // loadResources takes a list of AWS Config items and extracts resources
 func loadResources(items []Item) ([]entities.Resource, error) {
-	var res []entities.Resource
+	var rs []entities.Resource
 
 	// Iterate through our AWS Config items
 	for _, i := range items {
 
-		// Construct basic fields
-		r := entities.Resource{
-			Type:    i.Type,
-			Account: i.Account,
-			Region:  i.Region,
-			Arn:     i.Arn,
-			Tags:    i.Tags,
-		}
-
-		// Add policy where supported
-		p, err := extractPolicy(i)
+		// Load the single resource
+		r, err := loadResource(i)
 		if err != nil {
 			return nil, err
 		}
-		r.Policy = *p
 
-		res = append(res, r)
+		rs = append(rs, *r)
 	}
 
-	return res, nil
+	return rs, nil
+}
+
+// loadResource takes a single AWS Config item and returns a parsed resource object
+func loadResource(i Item) (*entities.Resource, error) {
+	// Construct basic fields
+	r := entities.Resource{
+		Type:    i.Type,
+		Account: i.Account,
+		Region:  i.Region,
+		Arn:     i.Arn,
+		Tags:    i.Tags,
+	}
+
+	// Add policy where supported
+	p, err := extractPolicy(i)
+	if err != nil {
+		return nil, err
+	}
+	r.Policy = *p
+
+	return &r, nil
 }
 
 // extractPolicy attempts to retrieve the resource policy, if supported
