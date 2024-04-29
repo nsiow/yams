@@ -31,3 +31,34 @@ GO_TEST_RUNNER ?= go test
 .PHONY: test
 test:
 	$(GO_TEST_RUNNER) ./...
+
+# --------------------------------------------------------------------------------
+# Codegen
+# --------------------------------------------------------------------------------
+
+BUILD_DATA_DIR        ?= ./builddata
+REPO_CLONE_URL        ?= https://github.com/iann0036/iam-dataset.git
+REPO_LOCAL_PATH       ?= $(BUILD_DATA_DIR)/clone/iam-dataset
+DATA_IAM_DEFINITION   ?= $(BUILD_DATA_DIR)/iam_definition.json
+DATA_MANAGED_POLICIES ?= $(BUILD_DATA_DIR)/managed_policies.json
+
+.PHONY: data
+data: $(REPO_LOCAL_PATH) $(DATA_IAM_DEFINITION) $(DATA_MANAGED_POLICIES)
+
+$(REPO_LOCAL_PATH):
+	git clone --single-branch --depth 1 $(REPO_CLONE_URL) $@
+
+$(DATA_IAM_DEFINITION):
+	@echo 'Generating IAM permission dataset'
+	@cp $(REPO_LOCAL_PATH)/aws/iam_definition.json $@
+
+$(DATA_MANAGED_POLICIES):
+	@echo 'Generating managed policy dataset'
+	@cat $(REPO_LOCAL_PATH)/aws/managedpolicies/*.json \
+		| jq '. | {arn, document}' \
+		| jq -s '.' \
+		> $@
+
+.PHONY: clean-data
+clean-data:
+	rm -rf $(BUILD_DATA_DIR)
