@@ -16,10 +16,11 @@ func loadResources(items []Item) ([]entities.Resource, error) {
 	// Iterate through our AWS Config items
 	for _, i := range items {
 
+		// TODO(nsiow) give similar treatment to errors for other entities
 		// Load the single resource
 		r, err := loadResource(i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error loading resource '%s': %v", i.Arn, err)
 		}
 
 		rs = append(rs, *r)
