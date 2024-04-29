@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	MANAGED_POLICY_TEMPLATE_FILE = "managed_policies.go.template"
+	MANAGED_POLICY_TEMPLATE_NAME = "managed policy"
+	MANAGED_POLICY_TEMPLATE_FILE = "mp.go.template"
 )
 
 func main() {
@@ -60,19 +61,19 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error reading template file '%s': %v\n", MANAGED_POLICY_TEMPLATE_FILE, err)
 		os.Exit(1)
 	}
-	tmpl, err := template.New("mp").Parse(string(data))
+	tmpl, err := template.New(MANAGED_POLICY_TEMPLATE_NAME).Parse(string(data))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error parsing template file '%s': %v\n", MANAGED_POLICY_TEMPLATE_FILE, err)
 		os.Exit(1)
 	}
 	for _, policy := range policies {
-		fn := fmt.Sprintf("%s.go", policy.EscapedName())
+		fn := fmt.Sprintf("gen__%s.go", policy.EscapedName())
 		f, err := os.Create(fn)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error opening file for writing '%s': %v\n", fn, err)
 			os.Exit(1)
 		}
-		err = tmpl.Execute(f, policies)
+		err = tmpl.Execute(f, &policy)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error rendering template file '%s': %v\n", MANAGED_POLICY_TEMPLATE_FILE, err)
 			os.Exit(1)

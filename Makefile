@@ -26,6 +26,12 @@ clean:
 # Testing
 # --------------------------------------------------------------------------------
 
+GO_FORMATTER ?= go fmt
+
+.PHONY: format
+format:
+	$(GO_FORMATTER) $(GO_TOOL_TARGET)
+
 GO_LINTER ?= go vet
 
 .PHONY: lint
@@ -45,8 +51,12 @@ test:
 GO_GENERATOR ?= go generate
 
 .PHONY: codegen
-codegen:
+codegen: clean-codegen
 	$(GO_GENERATOR) $(GO_TOOL_TARGET)
+
+.PHONY: clean-codegen
+clean-codegen:
+	rm -f ./pkg/aws/managedpolicies/gen__*.go
 
 # --------------------------------------------------------------------------------
 # Codegen: fetching data
