@@ -11,7 +11,39 @@ import (
 type Policy struct {
 	Version   string
 	Id        string
-	Statement []Statement
+	Statement StatementBlock
+}
+
+// StatementBlock represents one or more statements, provided in array or map form
+type StatementBlock struct {
+	Values []Statement
+}
+
+// UnmarshalJSON instructs how to create StatementBlock fields from raw bytes
+func (s *StatementBlock) UnmarshalJSON(data []byte) error {
+	// Handle empty string
+	if len(data) == 0 || string(data) == "null" {
+		return nil
+	}
+
+	// Handle single statement
+	if data[0] == '{' && data[len(data)-1] == '}' {
+		stmt := Statement{}
+		err := json.Unmarshal(data, &stmt)
+		if err != nil {
+			return err
+		}
+
+		s.Values = []Statement{stmt}
+		return nil
+	}
+
+	// Handle list of statements
+	if data[0] == '[' && data[len(data)-1] == ']' {
+		return json.Unmarshal(data, &s.Values)
+	}
+
+	return fmt.Errorf("not sure how to handle statement block: %s", string(data))
 }
 
 // Statement represents the grammar and structure of an AWS IAM Statement

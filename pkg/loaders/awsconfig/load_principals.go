@@ -3,6 +3,7 @@ package awsconfig
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
@@ -20,31 +21,48 @@ func loadPrincipals(items []Item, mpm *ManagedPolicyMap) ([]entities.Principal, 
 	// Iterate through our AWS Config items
 	for _, i := range items {
 
-		// Construct basic fields
-		p := entities.Principal{
-			Type:    i.Type,
-			Account: i.Account,
-			Region:  i.Region,
-			Arn:     i.Arn,
-			Tags:    i.Tags,
+		// Filter out only Principal types
+		if !slices.Contains(principalTypes, i.Type) {
+			continue
 		}
 
-		// Extract both inline and managed policies
-		ip, err := extractInlinePolicies(i)
+		// Load the single principal
+		p, err := loadPrincipal(i, mpm)
 		if err != nil {
 			return nil, err
 		}
-		p.InlinePolicies = ip
-		mp, err := extractManagedPolicies(i, mpm)
-		if err != nil {
-			return nil, err
-		}
-		p.ManagedPolicies = mp
 
-		ps = append(ps, p)
+		ps = append(ps, *p)
 	}
 
 	return ps, nil
+}
+
+// loadPrincipal takes a single AWS Config items and returns a parsed principal object
+func loadPrincipal(i Item, mpm *ManagedPolicyMap) (*entities.Principal, error) {
+	// Construct basic fields
+	p := entities.Principal{
+		Type:    i.Type,
+		Account: i.Account,
+		Region:  i.Region,
+		Arn:     i.Arn,
+		Tags:    i.Tags,
+	}
+
+	// Extract both inline and managed policies
+	// TODO(nsiow) Give these errors improved context similar to managed policies
+	ip, err := extractInlinePolicies(i)
+	if err != nil {
+		return nil, err
+	}
+	p.InlinePolicies = ip
+	mp, err := extractManagedPolicies(i, mpm)
+	if err != nil {
+		return nil, err
+	}
+	p.ManagedPolicies = mp
+
+	return &p, nil
 }
 
 // extractInlinePolicies attempts to retrieve the direct Principal permissions, if supported

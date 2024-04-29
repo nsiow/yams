@@ -3,30 +3,9 @@ package awsconfig
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/nsiow/yams/pkg/policy"
 )
-
-// policyItemConfiguration is a struct describing a configuration fragment for AWS::IAM::Policy
-type policyItemConfiguration struct {
-	PolicyVersionList []policyItemVersion `json:"policyVersionList"`
-}
-
-// Default attempts to retrieve the default version of this policy
-func (p *policyItemConfiguration) Default() (policyItemVersion, error) {
-	for _, piv := range p.PolicyVersionList {
-		if piv.IsDefaultVersion {
-			return piv, nil
-		}
-	}
-
-	return policyItemVersion{}, fmt.Errorf("no valid default policy version found for: %v", p)
-}
-
-// policyItemVersion is a struct describing a configuration fragment for AWS::IAM::Policy
-type policyItemVersion struct {
-	VersionId        string `json:"versionId"`
-	IsDefaultVersion bool   `json:"isDefaultVersion"`
-	Document         string `json:"document"`
-}
 
 // loadPolicies takes a list of AWS Config items and extracts policies into a ManagedPolicyMap
 func loadPolicies(items []Item) (*ManagedPolicyMap, error) {
@@ -40,28 +19,62 @@ func loadPolicies(items []Item) (*ManagedPolicyMap, error) {
 			continue
 		}
 
-		// Parse policy configuration
-		pic := policyItemConfiguration{}
-		err := json.Unmarshal(i.Configuration, &pic)
-		if err != nil {
-			return nil, err
-		}
-
-		// Attempt to retrieve default version
-		defaultVersion, err := pic.Default()
-		if err != nil {
-			return nil, err
-		}
-
-		// Attempt to decode our policy string; this _should_ always work
-		policy, err := decodePolicyString(defaultVersion.Document)
+		// Load the single policy
+		policy, err := loadPolicy(i)
 		if err != nil {
 			return nil, err
 		}
 
 		// Save the decoded policy into our map
-		m.Add(i.Arn, policy)
+		m.Add(i.Arn, *policy)
 	}
 
 	return m, nil
+}
+
+// loadPolicy takes a single AWS Config item and returns a parsed policy object
+func loadPolicy(i Item) (*policy.Policy, error) {
+	// Parse policy configuration
+	pic := policyFragment{}
+	err := json.Unmarshal(i.Configuration, &pic)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse policy version list (%+v): %v", pic, err)
+	}
+
+	// Attempt to retrieve default version
+	defaultVersion, err := pic.Default()
+	if err != nil {
+		return nil, fmt.Errorf("unable to determine default version for (%+v): %v", pic, err)
+	}
+
+	// Attempt to decode our policy string; this _should_ always work
+	policy, err := decodePolicyString(defaultVersion.Document)
+	if err != nil {
+		return nil, fmt.Errorf("unable to decode policy string (%+v): %v", pic, err)
+	}
+
+	return &policy, nil
+}
+
+// policyFragment is a struct describing a configuration fragment for AWS::IAM::Policy
+type policyFragment struct {
+	PolicyVersionList []policyVersionFragment `json:"policyVersionList"`
+}
+
+// Default attempts to retrieve the default version of this policy
+func (p *policyFragment) Default() (policyVersionFragment, error) {
+	for _, piv := range p.PolicyVersionList {
+		if piv.IsDefaultVersion {
+			return piv, nil
+		}
+	}
+
+	return policyVersionFragment{}, fmt.Errorf("no valid default policy version found for: %v", p)
+}
+
+// policyVersionFragment is a struct describing a configuration fragment for AWS::IAM::Policy
+type policyVersionFragment struct {
+	VersionId        string `json:"versionId"`
+	IsDefaultVersion bool   `json:"isDefaultVersion"`
+	Document         string `json:"document"`
 }
