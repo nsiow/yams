@@ -39,10 +39,29 @@ lint:
 	$(GO_LINTER) $(GO_TOOL_TARGET)
 
 GO_TEST_RUNNER ?= go test
+GO_TEST_FLAGS  ?=
 
 .PHONY: test
 test:
-	$(GO_TEST_RUNNER) $(GO_TOOL_TARGET)
+	$(GO_TEST_RUNNER) $(GO_TEST_FLAGS) $(GO_TOOL_TARGET)
+
+COVERAGE_FILE   ?= cover.out
+COVERAGE_REPORT ?= cover.html
+GO_COVER_TOOL   ?= go tool cover
+GO_COVER_FLAGS  ?= -html $(COVERAGE_FILE) -o $(COVERAGE_REPORT)
+
+.PHONY: cov
+cov: $(COVERAGE_FILE)
+
+$(COVERAGE_FILE): GO_TEST_FLAGS=-v -coverprofile $(COVERAGE_FILE)
+$(COVERAGE_FILE): test
+
+.PHONY: report
+report: $(COVERAGE_REPORT)
+	open $<
+
+$(COVERAGE_REPORT): $(COVERAGE_FILE)
+	$(GO_COVER_TOOL) $(GO_COVER_FLAGS)
 
 # --------------------------------------------------------------------------------
 # Codegen: generating code

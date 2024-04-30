@@ -28,10 +28,13 @@ func (p *PolyString) UnmarshalJSON(data []byte) error {
 		if err != nil {
 			return fmt.Errorf("error in array clause of polystring type")
 		}
+		return nil
 	}
 
 	// Otherwise handle it as a string
-	p.Values = append(p.Values, string(data))
+	var s string
+	json.Unmarshal(data, &s)
+	p.Values = append(p.Values, s)
 	return nil
 }
 
