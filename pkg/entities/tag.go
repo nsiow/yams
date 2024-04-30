@@ -5,3 +5,6 @@ type Tag struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
+
+// Tags defines a collection around a slice of Tag structs
+type Tags = []Tag
