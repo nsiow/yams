@@ -39,7 +39,6 @@ lint:
 	$(GO_LINTER) $(GO_TOOL_TARGET)
 
 GO_TEST_RUNNER ?= go test
-GO_TEST_FLAGS  ?= -tags testonly
 
 .PHONY: test
 test:
