@@ -20,7 +20,7 @@ func TestNewPolyString(t *testing.T) {
 	for _, tc := range tests {
 		got := NewPolyString(tc.input...).Values
 		if !reflect.DeepEqual(tc.want, got) {
-			t.Fatalf("expected: %v, got: %v", tc.want, got)
+			t.Fatalf("expected: %#v, got: %#v", tc.want, got)
 		}
 	}
 }
