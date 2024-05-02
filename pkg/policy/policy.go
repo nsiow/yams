@@ -63,6 +63,8 @@ type Statement struct {
 }
 
 // Validate determines whether or not the Statement is valid; returning an error otherwise
+//
+// Validity here is strictly in terms of the IAM grammar, and makes no guarantees around policy values
 func (s *Statement) Validate() error {
 	if !s.Principal.Empty() && !s.NotPrincipal.Empty() {
 		return fmt.Errorf("must supply exactly zero or one of (Principal | NotPrincipal)")
@@ -85,8 +87,6 @@ type Principal struct {
 	CanonicalUser ps.PolyString `json:",omitempty"`
 }
 
-// TODO(nsiow): Implement deeper validation for Principals
-
 // UnmarshalJSON instructs how to create Principal fields from raw bytes
 func (p *Principal) UnmarshalJSON(data []byte) error {
 	// Handle empty string
@@ -102,6 +102,7 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 		p.CanonicalUser = ps.NewPolyString("*")
 	}
 
+	// TODO(nsiow) better way to do this?
 	// Handle normal case
 	var m map[string]json.RawMessage
 	if v, ok := m["AWS"]; ok {
