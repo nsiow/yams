@@ -15,9 +15,7 @@ type Policy struct {
 }
 
 // StatementBlock represents one or more statements, provided in array or map form
-type StatementBlock struct {
-	Values []Statement
-}
+type StatementBlock []Statement
 
 // UnmarshalJSON instructs how to create StatementBlock fields from raw bytes
 func (s *StatementBlock) UnmarshalJSON(data []byte) error {
@@ -34,16 +32,18 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("error in single-statement clause processing of Statement block: %v", err)
 		}
 
-		s.Values = []Statement{stmt}
+		*s = []Statement{stmt}
 		return nil
 	}
 
 	// Handle list of statements
 	if data[0] == '[' && data[len(data)-1] == ']' {
-		err := json.Unmarshal(data, &s.Values)
+		var list []Statement
+		err := json.Unmarshal(data, &list)
 		if err != nil {
 			return fmt.Errorf("error in multi-statement clause processing of Statement block: %v", err)
 		}
+		*s = list
 		return nil
 	}
 

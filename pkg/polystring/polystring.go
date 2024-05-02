@@ -6,13 +6,11 @@ import (
 )
 
 // PolyString is a JSON-centric helper struct to facilitate one-or-more value representations
-type PolyString struct {
-	Values []string
-}
+type PolyString []string
 
 // NewPolyString creates a new PolicyString struct using the supplied values
 func NewPolyString(values ...string) PolyString {
-	return PolyString{Values: values}
+	return values
 }
 
 // UnmarshalJSON instructs how to create PolyString fields from raw bytes
@@ -24,23 +22,25 @@ func (p *PolyString) UnmarshalJSON(data []byte) error {
 
 	// If it looks like an array; handle it as such
 	if data[0] == '[' && data[len(data)-1] == ']' {
-		err := json.Unmarshal(data, &p.Values)
+		var list []string
+		err := json.Unmarshal(data, &list)
 		if err != nil {
 			return fmt.Errorf("error in array clause of polystring type")
 		}
+		*p = list
 		return nil
 	}
 
 	// Otherwise handle it as a string
 	var s string
 	json.Unmarshal(data, &s)
-	p.Values = append(p.Values, s)
+	*p = append(*p, s)
 	return nil
 }
 
 // Count returns the number of strings represented in the PolyString
 func (p *PolyString) Count() int {
-	return len(p.Values)
+	return len(*p)
 }
 
 // Empty returns whether or not the PolyString contains any values

@@ -9,8 +9,8 @@ import (
 // TestNewPolyString creates a polystring with different variables and determines correct functionality
 func TestNewPolyString(t *testing.T) {
 	type test struct {
-		input []string
-		want  []string
+		input PolyString
+		want  PolyString
 	}
 
 	tests := []test{
@@ -18,7 +18,7 @@ func TestNewPolyString(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got := NewPolyString(tc.input...).Values
+		got := NewPolyString(tc.input...)
 		if !reflect.DeepEqual(tc.want, got) {
 			t.Fatalf("expected: %#v, got: %#v", tc.want, got)
 		}
@@ -33,7 +33,7 @@ func TestUnmarshalValid(t *testing.T) {
 
 	type test struct {
 		input string
-		want  []string
+		want  PolyString
 		err   bool
 	}
 
@@ -61,7 +61,7 @@ func TestUnmarshalValid(t *testing.T) {
 			t.Fatalf("error unmarshalling polystring: %v", err)
 		}
 
-		got := ex.S.Values
+		got := ex.S
 		if !reflect.DeepEqual(tc.want, got) {
 			t.Fatalf("expected: %#v, got: %#v, for input: %#v", tc.want, got, tc.input)
 		}
@@ -76,11 +76,11 @@ func TestEmpty(t *testing.T) {
 	}
 
 	tests := []test{
-		{input: PolyString{Values: nil}, want: true},
-		{input: PolyString{Values: []string{}}, want: true},
-		{input: PolyString{Values: []string{"foo"}}, want: false},
-		{input: PolyString{Values: []string{"foo", "bar"}}, want: false},
-		{input: PolyString{Values: []string{"foo", "bar", "baz"}}, want: false},
+		{input: nil, want: true},
+		{input: []string{}, want: true},
+		{input: []string{"foo"}, want: false},
+		{input: []string{"foo", "bar"}, want: false},
+		{input: []string{"foo", "bar", "baz"}, want: false},
 	}
 
 	for _, tc := range tests {

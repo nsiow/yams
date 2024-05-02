@@ -87,10 +87,8 @@ func TestStatements(t *testing.T) {
 			input: Principal{
 				InlinePolicies: []policy.Policy{
 					{
-						Statement: policy.StatementBlock{
-							Values: []policy.Statement{
-								{Sid: "foo"},
-							},
+						Statement: []policy.Statement{
+							{Sid: "foo"},
 						},
 					},
 				},
@@ -104,19 +102,15 @@ func TestStatements(t *testing.T) {
 			input: Principal{
 				InlinePolicies: []policy.Policy{
 					{
-						Statement: policy.StatementBlock{
-							Values: []policy.Statement{
-								{Sid: "foo"},
-							},
+						Statement: []policy.Statement{
+							{Sid: "foo"},
 						},
 					},
 				},
 				ManagedPolicies: []policy.Policy{
 					{
-						Statement: policy.StatementBlock{
-							Values: []policy.Statement{
-								{Sid: "bar"},
-							},
+						Statement: []policy.Statement{
+							{Sid: "bar"},
 						},
 					},
 				},

@@ -40,7 +40,7 @@ func (p *Principal) Statements() []policy.Statement {
 
 	// Iterate over policies => statement blocks => statements
 	for _, policy := range p.Policies() {
-		for _, stmt := range policy.Statement.Values {
+		for _, stmt := range policy.Statement {
 			stmts = append(stmts, stmt)
 		}
 	}

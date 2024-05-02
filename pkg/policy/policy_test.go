@@ -21,7 +21,7 @@ func TestPolicyGrammar(t *testing.T) {
 			want: Policy{
 				Version:   "",
 				Id:        "",
-				Statement: StatementBlock{Values: []Statement{}},
+				Statement: []Statement{},
 			},
 		},
 	}
