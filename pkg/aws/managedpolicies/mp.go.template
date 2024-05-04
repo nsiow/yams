@@ -4,7 +4,6 @@ package managedpolicies
 
 import (
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/polystring"
 )
 
 var {{ .VarName }} = {{ .Struct }}

@@ -144,7 +144,7 @@ func TestPolicyGrammar(t *testing.T) {
 			t.Fatalf("expected error, got success for asset '%s': %v", tc.name, err)
 		case err != nil && tc.err:
 			// expected error; got error
-			t.Logf("test saw error: %v", err)
+			t.Logf("test saw expected error: %v", err)
 		case err == nil && !tc.err:
 			// no error and not expecting one, continue
 			break
@@ -213,7 +213,7 @@ func TestValidate(t *testing.T) {
 				t.Fatalf("expected error, got success for statement #%d, test case '%s': %v", i, tc.name, err)
 			case err != nil && tc.err:
 				// expected error; got error
-				t.Logf("test saw error: %v", err)
+				t.Logf("test saw expected error: %v", err)
 			case err == nil && !tc.err:
 				// no error and not expecting one, continue
 				break

@@ -1,4 +1,4 @@
-package polystring
+package policy
 
 import (
 	"encoding/json"
@@ -6,11 +6,11 @@ import (
 	"testing"
 )
 
-// TestNewPolyString creates a polystring with different variables and determines correct functionality
-func TestNewPolyString(t *testing.T) {
+// TestNewValue creates a Value with different variables and determines correct functionality
+func TestNewValue(t *testing.T) {
 	type test struct {
-		input PolyString
-		want  PolyString
+		input Value
+		want  Value
 	}
 
 	tests := []test{
@@ -18,7 +18,7 @@ func TestNewPolyString(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got := NewPolyString(tc.input...)
+		got := NewValue(tc.input...)
 		if !reflect.DeepEqual(tc.want, got) {
 			t.Fatalf("expected: %#v, got: %#v", tc.want, got)
 		}
@@ -28,12 +28,12 @@ func TestNewPolyString(t *testing.T) {
 // TestUnmarshal validates the JSON unmarshalling behavior of various cases
 func TestUnmarshalValid(t *testing.T) {
 	type exampleStruct struct {
-		S PolyString
+		S Value
 	}
 
 	type test struct {
 		input string
-		want  PolyString
+		want  Value
 		err   bool
 	}
 
@@ -41,7 +41,7 @@ func TestUnmarshalValid(t *testing.T) {
 		{input: `{"S": "foo"}`, want: []string{"foo"}},
 		{input: `{"S": ["foo", "bar"]}`, want: []string{"foo", "bar"}},
 		{input: `{"S": ""}`, want: []string{""}},
-		{input: `{"S": null}`, want: nil},
+		{input: `{"S": null}`, want: []string{}},
 		{input: `{"S": "null"}`, want: []string{"null"}},
 		{input: `{"S": []}`, want: []string{}},
 		{input: `{"S": [0]}`, err: true},
@@ -58,7 +58,7 @@ func TestUnmarshalValid(t *testing.T) {
 			}
 		}
 		if err != nil {
-			t.Fatalf("error unmarshalling polystring: %v", err)
+			t.Fatalf("error unmarshalling Value: %v", err)
 		}
 
 		got := ex.S
@@ -68,10 +68,10 @@ func TestUnmarshalValid(t *testing.T) {
 	}
 }
 
-// TestEmpty validates the correct emptiness behavior of a PolyString
+// TestEmpty validates the correct emptiness behavior of a Value
 func TestEmpty(t *testing.T) {
 	type test struct {
-		input PolyString
+		input Value
 		want  bool
 	}
 

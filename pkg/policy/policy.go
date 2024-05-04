@@ -3,8 +3,6 @@ package policy
 import (
 	"encoding/json"
 	"fmt"
-
-	ps "github.com/nsiow/yams/pkg/polystring"
 )
 
 // Policy represents the grammar and structure of an AWS IAM Policy
@@ -29,7 +27,7 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 		stmt := Statement{}
 		err := json.Unmarshal(data, &stmt)
 		if err != nil {
-			return fmt.Errorf("error in single-statement clause processing of Statement block: %v", err)
+			return fmt.Errorf("error in single-statement clause of Statement:\ndata=%s\nerror=%v", string(data), err)
 		}
 
 		*s = []Statement{stmt}
@@ -41,7 +39,7 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 		var list []Statement
 		err := json.Unmarshal(data, &list)
 		if err != nil {
-			return fmt.Errorf("error in multi-statement clause processing of Statement block: %v", err)
+			return fmt.Errorf("error in multi-statement clause of Statement:\ndata=%s\nerror=%v", string(data), err)
 		}
 		*s = list
 		return nil
@@ -53,14 +51,14 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 // Statement represents the grammar and structure of an AWS IAM Statement
 type Statement struct {
 	Sid          string
-	Principal    Principal `json:",omitempty"`
-	NotPrincipal Principal `json:",omitempty"`
+	Principal    PrincipalBlock `json:",omitempty"`
+	NotPrincipal PrincipalBlock `json:",omitempty"`
 	Effect       string
-	Action       Action    `json:",omitempty"`
-	NotAction    Action    `json:",omitempty"`
-	Resource     Resource  `json:",omitempty"`
-	NotResource  Resource  `json:",omitempty"`
-	Condition    Condition `json:",omitempty"`
+	Action       Action         `json:",omitempty"`
+	NotAction    Action         `json:",omitempty"`
+	Resource     Resource       `json:",omitempty"`
+	NotResource  Resource       `json:",omitempty"`
+	Condition    ConditionBlock `json:",omitempty"`
 }
 
 // Validate determines whether or not the Statement is valid; returning an error otherwise
@@ -80,52 +78,35 @@ func (s *Statement) Validate() error {
 	return nil
 }
 
+// PrincipalBlock represents a set of Principals, provided in string or map form
+type PrincipalBlock = Principal
+
 // Principal represents the grammar and structure of an AWS IAM Principal
 type Principal struct {
-	AWS           ps.PolyString `json:",omitempty"`
-	Federated     ps.PolyString `json:",omitempty"`
-	Service       ps.PolyString `json:",omitempty"`
-	CanonicalUser ps.PolyString `json:",omitempty"`
+	AWS           Value `json:",omitempty"`
+	Federated     Value `json:",omitempty"`
+	Service       Value `json:",omitempty"`
+	CanonicalUser Value `json:",omitempty"`
 }
 
 // UnmarshalJSON instructs how to create Principal fields from raw bytes
-func (p *Principal) UnmarshalJSON(data []byte) error {
-	// Handle empty string
-	if len(data) == 0 || string(data) == "null" {
+func (p *PrincipalBlock) UnmarshalJSON(data []byte) error {
+	// Handle string case; only valid in this 3-byte sequence
+	if len(data) == 3 && string(data) == `"*"` {
+		p.AWS = []string{"*"}
+		p.Federated = []string{"*"}
+		p.Service = []string{"*"}
+		p.CanonicalUser = []string{"*"}
 		return nil
 	}
 
-	// Handle wildcard
-	if len(data) == 1 && data[0] == '*' {
-		p.AWS = ps.NewPolyString("*")
-		p.Federated = ps.NewPolyString("*")
-		p.Service = ps.NewPolyString("*")
-		p.CanonicalUser = ps.NewPolyString("*")
+	var principal Principal
+	err := json.Unmarshal(data, &principal)
+	if err != nil {
+		return fmt.Errorf("unable to parse:\nprincipal = %s\nerror = %v", string(data), err)
 	}
 
-	// TODO(nsiow) better way to do this?
-	// Handle normal case
-	var m map[string]json.RawMessage
-	if v, ok := m["AWS"]; ok {
-		if err := json.Unmarshal(v, &p.AWS); err != nil {
-			return fmt.Errorf("error in 'AWS' clause processing of Principal block: %v", err)
-		}
-	}
-	if v, ok := m["Federated"]; ok {
-		if err := json.Unmarshal(v, &p.Federated); err != nil {
-			return fmt.Errorf("error in 'Federated' clause processing of Principal block: %v", err)
-		}
-	}
-	if v, ok := m["Service"]; ok {
-		if err := json.Unmarshal(v, &p.Service); err != nil {
-			return fmt.Errorf("error in 'Service' clause processing of Principal block: %v", err)
-		}
-	}
-	if v, ok := m["CanonicalUser"]; ok {
-		if err := json.Unmarshal(v, &p.CanonicalUser); err != nil {
-			return fmt.Errorf("error in 'CanonicalUser' clause processing of Principal block: %v", err)
-		}
-	}
+	*p = principal
 	return nil
 }
 
@@ -139,38 +120,133 @@ func (p *Principal) Empty() bool {
 
 // Action represents the grammar and structure of an AWS IAM Action
 type Action struct {
-	ps.PolyString
+	Value
 }
 
 // Resource represents the grammar and structure of an AWS IAM Resource
 type Resource struct {
-	ps.PolyString
+	Value
 }
 
-// ConditionMap represents the grammar and structure of an AWS IAM Condition map
-type ConditionMap struct {
-	Map map[string]Condition
+// ConditionBlock represents the grammar and structure of an AWS IAM Condition block
+type ConditionBlock map[ConditionOperation]Condition
+
+// ConditionOperation represents the operation portion of a condition block
+type ConditionOperation string
+
+// Condition represents the grammar and structure of an AWS IAM Condition
+type Condition map[ConditionKey]ConditionValue
+
+// ConditionKey represents the key portion of a condition
+type ConditionKey string
+
+// ConditionValue represents the value portion of a condition
+type ConditionValue struct {
+	bools   []bool
+	numbers []int
+	strings []string
 }
 
-// UnmarshalJSON instructs how to create ConditionMap fields from raw bytes
-func (c *ConditionMap) UnmarshalJSON(data []byte) error {
-	err := json.Unmarshal(data, &c.Map)
-	if err != nil {
-		return fmt.Errorf("error in 'ConditionMap' clause processing of Condition block: %v", err)
+// nTrue counts the booleans input and returns the number of them that are true
+func nTrue(b ...bool) int {
+	n := 0
+	for _, v := range b {
+		if v {
+			n++
+		}
+	}
+	return n
+}
+
+// Validate confirms that we have one and only one type of value
+func (c *ConditionValue) Validate() error {
+	nTrue := nTrue(len(c.bools) > 0, len(c.numbers) > 0, len(c.strings) > 0)
+	if nTrue > 1 {
+		return fmt.Errorf("multiple (%d) types observed in condition value: %+v", nTrue, c)
 	}
 	return nil
 }
 
-// Condition represents the grammar and structure of an AWS IAM Condition
-type Condition struct {
-	Map map[string]ps.PolyString
+// Bools returns the contained values if we have bools; otherwise errors
+func (c *ConditionValue) Bools() ([]bool, error) {
+	err := c.Validate()
+	if err != nil {
+		return nil, err
+	}
+	return c.bools, nil
 }
 
-// UnmarshalJSON instructs how to create Condition fields from raw bytes
-func (c *Condition) UnmarshalJSON(data []byte) error {
-	err := json.Unmarshal(data, &c.Map)
+// Numbers returns the contained values if we have numbers; otherwise errors
+func (c *ConditionValue) Numbers() ([]int, error) {
+	err := c.Validate()
 	if err != nil {
-		return fmt.Errorf("error in 'Condition' clause processing of Condition block: %v", err)
+		return nil, err
 	}
+	return c.numbers, nil
+}
+
+// Strings returns the contained values if we have strings; otherwise errors
+func (c *ConditionValue) Strings() ([]string, error) {
+	err := c.Validate()
+	if err != nil {
+		return nil, err
+	}
+	return c.strings, nil
+}
+
+// MarshalJSON instructs how to create raw bytes from ConditionValue fields
+func (c *ConditionValue) MarshalJSON() ([]byte, error) {
+	var items []any
+
+	for _, x := range c.bools {
+		items = append(items, x)
+	}
+	for _, x := range c.numbers {
+		items = append(items, x)
+	}
+	for _, x := range c.strings {
+		items = append(items, x)
+	}
+
+	return json.Marshal(items)
+}
+
+// UnmarshalJSON instructs how to create ConditionValue fields from raw bytes
+func (c *ConditionValue) UnmarshalJSON(data []byte) error {
+	// First make sure the data can be marshalled at all
+	var raw any
+	err := json.Unmarshal(data, &raw)
+	if err != nil {
+		return fmt.Errorf("unable to parse:\nconditionValue = %s\nerror = %v", string(data), err)
+	}
+
+	// Handle the different cases between both types
+	switch cast := raw.(type) {
+	case bool:
+		c.bools = []bool{cast}
+	case int:
+		c.numbers = []int{cast}
+	case string:
+		c.strings = []string{cast}
+	case []any:
+		// Otherwise iterate through and fill out arrays; we'll check for homogeneity later
+		for _, a := range cast {
+			switch item := a.(type) {
+			case bool:
+				c.bools = append(c.bools, item)
+			case int:
+				c.numbers = append(c.numbers, item)
+			case string:
+				c.strings = append(c.strings, item)
+			default:
+				return fmt.Errorf("unsure how to handle type '%T' for condition value array: %v", a, a)
+			}
+		}
+	case nil:
+		break
+	default:
+		return fmt.Errorf("unsure how to handle type '%T' for condition value: %v", cast, cast)
+	}
+
 	return nil
 }
