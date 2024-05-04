@@ -221,7 +221,7 @@ func TestPolicyGrammar(t *testing.T) {
 		check := true
 		switch {
 		case err == nil && tc.err:
-			t.Fatalf("expected error, got success for asset '%s': %v", tc.name, err)
+			t.Fatalf("expected error, got success for test case '%s': %v", tc.name, err)
 		case err != nil && tc.err:
 			// expected error; got error
 			t.Logf("test saw expected error: %v", err)
@@ -229,7 +229,7 @@ func TestPolicyGrammar(t *testing.T) {
 		case err == nil && !tc.err:
 			// no error and not expecting one, continue
 		case err != nil && !tc.err:
-			t.Fatalf("unable to create policy from asset '%s': %v", tc.name, err)
+			t.Fatalf("unable to create policy from test case '%s': %v", tc.name, err)
 		}
 
 		// Check against expected value
@@ -335,7 +335,7 @@ func TestValidate(t *testing.T) {
 		p := Policy{}
 		err := json.Unmarshal([]byte(tc.input), &p)
 		if err != nil {
-			t.Fatalf("unable to create policy from asset '%s': %v", tc.name, err)
+			t.Fatalf("unable to create policy from test case '%s': %v", tc.name, err)
 		}
 
 		// Validate statements

@@ -16,11 +16,8 @@ func NewValue(values ...string) Value {
 // UnmarshalJSON instructs how to create Value fields from raw bytes
 func (v *Value) UnmarshalJSON(data []byte) error {
 	// First make sure the data can be marshalled at all
-	var raw any
-	err := json.Unmarshal(data, &raw)
-	if err != nil {
-		return fmt.Errorf("unable to parse:\nvalue = %s\nerror = %v", string(data), err)
-	}
+	var raw any = nil
+	_ = json.Unmarshal(data, &raw) // ignore error; address in switch
 
 	// Handle the different cases between both types
 	value := []string{}

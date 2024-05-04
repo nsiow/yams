@@ -45,6 +45,8 @@ func TestUnmarshalValid(t *testing.T) {
 		{input: `{"S": "null"}`, want: []string{"null"}},
 		{input: `{"S": []}`, want: []string{}},
 		{input: `{"S": [0]}`, err: true},
+		{input: `{"S": 0}`, err: true},
+		{input: `{"S": true`, err: true},
 	}
 
 	for _, tc := range tests {
@@ -65,6 +67,28 @@ func TestUnmarshalValid(t *testing.T) {
 		if !reflect.DeepEqual(tc.want, got) {
 			t.Fatalf("expected: %#v, got: %#v, for input: %#v", tc.want, got, tc.input)
 		}
+	}
+}
+
+// TestInvalid validates the handling of invalid JSON fragments
+func TestInvalid(t *testing.T) {
+	type test struct {
+		input string
+	}
+
+	tests := []test{
+		{input: `a`},
+	}
+
+	for _, tc := range tests {
+		var v Value
+		err := json.Unmarshal([]byte(tc.input), &v)
+		if err != nil {
+			t.Logf("test saw expected error: %v", err)
+			continue
+		}
+
+		t.Fatalf("expected error, got success for input: %s", tc.input)
 	}
 }
 
