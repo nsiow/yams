@@ -12,6 +12,10 @@ CLI ?= yams
 
 GO_BUILDER ?= go build
 
+.PHONY: build
+build:
+	$(GO_BUILDER) $(GO_TOOL_TARGET)
+
 .PHONY: build-cli
 build-cli: $(CLI)
 
