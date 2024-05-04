@@ -19,9 +19,9 @@ type StatementBlock []Statement
 
 // UnmarshalJSON instructs how to create StatementBlock fields from raw bytes
 func (s *StatementBlock) UnmarshalJSON(data []byte) error {
-	// Handle empty string
-	if len(data) == 0 || string(data) == "null" {
-		return nil
+	// Handle empty/too-small string
+	if len(data) < 2 {
+		return fmt.Errorf("invalid statement block: %s", string(data))
 	}
 
 	// Handle single statement
@@ -55,6 +55,7 @@ type Statement struct {
 	Sid          string
 	Principal    Principal `json:",omitempty"`
 	NotPrincipal Principal `json:",omitempty"`
+	Effect       string
 	Action       Action    `json:",omitempty"`
 	NotAction    Action    `json:",omitempty"`
 	Resource     Resource  `json:",omitempty"`

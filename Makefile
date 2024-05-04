@@ -21,6 +21,8 @@ $(CLI): $(shell find . -type f -name '*.go')
 .PHONY: clean
 clean:
 	rm -f $(CLI)
+	rm -f $(COVERAGE_FILE)
+	rm -f $(COVERAGE_REPORT)
 
 # --------------------------------------------------------------------------------
 # Testing
@@ -45,6 +47,7 @@ test:
 	$(GO_TEST_RUNNER) $(GO_TEST_FLAGS) $(GO_TOOL_TARGET)
 
 COVERAGE_FILE   ?= cover.out
+COVERAGE_REPORT ?= cover.html
 GO_COVER_TOOL   ?= go tool cover
 GO_COVER_FLAGS  ?= -html $(COVERAGE_FILE)
 
@@ -57,6 +60,9 @@ $(COVERAGE_FILE): test
 .PHONY: report
 report: $(COVERAGE_FILE)
 	$(GO_COVER_TOOL) $(GO_COVER_FLAGS)
+
+$(COVERAGE_REPORT): $(COVERAGE_FILE)
+	$(GO_COVER_TOOL) $(GO_COVER_FLAGS) -o $(COVERAGE_REPORT)
 
 # --------------------------------------------------------------------------------
 # Codegen: generating code
