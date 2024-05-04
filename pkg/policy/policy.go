@@ -51,8 +51,8 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 // Statement represents the grammar and structure of an AWS IAM Statement
 type Statement struct {
 	Sid          string
-	Principal    PrincipalBlock `json:",omitempty"`
-	NotPrincipal PrincipalBlock `json:",omitempty"`
+	Principal    Principal `json:",omitempty"`
+	NotPrincipal Principal `json:",omitempty"`
 	Effect       string
 	Action       Action         `json:",omitempty"`
 	NotAction    Action         `json:",omitempty"`
@@ -78,11 +78,19 @@ func (s *Statement) Validate() error {
 	return nil
 }
 
-// PrincipalBlock represents a set of Principals, provided in string or map form
-type PrincipalBlock = Principal
+// Principal represents a set of Principals, provided in string or map form
+type Principal PrincipalMap
 
-// Principal represents the grammar and structure of an AWS IAM Principal
-type Principal struct {
+// Empty determines whether or not the specified Principal field is empty
+func (p *Principal) Empty() bool {
+	return p.AWS.Empty() &&
+		p.Service.Empty() &&
+		p.Federated.Empty() &&
+		p.CanonicalUser.Empty()
+}
+
+// PrincipalMap represents the grammar and structure of an AWS IAM Principal represented in map form
+type PrincipalMap struct {
 	AWS           Value `json:",omitempty"`
 	Federated     Value `json:",omitempty"`
 	Service       Value `json:",omitempty"`
@@ -90,7 +98,7 @@ type Principal struct {
 }
 
 // UnmarshalJSON instructs how to create Principal fields from raw bytes
-func (p *PrincipalBlock) UnmarshalJSON(data []byte) error {
+func (p *Principal) UnmarshalJSON(data []byte) error {
 	// Handle string case; only valid in this 3-byte sequence
 	if len(data) == 3 && string(data) == `"*"` {
 		p.AWS = []string{"*"}
@@ -100,22 +108,17 @@ func (p *PrincipalBlock) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	var principal Principal
+	var principal PrincipalMap
 	err := json.Unmarshal(data, &principal)
 	if err != nil {
 		return fmt.Errorf("unable to parse:\nprincipal = %s\nerror = %v", string(data), err)
 	}
 
-	*p = principal
+	p.AWS = principal.AWS
+	p.Federated = principal.Federated
+	p.Service = principal.Service
+	p.CanonicalUser = principal.CanonicalUser
 	return nil
-}
-
-// Empty determines whether or not the specified Principal field is empty
-func (p *Principal) Empty() bool {
-	return p.AWS.Empty() &&
-		p.Service.Empty() &&
-		p.Federated.Empty() &&
-		p.CanonicalUser.Empty()
 }
 
 // Action represents the grammar and structure of an AWS IAM Action
@@ -141,112 +144,4 @@ type Condition map[ConditionKey]ConditionValue
 type ConditionKey string
 
 // ConditionValue represents the value portion of a condition
-type ConditionValue struct {
-	bools   []bool
-	numbers []int
-	strings []string
-}
-
-// nTrue counts the booleans input and returns the number of them that are true
-func nTrue(b ...bool) int {
-	n := 0
-	for _, v := range b {
-		if v {
-			n++
-		}
-	}
-	return n
-}
-
-// Validate confirms that we have one and only one type of value
-func (c *ConditionValue) Validate() error {
-	nTrue := nTrue(len(c.bools) > 0, len(c.numbers) > 0, len(c.strings) > 0)
-	if nTrue > 1 {
-		return fmt.Errorf("multiple (%d) types observed in condition value: %+v", nTrue, c)
-	}
-	return nil
-}
-
-// Bools returns the contained values if we have bools; otherwise errors
-func (c *ConditionValue) Bools() ([]bool, error) {
-	err := c.Validate()
-	if err != nil {
-		return nil, err
-	}
-	return c.bools, nil
-}
-
-// Numbers returns the contained values if we have numbers; otherwise errors
-func (c *ConditionValue) Numbers() ([]int, error) {
-	err := c.Validate()
-	if err != nil {
-		return nil, err
-	}
-	return c.numbers, nil
-}
-
-// Strings returns the contained values if we have strings; otherwise errors
-func (c *ConditionValue) Strings() ([]string, error) {
-	err := c.Validate()
-	if err != nil {
-		return nil, err
-	}
-	return c.strings, nil
-}
-
-// MarshalJSON instructs how to create raw bytes from ConditionValue fields
-func (c *ConditionValue) MarshalJSON() ([]byte, error) {
-	var items []any
-
-	for _, x := range c.bools {
-		items = append(items, x)
-	}
-	for _, x := range c.numbers {
-		items = append(items, x)
-	}
-	for _, x := range c.strings {
-		items = append(items, x)
-	}
-
-	return json.Marshal(items)
-}
-
-// UnmarshalJSON instructs how to create ConditionValue fields from raw bytes
-func (c *ConditionValue) UnmarshalJSON(data []byte) error {
-	// First make sure the data can be marshalled at all
-	var raw any
-	err := json.Unmarshal(data, &raw)
-	if err != nil {
-		return fmt.Errorf("unable to parse:\nconditionValue = %s\nerror = %v", string(data), err)
-	}
-
-	// Handle the different cases between both types
-	switch cast := raw.(type) {
-	case bool:
-		c.bools = []bool{cast}
-	case int:
-		c.numbers = []int{cast}
-	case string:
-		c.strings = []string{cast}
-	case []any:
-		// Otherwise iterate through and fill out arrays; we'll check for homogeneity later
-		for _, a := range cast {
-			switch item := a.(type) {
-			case bool:
-				c.bools = append(c.bools, item)
-			case int:
-				c.numbers = append(c.numbers, item)
-			case string:
-				c.strings = append(c.strings, item)
-			default:
-				return fmt.Errorf("unsure how to handle type '%T' for condition value array: %v", a, a)
-			}
-		}
-	case nil:
-		break
-	default:
-		return fmt.Errorf("unsure how to handle type '%T' for condition value: %v", cast, cast)
-	}
-
-	return nil
-}
+type ConditionValue any

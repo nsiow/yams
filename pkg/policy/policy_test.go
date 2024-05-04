@@ -19,10 +19,10 @@ func TestPolicyGrammar(t *testing.T) {
 		{
 			name: "empty_policy",
 			input: `
-			  {
-          "Version": "",
-          "Id": "",
-          "Statement": []
+				{
+				  "Version": "",
+				  "Id": "",
+				  "Statement": []
 				}
 			`,
 			want: Policy{
@@ -81,8 +81,8 @@ func TestPolicyGrammar(t *testing.T) {
 		{
 			name: "weird_statement_block",
 			input: `
-			  {
-					"Statement": ""
+				{
+				  "Statement": ""
 				}
 			`,
 			err: true,
@@ -130,6 +130,85 @@ func TestPolicyGrammar(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "valid_structured_principal",
+			input: `
+				{
+				  "Version": "2012-10-17",
+				  "Id": "s3read",
+				  "Statement": [
+				    {
+				      "Effect": "Allow",
+				      "Principal": {
+				        "AWS": [
+				          "SomeValueHere"
+				        ]
+				      },
+				      "Action": [
+				        "s3:GetObject",
+				        "s3:ListBucket"
+				      ],
+				      "Resource": [
+				        "arn:aws:s3:::foo-bucket",
+				        "arn:aws:s3:::foo-bucket/*"
+				      ]
+				    }
+				  ]
+				}
+			`,
+			want: Policy{
+				Version: "2012-10-17",
+				Id:      "s3read",
+				Statement: []Statement{
+					{
+						Effect: "Allow",
+						Principal: Principal{
+							AWS: []string{"SomeValueHere"},
+						},
+						Action: Action{
+							[]string{
+								"s3:GetObject",
+								"s3:ListBucket",
+							},
+						},
+						Resource: Resource{
+							[]string{
+								"arn:aws:s3:::foo-bucket",
+								"arn:aws:s3:::foo-bucket/*",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid_structured_principal",
+			input: `
+				{
+				  "Version": "2012-10-17",
+				  "Id": "s3read",
+				  "Statement": [
+				    {
+				      "Effect": "Allow",
+				      "Principal": {
+				        "AWS": [
+				          0
+				        ]
+				      },
+				      "Action": [
+				        "s3:GetObject",
+				        "s3:ListBucket"
+				      ],
+				      "Resource": [
+				        "arn:aws:s3:::foo-bucket",
+				        "arn:aws:s3:::foo-bucket/*"
+				      ]
+				    }
+				  ]
+				}
+			`,
+			err: true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -139,21 +218,22 @@ func TestPolicyGrammar(t *testing.T) {
 		p := Policy{}
 		err := json.Unmarshal([]byte(tc.input), &p)
 
+		check := true
 		switch {
 		case err == nil && tc.err:
 			t.Fatalf("expected error, got success for asset '%s': %v", tc.name, err)
 		case err != nil && tc.err:
 			// expected error; got error
 			t.Logf("test saw expected error: %v", err)
+			check = false
 		case err == nil && !tc.err:
 			// no error and not expecting one, continue
-			break
 		case err != nil && !tc.err:
 			t.Fatalf("unable to create policy from asset '%s': %v", tc.name, err)
 		}
 
 		// Check against expected value
-		if !reflect.DeepEqual(tc.want, p) {
+		if check && !reflect.DeepEqual(tc.want, p) {
 			t.Fatalf("expected: %#v, got: %#v", tc.want, p)
 		}
 	}
@@ -169,12 +249,28 @@ func TestValidate(t *testing.T) {
 
 	tests := []test{
 		{
-			name: "empty_policy",
+			name: "valid",
 			input: `
 			  {
           "Version": "",
           "Id": "",
-          "Statement": {}
+          "Statement": [{
+						"Effect": "*",
+						"Principal": "*",
+						"Action": "*",
+						"Resource": "*"
+					}]
+				}
+			`,
+			err: false,
+		},
+		{
+			name: "empty_statement",
+			input: `
+			  {
+          "Version": "",
+          "Id": "",
+          "Statement": []
 				}
 			`,
 			err: true,
@@ -185,10 +281,47 @@ func TestValidate(t *testing.T) {
 			  {
           "Version": "",
           "Id": "",
-          "Statement": {
+          "Statement": [{
+						"Effect": "*",
 						"Principal": "*",
-						"NotPrincipal": "*"
-					}
+						"NotPrincipal": "*",
+						"Action": "*",
+						"Resource": "*"
+					}]
+				}
+			`,
+			err: true,
+		},
+		{
+			name: "double_action",
+			input: `
+			  {
+          "Version": "",
+          "Id": "",
+          "Statement": [{
+						"Effect": "*",
+						"Principal": "*",
+						"Action": "*",
+						"NotAction": "*",
+						"Resource": "*"
+					}]
+				}
+			`,
+			err: true,
+		},
+		{
+			name: "double_resource",
+			input: `
+			  {
+          "Version": "",
+          "Id": "",
+          "Statement": [{
+						"Effect": "*",
+						"Principal": "*",
+						"Action": "*",
+						"Resource": "*",
+						"NotResource": "*"
+					}]
 				}
 			`,
 			err: true,
@@ -216,7 +349,6 @@ func TestValidate(t *testing.T) {
 				t.Logf("test saw expected error: %v", err)
 			case err == nil && !tc.err:
 				// no error and not expecting one, continue
-				break
 			case err != nil && !tc.err:
 				t.Fatalf("expected success, got error for statement #%d, test case '%s': %v", i, tc.name, err)
 			}
