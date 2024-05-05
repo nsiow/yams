@@ -40,12 +40,13 @@ func TestUnmarshalValid(t *testing.T) {
 	tests := []test{
 		{input: `{"S": "foo"}`, want: []string{"foo"}},
 		{input: `{"S": ["foo", "bar"]}`, want: []string{"foo", "bar"}},
-		{input: `{"S": ""}`, want: []string{""}},
 		{input: `{"S": null}`, want: []string{}},
 		{input: `{"S": "null"}`, want: []string{"null"}},
 		{input: `{"S": []}`, want: []string{}},
+		{input: `{"S": ""}`, err: true},
 		{input: `{"S": [0]}`, err: true},
 		{input: `{"S": 0}`, err: true},
+		{input: `{"S": 1000}`, err: true},
 		{input: `{"S": true`, err: true},
 	}
 

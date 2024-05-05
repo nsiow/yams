@@ -31,7 +31,8 @@ func (v *Value) UnmarshalJSON(data []byte) error {
 	case data[0] == '"':
 		var s string
 		err := json.Unmarshal(data, &s)
-		if err != nil {
+		// TODO(nsiow) figure out correct behavior of empty string; IAM treates it... weirdly
+		if err != nil || len(s) == 0 {
 			return fmt.Errorf("error in single-value clause of Value:\ndata=%s\nerror=%v", string(data), err)
 		}
 		a := []string{s}

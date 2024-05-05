@@ -55,11 +55,16 @@ COVERAGE_REPORT ?= cover.html
 GO_COVER_TOOL   ?= go tool cover
 GO_COVER_FLAGS  ?= -html $(COVERAGE_FILE)
 
+# Track coverage of library; not helpers or codegen files
+COVERAGE_OMIT   ?= '(yams/cmd|zzz)'
+
 .PHONY: cov
 cov: $(COVERAGE_FILE)
 
 $(COVERAGE_FILE): GO_TEST_FLAGS=-v -coverprofile $(COVERAGE_FILE)
 $(COVERAGE_FILE): test
+	grep -Ev $(COVERAGE_OMIT) $(COVERAGE_FILE) > $(COVERAGE_FILE).tmp
+	mv $(COVERAGE_FILE).tmp $(COVERAGE_FILE)
 
 .PHONY: report
 report: $(COVERAGE_FILE)

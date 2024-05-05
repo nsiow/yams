@@ -45,6 +45,19 @@ func TestPolicyGrammar(t *testing.T) {
 			},
 		},
 		{
+			name: "null_statement",
+			input: `
+				{
+				  "Statement": null
+				}
+			`,
+			want: Policy{
+				Version:   "",
+				Id:        "",
+				Statement: []Statement{},
+			},
+		},
+		{
 			name: "invalid_small_statement",
 			input: `
 				{
