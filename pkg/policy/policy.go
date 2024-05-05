@@ -22,6 +22,12 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("invalid statement block: %s", string(data))
 	}
 
+	// Check for null case
+	if len(data) == 4 && string(data) == "null" {
+		*s = []Statement{}
+		return nil
+	}
+
 	// Handle single statement
 	if data[0] == '{' && data[len(data)-1] == '}' {
 		stmt := Statement{}

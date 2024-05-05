@@ -15,31 +15,41 @@ func NewValue(values ...string) Value {
 
 // UnmarshalJSON instructs how to create Value fields from raw bytes
 func (v *Value) UnmarshalJSON(data []byte) error {
-	// First make sure the data can be marshalled at all
-	var raw any = nil
-	_ = json.Unmarshal(data, &raw) // ignore error; address in switch
-
-	// Handle the different cases between both types
-	value := []string{}
-	switch cast := raw.(type) {
-	case string:
-		value = []string{cast}
-	case []any:
-		for _, a := range cast {
-			s, ok := a.(string)
-			if !ok {
-				return fmt.Errorf("should be string or []string, saw %T for %v", a, a)
-			}
-			value = append(value, s)
-		}
-	case nil:
-		break
-	default:
-		return fmt.Errorf("should be string or []string, saw %T for %v", cast, cast)
+	// We should have either a string (""), an array ([]), or null (null); anything shorter is invalid
+	if len(data) < 2 {
+		return fmt.Errorf("value too short: %s", string(data))
 	}
 
-	*v = value
-	return nil
+	// Check for null case
+	if len(data) == 4 && string(data) == "null" {
+		*v = []string{}
+		return nil
+	}
+
+	switch {
+	// Handle single-value case
+	case data[0] == '"':
+		var s string
+		err := json.Unmarshal(data, &s)
+		if err != nil {
+			return fmt.Errorf("error in single-value clause of Value:\ndata=%s\nerror=%v", string(data), err)
+		}
+		a := []string{s}
+		*v = a
+		return nil
+	// Handle multi-value case
+	case data[0] == '[':
+		var a []string
+		err := json.Unmarshal(data, &a)
+		if err != nil {
+			return fmt.Errorf("error in multi-value clause of Value:\ndata=%s\nerror=%v", string(data), err)
+		}
+		*v = a
+		return nil
+	// Anything else is an error
+	default:
+		return fmt.Errorf("should be string or []string, but received invalid input:\ndata=%s", string(data))
+	}
 }
 
 // Count returns the number of strings represented in the Value
