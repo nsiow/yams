@@ -50,8 +50,8 @@ GO_TEST_RUNNER ?= go test
 test:
 	$(GO_TEST_RUNNER) $(GO_TEST_FLAGS) $(GO_TOOL_TARGET)
 
-COVERAGE_FILE   ?= cover.out
-COVERAGE_REPORT ?= cover.html
+COVERAGE_FILE   ?= coverage.out
+COVERAGE_REPORT ?= coverage.html
 GO_COVER_TOOL   ?= go tool cover
 GO_COVER_FLAGS  ?= -html $(COVERAGE_FILE)
 
