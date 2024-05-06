@@ -13,22 +13,24 @@ import (
 func decodePolicyString(policyString string) (policy.Policy, error) {
 	p := policy.Policy{}
 
-	// If we decoded a nested JSON string, go again
-	if strings.HasPrefix(policyString, "\"") && strings.HasSuffix(policyString, "\"") {
+	// If we find a nested JSON string, unmarshal it before continuing
+	if strings.HasPrefix(policyString, `"`) {
 		var inner string
 		err := json.Unmarshal([]byte(policyString), &inner)
-		if err != nil {
+		if err != nil || len(inner) == 0 {
 			return p, fmt.Errorf("error unwrapping nested JSON string: %v for input:\n%s", err, policyString)
 		}
 		policyString = inner
 	}
 
-	// TODO(nsiow) revisit this error handling
-	// Attempt decode
-	escaped, _ := url.QueryUnescape(policyString)
+	// Attempt unescaping
+	escaped, err := url.QueryUnescape(policyString)
+	if err != nil {
+		return p, fmt.Errorf("error unescaping string: %v for input:\n%s", err, escaped)
+	}
 
 	// Attempt JSON unmarshalling
-	err := json.Unmarshal([]byte(escaped), &p)
+	err = json.Unmarshal([]byte(escaped), &p)
 	if err != nil {
 		return p, fmt.Errorf("error converting decoded policy into struct: %v for input:\n%s", err, escaped)
 	}
