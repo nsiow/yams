@@ -19,7 +19,7 @@ type Loader struct {
 	resources []entities.Resource
 
 	// managedPolicies contains a map of policy ARN to policy
-	managedPolicies *ManagedPolicyMap
+	managedPolicies *PolicyMap
 }
 
 // NewLoader provisions and returns a new `Loader` struct, ready to use

@@ -7,6 +7,7 @@ import (
 	p "github.com/nsiow/yams/pkg/policy"
 )
 
+// TestDecodePolicyStringValid confirms correct decoding of valid strings
 func TestDecodePolicyStringValid(t *testing.T) {
 	type test struct {
 		name  string
@@ -134,6 +135,7 @@ func TestDecodePolicyStringValid(t *testing.T) {
 	}
 }
 
+// TestDecodePolicyStringInvalid confirms failed decoding of invalid strings
 func TestDecodePolicyStringInvalid(t *testing.T) {
 	type test struct {
 		name  string

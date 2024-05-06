@@ -7,9 +7,9 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// loadPolicies takes a list of AWS Config items and extracts policies into a ManagedPolicyMap
-func loadPolicies(items []Item) (*ManagedPolicyMap, error) {
-	m := NewManagedPolicyMap()
+// loadPolicies takes a list of AWS Config items and extracts policies into a PolicyMap
+func loadPolicies(items []Item) (*PolicyMap, error) {
+	m := NewPolicyMap()
 
 	// Iterate through our AWS Config items
 	for _, i := range items {
