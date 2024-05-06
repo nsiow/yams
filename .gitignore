@@ -1,3 +1,23 @@
+# --------------------------------------------------------------------------------
+# Project files
+# --------------------------------------------------------------------------------
+
+# Output binary
+yams
+
+# Data that should only be present on build machines
+builddata
+
+# --------------------------------------------------------------------------------
+# Editor files
+# --------------------------------------------------------------------------------
+
+.vim
+
+# --------------------------------------------------------------------------------
+# Go gitignore
+# --------------------------------------------------------------------------------
+
 # If you prefer the allow list template instead of the deny list, see community template:
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
@@ -13,6 +33,7 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+cover.html
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
