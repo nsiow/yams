@@ -19,7 +19,7 @@ type StatementBlock []Statement
 func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 	// Handle empty/too-small string
 	if len(data) < 2 {
-		return fmt.Errorf("invalid statement block: %s", string(data))
+		return fmt.Errorf("invalid statement block: %s", data)
 	}
 
 	// Check for null case
@@ -33,7 +33,7 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 		stmt := Statement{}
 		err := json.Unmarshal(data, &stmt)
 		if err != nil {
-			return fmt.Errorf("error in single-statement clause of Statement:\ndata=%s\nerror=%v", string(data), err)
+			return fmt.Errorf("error in single-statement clause of Statement:\ndata=%s\nerror=%v", data, err)
 		}
 
 		*s = []Statement{stmt}
@@ -45,13 +45,13 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 		var list []Statement
 		err := json.Unmarshal(data, &list)
 		if err != nil {
-			return fmt.Errorf("error in multi-statement clause of Statement:\ndata=%s\nerror=%v", string(data), err)
+			return fmt.Errorf("error in multi-statement clause of Statement:\ndata=%s\nerror=%v", data, err)
 		}
 		*s = list
 		return nil
 	}
 
-	return fmt.Errorf("not sure how to handle statement block: %s", string(data))
+	return fmt.Errorf("not sure how to handle statement block: %s", data)
 }
 
 // Statement represents the grammar and structure of an AWS IAM Statement
@@ -117,7 +117,7 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 	var principal PrincipalMap
 	err := json.Unmarshal(data, &principal)
 	if err != nil {
-		return fmt.Errorf("unable to parse:\nprincipal = %s\nerror = %v", string(data), err)
+		return fmt.Errorf("unable to parse:\nprincipal = %s\nerror = %v", data, err)
 	}
 
 	p.AWS = principal.AWS

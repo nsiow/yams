@@ -17,7 +17,7 @@ func NewValue(values ...string) Value {
 func (v *Value) UnmarshalJSON(data []byte) error {
 	// We should have either a string (""), an array ([]), or null (null); anything shorter is invalid
 	if len(data) < 2 {
-		return fmt.Errorf("value too short: %s", string(data))
+		return fmt.Errorf("value too short: %s", data)
 	}
 
 	// Check for null case
@@ -33,7 +33,7 @@ func (v *Value) UnmarshalJSON(data []byte) error {
 		err := json.Unmarshal(data, &s)
 		// TODO(nsiow) figure out correct behavior of empty string; IAM treates it... weirdly
 		if err != nil || len(s) == 0 {
-			return fmt.Errorf("error in single-value clause of Value:\ndata=%s\nerror=%v", string(data), err)
+			return fmt.Errorf("error in single-value clause of Value:\ndata=%s\nerror=%v", data, err)
 		}
 		a := []string{s}
 		*v = a
@@ -43,13 +43,13 @@ func (v *Value) UnmarshalJSON(data []byte) error {
 		var a []string
 		err := json.Unmarshal(data, &a)
 		if err != nil {
-			return fmt.Errorf("error in multi-value clause of Value:\ndata=%s\nerror=%v", string(data), err)
+			return fmt.Errorf("error in multi-value clause of Value:\ndata=%s\nerror=%v", data, err)
 		}
 		*v = a
 		return nil
 	// Anything else is an error
 	default:
-		return fmt.Errorf("should be string or []string, but received invalid input:\ndata=%s", string(data))
+		return fmt.Errorf("should be string or []string, but received invalid input:\ndata=%s", data)
 	}
 }
 

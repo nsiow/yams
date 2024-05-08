@@ -162,8 +162,6 @@ func TestLoadJsonValid(t *testing.T) {
 
 			// Compare and validate; pretty-print in JSON if something goes wrong for easier debugging
 			if !reflect.DeepEqual(tc.want, got) {
-				// TODO(nsiow) remove all string(...) casts; just use %s directly
-				// across code base
 				wantString, err := json.MarshalIndent(tc.want, "", " ")
 				if err != nil {
 					t.Logf("error while trying to pretty print test error; falling back")
