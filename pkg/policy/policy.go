@@ -128,14 +128,10 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 }
 
 // Action represents the grammar and structure of an AWS IAM Action
-type Action struct {
-	Value
-}
+type Action = Value
 
 // Resource represents the grammar and structure of an AWS IAM Resource
-type Resource struct {
-	Value
-}
+type Resource = Value
 
 // ConditionBlock represents the grammar and structure of an AWS IAM Condition block
 type ConditionBlock map[ConditionOperation]Condition

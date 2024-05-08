@@ -37,17 +37,13 @@ func TestStorageRetrieval(t *testing.T) {
 				Statement: []pol.Statement{
 					{
 						Effect: "Allow",
-						Action: pol.Action{
-							Value: []string{
-								"s3:GetObject",
-								"s3:ListBucket",
-							},
+						Action: []string{
+							"s3:GetObject",
+							"s3:ListBucket",
 						},
-						Resource: pol.Resource{
-							Value: []string{
-								"arn:aws:s3:::foo-bucket",
-								"arn:aws:s3:::foo-bucket/*",
-							},
+						Resource: []string{
+							"arn:aws:s3:::foo-bucket",
+							"arn:aws:s3:::foo-bucket/*",
 						},
 					},
 				},

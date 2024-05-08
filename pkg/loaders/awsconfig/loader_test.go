@@ -37,13 +37,9 @@ var simple1Output environment.Universe = environment.Universe{
 					Version: "2012-10-17",
 					Statement: []policy.Statement{
 						{
-							Effect: "Allow",
-							Action: policy.Action{
-								Value: []string{"s3:GetObject", "s3:ListBucket"},
-							},
-							Resource: policy.Resource{
-								Value: []string{"arn:aws:s3:::simple-bucket", "arn:aws:s3:::simple-bucket/*"},
-							},
+							Effect:   "Allow",
+							Action:   []string{"s3:GetObject", "s3:ListBucket"},
+							Resource: []string{"arn:aws:s3:::simple-bucket", "arn:aws:s3:::simple-bucket/*"},
 						},
 					},
 				},
@@ -53,13 +49,9 @@ var simple1Output environment.Universe = environment.Universe{
 					Version: "2012-10-17",
 					Statement: []policy.Statement{
 						{
-							Effect: "Allow",
-							Action: policy.Action{
-								Value: []string{"sqs:ReceiveMessage"},
-							},
-							Resource: policy.Resource{
-								Value: []string{"arn:aws:sqs:us-east-1:0000000000000:queue-2"},
-							},
+							Effect:   "Allow",
+							Action:   []string{"sqs:ReceiveMessage"},
+							Resource: []string{"arn:aws:sqs:us-east-1:0000000000000:queue-2"},
 						},
 					},
 				},
@@ -80,9 +72,7 @@ var simple1Output environment.Universe = environment.Universe{
 							Service: policy.Value{"ec2.amazonaws.com"},
 						},
 						Effect: "Allow",
-						Action: policy.Action{
-							Value: []string{"sts:AssumeRole"},
-						},
+						Action: []string{"sts:AssumeRole"},
 					},
 				},
 			},
