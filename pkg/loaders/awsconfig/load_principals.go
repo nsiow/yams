@@ -15,7 +15,7 @@ var principalTypes = []string{
 }
 
 // loadPrincipals takes a list of AWS Config items and extracts resources
-func loadPrincipals(items []Item, mpm *PolicyMap) ([]entities.Principal, error) {
+func loadPrincipals(items []ConfigItem, mpm *PolicyMap) ([]entities.Principal, error) {
 	var ps []entities.Principal
 
 	// Iterate through our AWS Config items
@@ -39,7 +39,7 @@ func loadPrincipals(items []Item, mpm *PolicyMap) ([]entities.Principal, error) 
 }
 
 // loadPrincipal takes a single AWS Config item and returns a parsed principal object
-func loadPrincipal(i Item, mpm *PolicyMap) (*entities.Principal, error) {
+func loadPrincipal(i ConfigItem, mpm *PolicyMap) (*entities.Principal, error) {
 	// Construct basic fields
 	p := entities.Principal{
 		Type:    i.Type,
@@ -66,7 +66,7 @@ func loadPrincipal(i Item, mpm *PolicyMap) (*entities.Principal, error) {
 }
 
 // extractInlinePolicies attempts to retrieve the direct Principal permissions, if supported
-func extractInlinePolicies(i Item) ([]policy.Policy, error) {
+func extractInlinePolicies(i ConfigItem) ([]policy.Policy, error) {
 	switch i.Type {
 	case CONST_TYPE_AWS_IAM_ROLE:
 		// Fetch configuration.rolePolicyList
@@ -93,7 +93,7 @@ func extractInlinePolicies(i Item) ([]policy.Policy, error) {
 }
 
 // extractManagedPolicies attempts to retrieve the Principal's managed permisions, if supported
-func extractManagedPolicies(i Item, mpm *PolicyMap) ([]policy.Policy, error) {
+func extractManagedPolicies(i ConfigItem, mpm *PolicyMap) ([]policy.Policy, error) {
 	switch i.Type {
 	case CONST_TYPE_AWS_IAM_ROLE:
 		// Fetch configuration.attachedManagedPolicies

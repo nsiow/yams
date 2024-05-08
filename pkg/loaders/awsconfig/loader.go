@@ -18,6 +18,7 @@ type Loader struct {
 	// resources contains all cloud resources
 	resources []entities.Resource
 
+	// TODO(nsiow) should this be pointer or value?
 	// managedPolicies contains a map of policy ARN to policy
 	managedPolicies *PolicyMap
 }
@@ -39,8 +40,11 @@ func (l *Loader) Resources() []entities.Resource {
 
 // LoadJson loads data from a provided JSON array
 func (a *Loader) LoadJson(data []byte) error {
-	var items []Item
-	json.Unmarshal(data, &items)
+	var items []ConfigItem
+	err := json.Unmarshal(data, &items)
+	if err != nil {
+		return fmt.Errorf("unable to load data as JSON: %v", err)
+	}
 	return a.loadItems(items)
 }
 
@@ -53,13 +57,13 @@ func (a *Loader) LoadJsonl(data []byte) error {
 	buf := make([]byte, 0, 64*1024)
 	s.Buffer(buf, 1024*1024)
 
-	var items []Item
+	var items []ConfigItem
 	for s.Scan() {
 		// Read the next line
 		b := s.Bytes()
 
 		// Unmarshal into a single item
-		var i Item
+		var i ConfigItem
 		err := json.Unmarshal(b, &i)
 		if err != nil {
 			return err
@@ -79,7 +83,7 @@ func (a *Loader) LoadJsonl(data []byte) error {
 }
 
 // loadItems loads data from the provided AWS Config items
-func (a *Loader) loadItems(items []Item) error {
+func (a *Loader) loadItems(items []ConfigItem) error {
 	// Load policies first (required to load principals)
 	mp, err := loadPolicies(items)
 	if err != nil {

@@ -6,13 +6,13 @@ import (
 	"github.com/nsiow/yams/pkg/entities"
 )
 
-// Item defines the structure of a generic CI from AWS Config
-type Item struct {
+// ConfigItem defines the structure of a generic CI from AWS Config
+type ConfigItem struct {
 	Type                       string          `json:"resourceType"`
 	Account                    string          `json:"accountId"`
 	Region                     string          `json:"awsRegion"`
 	Arn                        string          `json:"arn"`
-	Tags                       []entities.Tag  `json:"tags"`
+	Tags                       entities.Tags   `json:"tags"`
 	Configuration              json.RawMessage `json:"configuration"`
 	SupplementaryConfiguration json.RawMessage `json:"supplementaryConfiguration"`
 }

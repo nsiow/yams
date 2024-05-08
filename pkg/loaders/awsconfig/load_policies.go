@@ -8,7 +8,7 @@ import (
 )
 
 // loadPolicies takes a list of AWS Config items and extracts policies into a PolicyMap
-func loadPolicies(items []Item) (*PolicyMap, error) {
+func loadPolicies(items []ConfigItem) (*PolicyMap, error) {
 	m := NewPolicyMap()
 
 	// Iterate through our AWS Config items
@@ -33,7 +33,7 @@ func loadPolicies(items []Item) (*PolicyMap, error) {
 }
 
 // loadPolicy takes a single AWS Config item and returns a parsed policy object
-func loadPolicy(i Item) (*policy.Policy, error) {
+func loadPolicy(i ConfigItem) (*policy.Policy, error) {
 	// Parse policy configuration
 	pic := policyFragment{}
 	err := json.Unmarshal(i.Configuration, &pic)
