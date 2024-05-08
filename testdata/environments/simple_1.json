@@ -48,5 +48,40 @@
         "key": "some-technical-tag"
       }
     ]
+  },
+  {
+    "arn": "arn:aws:iam::000000000000:policy/Common",
+    "resourceType": "AWS::IAM::Policy",
+    "awsRegion": null,
+    "accountId": "000000000000",
+    "configuration": {
+      "permissionsBoundaryUsageCount": 0,
+      "policyVersionList": [
+        {
+          "versionId": "v2",
+          "isDefaultVersion": true,
+          "document": "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Effect%22%3A%22Allow%22%2C%22Action%22%3A%22sqs%3AReceiveMessage%22%2C%22Resource%22%3A%22arn%3Aaws%3Asqs%3Aus-east-1%3A0000000000000%3Aqueue-2%22%7D%5D%7D",
+          "createDate": "2022-02-01T11:22:33.000Z"
+        },
+        {
+          "versionId": "v1",
+          "isDefaultVersion": false,
+          "document": "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Effect%22%3A%22Allow%22%2C%22Action%22%3A%22sqs%3AReceiveMessage%22%2C%22Resource%22%3A%22arn%3Aaws%3Asqs%3Aus-east-1%3A0000000000000%3Aqueue-2%22%7D%5D%7D",
+          "createDate": "2021-02-04T11:22:33.000Z"
+        }
+      ],
+      "path": "/",
+      "updateDate": "2022-02-01T16:51:16.000Z",
+      "policyId": "ANPA11111111111111111",
+      "defaultVersionId": "v2",
+      "policyName": "Common",
+      "isAttachable": true,
+      "description": "Shared permissions or something",
+      "attachmentCount": 100,
+      "arn": "arn:aws:iam::000000000000:policy/Common",
+      "createDate": "2021-02-04T00:11:22.000Z"
+    },
+    "supplementaryConfiguration": {},
+    "tags": []
   }
 ]
