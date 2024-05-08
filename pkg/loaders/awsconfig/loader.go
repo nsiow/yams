@@ -59,8 +59,11 @@ func (a *Loader) LoadJsonl(data []byte) error {
 
 	var items []ConfigItem
 	for s.Scan() {
-		// Read the next line
+		// Read the next line; skip empty lines
 		b := s.Bytes()
+		if len(b) == 0 {
+			continue
+		}
 
 		// Unmarshal into a single item
 		var i ConfigItem
