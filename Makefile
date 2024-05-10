@@ -61,7 +61,7 @@ COVERAGE_OMIT   ?= '(yams/cmd|zzz)'
 .PHONY: cov
 cov: $(COVERAGE_FILE)
 
-$(COVERAGE_FILE): GO_TEST_FLAGS=-coverprofile $(COVERAGE_FILE)
+$(COVERAGE_FILE): GO_TEST_FLAGS+=-coverprofile $(COVERAGE_FILE)
 $(COVERAGE_FILE): test
 	grep -Ev $(COVERAGE_OMIT) $(COVERAGE_FILE) > $(COVERAGE_FILE).tmp
 	mv $(COVERAGE_FILE).tmp $(COVERAGE_FILE)

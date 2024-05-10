@@ -34,6 +34,7 @@ builddata
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 cover.html
+coverage.html
 
 # Dependency directories (remove the comment below to include it)
 # vendor/

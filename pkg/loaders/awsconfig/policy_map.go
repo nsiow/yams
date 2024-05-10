@@ -7,29 +7,30 @@ import (
 )
 
 const (
-	awsManagedPolicyPrefix = "arn:aws:iam::aws:policy/"
+	// The ARN prefix which precedes all AWS-managed policies (is missing account ID)
+	awsPolicyPrefix = "arn:aws:iam::aws:policy/"
 )
 
-// ManagedPolicyMap contains a mapping from ARN to policy for AWS- and customer-managed policies
-type ManagedPolicyMap struct {
+// PolicyMap contains a mapping from ARN to policy for AWS- and customer-managed policies
+type PolicyMap struct {
 	pmap map[string]policy.Policy
 }
 
-// NewManagedPolicyMap creates and returns an initialized instance of ManagedPolicyMap
-func NewManagedPolicyMap() *ManagedPolicyMap {
-	m := ManagedPolicyMap{}
+// NewPolicyMap creates and returns an initialized instance of PolicyMap
+func NewPolicyMap() *PolicyMap {
+	m := PolicyMap{}
 	m.pmap = make(map[string]policy.Policy)
 	return &m
 }
 
 // Add creates a new mapping between the provided ARN and policy
-func (m *ManagedPolicyMap) Add(arn string, pstruct policy.Policy) {
+func (m *PolicyMap) Add(arn string, pstruct policy.Policy) {
 	arn = m.NormalizeArn(arn)
 	m.pmap[arn] = pstruct
 }
 
 // Get retrieves the requested policy by ARN, if it exists
-func (m *ManagedPolicyMap) Get(arn string) (policy.Policy, bool) {
+func (m *PolicyMap) Get(arn string) (policy.Policy, bool) {
 	arn = m.NormalizeArn(arn)
 	val, ok := m.pmap[arn]
 	return val, ok
@@ -37,9 +38,9 @@ func (m *ManagedPolicyMap) Get(arn string) (policy.Policy, bool) {
 
 // TODO(nsiow) revisit this normalization with a larger test data set
 // NormalizeArn updates the ARN to avoid cases where /[aws-]service-role/ paths are messed up
-func (m *ManagedPolicyMap) NormalizeArn(arn string) string {
+func (m *PolicyMap) NormalizeArn(arn string) string {
 	// Only applies to AWS managed roles
-	if !strings.HasPrefix(arn, awsManagedPolicyPrefix) {
+	if !strings.HasPrefix(arn, awsPolicyPrefix) {
 		return arn
 	}
 
