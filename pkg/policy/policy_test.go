@@ -127,17 +127,13 @@ func TestPolicyGrammar(t *testing.T) {
 				Statement: []Statement{
 					{
 						Effect: "Allow",
-						Action: Action{
-							[]string{
-								"s3:GetObject",
-								"s3:ListBucket",
-							},
+						Action: []string{
+							"s3:GetObject",
+							"s3:ListBucket",
 						},
-						Resource: Resource{
-							[]string{
-								"arn:aws:s3:::foo-bucket",
-								"arn:aws:s3:::foo-bucket/*",
-							},
+						Resource: []string{
+							"arn:aws:s3:::foo-bucket",
+							"arn:aws:s3:::foo-bucket/*",
 						},
 					},
 				},
@@ -178,17 +174,13 @@ func TestPolicyGrammar(t *testing.T) {
 						Principal: Principal{
 							AWS: []string{"SomeValueHere"},
 						},
-						Action: Action{
-							[]string{
-								"s3:GetObject",
-								"s3:ListBucket",
-							},
+						Action: []string{
+							"s3:GetObject",
+							"s3:ListBucket",
 						},
-						Resource: Resource{
-							[]string{
-								"arn:aws:s3:::foo-bucket",
-								"arn:aws:s3:::foo-bucket/*",
-							},
+						Resource: []string{
+							"arn:aws:s3:::foo-bucket",
+							"arn:aws:s3:::foo-bucket/*",
 						},
 					},
 				},

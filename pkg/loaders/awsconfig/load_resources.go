@@ -10,7 +10,7 @@ import (
 )
 
 // loadResources takes a list of AWS Config items and extracts resources
-func loadResources(items []Item) ([]entities.Resource, error) {
+func loadResources(items []ConfigItem) ([]entities.Resource, error) {
 	var rs []entities.Resource
 
 	// Iterate through our AWS Config items
@@ -30,7 +30,7 @@ func loadResources(items []Item) ([]entities.Resource, error) {
 }
 
 // loadResource takes a single AWS Config item and returns a parsed resource object
-func loadResource(i Item) (*entities.Resource, error) {
+func loadResource(i ConfigItem) (*entities.Resource, error) {
 	// Construct basic fields
 	r := entities.Resource{
 		Type:    i.Type,
@@ -53,7 +53,7 @@ func loadResource(i Item) (*entities.Resource, error) {
 }
 
 // extractPolicy attempts to retrieve the resource policy, if supported
-func extractPolicy(i Item) (*policy.Policy, error) {
+func extractPolicy(i ConfigItem) (*policy.Policy, error) {
 	switch i.Type {
 	case CONST_TYPE_AWS_DYNAMODB_TABLE:
 		// TODO(nsiow) add logic once support lands in AWS Config
@@ -64,8 +64,7 @@ func extractPolicy(i Item) (*policy.Policy, error) {
 		return policyFromConfiguration(i.Configuration, "Policy")
 	case CONST_TYPE_AWS_IAM_ROLE:
 		return policyFromConfiguration(i.Configuration, "assumeRolePolicyDocument")
-	case CONST_TYPE_AWS_KMS_KEY:
-		panic("AWS::KMS::Key is not yet implemented")
+	// TODO(nsiow) implement KMS key policies
 	default:
 		return nil, nil
 	}
