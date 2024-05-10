@@ -1,0 +1,40 @@
+[
+  {
+    "arn": "arn:aws:s3:::somebucket",
+    "resourceType": "AWS::S3::Bucket",
+    "awsRegion": null,
+    "accountId": "000000000000",
+    "configuration": {
+      "owner": {
+        "id": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+      },
+      "name": "somebucket",
+      "creationDate": "2021-11-01T20:06:37.000Z"
+    },
+    "supplementaryConfiguration": {
+      "PublicAccessBlockConfiguration": {
+        "blockPublicPolicy": true,
+        "restrictPublicBuckets": true,
+        "blockPublicAcls": true,
+        "ignorePublicAcls": true
+      },
+      "BucketPolicy": 5,
+      "BucketTaggingConfiguration": {
+        "tagSets": [
+          {
+            "tags": {
+              "this-bucket-tag": "is-cool"
+            }
+          }
+        ]
+      }
+    },
+    "tags": [
+      {
+        "tag": "this-bucket-tag=is-cool",
+        "value": "is-cool",
+        "key": "this-bucket-tag"
+      }
+    ]
+  }
+]

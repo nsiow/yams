@@ -83,5 +83,130 @@
     },
     "supplementaryConfiguration": {},
     "tags": []
+  },
+  {
+    "arn": "arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable",
+    "resourceType": "AWS::DynamoDB::Table",
+    "awsRegion": null,
+    "accountId": "000000000000",
+    "configuration": {
+      "attributeDefinitions": [
+        {
+          "attributeType": "S",
+          "attributeName": "somefield"
+        }
+      ],
+      "keySchema": [
+        {
+          "attributeName": "somefield",
+          "keyType": "HASH"
+        }
+      ],
+      "tableId": "11111111-2222-3333-4444-555555555555",
+      "deletionProtectionEnabled": false,
+      "provisionedThroughput": {
+        "numberOfDecreasesToday": 0,
+        "writeCapacityUnits": 5,
+        "readCapacityUnits": 5
+      },
+      "tableStatus": "ACTIVE",
+      "tableName": "SomeTable",
+      "creationDateTime": "2017-04-06T06:30:13.719Z",
+      "tableArn": "arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable"
+    },
+    "supplementaryConfiguration": {
+      "ContinuousBackupsDescription": {
+        "pointInTimeRecoveryDescription": {
+          "pointInTimeRecoveryStatus": "DISABLED"
+        },
+        "continuousBackupsStatus": "ENABLED"
+      },
+      "Tags": []
+    },
+    "tags": []
+  },
+  {
+    "arn": "arn:aws:s3:::somebucket",
+    "resourceType": "AWS::S3::Bucket",
+    "awsRegion": null,
+    "accountId": "000000000000",
+    "configuration": {
+      "owner": {
+        "id": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+      },
+      "name": "somebucket",
+      "creationDate": "2021-11-01T20:06:37.000Z"
+    },
+    "supplementaryConfiguration": {
+      "PublicAccessBlockConfiguration": {
+        "blockPublicPolicy": true,
+        "restrictPublicBuckets": true,
+        "blockPublicAcls": true,
+        "ignorePublicAcls": true
+      },
+      "BucketPolicy": {
+        "policyText": "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Sid%22%3A%22AllowGetObject%22%2C%22Effect%22%3A%22Allow%22%2C%22Principal%22%3A%7B%22AWS%22%3A%22arn%3Aaws%3Aiam%3A%3A000000000000%3Arole%2Fnsiow%22%7D%2C%22Action%22%3A%22s3%3AGetObject%22%2C%22Resource%22%3A%22arn%3Aaws%3As3%3A%3A%3Asomebucket%2F*%22%7D%5D%7D"
+      },
+      "BucketTaggingConfiguration": {
+        "tagSets": [
+          {
+            "tags": {
+              "this-bucket-tag": "is-cool"
+            }
+          }
+        ]
+      }
+    },
+    "tags": [
+      {
+        "tag": "this-bucket-tag=is-cool",
+        "value": "is-cool",
+        "key": "this-bucket-tag"
+      }
+    ]
+  },
+  {
+    "arn": "arn:aws:sqs:us-west-2:000000000000:ExampleQueue",
+    "resourceType": "AWS::SQS::Queue",
+    "awsRegion": null,
+    "accountId": "000000000000",
+    "configuration": {
+      "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AllowReceiveMessage\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::000000000000:role/nsiow\"},\"Action\":\"sqs:ReceiveMessage\",\"Resource\":\"arn:aws:sqs:us-west-2:000000000000:ExampleQueue\"}]}",
+      "ReceiveMessageWaitTimeSeconds": 0,
+      "SqsManagedSseEnabled": "false",
+      "CreatedTimestamp": "2222222222",
+      "DelaySeconds": 0,
+      "MessageRetentionPeriod": 345600,
+      "MaximumMessageSize": 262144,
+      "VisibilityTimeout": 30,
+      "LastModifiedTimestamp": "2222222222",
+      "QueueArn": "arn:aws:sqs:us-west-2:000000000000:ExampleQueue"
+    },
+    "supplementaryConfiguration": {
+      "Tags": {}
+    },
+    "tags": []
+  },
+{
+    "arn": "arn:aws:sqs:us-west-2:000000000000:SimpleQueue",
+    "resourceType": "AWS::SQS::Queue",
+    "awsRegion": null,
+    "accountId": "000000000000",
+    "configuration": {
+      "ReceiveMessageWaitTimeSeconds": 0,
+      "SqsManagedSseEnabled": "false",
+      "CreatedTimestamp": "2222222222",
+      "DelaySeconds": 0,
+      "MessageRetentionPeriod": 345600,
+      "MaximumMessageSize": 262144,
+      "VisibilityTimeout": 30,
+      "LastModifiedTimestamp": "2222222222",
+      "QueueArn": "arn:aws:sqs:us-west-2:000000000000:SimpleQueue"
+    },
+    "supplementaryConfiguration": {
+      "Tags": {}
+    },
+    "tags": []
   }
+
 ]

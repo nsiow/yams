@@ -1,0 +1,14 @@
+[
+  {
+    "resourceType": "AWS::IAM::Policy",
+    "configuration": {
+      "policyVersionList": [
+        {
+          "versionId": "v1",
+          "isDefaultVersion": false,
+          "document": ""
+        }
+      ]
+    }
+  }
+]

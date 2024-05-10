@@ -1,0 +1,6 @@
+[
+  {
+    "resourceType": "AWS::IAM::Policy",
+    "configuration": ""
+  }
+]

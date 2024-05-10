@@ -12,6 +12,173 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
+// TestLoadJsonValid confirms that we can correctly load data from JSON arrays of AWS Config data
+func TestLoadJsonValid(t *testing.T) {
+	type test struct {
+		name  string
+		input string
+		want  environment.Universe
+	}
+
+	tests := []test{
+		{
+			name:  "empty",
+			input: `../../../testdata/environments/empty.json`,
+			want: environment.Universe{
+				Principals: []entities.Principal(nil),
+				Resources:  []entities.Resource(nil),
+			},
+		},
+		{
+			name:  "simple_1",
+			input: `../../../testdata/environments/simple_1.json`,
+			want:  simple1Output,
+		},
+	}
+
+	for _, tc := range tests {
+		// Test both the JSON and JSON-L versions
+		subtests := []string{
+			tc.input,
+			tc.input + "l",
+		}
+
+		for _, input := range subtests {
+			t.Logf("running test case: %s (file: %s)", tc.name, input)
+
+			// Read requested input file
+			inputBytes, err := os.ReadFile(input)
+			if err != nil {
+				t.Fatalf("unable to read file '%s' for test case: '%s': %v", input, tc.name, err)
+			}
+
+			// Call correct loader based on input type
+			l := NewLoader()
+			ext := path.Ext(input)
+			switch ext {
+			case ".json":
+				err = l.LoadJson(inputBytes)
+			case ".jsonl":
+				err = l.LoadJsonl(inputBytes)
+			default:
+				t.Fatalf("unsure how to handle ext '%s' for test case: '%s'", ext, tc.name)
+			}
+			if err != nil {
+				t.Fatalf("unexpected error for test case: '%s': %v", tc.name, err)
+			}
+
+			// Construct our universe based on what we received
+			got := environment.Universe{
+				Principals: l.Principals(),
+				Resources:  l.Resources(),
+			}
+
+			// Compare and validate; pretty-print in JSON if something goes wrong for easier debugging
+			if !reflect.DeepEqual(tc.want, got) {
+				// wantString, err := json.MarshalIndent(tc.want, "", " ")
+				wantString, err := json.Marshal(tc.want)
+				if err != nil {
+					t.Logf("error while trying to pretty print test error; falling back")
+					t.Fatalf("expected: %s, got: %#v for test case '%s'", tc.want, got, tc.name)
+				}
+				// gotString, err := json.MarshalIndent(got, "", " ")
+				gotString, err := json.Marshal(got)
+				if err != nil {
+					t.Logf("error while trying to pretty print test error; falling back")
+					t.Fatalf("expected: %s, got: %#v for test case '%s'", tc.want, got, tc.name)
+				}
+				t.Fatalf("*failure* on test '%s'\n\n*expected*\n%s\n\n*got*\n%s", tc.name, wantString, gotString)
+			}
+		}
+	}
+}
+
+// TestLoadJsonInvalid confirms correct error handling of invalid Config dumps
+func TestLoadJsonInvalid(t *testing.T) {
+	type test struct {
+		name  string
+		input string
+	}
+
+	tests := []test{
+		{
+			name:  "invalid_json",
+			input: `../../../testdata/environments/invalid.json`,
+		},
+		{
+			name:  "invalid_jsonl",
+			input: `../../../testdata/environments/invalid.jsonl`,
+		},
+		{
+			name:  "lots_o_junk",
+			input: `../../../testdata/environments/lots_o_junk.jsonl`,
+		},
+		{
+			name:  "invalid_policy_wrong_outer_type",
+			input: `../../../testdata/environments/invalid_policy_wrong_outer_type.json`,
+		},
+		{
+			name:  "invalid_policy_no_default_version",
+			input: `../../../testdata/environments/invalid_policy_no_default_version.json`,
+		},
+		{
+			name:  "invalid_policy_bad_document",
+			input: `../../../testdata/environments/invalid_policy_bad_document.json`,
+		},
+		{
+			name:  "invalid_principal_bad_inline",
+			input: `../../../testdata/environments/invalid_principal_bad_inline.json`,
+		},
+		{
+			name:  "invalid_principal_bad_inline_encoding",
+			input: `../../../testdata/environments/invalid_principal_bad_inline_encoding.json`,
+		},
+		{
+			name:  "invalid_principal_bad_managed",
+			input: `../../../testdata/environments/invalid_principal_bad_managed.json`,
+		},
+		{
+			name:  "invalid_principal_missing_managed",
+			input: `../../../testdata/environments/invalid_principal_missing_managed.json`,
+		},
+		{
+			name:  "invalid_resource_bad_policy",
+			input: `../../../testdata/environments/invalid_resource_bad_policy.json`,
+		},
+		{
+			name:  "invalid_resource_bad_policy_type",
+			input: `../../../testdata/environments/invalid_resource_bad_policy_type.json`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Logf("running test case: %s (file: %s)", tc.name, tc.input)
+
+		// Read requested input file
+		inputBytes, err := os.ReadFile(tc.input)
+		if err != nil {
+			t.Fatalf("unable to read file '%s' for test case: '%s': %v", tc.input, tc.name, err)
+		}
+
+		// Call correct loader based on input type
+		l := NewLoader()
+		ext := path.Ext(tc.input)
+		switch ext {
+		case ".json":
+			err = l.LoadJson(inputBytes)
+		case ".jsonl":
+			err = l.LoadJsonl(inputBytes)
+		default:
+			t.Fatalf("unsure how to handle ext '%s' for test case: '%s'", ext, tc.name)
+		}
+		if err == nil {
+			t.Fatalf("expected error but was able to load Config data in test case '%s'", tc.name)
+		}
+
+		t.Logf("saw expected error for test case: '%s'\n%v", tc.name, err)
+	}
+}
+
 // Define some common test variables here, which we'll use across multiple tests
 var simple1Output environment.Universe = environment.Universe{
 	Principals: []entities.Principal{
@@ -97,83 +264,69 @@ var simple1Output environment.Universe = environment.Universe{
 			Policy:  policy.Policy{},
 			Tags:    entities.Tags{},
 		},
-	},
-}
-
-// TestLoadJson confirms that we can correctly load data from JSON arrays of AWS Config data
-func TestLoadJsonValid(t *testing.T) {
-	type test struct {
-		name  string
-		input string
-		want  environment.Universe
-	}
-
-	tests := []test{
 		{
-			name:  "empty",
-			input: `../../../testdata/environments/empty.json`,
-			want: environment.Universe{
-				Principals: []entities.Principal(nil),
-				Resources:  []entities.Resource(nil),
+			Type:    "AWS::DynamoDB::Table",
+			Account: "000000000000",
+			Region:  "",
+			Arn:     "arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable",
+			Policy:  policy.Policy{},
+			Tags:    entities.Tags{},
+		},
+		{
+			Type:    "AWS::S3::Bucket",
+			Account: "000000000000",
+			Region:  "",
+			Arn:     "arn:aws:s3:::somebucket",
+			Policy: policy.Policy{
+				Version: "2012-10-17",
+				Statement: []policy.Statement{
+					{
+						Sid: "AllowGetObject",
+						Principal: policy.Principal{
+							AWS: policy.Value{"arn:aws:iam::000000000000:role/nsiow"},
+						},
+						Effect:   "Allow",
+						Action:   []string{"s3:GetObject"},
+						Resource: []string{"arn:aws:s3:::somebucket/*"},
+					},
+				},
+			},
+			Tags: []entities.Tag{
+				{
+					Key:   "this-bucket-tag",
+					Value: "is-cool",
+					Tag:   "this-bucket-tag=is-cool",
+				},
 			},
 		},
 		{
-			name:  "simple_1",
-			input: `../../../testdata/environments/simple_1.json`,
-			want:  simple1Output,
+			Type:    "AWS::SQS::Queue",
+			Account: "000000000000",
+			Region:  "",
+			Arn:     "arn:aws:sqs:us-west-2:000000000000:ExampleQueue",
+			Policy: policy.Policy{
+				Version: "2012-10-17",
+				Statement: []policy.Statement{
+					{
+						Sid: "AllowReceiveMessage",
+						Principal: policy.Principal{
+							AWS: policy.Value{"arn:aws:iam::000000000000:role/nsiow"},
+						},
+						Effect:   "Allow",
+						Action:   []string{"sqs:ReceiveMessage"},
+						Resource: []string{"arn:aws:sqs:us-west-2:000000000000:ExampleQueue"},
+					},
+				},
+			},
+			Tags: []entities.Tag{},
 		},
-	}
-
-	for _, tc := range tests {
-		subtests := []string{
-			tc.input,
-			tc.input + "l",
-		}
-
-		for _, input := range subtests {
-			t.Logf("running test case: %s (file: %s)", tc.name, input)
-
-			// Read requested input file
-			inputBytes, err := os.ReadFile(input)
-			if err != nil {
-				t.Fatalf("unable to read file '%s' for test case: '%s': %v", input, tc.name, err)
-			}
-
-			// Call correct loader based on input type
-			l := NewLoader()
-			ext := path.Ext(input)
-			switch ext {
-			case ".json":
-				err = l.LoadJson(inputBytes)
-			case ".jsonl":
-				err = l.LoadJsonl(inputBytes)
-			default:
-				t.Fatalf("unsure how to handle ext '%s' for test case: '%s'", ext, tc.name)
-			}
-			if err != nil {
-				t.Fatalf("unexpected error for test case: '%s': %v", tc.name, err)
-			}
-
-			// Construct our universe based on what we received
-			got := environment.Universe{
-				Principals: l.Principals(),
-				Resources:  l.Resources(),
-			}
-
-			// Compare and validate; pretty-print in JSON if something goes wrong for easier debugging
-			if !reflect.DeepEqual(tc.want, got) {
-				wantString, err := json.MarshalIndent(tc.want, "", " ")
-				if err != nil {
-					t.Logf("error while trying to pretty print test error; falling back")
-					t.Fatalf("expected: %s, got: %#v for test case '%s'", tc.want, got, tc.name)
-				}
-				gotString, err := json.MarshalIndent(got, "", " ")
-				if err != nil {
-					t.Logf("error while trying to pretty print test error; falling back")
-					t.Fatalf("expected: %s, got: %#v for test case '%s'", tc.want, got, tc.name)
-				}
-				t.Fatalf("*failure* on test '%s'\n\n*expected*\n%s\n\n*got*\n%s", tc.name, wantString, gotString)
-			}
-		}
-	}
+		{
+			Type:    "AWS::SQS::Queue",
+			Account: "000000000000",
+			Region:  "",
+			Arn:     "arn:aws:sqs:us-west-2:000000000000:SimpleQueue",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
+		},
+	},
 }

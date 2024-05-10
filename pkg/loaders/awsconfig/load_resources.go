@@ -64,8 +64,7 @@ func extractPolicy(i ConfigItem) (*policy.Policy, error) {
 		return policyFromConfiguration(i.Configuration, "Policy")
 	case CONST_TYPE_AWS_IAM_ROLE:
 		return policyFromConfiguration(i.Configuration, "assumeRolePolicyDocument")
-	case CONST_TYPE_AWS_KMS_KEY:
-		panic("AWS::KMS::Key is not yet implemented")
+	// TODO(nsiow) implement KMS key policies
 	default:
 		return nil, nil
 	}
