@@ -6,43 +6,21 @@ import (
 
 // Principal defines the general shape of an AWS cloud principal
 type Principal struct {
-	Type            string
-	Account         string
-	Region          string
-	Arn             string
-	Tags            []Tag
-	InlinePolicies  []policy.Policy
-	ManagedPolicies []policy.Policy
-}
+	// Type refers to the AWS resource type of the Principal
+	Type string
 
-// Policies returns the merger of both inline and managed policies
-func (p *Principal) Policies() []policy.Policy {
-	// Do it the old fashioned way rather than `append` to avoid recopies
-	length := len(p.InlinePolicies) + len(p.ManagedPolicies)
-	policies := make([]policy.Policy, length)
+	// Account refers to the 12-digit AWS account ID where the Principal resides
+	Account string
 
-	i := 0
-	for j := range p.InlinePolicies {
-		policies[i] = p.InlinePolicies[j]
-		i += 1
-	}
-	for k := range p.ManagedPolicies {
-		policies[i] = p.ManagedPolicies[k]
-		i += 1
-	}
+	// Arn refers to the Amazon Resource Name of the Principal
+	Arn string
 
-	return policies
-}
+	// Tags refers to the AWS metadata tags attached to the Principal
+	Tags []Tag
 
-// Statements returns the merger of statements within both inline and managed policies
-func (p *Principal) Statements() []policy.Statement {
-	var stmts []policy.Statement
+	// InlinePolicies refers to the inline (unattached) policies associated with the Principal
+	InlinePolicies []policy.Policy
 
-	// Iterate over policies => statement blocks => statements
-	for _, policy := range p.Policies() {
-		for _, stmt := range policy.Statement {
-			stmts = append(stmts, stmt)
-		}
-	}
-	return stmts
+	// AttachedPolicies refers to the managed policies associated with the Principal
+	AttachedPolicies []policy.Policy
 }

@@ -6,10 +6,21 @@ import (
 
 // Resource defines the general shape of an AWS cloud resource
 type Resource struct {
-	Type    string
+	// Type refers to the AWS resource type of the Resource
+	Type string
+
+	// Account refers to the 12-digit AWS account ID where the Resource resides
 	Account string
-	Region  string
-	Arn     string
-	Policy  policy.Policy
-	Tags    []Tag
+
+	// Region refers to the AWS region ID where the Resource resides
+	Region string
+
+	// Arn refers to the Amazon Resource Name of the Resource
+	Arn string
+
+	// Tags refers to the AWS metadata tags attached to the Resource
+	Tags []Tag
+
+	// Policy refers to the resource policy associated with the Resource
+	Policy policy.Policy
 }

@@ -185,18 +185,15 @@ var simple1Output environment.Universe = environment.Universe{
 		{
 			Type:    "AWS::IAM::Role",
 			Account: "000000000000",
-			Region:  "",
 			Arn:     "arn:aws:iam::000000000000:role/SimpleRole1",
 			Tags: []entities.Tag{
 				{
 					Key:   "some-business-tag",
 					Value: "important-business-thing",
-					Tag:   "some-business-tag=important-business-thing",
 				},
 				{
 					Key:   "some-technical-tag",
 					Value: "important-technical-thing",
-					Tag:   "some-technical-tag=important-technical-thing",
 				},
 			},
 			InlinePolicies: []policy.Policy{
@@ -211,7 +208,7 @@ var simple1Output environment.Universe = environment.Universe{
 					},
 				},
 			},
-			ManagedPolicies: []policy.Policy{
+			AttachedPolicies: []policy.Policy{
 				{
 					Version: "2012-10-17",
 					Statement: []policy.Statement{
@@ -247,12 +244,10 @@ var simple1Output environment.Universe = environment.Universe{
 				{
 					Key:   "some-business-tag",
 					Value: "important-business-thing",
-					Tag:   "some-business-tag=important-business-thing",
 				},
 				{
 					Key:   "some-technical-tag",
 					Value: "important-technical-thing",
-					Tag:   "some-technical-tag=important-technical-thing",
 				},
 			},
 		},
@@ -262,7 +257,7 @@ var simple1Output environment.Universe = environment.Universe{
 			Region:  "",
 			Arn:     "arn:aws:iam::000000000000:policy/Common",
 			Policy:  policy.Policy{},
-			Tags:    entities.Tags{},
+			Tags:    []entities.Tag{},
 		},
 		{
 			Type:    "AWS::DynamoDB::Table",
@@ -270,7 +265,7 @@ var simple1Output environment.Universe = environment.Universe{
 			Region:  "",
 			Arn:     "arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable",
 			Policy:  policy.Policy{},
-			Tags:    entities.Tags{},
+			Tags:    []entities.Tag{},
 		},
 		{
 			Type:    "AWS::S3::Bucket",
@@ -295,7 +290,6 @@ var simple1Output environment.Universe = environment.Universe{
 				{
 					Key:   "this-bucket-tag",
 					Value: "is-cool",
-					Tag:   "this-bucket-tag=is-cool",
 				},
 			},
 		},

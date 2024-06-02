@@ -26,39 +26,40 @@ func loadPolicies(items []ConfigItem) (*PolicyMap, error) {
 		}
 
 		// Save the decoded policy into our map
-		m.Add(i.Arn, *policy)
+		m.Add(i.Arn, policy)
 	}
 
 	return m, nil
 }
 
 // loadPolicy takes a single AWS Config item and returns a parsed policy object
-func loadPolicy(i ConfigItem) (*policy.Policy, error) {
+func loadPolicy(i ConfigItem) (policy.Policy, error) {
 	// Parse policy configuration
 	pic := policyFragment{}
 	err := json.Unmarshal(i.Configuration, &pic)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse policy version list (%+v): %v", pic, err)
+		return policy.Policy{}, fmt.Errorf("unable to parse policy version list (%+v): %v", pic, err)
 	}
 
 	// Attempt to retrieve default version
 	defaultVersion, err := pic.Default()
 	if err != nil {
-		return nil, fmt.Errorf("unable to determine default version for (%+v): %v", pic, err)
+		return policy.Policy{}, fmt.Errorf("unable to determine default version for (%+v): %v", pic, err)
 	}
 
-	// Attempt to decode our policy string; this _should_ always work
-	policy, err := decodePolicyString(defaultVersion.Document)
-	if err != nil {
-		return nil, fmt.Errorf("unable to decode policy string: %v", err)
-	}
-
-	return &policy, nil
+	return policy.Policy(defaultVersion.Document), nil
 }
 
 // policyFragment is a struct describing a configuration fragment for AWS::IAM::Policy
 type policyFragment struct {
 	PolicyVersionList []policyVersionFragment `json:"policyVersionList"`
+}
+
+// policyVersionFragment is a struct describing a configuration fragment for AWS::IAM::Policy
+type policyVersionFragment struct {
+	VersionId        string        `json:"versionId"`
+	IsDefaultVersion bool          `json:"isDefaultVersion"`
+	Document         encodedPolicy `json:"document"`
 }
 
 // Default attempts to retrieve the default version of this policy
@@ -70,11 +71,4 @@ func (p *policyFragment) Default() (policyVersionFragment, error) {
 	}
 
 	return policyVersionFragment{}, fmt.Errorf("no valid default policy version found for: %v", p)
-}
-
-// policyVersionFragment is a struct describing a configuration fragment for AWS::IAM::Policy
-type policyVersionFragment struct {
-	VersionId        string `json:"versionId"`
-	IsDefaultVersion bool   `json:"isDefaultVersion"`
-	Document         string `json:"document"`
 }

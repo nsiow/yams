@@ -38,6 +38,7 @@ GO_FORMATTER ?= go fmt
 format:
 	$(GO_FORMATTER) $(GO_TOOL_TARGET)
 
+# TODO(nsiow) switch to golanglint-ci
 GO_LINTER ?= go vet
 
 .PHONY: lint

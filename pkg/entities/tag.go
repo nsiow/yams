@@ -1,11 +1,10 @@
 package entities
 
-// Tag defines a standard AWS resource/principal tag
+// Tag defines the general shape of an AWS metadata tag
 type Tag struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-	Tag   string `json:"tag"`
-}
+	// Key refers to the tag key
+	Key string
 
-// Tags defines a collection around a slice of Tag structs
-type Tags = []Tag
+	// Value refers to the tag value
+	Value string
+}

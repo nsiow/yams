@@ -7,6 +7,7 @@ import (
 
 // Policy represents the grammar and structure of an AWS IAM Policy
 type Policy struct {
+	// Context   string `json:"-"` // TODO(nsiow) implement context from Policy -> Statement for tracking
 	Version   string
 	Id        string
 	Statement StatementBlock
@@ -57,9 +58,9 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 // Statement represents the grammar and structure of an AWS IAM Statement
 type Statement struct {
 	Sid          string
-	Principal    Principal `json:",omitempty"`
-	NotPrincipal Principal `json:",omitempty"`
 	Effect       string
+	Principal    Principal      `json:",omitempty"`
+	NotPrincipal Principal      `json:",omitempty"`
 	Action       Action         `json:",omitempty"`
 	NotAction    Action         `json:",omitempty"`
 	Resource     Resource       `json:",omitempty"`
@@ -134,16 +135,16 @@ type Action = Value
 type Resource = Value
 
 // ConditionBlock represents the grammar and structure of an AWS IAM Condition block
-type ConditionBlock map[ConditionOperation]Condition
+type ConditionBlock = map[ConditionOperation]Condition
 
 // ConditionOperation represents the operation portion of a condition block
-type ConditionOperation string
+type ConditionOperation = string
 
 // Condition represents the grammar and structure of an AWS IAM Condition
-type Condition map[ConditionKey]ConditionValue
+type Condition = map[ConditionKey]ConditionValue
 
 // ConditionKey represents the key portion of a condition
-type ConditionKey string
+type ConditionKey = string
 
 // ConditionValue represents the value portion of a condition
 type ConditionValue any
