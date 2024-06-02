@@ -43,7 +43,9 @@ func (s *Simulator) ComputeAccessSummary(
 	for _, r := range env.Resources {
 		for _, p := range env.Principals {
 			for _, a := range actions {
-				result, err := s.Simulate(a, &p, &r, &AuthContext{})
+				result, err := s.Simulate(
+					&Event{a, &p, &r, &AuthContext{}},
+				)
 				if err != nil {
 					return nil, errors.Join(fmt.Errorf("error during simulation"), err)
 				}
@@ -61,10 +63,6 @@ func (s *Simulator) ComputeAccessSummary(
 
 // Simulate determines whether the provided Principal is able to perform the given Action on the
 // specified Resource
-func (s *Simulator) Simulate(
-	action string,
-	p *entities.Principal,
-	r *entities.Resource,
-	ac *AuthContext) (*Result, error) {
-	nye
+func (s *Simulator) Simulate(evt *Event) (*Result, error) {
+	return evalOverallAccess(evt)
 }

@@ -22,3 +22,9 @@ func (e *EffectSet) Add(effect policy.Effect) {
 func (e *EffectSet) Contains(effect policy.Effect) bool {
 	return slices.Contains(e.effects, effect)
 }
+
+// Allowed determines whether or not the EffectSet corresponds to an IAM operation being allowed,
+// based on the values contained within the set
+func (e *EffectSet) Allowed() bool {
+	return len(e.effects) == 1 && e.effects[0] == policy.EFFECT_ALLOW
+}
