@@ -57,8 +57,8 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 
 // Statement represents the grammar and structure of an AWS IAM Statement
 type Statement struct {
-	Sid          string
-	Effect       string
+	Sid          Effect
+	Effect       Effect
 	Principal    Principal      `json:",omitempty"`
 	NotPrincipal Principal      `json:",omitempty"`
 	Action       Action         `json:",omitempty"`
@@ -83,6 +83,35 @@ func (s *Statement) Validate() error {
 	}
 
 	return nil
+}
+
+// Effect corresponds
+type Effect string
+
+// EFFECT_Allow corresponds to Effect=Allow in an IAM policy
+const EFFECT_ALLOW = "Allow"
+
+// EFFECT_DENY corresponds to Effect=Deny in an IAM policy
+const EFFECT_DENY = "Deny"
+
+// UnmarshalJSON instructs how to create Effect fields from raw bytes
+func (e *Effect) UnmarshalJSON(data []byte) error {
+	var effect string
+	err := json.Unmarshal(data, &effect)
+	if err != nil {
+		return fmt.Errorf("unable to parse:\neffect = %s\nerror = %v", data, err)
+	}
+
+	switch effect {
+	case EFFECT_ALLOW:
+		*e = EFFECT_ALLOW
+		return nil
+	case EFFECT_DENY:
+		*e = EFFECT_DENY
+		return nil
+	default:
+		return fmt.Errorf("invalid value for 'Effect' field: %s", effect)
+	}
 }
 
 // Principal represents a set of Principals, provided in string or map form

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/nsiow/yams/pkg/entities"
-	"github.com/nsiow/yams/pkg/environment"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -17,14 +16,14 @@ func TestLoadJsonValid(t *testing.T) {
 	type test struct {
 		name  string
 		input string
-		want  environment.Universe
+		want  entities.Environment
 	}
 
 	tests := []test{
 		{
 			name:  "empty",
 			input: `../../../testdata/environments/empty.json`,
-			want: environment.Universe{
+			want: entities.Environment{
 				Principals: []entities.Principal(nil),
 				Resources:  []entities.Resource(nil),
 			},
@@ -68,7 +67,7 @@ func TestLoadJsonValid(t *testing.T) {
 			}
 
 			// Construct our universe based on what we received
-			got := environment.Universe{
+			got := entities.Environment{
 				Principals: l.Principals(),
 				Resources:  l.Resources(),
 			}
@@ -180,7 +179,7 @@ func TestLoadJsonInvalid(t *testing.T) {
 }
 
 // Define some common test variables here, which we'll use across multiple tests
-var simple1Output environment.Universe = environment.Universe{
+var simple1Output entities.Environment = entities.Environment{
 	Principals: []entities.Principal{
 		{
 			Type:    "AWS::IAM::Role",
