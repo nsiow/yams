@@ -1,11 +1,11 @@
 package sim
 
-// ResultContext provides contextual information around how the
-type ResultContext struct {
+// Trace provides contextual information around how the
+type Trace struct {
 	log []string
 }
 
 // Add takes the provided message and saves it into our ResultContext
-func (r *ResultContext) Add(message string) {
+func (r *Trace) Add(message string) {
 	r.log = append(r.log, message)
 }

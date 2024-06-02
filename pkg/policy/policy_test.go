@@ -260,7 +260,7 @@ func TestValidate(t *testing.T) {
           "Version": "",
           "Id": "",
           "Statement": [{
-						"Effect": "*",
+						"Effect": "Allow",
 						"Principal": "*",
 						"Action": "*",
 						"Resource": "*"
@@ -287,7 +287,7 @@ func TestValidate(t *testing.T) {
           "Version": "",
           "Id": "",
           "Statement": [{
-						"Effect": "*",
+						"Effect": "Allow",
 						"Principal": "*",
 						"NotPrincipal": "*",
 						"Action": "*",
@@ -304,7 +304,7 @@ func TestValidate(t *testing.T) {
           "Version": "",
           "Id": "",
           "Statement": [{
-						"Effect": "*",
+						"Effect": "Allow",
 						"Principal": "*",
 						"Action": "*",
 						"NotAction": "*",
@@ -321,7 +321,7 @@ func TestValidate(t *testing.T) {
           "Version": "",
           "Id": "",
           "Statement": [{
-						"Effect": "*",
+						"Effect": "Allow",
 						"Principal": "*",
 						"Action": "*",
 						"Resource": "*",

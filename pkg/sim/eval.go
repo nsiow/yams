@@ -13,13 +13,14 @@ import (
 func evalOverallAccess(evt *Event) (*Result, error) {
 
 	res := Result{}
+	trc := res.Trace
 
 	// Calculate Principal access
-	pAccess, err := evalPrincipalAccess(evt)
+	pAccess, err := evalPrincipalAccess(evt, trc)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("error evaluating principal access"), err)
 	}
-	rAccess, err := evalResourceAccess(evt)
+	rAccess, err := evalResourceAccess(evt, trc)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("error evaluating resource access"), err)
 	}
@@ -27,12 +28,12 @@ func evalOverallAccess(evt *Event) (*Result, error) {
 	// Check for explicit Deny results
 	if pAccess.Contains(policy.EFFECT_DENY) {
 		res.IsAllowed = false
-		res.ResultContext.Add("[explicit deny] explicit deny found in identity policy")
+		trc.Add("[explicit deny] explicit deny found in identity policy")
 		return &res, nil
 	}
 	if rAccess.Contains(policy.EFFECT_DENY) {
 		res.IsAllowed = false
-		res.ResultContext.Add("[explicit deny] explicit deny found in resource policy")
+		trc.Add("[explicit deny] explicit deny found in resource policy")
 		return &res, nil
 	}
 
@@ -40,13 +41,13 @@ func evalOverallAccess(evt *Event) (*Result, error) {
 	if evalIsSameAccount(evt.Principal, evt.Resource) {
 		if pAccess.Contains(policy.EFFECT_ALLOW) {
 			res.IsAllowed = true
-			res.ResultContext.Add("[allow] access granted via same-account identity policy")
+			trc.Add("[allow] access granted via same-account identity policy")
 			return &res, nil
 		}
 
 		// TODO(nsiow) implement correct behavior for same-account access via explicit ARN
 		res.IsAllowed = false
-		res.ResultContext.Add("[implicit deny] no identity-based policy allows this action")
+		trc.Add("[implicit deny] no identity-based policy allows this action")
 		return &res, nil
 	}
 
@@ -54,29 +55,29 @@ func evalOverallAccess(evt *Event) (*Result, error) {
 	// access
 	if pAccess.Contains(policy.EFFECT_ALLOW) && rAccess.Contains(policy.EFFECT_ALLOW) {
 		res.IsAllowed = true
-		res.ResultContext.Add("[allow] access granted via x-account identity + resource policies")
+		trc.Add("[allow] access granted via x-account identity + resource policies")
 		return &res, nil
 	}
 	if pAccess.Contains(policy.EFFECT_ALLOW) && !rAccess.Contains(policy.EFFECT_ALLOW) {
 		res.IsAllowed = false
-		res.ResultContext.Add("[implicit deny] x-account, missing resource policy access")
+		trc.Add("[implicit deny] x-account, missing resource policy access")
 		return &res, nil
 	}
 	if !pAccess.Contains(policy.EFFECT_ALLOW) && rAccess.Contains(policy.EFFECT_ALLOW) {
 		res.IsAllowed = false
-		res.ResultContext.Add("[implicit deny] x-account, missing identity policy access")
+		trc.Add("[implicit deny] x-account, missing identity policy access")
 		return &res, nil
 	}
 	res.IsAllowed = false
-	res.ResultContext.Add("[implicit deny] x-account, missing both identity + resource access")
+	trc.Add("[implicit deny] x-account, missing both identity + resource access")
 	return &res, nil
 }
 
 // statementEvalFunction is the blueprint of a function that allows us to evaluate a single statement
-type statementEvalFunction func(*Event, *policy.Statement) (bool, error)
+type statementEvalFunction func(*Event, *Trace, *policy.Statement) (bool, error)
 
 // evalPrincipalAccess calculates the Principal-side access to the specified Resource
-func evalPrincipalAccess(evt *Event) (*EffectSet, error) {
+func evalPrincipalAccess(evt *Event, trc *Trace) (*EffectSet, error) {
 
 	// Specify the types of policies we will consider for Principal access
 	effectivePolicies := [][]policy.Policy{
@@ -97,7 +98,7 @@ func evalPrincipalAccess(evt *Event) (*EffectSet, error) {
 		for _, pol := range polType {
 			for _, stmt := range pol.Statement {
 				for _, f := range functions {
-					match, err := f(evt, &stmt)
+					match, err := f(evt, trc, &stmt)
 					if err != nil {
 						return nil, errors.Join(
 							fmt.Errorf("error evaluating principal policy statement[sid=%s]", stmt.Sid),
@@ -115,7 +116,7 @@ func evalPrincipalAccess(evt *Event) (*EffectSet, error) {
 }
 
 // evalResourceAccess calculates the Resource-side access with regard to the specified Principal
-func evalResourceAccess(evt *Event) (*EffectSet, error) {
+func evalResourceAccess(evt *Event, trc *Trace) (*EffectSet, error) {
 
 	// Specify the statement evaluation functions we will consider for Principal access
 	functions := []statementEvalFunction{
@@ -124,11 +125,11 @@ func evalResourceAccess(evt *Event) (*EffectSet, error) {
 		evalStatementMatchesCondition,
 	}
 
-	// Iterate over policy types / policies / statements to evaluate access
+	// Iterate over resource policy statements to evaluate access
 	effects := EffectSet{}
 	for _, stmt := range evt.Resource.Policy.Statement {
 		for _, f := range functions {
-			match, err := f(evt, &stmt)
+			match, err := f(evt, trc, &stmt)
 			if err != nil {
 				return nil, errors.Join(
 					fmt.Errorf("error evaluating principal policy statement[sid=%s]", stmt.Sid),
@@ -145,23 +146,82 @@ func evalResourceAccess(evt *Event) (*EffectSet, error) {
 }
 
 // evalStatementMatchesAction computes whether the Statement matches the Event's Action
-func evalStatementMatchesAction(evt *Event, stmt *policy.Statement) (bool, error) {
-	panic("not yet implemented")
+func evalStatementMatchesAction(evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+
+	// Determine which Action block to use
+	var gate Gate
+	var action policy.Action
+	if !stmt.Action.Empty() {
+		action = stmt.Action
+	} else {
+		action = stmt.NotAction
+		gate.Invert()
+	}
+
+	// FIXME(nsiow) is this how gate should be used?
+	for _, a := range action {
+		match := gate.Apply(matchWildcard(a, evt.Action))
+		if match {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// evalStatementMatchesPrincipal computes whether the Statement matches the Event's Principal
+func evalStatementMatchesPrincipal(evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+
+	// Determine which Principal block to use
+	var gate Gate
+	var principals policy.Principal
+	if !stmt.Principal.Empty() {
+		principals = stmt.Principal
+	} else {
+		principals = stmt.NotPrincipal
+		gate.Invert()
+	}
+
+	// FIXME(nsiow) is this how gate should be used?
+	for _, p := range principals.AWS {
+		match := gate.Apply(matchWildcard(p, evt.Principal.Arn))
+		if match {
+			return true, nil
+		}
+	}
+
+	return false, nil
+
+}
+
+// evalStatementMatchesResource computes whether the Statement matches the Event's Resource
+func evalStatementMatchesResource(evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+
+	// Determine which Resource block to use
+	var gate Gate
+	var resources policy.Resource
+	if !stmt.Resource.Empty() {
+		resources = stmt.Resource
+	} else {
+		resources = stmt.NotResource
+		gate.Invert()
+	}
+
+	// FIXME(nsiow) is this how gate should be used?
+	for _, r := range resources {
+		match := gate.Apply(matchWildcard(r, evt.Resource.Arn))
+		if match {
+			return true, nil
+		}
+	}
+
+	return false, nil
+
 }
 
 // evalStatementMatchesCondition computes whether the Statement's Conditions hold true given the
 // provided Event
-func evalStatementMatchesCondition(evt *Event, stmt *policy.Statement) (bool, error) {
-	panic("not yet implemented")
-}
-
-// evalStatementMatchesPrincipal computes whether the Statement matches the Event's Principal
-func evalStatementMatchesPrincipal(evt *Event, stmt *policy.Statement) (bool, error) {
-	panic("not yet implemented")
-}
-
-// evalStatementMatchesResource computes whether the Statement matches the Event's Resource
-func evalStatementMatchesResource(evt *Event, stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesCondition(evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
 	panic("not yet implemented")
 }
 

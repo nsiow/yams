@@ -57,7 +57,7 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 
 // Statement represents the grammar and structure of an AWS IAM Statement
 type Statement struct {
-	Sid          Effect
+	Sid          string
 	Effect       Effect
 	Principal    Principal      `json:",omitempty"`
 	NotPrincipal Principal      `json:",omitempty"`
@@ -170,10 +170,4 @@ type ConditionBlock = map[ConditionOperation]Condition
 type ConditionOperation = string
 
 // Condition represents the grammar and structure of an AWS IAM Condition
-type Condition = map[ConditionKey]ConditionValue
-
-// ConditionKey represents the key portion of a condition
-type ConditionKey = string
-
-// ConditionValue represents the value portion of a condition
-type ConditionValue any
+type Condition = map[string]Value

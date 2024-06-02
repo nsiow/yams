@@ -9,6 +9,12 @@ type Principal struct {
 	// Type refers to the AWS resource type of the Principal
 	Type string
 
+	// OrgId refers to the ID of the AWS Organizations org where the Principal resides
+	OrgId string
+
+	// OrgPath refers to the path of the AWS Organizations OU where the Principal resides
+	OrgPath string
+
 	// Account refers to the 12-digit AWS account ID where the Principal resides
 	Account string
 
