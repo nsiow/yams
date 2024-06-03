@@ -11,7 +11,7 @@ import (
 // Principals + Resources
 type Simulator struct {
 	env     *entities.Environment
-	options options
+	options SimOptions
 }
 
 // NewSimulator creates and returns a Simulator with the provided options
@@ -19,7 +19,7 @@ func NewSimulator(o ...Option) (*Simulator, error) {
 	s := Simulator{}
 
 	// Execute any provided options
-	var opts options
+	var opts SimOptions
 	for _, opt := range o {
 		err := opt(&opts)
 		if err != nil {
@@ -43,7 +43,7 @@ func (s *Simulator) SetEnvironment(env *entities.Environment) {
 
 // SimulateEvent determines whether the provided Event would be allowed
 func (s *Simulator) SimulateEvent(evt *Event) (*Result, error) {
-	return evalOverallAccess(evt)
+	return evalOverallAccess(&s.options, evt)
 }
 
 // SimulateByArn determines whether the operation would be allowed
@@ -74,7 +74,7 @@ func (s *Simulator) SimulateByArn(action, principal, resource string, ac *AuthCo
 		return nil, fmt.Errorf("simulator environment does not have Resource with Arn=%s", resource)
 	}
 
-	return evalOverallAccess(&evt)
+	return evalOverallAccess(&s.options, &evt)
 }
 
 // ComputeAccessSummary generates a numerical summary of access within the provided Environment

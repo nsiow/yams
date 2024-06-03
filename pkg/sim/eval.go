@@ -3,6 +3,7 @@ package sim
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	e "github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
@@ -10,17 +11,17 @@ import (
 
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
 // and different-account evaluations
-func evalOverallAccess(evt *Event) (*Result, error) {
+func evalOverallAccess(opts *SimOptions, evt *Event) (*Result, error) {
 
 	res := Result{}
 	trc := res.Trace
 
 	// Calculate Principal access
-	pAccess, err := evalPrincipalAccess(evt, trc)
+	pAccess, err := evalPrincipalAccess(opts, evt, trc)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("error evaluating principal access"), err)
 	}
-	rAccess, err := evalResourceAccess(evt, trc)
+	rAccess, err := evalResourceAccess(opts, evt, trc)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("error evaluating resource access"), err)
 	}
@@ -74,10 +75,10 @@ func evalOverallAccess(evt *Event) (*Result, error) {
 }
 
 // statementEvalFunction is the blueprint of a function that allows us to evaluate a single statement
-type statementEvalFunction func(*Event, *Trace, *policy.Statement) (bool, error)
+type statementEvalFunction func(*SimOptions, *Event, *Trace, *policy.Statement) (bool, error)
 
 // evalPrincipalAccess calculates the Principal-side access to the specified Resource
-func evalPrincipalAccess(evt *Event, trc *Trace) (*EffectSet, error) {
+func evalPrincipalAccess(opts *SimOptions, evt *Event, trc *Trace) (*EffectSet, error) {
 
 	// Specify the types of policies we will consider for Principal access
 	effectivePolicies := [][]policy.Policy{
@@ -98,7 +99,7 @@ func evalPrincipalAccess(evt *Event, trc *Trace) (*EffectSet, error) {
 		for _, pol := range polType {
 			for _, stmt := range pol.Statement {
 				for _, f := range functions {
-					match, err := f(evt, trc, &stmt)
+					match, err := f(opts, evt, trc, &stmt)
 					if err != nil {
 						return nil, errors.Join(
 							fmt.Errorf("error evaluating principal policy statement[sid=%s]", stmt.Sid),
@@ -116,7 +117,7 @@ func evalPrincipalAccess(evt *Event, trc *Trace) (*EffectSet, error) {
 }
 
 // evalResourceAccess calculates the Resource-side access with regard to the specified Principal
-func evalResourceAccess(evt *Event, trc *Trace) (*EffectSet, error) {
+func evalResourceAccess(opts *SimOptions, evt *Event, trc *Trace) (*EffectSet, error) {
 
 	// Specify the statement evaluation functions we will consider for Principal access
 	functions := []statementEvalFunction{
@@ -129,7 +130,7 @@ func evalResourceAccess(evt *Event, trc *Trace) (*EffectSet, error) {
 	effects := EffectSet{}
 	for _, stmt := range evt.Resource.Policy.Statement {
 		for _, f := range functions {
-			match, err := f(evt, trc, &stmt)
+			match, err := f(opts, evt, trc, &stmt)
 			if err != nil {
 				return nil, errors.Join(
 					fmt.Errorf("error evaluating principal policy statement[sid=%s]", stmt.Sid),
@@ -146,7 +147,8 @@ func evalResourceAccess(evt *Event, trc *Trace) (*EffectSet, error) {
 }
 
 // evalStatementMatchesAction computes whether the Statement matches the Event's Action
-func evalStatementMatchesAction(evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesAction(
+	opts *SimOptions, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Action block to use
 	var gate Gate
@@ -158,19 +160,19 @@ func evalStatementMatchesAction(evt *Event, trc *Trace, stmt *policy.Statement) 
 		gate.Invert()
 	}
 
-	// FIXME(nsiow) is this how gate should be used?
 	for _, a := range action {
-		match := gate.Apply(matchWildcardIgnoreCase(a, evt.Action))
+		match := matchWildcardIgnoreCase(a, evt.Action)
 		if match {
-			return true, nil
+			return gate.Apply(true), nil
 		}
 	}
 
-	return false, nil
+	return gate.Apply(false), nil
 }
 
 // evalStatementMatchesPrincipal computes whether the Statement matches the Event's Principal
-func evalStatementMatchesPrincipal(evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesPrincipal(
+	opts *SimOptions, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Principal block to use
 	var gate Gate
@@ -182,21 +184,20 @@ func evalStatementMatchesPrincipal(evt *Event, trc *Trace, stmt *policy.Statemen
 		gate.Invert()
 	}
 
-	// FIXME(nsiow) is this how gate should be used?
 	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
 	for _, p := range principals.AWS {
-		match := gate.Apply(matchWildcard(p, evt.Principal.Arn))
+		match := matchWildcard(p, evt.Principal.Arn)
 		if match {
-			return true, nil
+			return gate.Apply(true), nil
 		}
 	}
 
-	return false, nil
-
+	return gate.Apply(false), nil
 }
 
 // evalStatementMatchesResource computes whether the Statement matches the Event's Resource
-func evalStatementMatchesResource(evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesResource(
+	opts *SimOptions, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Resource block to use
 	var gate Gate
@@ -210,19 +211,27 @@ func evalStatementMatchesResource(evt *Event, trc *Trace, stmt *policy.Statement
 
 	// FIXME(nsiow) is this how gate should be used?
 	for _, r := range resources {
-		match := gate.Apply(matchWildcard(r, evt.Resource.Arn))
+		match := matchWildcard(r, evt.Resource.Arn)
 		if match {
-			return true, nil
+			return gate.Apply(true), nil
 		}
 	}
 
-	return false, nil
-
+	return gate.Apply(false), nil
 }
 
 // evalStatementMatchesCondition computes whether the Statement's Conditions hold true given the
 // provided Event
-func evalStatementMatchesCondition(evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesCondition(
+	opts *SimOptions, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+
+	knownConditionOperators := []string{}
+	for op := range stmt.Condition {
+		if !slices.Contains(knownConditionOperators, op) {
+			return false, fmt.Errorf("unknown condition operator: %s", op)
+		}
+	}
+
 	return true, nil // FIXME(nsiow) this needs to be implemented
 }
 
