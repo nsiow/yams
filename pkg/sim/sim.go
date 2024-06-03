@@ -11,15 +11,15 @@ import (
 // Principals + Resources
 type Simulator struct {
 	env     *entities.Environment
-	options SimOptions
+	options Options
 }
 
 // NewSimulator creates and returns a Simulator with the provided options
-func NewSimulator(o ...Option) (*Simulator, error) {
+func NewSimulator(o ...OptionF) (*Simulator, error) {
 	s := Simulator{}
 
 	// Execute any provided options
-	var opts SimOptions
+	var opts Options
 	for _, opt := range o {
 		err := opt(&opts)
 		if err != nil {

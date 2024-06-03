@@ -8,6 +8,7 @@ import (
 // MatchWildcard determines if the provided string matches the wildcard pattern, using AWS's
 // heuristics for wildcards
 //
+// TODO(nsiow) consider moving this to its own package
 // TODO(nsiow) add trace logging for better debugging
 // TODO(nsiow) fix behavior for */? interleaved patterns
 func matchWildcard(pattern, value string) bool {

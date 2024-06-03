@@ -1,4 +1,4 @@
-package sim
+package gate
 
 // Gate is a helper struct implementing a NOT gate for easier handling of policy inversions
 type Gate struct {

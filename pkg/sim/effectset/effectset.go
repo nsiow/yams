@@ -1,4 +1,4 @@
-package sim
+package effectset
 
 import (
 	"slices"
@@ -16,6 +16,11 @@ func (e *EffectSet) Add(effect policy.Effect) {
 	if !slices.Contains(e.effects, effect) {
 		e.effects = append(e.effects, effect)
 	}
+}
+
+// Effects returns all Effect values currently held within the set
+func (e *EffectSet) Effects() []policy.Effect {
+	return e.effects
 }
 
 // Contains determines whether or not the specified Effect is present in our set

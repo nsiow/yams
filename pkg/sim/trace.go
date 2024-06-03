@@ -1,6 +1,7 @@
 package sim
 
 // Trace provides contextual information around how the
+// TODO(nsiow) consider moving this to its own package
 type Trace struct {
 	log []string
 }

@@ -1,4 +1,4 @@
-package sim
+package effectset
 
 import (
 	"testing"
@@ -80,7 +80,7 @@ func TestEffectSet(t *testing.T) {
 		}
 
 		// Ensure that we never go over 2 elements
-		if len(es.effects) > 2 {
+		if len(es.Effects()) > 2 {
 			t.Fatalf("saw %d elements in EffectSet; expected a maximum of 2", len(es.effects))
 		}
 

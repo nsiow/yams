@@ -115,6 +115,7 @@ func (e *Effect) UnmarshalJSON(data []byte) error {
 }
 
 // Principal represents a set of Principals, provided in string or map form
+// TODO(nsiow) handle remarshaling into Principal=*
 type Principal PrincipalMap
 
 // Empty determines whether or not the specified Principal field is empty

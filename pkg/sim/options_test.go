@@ -6,7 +6,7 @@ import (
 
 func TestWithFailOnUnknownCondition(t *testing.T) {
 	// Apply option
-	opt := SimOptions{}
+	opt := Options{}
 	f := WithFailOnUnknownCondition()
 	err := f(&opt)
 	if err != nil {

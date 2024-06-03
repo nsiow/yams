@@ -7,11 +7,13 @@ import (
 
 	e "github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
+	"github.com/nsiow/yams/pkg/sim/effectset"
+	"github.com/nsiow/yams/pkg/sim/gate"
 )
 
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
 // and different-account evaluations
-func evalOverallAccess(opts *SimOptions, evt *Event) (*Result, error) {
+func evalOverallAccess(opts *Options, evt *Event) (*Result, error) {
 
 	res := Result{}
 	trc := res.Trace
@@ -75,10 +77,10 @@ func evalOverallAccess(opts *SimOptions, evt *Event) (*Result, error) {
 }
 
 // statementEvalFunction is the blueprint of a function that allows us to evaluate a single statement
-type statementEvalFunction func(*SimOptions, *Event, *Trace, *policy.Statement) (bool, error)
+type statementEvalFunction func(*Options, *Event, *Trace, *policy.Statement) (bool, error)
 
 // evalPrincipalAccess calculates the Principal-side access to the specified Resource
-func evalPrincipalAccess(opts *SimOptions, evt *Event, trc *Trace) (*EffectSet, error) {
+func evalPrincipalAccess(opts *Options, evt *Event, trc *Trace) (*effectset.EffectSet, error) {
 
 	// Specify the types of policies we will consider for Principal access
 	effectivePolicies := [][]policy.Policy{
@@ -94,7 +96,7 @@ func evalPrincipalAccess(opts *SimOptions, evt *Event, trc *Trace) (*EffectSet, 
 	}
 
 	// Iterate over policy types / policies / statements to evaluate access
-	effects := EffectSet{}
+	effects := effectset.EffectSet{}
 	for _, polType := range effectivePolicies {
 		for _, pol := range polType {
 			for _, stmt := range pol.Statement {
@@ -117,7 +119,7 @@ func evalPrincipalAccess(opts *SimOptions, evt *Event, trc *Trace) (*EffectSet, 
 }
 
 // evalResourceAccess calculates the Resource-side access with regard to the specified Principal
-func evalResourceAccess(opts *SimOptions, evt *Event, trc *Trace) (*EffectSet, error) {
+func evalResourceAccess(opts *Options, evt *Event, trc *Trace) (*effectset.EffectSet, error) {
 
 	// Specify the statement evaluation functions we will consider for Principal access
 	functions := []statementEvalFunction{
@@ -127,7 +129,7 @@ func evalResourceAccess(opts *SimOptions, evt *Event, trc *Trace) (*EffectSet, e
 	}
 
 	// Iterate over resource policy statements to evaluate access
-	effects := EffectSet{}
+	effects := effectset.EffectSet{}
 	for _, stmt := range evt.Resource.Policy.Statement {
 		for _, f := range functions {
 			match, err := f(opts, evt, trc, &stmt)
@@ -148,82 +150,83 @@ func evalResourceAccess(opts *SimOptions, evt *Event, trc *Trace) (*EffectSet, e
 
 // evalStatementMatchesAction computes whether the Statement matches the Event's Action
 func evalStatementMatchesAction(
-	opts *SimOptions, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Action block to use
-	var gate Gate
+	var _gate gate.Gate
 	var action policy.Action
 	if !stmt.Action.Empty() {
 		action = stmt.Action
 	} else {
 		action = stmt.NotAction
-		gate.Invert()
+		_gate.Invert()
 	}
 
 	for _, a := range action {
 		match := matchWildcardIgnoreCase(a, evt.Action)
 		if match {
-			return gate.Apply(true), nil
+			return _gate.Apply(true), nil
 		}
 	}
 
-	return gate.Apply(false), nil
+	return _gate.Apply(false), nil
 }
 
 // evalStatementMatchesPrincipal computes whether the Statement matches the Event's Principal
 func evalStatementMatchesPrincipal(
-	opts *SimOptions, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Principal block to use
-	var gate Gate
+	var _gate gate.Gate
 	var principals policy.Principal
 	if !stmt.Principal.Empty() {
 		principals = stmt.Principal
 	} else {
 		principals = stmt.NotPrincipal
-		gate.Invert()
+		_gate.Invert()
 	}
 
 	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
 	for _, p := range principals.AWS {
 		match := matchWildcard(p, evt.Principal.Arn)
 		if match {
-			return gate.Apply(true), nil
+			return _gate.Apply(true), nil
 		}
 	}
 
-	return gate.Apply(false), nil
+	return _gate.Apply(false), nil
 }
 
 // evalStatementMatchesResource computes whether the Statement matches the Event's Resource
 func evalStatementMatchesResource(
-	opts *SimOptions, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Resource block to use
-	var gate Gate
+	var _gate gate.Gate
 	var resources policy.Resource
 	if !stmt.Resource.Empty() {
 		resources = stmt.Resource
 	} else {
 		resources = stmt.NotResource
-		gate.Invert()
+		_gate.Invert()
 	}
 
 	// FIXME(nsiow) is this how gate should be used?
 	for _, r := range resources {
 		match := matchWildcard(r, evt.Resource.Arn)
 		if match {
-			return gate.Apply(true), nil
+			return _gate.Apply(true), nil
 		}
 	}
 
-	return gate.Apply(false), nil
+	return _gate.Apply(false), nil
 }
 
 // evalStatementMatchesCondition computes whether the Statement's Conditions hold true given the
 // provided Event
 func evalStatementMatchesCondition(
-	opts *SimOptions, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+	// FIXME(nsiow) this needs to be implemented
 
 	knownConditionOperators := []string{}
 	for op := range stmt.Condition {
@@ -232,7 +235,7 @@ func evalStatementMatchesCondition(
 		}
 	}
 
-	return true, nil // FIXME(nsiow) this needs to be implemented
+	return true, nil
 }
 
 // evalIsSameAccount determines whether or not the provided Principal + Resource exist within the
