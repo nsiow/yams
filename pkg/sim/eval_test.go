@@ -113,6 +113,34 @@ func TestResourceAccess(t *testing.T) {
 			},
 			want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
 		},
+		{
+			name: "error_nonexistent_condition",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn: "arn:aws:iam::88888:role/myrole",
+				},
+				Resource: &entities.Resource{
+					Arn: "arn:aws:s3:::mybucket",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Resource: []string{"arn:aws:s3:::mybucket"},
+								Principal: policy.Principal{
+									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+								},
+								Condition: map[string]map[string]policy.Value{
+									"StringEqualsThisDoesNotExist": nil,
+								},
+							},
+						},
+					},
+				},
+			},
+			opts: Options{FailOnUnknownCondition: true},
+			err:  true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -123,6 +151,7 @@ func TestResourceAccess(t *testing.T) {
 		if err != nil {
 			if tc.err {
 				t.Logf("observed expected error: %v", err)
+				continue
 			} else {
 				t.Fatalf("observed unexpected error: %v", err)
 			}
