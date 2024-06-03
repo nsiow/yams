@@ -160,7 +160,7 @@ func evalStatementMatchesAction(evt *Event, trc *Trace, stmt *policy.Statement) 
 
 	// FIXME(nsiow) is this how gate should be used?
 	for _, a := range action {
-		match := gate.Apply(matchWildcard(a, evt.Action))
+		match := gate.Apply(matchWildcardIgnoreCase(a, evt.Action))
 		if match {
 			return true, nil
 		}
@@ -183,6 +183,7 @@ func evalStatementMatchesPrincipal(evt *Event, trc *Trace, stmt *policy.Statemen
 	}
 
 	// FIXME(nsiow) is this how gate should be used?
+	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
 	for _, p := range principals.AWS {
 		match := gate.Apply(matchWildcard(p, evt.Principal.Arn))
 		if match {
@@ -222,7 +223,7 @@ func evalStatementMatchesResource(evt *Event, trc *Trace, stmt *policy.Statement
 // evalStatementMatchesCondition computes whether the Statement's Conditions hold true given the
 // provided Event
 func evalStatementMatchesCondition(evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
-	panic("not yet implemented")
+	return true, nil // FIXME(nsiow) this needs to be implemented
 }
 
 // evalIsSameAccount determines whether or not the provided Principal + Resource exist within the

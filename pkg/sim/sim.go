@@ -52,7 +52,7 @@ func (s *Simulator) SimulateByArn(action, principal, resource string, ac *AuthCo
 	evt.Action = action
 	evt.AuthContext = ac
 
-	// Locate Principal + Resource
+	// Locate Principal
 	for _, p := range s.env.Principals {
 		if p.Arn == principal {
 			evt.Principal = &p
@@ -62,6 +62,8 @@ func (s *Simulator) SimulateByArn(action, principal, resource string, ac *AuthCo
 	if evt.Principal == nil {
 		return nil, fmt.Errorf("simulator environment does not have Principal with Arn=%s", principal)
 	}
+
+	// Locate resource
 	for _, r := range s.env.Resources {
 		if r.Arn == resource {
 			evt.Resource = &r

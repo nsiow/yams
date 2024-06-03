@@ -9,3 +9,8 @@ type Trace struct {
 func (r *Trace) Add(message string) {
 	r.log = append(r.log, message)
 }
+
+// Messages returns all Trace messages received thus far
+func (r *Trace) Messages() []string {
+	return r.log
+}

@@ -8,7 +8,6 @@ import (
 // MatchWildcard determines if the provided string matches the wildcard pattern, using AWS's
 // heuristics for wildcards
 //
-// TODO(nsiow) add support for single-character wildcards (`?`)
 // TODO(nsiow) add trace logging for better debugging
 func matchWildcard(pattern, value string) bool {
 	// Full wildcard case -- '*' matches absolutely everything
@@ -85,4 +84,10 @@ func convertWildcardToRegex(pattern string) (*regexp.Regexp, error) {
 	pattern = strings.ReplaceAll(pattern, "*", `[^:]*`)
 	pattern = strings.ReplaceAll(pattern, "?", `[^:]?`)
 	return regexp.Compile(pattern)
+}
+
+// MatchWildcardIgnoreCase determines if the provided string matches the wildcard pattern, using
+// AWS's heuristics for wildcards
+func matchWildcardIgnoreCase(pattern, value string) bool {
+	return matchWildcard(strings.ToLower(pattern), strings.ToLower(value))
 }

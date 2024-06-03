@@ -6,8 +6,3 @@ package sim
 type AuthContext struct {
 	Properties map[string][]string
 }
-
-// WithPrincipal sets all Principal-related properties
-func (a *AuthContext) WithPrincipalOrgId(orgId string) *AuthContext {
-	panic("not yet implmented")
-}

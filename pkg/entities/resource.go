@@ -31,3 +31,13 @@ type Resource struct {
 func (r *Resource) Service() string {
 	return strings.ToLower(strings.Split(r.Type, "::")[1])
 }
+
+// SubresourceArn returns the ARN of the specified subresource
+func (r *Resource) SubresourceArn(subpath string) string {
+	arn := r.Arn
+	if !strings.HasPrefix(arn, "/") {
+		arn += "/"
+	}
+
+	return arn + subpath
+}
