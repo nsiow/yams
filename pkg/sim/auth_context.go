@@ -9,7 +9,5 @@ type AuthContext struct {
 
 // WithPrincipal sets all Principal-related properties
 func (a *AuthContext) WithPrincipalOrgId(orgId string) *AuthContext {
-	s := a.Properties["aws:PrincipalOrgId"]
-	s = append(s, orgId)
-	return a
+	panic("not yet implmented")
 }
