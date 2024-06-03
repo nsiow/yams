@@ -6,15 +6,6 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-func TestEffectSetAllow(t *testing.T) {
-}
-
-func TestEffectSetImplicitDeny(t *testing.T) {
-}
-
-func TestEffectSetExplicitDeny(t *testing.T) {
-}
-
 func TestEffectSet(t *testing.T) {
 	type test struct {
 		name    string
@@ -93,9 +84,10 @@ func TestEffectSet(t *testing.T) {
 			t.Fatalf("saw %d elements in EffectSet; expected a maximum of 2", len(es.effects))
 		}
 
-		// Validate statements
-		if tc.allowed != es.Allowed() {
-			t.Fatalf("failed test case '%s': wanted %v saw %v", tc.name, tc.allowed, es.Allowed())
+		// Check results
+		got := es.Allowed()
+		if tc.allowed != got {
+			t.Fatalf("failed test case '%s': wanted %v got %v", tc.name, tc.allowed, es.Allowed())
 		}
 	}
 }

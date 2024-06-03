@@ -96,7 +96,7 @@ func (s *Simulator) ComputeAccessSummary(actions []string) (map[string]int, erro
 				}
 
 				if result.IsAllowed {
-					access[r.Arn] += 1
+					access[r.Arn]++
 					break
 				}
 			}
