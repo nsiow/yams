@@ -2,92 +2,106 @@ package gate
 
 import (
 	"testing"
+
+	"github.com/nsiow/yams/internal/testrunner"
 )
 
 func TestGate(t *testing.T) {
-	type test struct {
-		name       string
+	type input struct {
 		numInverts int
-		input      bool
-		want       bool
+		value      bool
 	}
 
-	tests := []test{
+	tests := []testrunner.TestCase[input, bool]{
 		{
-			name:       "no_inverts_true",
-			numInverts: 0,
-			input:      true,
-			want:       true,
+			Name: "no_inverts_true",
+			Input: input{
+				numInverts: 0,
+				value:      true,
+			},
+			Want: true,
 		},
 		{
-			name:       "no_inverts_false",
-			numInverts: 0,
-			input:      true,
-			want:       true,
+			Name: "no_inverts_false",
+			Input: input{
+				numInverts: 0,
+				value:      true,
+			},
+			Want: true,
 		},
 		{
-			name:       "single_invert_true",
-			numInverts: 1,
-			input:      true,
-			want:       false,
+			Name: "single_invert_true",
+			Input: input{
+				numInverts: 1,
+				value:      true,
+			},
+			Want: false,
 		},
 		{
-			name:       "single_invert_false",
-			numInverts: 1,
-			input:      false,
-			want:       true,
+			Name: "single_invert_false",
+			Input: input{
+				numInverts: 1,
+				value:      false,
+			},
+			Want: true,
 		},
 		{
-			name:       "double_invert_true",
-			numInverts: 2,
-			input:      true,
-			want:       true,
+			Name: "double_invert_true",
+			Input: input{
+				numInverts: 2,
+				value:      true,
+			},
+			Want: true,
 		},
 		{
-			name:       "double_invert_false",
-			numInverts: 2,
-			input:      false,
-			want:       false,
+			Name: "double_invert_false",
+			Input: input{
+				numInverts: 2,
+				value:      false,
+			},
+			Want: false,
 		},
 		{
-			name:       "high_invert_even_true",
-			numInverts: 100,
-			input:      true,
-			want:       true,
+			Name: "high_invert_even_true",
+			Input: input{
+				numInverts: 100,
+				value:      true,
+			},
+			Want: true,
 		},
 		{
-			name:       "high_invert_even_false",
-			numInverts: 100,
-			input:      false,
-			want:       false,
+			Name: "high_invert_even_false",
+			Input: input{
+				numInverts: 100,
+				value:      false,
+			},
+			Want: false,
 		},
 		{
-			name:       "high_invert_odd_true",
-			numInverts: 151,
-			input:      true,
-			want:       false,
+			Name: "high_invert_odd_true",
+			Input: input{
+				numInverts: 151,
+				value:      true,
+			},
+			Want: false,
 		},
 		{
-			name:       "high_invert_odd_false",
-			numInverts: 151,
-			input:      false,
-			want:       true,
+			Name: "high_invert_odd_false",
+			Input: input{
+				numInverts: 151,
+				value:      false,
+			},
+			Want: true,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Logf("running test case: %s", tc.name)
-
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
 		// Invert as many times as requested
 		g := Gate{}
-		for i := 0; i < tc.numInverts; i++ {
+		for j := 0; j < i.numInverts; j++ {
 			g.Invert()
 		}
 
-		// Apply gate
-		got := g.Apply(tc.input)
-		if got != tc.want {
-			t.Fatalf("failed test case '%s': wanted %v got %v", tc.name, got, tc.want)
-		}
-	}
+		return g.Apply(i.value), nil
+	})
 }

@@ -2,27 +2,29 @@ package policy
 
 import (
 	"encoding/json"
-	"reflect"
 	"testing"
+
+	"github.com/nsiow/yams/internal/testrunner"
 )
 
 // TestNewValue creates a Value with different variables and determines correct functionality
 func TestNewValue(t *testing.T) {
 	type test struct {
-		input Value
-		want  Value
+		input []string
+		want  []string
 	}
 
-	tests := []test{
-		{input: []string{}, want: []string{}},
+	tests := []testrunner.TestCase[[]string, []string]{
+		{
+			Input: []string{},
+			Want:  []string{},
+		},
 	}
 
-	for _, tc := range tests {
-		got := NewValue(tc.input...)
-		if !reflect.DeepEqual(tc.want, got) {
-			t.Fatalf("expected: %#v, got: %#v", tc.want, got)
-		}
-	}
+	testrunner.RunTestSuite(t, tests, func(v []string) ([]string, error) {
+		got := NewValue(v...)
+		return got, nil
+	})
 }
 
 // TestUnmarshal validates the JSON unmarshalling behavior of various cases
@@ -37,38 +39,28 @@ func TestUnmarshalValid(t *testing.T) {
 		err   bool
 	}
 
-	tests := []test{
-		{input: `{"S": "foo"}`, want: []string{"foo"}},
-		{input: `{"S": ["foo", "bar"]}`, want: []string{"foo", "bar"}},
-		{input: `{"S": null}`, want: []string{}},
-		{input: `{"S": "null"}`, want: []string{"null"}},
-		{input: `{"S": []}`, want: []string{}},
-		{input: `{"S": ""}`, err: true},
-		{input: `{"S": [0]}`, err: true},
-		{input: `{"S": 0}`, err: true},
-		{input: `{"S": 1000}`, err: true},
-		{input: `{"S": true`, err: true},
+	tests := []testrunner.TestCase[string, Value]{
+		{Input: `{"S": "foo"}`, Want: []string{"foo"}},
+		{Input: `{"S": ["foo", "bar"]}`, Want: []string{"foo", "bar"}},
+		{Input: `{"S": null}`, Want: []string{}},
+		{Input: `{"S": "null"}`, Want: []string{"null"}},
+		{Input: `{"S": []}`, Want: []string{}},
+		{Input: `{"S": ""}`, ShouldErr: true},
+		{Input: `{"S": [0]}`, ShouldErr: true},
+		{Input: `{"S": 0}`, ShouldErr: true},
+		{Input: `{"S": 1000}`, ShouldErr: true},
+		{Input: `{"S": true`, ShouldErr: true},
 	}
 
-	for _, tc := range tests {
+	testrunner.RunTestSuite(t, tests, func(s string) (Value, error) {
 		ex := exampleStruct{}
-		err := json.Unmarshal([]byte(tc.input), &ex)
-		if tc.err {
-			if err == nil {
-				t.Fatalf("expected: err, got: nil, for input: %#v", tc.input)
-			} else {
-				continue // expected error, saw error; next test
-			}
-		}
+		err := json.Unmarshal([]byte(s), &ex)
 		if err != nil {
-			t.Fatalf("error unmarshalling Value: %v", err)
+			return Value{}, err
 		}
 
-		got := ex.S
-		if !reflect.DeepEqual(tc.want, got) {
-			t.Fatalf("expected: %#v, got: %#v, for input: %#v", tc.want, got, tc.input)
-		}
-	}
+		return ex.S, nil
+	})
 }
 
 // TestInvalid validates the handling of invalid JSON fragments
@@ -77,20 +69,14 @@ func TestInvalid(t *testing.T) {
 		input string
 	}
 
-	tests := []test{
-		{input: `a`},
+	tests := []testrunner.TestCase[string, any]{
+		{Input: `a`, ShouldErr: true},
 	}
 
-	for _, tc := range tests {
+	testrunner.RunTestSuite(t, tests, func(s string) (any, error) {
 		var v Value
-		err := json.Unmarshal([]byte(tc.input), &v)
-		if err != nil {
-			t.Logf("test saw expected error: %v", err)
-			continue
-		}
-
-		t.Fatalf("expected error, got success for input: %s", tc.input)
-	}
+		return nil, json.Unmarshal([]byte(s), &v)
+	})
 }
 
 // TestEmpty validates the correct emptiness behavior of a Value
@@ -100,18 +86,15 @@ func TestEmpty(t *testing.T) {
 		want  bool
 	}
 
-	tests := []test{
-		{input: nil, want: true},
-		{input: []string{}, want: true},
-		{input: []string{"foo"}, want: false},
-		{input: []string{"foo", "bar"}, want: false},
-		{input: []string{"foo", "bar", "baz"}, want: false},
+	tests := []testrunner.TestCase[Value, bool]{
+		{Input: nil, Want: true},
+		{Input: []string{}, Want: true},
+		{Input: []string{"foo"}, Want: false},
+		{Input: []string{"foo", "bar"}, Want: false},
+		{Input: []string{"foo", "bar", "baz"}, Want: false},
 	}
 
-	for _, tc := range tests {
-		got := tc.input.Empty()
-		if !reflect.DeepEqual(tc.want, got) {
-			t.Fatalf("expected: %#v, got: %#v, for input: %#v", tc.want, got, tc.input)
-		}
-	}
+	testrunner.RunTestSuite(t, tests, func(v Value) (bool, error) {
+		return v.Empty(), nil
+	})
 }
