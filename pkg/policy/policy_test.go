@@ -2,107 +2,101 @@ package policy
 
 import (
 	"encoding/json"
-	"reflect"
 	"testing"
+
+	"github.com/nsiow/yams/internal/testrunner"
 )
 
 // TestPolicyGrammar confirms we got the right shape for our policy grammar
 func TestPolicyGrammar(t *testing.T) {
-	type test struct {
-		name  string
-		input string
-		want  Policy
-		err   bool
-	}
-
-	tests := []test{
+	tests := []testrunner.TestCase[string, Policy]{
 		{
-			name: "empty_policy",
-			input: `
+			Name: "empty_policy",
+			Input: `
 				{
 				  "Version": "",
 				  "Id": "",
 				  "Statement": []
 				}
 			`,
-			want: Policy{
+			Want: Policy{
 				Version:   "",
 				Id:        "",
 				Statement: []Statement{},
 			},
 		},
 		{
-			name: "empty_statement_map",
-			input: `
+			Name: "empty_statement_map",
+			Input: `
 				{
 				  "Statement": {}
 				}
 			`,
-			want: Policy{
+			Want: Policy{
 				Version:   "",
 				Id:        "",
 				Statement: []Statement{{}},
 			},
 		},
 		{
-			name: "null_statement",
-			input: `
+			Name: "null_statement",
+			Input: `
 				{
 				  "Statement": null
 				}
 			`,
-			want: Policy{
+			Want: Policy{
 				Version:   "",
 				Id:        "",
 				Statement: []Statement{},
 			},
 		},
 		{
-			name: "invalid_small_statement",
-			input: `
+			Name: "invalid_small_statement",
+			Input: `
 				{
 				  "Statement": 0
 				}
 			`,
-			err: true,
+			ShouldErr: true,
 		},
 		{
-			name: "invalid_statement_array",
-			input: `
+			Name: "invalid_statement_array",
+			Input: `
 				{
 				  "Statement": [0]
 				}
 			`,
-			err: true,
+			ShouldErr: true,
 		},
 		{
-			name: "invalid_statement_map",
-			input: `
+			Name: "invalid_statement_map",
+			Input: `
 				{
 				  "Statement": {
 				    "Effect": 0
 				  }
 				}
 			`,
-			err: true,
+			ShouldErr: true,
 		},
 		{
-			name:  "null_policy",
-			input: `null`,
-			want:  Policy{},
+			Name:  "null_policy",
+			Input: `null`,
+			Want:  Policy{},
 		},
 		{
-			name: "weird_statement_block",
-			input: `
+			Name: "weird_statement_block",
+			Input: `
 				{
 				  "Statement": ""
 				}
 			`,
-			err: true,
+			ShouldErr: true,
 		},
 		{
-			name: "s3read_policy",
-			input: `
+			Name: "s3read_policy",
+			Input: `
 				{
 				  "Version": "2012-10-17",
 				  "Id": "s3read",
@@ -121,7 +115,7 @@ func TestPolicyGrammar(t *testing.T) {
 				  ]
 				}
 			`,
-			want: Policy{
+			Want: Policy{
 				Version: "2012-10-17",
 				Id:      "s3read",
 				Statement: []Statement{
@@ -140,8 +134,8 @@ func TestPolicyGrammar(t *testing.T) {
 			},
 		},
 		{
-			name: "valid_structured_principal",
-			input: `
+			Name: "valid_structured_principal",
+			Input: `
 				{
 				  "Version": "2012-10-17",
 				  "Id": "s3read",
@@ -165,7 +159,7 @@ func TestPolicyGrammar(t *testing.T) {
 				  ]
 				}
 			`,
-			want: Policy{
+			Want: Policy{
 				Version: "2012-10-17",
 				Id:      "s3read",
 				Statement: []Statement{
@@ -187,8 +181,8 @@ func TestPolicyGrammar(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid_structured_principal",
-			input: `
+			Name: "invalid_structured_principal",
+			Input: `
 				{
 				  "Version": "2012-10-17",
 				  "Id": "s3read",
@@ -212,151 +206,87 @@ func TestPolicyGrammar(t *testing.T) {
 				  ]
 				}
 			`,
-			err: true,
+			ShouldErr: true,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Logf("running test case: %s", tc.name)
-
-		// Unmarshal into a policy
+	testrunner.RunTestSuite(t, tests, func(s string) (Policy, error) {
 		p := Policy{}
-		err := json.Unmarshal([]byte(tc.input), &p)
-
-		check := true
-		switch {
-		case err == nil && tc.err:
-			t.Fatalf("expected error, got success for test case '%s': %v", tc.name, err)
-		case err != nil && tc.err:
-			// expected error; got error
-			t.Logf("test saw expected error: %v", err)
-			check = false
-		case err == nil && !tc.err:
-			// no error and not expecting one, continue
-		case err != nil && !tc.err:
-			t.Fatalf("unable to create policy from test case '%s': %v", tc.name, err)
-		}
-
-		// Check against expected value
-		if check && !reflect.DeepEqual(tc.want, p) {
-			t.Fatalf("expected: %#v, got: %#v", tc.want, p)
-		}
-	}
+		err := json.Unmarshal([]byte(s), &p)
+		return p, err
+	})
 }
 
-// TestValidate confirms correct validation behavior for parsed policies
+// TestValidate confirms correct validation behavior for parsed policy statements
 func TestValidate(t *testing.T) {
-	type test struct {
-		name  string
-		input string
-		err   bool
-	}
-
-	tests := []test{
+	tests := []testrunner.TestCase[string, any]{
 		{
-			name: "valid",
-			input: `
-			  {
-          "Version": "",
-          "Id": "",
-          "Statement": [{
-						"Effect": "Allow",
-						"Principal": "*",
-						"Action": "*",
-						"Resource": "*"
-					}]
-				}
+			Name: "valid",
+			Input: `
+        {
+			  	"Effect": "Allow",
+			  	"Principal": "*",
+			  	"Action": "*",
+			  	"Resource": "*"
+			  }
 			`,
-			err: false,
+			ShouldErr: false,
 		},
 		{
-			name: "empty_statement",
-			input: `
-			  {
-          "Version": "",
-          "Id": "",
-          "Statement": []
-				}
+			Name: "empty_statement",
+			Input: `
+			  {}
 			`,
-			err: true,
+			ShouldErr: true,
 		},
 		{
-			name: "double_principal",
-			input: `
-			  {
-          "Version": "",
-          "Id": "",
-          "Statement": [{
-						"Effect": "Allow",
-						"Principal": "*",
-						"NotPrincipal": "*",
-						"Action": "*",
-						"Resource": "*"
-					}]
+			Name: "double_principal",
+			Input: `
+        {
+					"Effect": "Allow",
+					"Principal": "*",
+					"NotPrincipal": "*",
+					"Action": "*",
+					"Resource": "*"
 				}
 			`,
-			err: true,
+			ShouldErr: true,
 		},
 		{
-			name: "double_action",
-			input: `
+			Name: "double_action",
+			Input: `
 			  {
-          "Version": "",
-          "Id": "",
-          "Statement": [{
-						"Effect": "Allow",
-						"Principal": "*",
-						"Action": "*",
-						"NotAction": "*",
-						"Resource": "*"
-					}]
+					"Effect": "Allow",
+					"Principal": "*",
+					"Action": "*",
+					"NotAction": "*",
+					"Resource": "*"
 				}
 			`,
-			err: true,
+			ShouldErr: true,
 		},
 		{
-			name: "double_resource",
-			input: `
-			  {
-          "Version": "",
-          "Id": "",
-          "Statement": [{
-						"Effect": "Allow",
-						"Principal": "*",
-						"Action": "*",
-						"Resource": "*",
-						"NotResource": "*"
-					}]
+			Name: "double_resource",
+			Input: `
+        {
+					"Effect": "Allow",
+					"Principal": "*",
+					"Action": "*",
+					"Resource": "*",
+					"NotResource": "*"
 				}
 			`,
-			err: true,
+			ShouldErr: true,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Logf("running test case: %s", tc.name)
-
-		// Unmarshal into a policy
-		p := Policy{}
-		err := json.Unmarshal([]byte(tc.input), &p)
+	testrunner.RunTestSuite(t, tests, func(s string) (any, error) {
+		stmt := Statement{}
+		err := json.Unmarshal([]byte(s), &stmt)
 		if err != nil {
-			t.Fatalf("unable to create policy from test case '%s': %v", tc.name, err)
+			t.Fatalf("unexpected error prior to Validate(...) function: %v", err)
 		}
 
-		// Validate statements
-		for i, stmt := range p.Statement {
-			err := stmt.Validate()
-			switch {
-			case err == nil && tc.err:
-				t.Fatalf("expected error, got success for statement #%d, test case '%s': %v", i, tc.name, err)
-			case err != nil && tc.err:
-				// expected error; got error
-				t.Logf("test saw expected error: %v", err)
-			case err == nil && !tc.err:
-				// no error and not expecting one, continue
-			case err != nil && !tc.err:
-				t.Fatalf("expected success, got error for statement #%d, test case '%s': %v", i, tc.name, err)
-			}
-		}
-	}
+		return nil, stmt.Validate()
+	})
 }
