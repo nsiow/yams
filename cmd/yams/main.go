@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/nsiow/yams/pkg/loaders"
+	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/loaders/awsconfig"
 )
 
@@ -27,16 +27,16 @@ func main() {
 	}
 
 	// Attempt to parse the data
-	var loader loaders.Loader
+	var env entities.Environment
 	switch rc.CacheFormat {
 	case CONST_CACHE_FORMAT_AWS_CONFIG:
 		l := awsconfig.NewLoader()
 		err = l.LoadJson(data)
-		loader = l
+		env = l.Environment()
 	case CONST_CACHE_FORMAT_AWS_CONFIG_LINES:
 		l := awsconfig.NewLoader()
 		err = l.LoadJsonl(data)
-		loader = l
+		env = l.Environment()
 	default:
 		fmt.Fprintf(os.Stderr, "unsure how to load cache format: %s", rc.CacheFormat)
 		os.Exit(1)
@@ -46,5 +46,5 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("loaded %d principals; %d resources from cache\n",
-		len(loader.Principals()), len(loader.Resources()))
+		len(env.Principals), len(env.Resources))
 }

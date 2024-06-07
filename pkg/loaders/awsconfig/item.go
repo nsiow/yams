@@ -12,7 +12,7 @@ type ConfigItem struct {
 	Account                    string          `json:"accountId"`
 	Region                     string          `json:"awsRegion"`
 	Arn                        string          `json:"arn"`
-	Tags                       []entities.Tag     `json:"tags"`
+	Tags                       []entities.Tag  `json:"tags"`
 	Configuration              json.RawMessage `json:"configuration"`
 	SupplementaryConfiguration json.RawMessage `json:"supplementaryConfiguration"`
 }

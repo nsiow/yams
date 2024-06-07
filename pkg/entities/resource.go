@@ -1,6 +1,8 @@
 package entities
 
 import (
+	"strings"
+
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -23,4 +25,19 @@ type Resource struct {
 
 	// Policy refers to the resource policy associated with the Resource
 	Policy policy.Policy
+}
+
+// Service derives the AWS service name from the resource type in form AWS::<Service>::<Type>
+func (r *Resource) Service() string {
+	return strings.ToLower(strings.Split(r.Type, "::")[1])
+}
+
+// SubresourceArn returns the ARN of the specified subresource
+func (r *Resource) SubresourceArn(subpath string) string {
+	arn := r.Arn
+	if !strings.HasPrefix(arn, "/") {
+		arn += "/"
+	}
+
+	return arn + subpath
 }

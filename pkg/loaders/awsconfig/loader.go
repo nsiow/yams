@@ -38,6 +38,14 @@ func (l *Loader) Resources() []entities.Resource {
 	return l.resources
 }
 
+// Environment returns an Environment containing the loaded Principals + Resources
+func (l *Loader) Environment() entities.Environment {
+	return entities.Environment{
+		Principals: l.Principals(),
+		Resources:  l.Resources(),
+	}
+}
+
 // LoadJson loads data from a provided JSON array
 func (a *Loader) LoadJson(data []byte) error {
 	var items []ConfigItem
