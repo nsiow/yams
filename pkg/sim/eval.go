@@ -15,15 +15,15 @@ import (
 // and different-account evaluations
 func evalOverallAccess(opts *Options, evt *Event) (*Result, error) {
 
-	res := Result{}
-	trc := res.Trace
+	trc := Trace{}
+	res := Result{Trace: &trc}
 
 	// Calculate Principal access
-	pAccess, err := evalPrincipalAccess(opts, evt, trc)
+	pAccess, err := evalPrincipalAccess(opts, evt, &trc)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("error evaluating principal access"), err)
 	}
-	rAccess, err := evalResourceAccess(opts, evt, trc)
+	rAccess, err := evalResourceAccess(opts, evt, &trc)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("error evaluating resource access"), err)
 	}
@@ -71,6 +71,8 @@ func evalOverallAccess(opts *Options, evt *Event) (*Result, error) {
 		trc.Add("[implicit deny] x-account, missing identity policy access")
 		return &res, nil
 	}
+
+	// We fell through and no access was granted from either side
 	res.IsAllowed = false
 	trc.Add("[implicit deny] x-account, missing both identity + resource access")
 	return &res, nil
@@ -100,6 +102,8 @@ func evalPrincipalAccess(opts *Options, evt *Event, trc *Trace) (*effectset.Effe
 	for _, polType := range effectivePolicies {
 		for _, pol := range polType {
 			for _, stmt := range pol.Statement {
+
+				matchedAll := true
 				for _, f := range functions {
 					match, err := f(opts, evt, trc, &stmt)
 					if err != nil {
@@ -107,9 +111,14 @@ func evalPrincipalAccess(opts *Options, evt *Event, trc *Trace) (*effectset.Effe
 							fmt.Errorf("error evaluating principal policy statement[sid=%s]", stmt.Sid),
 							err)
 					}
-					if match {
-						effects.Add(stmt.Effect)
+					if !match {
+						matchedAll = false
+						break
 					}
+				}
+
+				if matchedAll {
+					effects.Add(stmt.Effect)
 				}
 			}
 		}
@@ -131,6 +140,7 @@ func evalResourceAccess(opts *Options, evt *Event, trc *Trace) (*effectset.Effec
 	// Iterate over resource policy statements to evaluate access
 	effects := effectset.EffectSet{}
 	for _, stmt := range evt.Resource.Policy.Statement {
+		matchedAll := true
 		for _, f := range functions {
 			match, err := f(opts, evt, trc, &stmt)
 			if err != nil {
@@ -138,9 +148,14 @@ func evalResourceAccess(opts *Options, evt *Event, trc *Trace) (*effectset.Effec
 					fmt.Errorf("error evaluating principal policy statement[sid=%s]", stmt.Sid),
 					err)
 			}
-			if match {
-				effects.Add(stmt.Effect)
+			if !match {
+				matchedAll = false
+				break
 			}
+		}
+
+		if matchedAll {
+			effects.Add(stmt.Effect)
 		}
 	}
 
@@ -228,10 +243,12 @@ func evalStatementMatchesCondition(
 	opts *Options, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
 	// FIXME(nsiow) this needs to be implemented
 
-	knownConditionOperators := []string{}
-	for op := range stmt.Condition {
-		if !slices.Contains(knownConditionOperators, op) {
-			return false, fmt.Errorf("unknown condition operator: %s", op)
+	if opts.FailOnUnknownCondition {
+		knownConditions := []string{}
+		for op := range stmt.Condition {
+			if !slices.Contains(knownConditions, op) {
+				return false, fmt.Errorf("unknown condition: %s", op)
+			}
 		}
 	}
 

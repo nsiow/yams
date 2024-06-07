@@ -8,6 +8,692 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
+// TestOverallAccess_XAccount checks both principal-side and resource-side logic where the
+// resource + principal reside within the same account
+func TestOverallAccess_XAccount(t *testing.T) {
+	type test struct {
+		name  string
+		event Event
+		want  bool
+		opts  Options
+		err   bool
+	}
+
+	tests := []test{
+		{
+			name: "x_account_implicit_deny",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:              "arn:aws:iam::88888:role/myrole",
+					Account:          "88888",
+					InlinePolicies:   nil,
+					AttachedPolicies: nil,
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "11111",
+					Policy:  policy.Policy{},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "x_account_principal_only_allow",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "11111",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "x_account_resource_only_allow",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "11111",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:listbucket"},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+								Principal: policy.Principal{
+									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+
+			name: "x_account_principal_deny",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_DENY,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "11111",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "x_account_resource_deny",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "11111",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_DENY,
+								Action:   []string{"s3:listbucket"},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+							},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "x_account_allow_and_allow",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "11111",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:listbucket"},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+								Principal: policy.Principal{
+									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "x_account_error_nonexistent_principal_condition",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+									Principal: policy.Principal{
+										AWS: []string{"arn:aws:iam::88888:role/myrole"},
+									},
+									Condition: map[string]map[string]policy.Value{
+										"StringEqualsThisDoesNotExist": nil,
+									},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "11111",
+				},
+			},
+			opts: Options{FailOnUnknownCondition: true},
+			err:  true,
+		},
+		{
+			name: "x_account_error_nonexistent_resource_condition",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "11111",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:listbucket"},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+								Principal: policy.Principal{
+									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+								},
+								Condition: map[string]map[string]policy.Value{
+									"StringEqualsThisDoesNotExist": nil,
+								},
+							},
+						},
+					},
+				},
+			},
+			opts: Options{FailOnUnknownCondition: true},
+			err:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Logf("running test case: %s", tc.name)
+
+		res, err := evalOverallAccess(&tc.opts, &tc.event)
+
+		check := true
+		switch {
+		case err == nil && tc.err:
+			t.Fatalf("expected error, got success for test case '%s': %v", tc.name, err)
+		case err != nil && tc.err:
+			// expected error; got error
+			t.Logf("test saw expected error: %v", err)
+			check = false
+		case err == nil && !tc.err:
+			// no error and not expecting one, continue
+		case err != nil && !tc.err:
+			t.Fatalf("unable to create policy from test case '%s': %v", tc.name, err)
+		}
+
+		if check && !reflect.DeepEqual(res.IsAllowed, tc.want) {
+			t.Fatalf("failed test case: '%s', wanted %v got %v", tc.name, tc.want, res.IsAllowed)
+		}
+	}
+}
+
+// TestOverallAccess_SameAccount checks both principal-side and resource-side logic where the
+// resource + principal reside within the same account
+func TestOverallAccess_SameAccount(t *testing.T) {
+	type test struct {
+		name  string
+		event Event
+		want  bool
+		opts  Options
+		err   bool
+	}
+
+	tests := []test{
+		{
+			name: "same_account_implicit_deny",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:              "arn:aws:iam::88888:role/myrole",
+					Account:          "88888",
+					InlinePolicies:   nil,
+					AttachedPolicies: nil,
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+					Policy:  policy.Policy{},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "same_account_simple_allow",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "same_account_simple_deny",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_DENY,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "allow_and_deny",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+					AttachedPolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_DENY,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+				},
+			},
+			want: false,
+		},
+		{
+			name: "same_account_error_nonexistent_condition",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+									Principal: policy.Principal{
+										AWS: []string{"arn:aws:iam::88888:role/myrole"},
+									},
+									Condition: map[string]map[string]policy.Value{
+										"StringEqualsThisDoesNotExist": nil,
+									},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+				},
+			},
+			opts: Options{FailOnUnknownCondition: true},
+			err:  true,
+		},
+		// FIXME(nsiow) uncomment this test when ready for same-account edge case handling
+		// {
+		// 	name: "same_account_resource_access",
+		// 	event: Event{
+		// 		Action: "s3:listbucket",
+		// 		Principal: &entities.Principal{
+		// 			Arn: "arn:aws:iam::88888:role/myrole",
+		//			Account: "88888",
+		// 		},
+		// 		Resource: &entities.Resource{
+		// 			Arn: "arn:aws:s3:::mybucket",
+		//			Account: "88888",
+		// 			Policy: policy.Policy{
+		// 				Statement: []policy.Statement{
+		// 					{
+		// 						Effect:   policy.EFFECT_ALLOW,
+		// 						Action:   []string{"s3:listbucket"},
+		// 						Resource: []string{"arn:aws:s3:::mybucket"},
+		// 						Principal: policy.Principal{
+		// 							AWS: []string{"arn:aws:iam::88888:role/myrole"},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	want: []policy.Effect{policy.EFFECT_ALLOW},
+		// },
+	}
+
+	for _, tc := range tests {
+		t.Logf("running test case: %s", tc.name)
+
+		res, err := evalOverallAccess(&tc.opts, &tc.event)
+
+		check := true
+		switch {
+		case err == nil && tc.err:
+			t.Fatalf("expected error, got success for test case '%s': %v", tc.name, err)
+		case err != nil && tc.err:
+			// expected error; got error
+			t.Logf("test saw expected error: %v", err)
+			check = false
+		case err == nil && !tc.err:
+			// no error and not expecting one, continue
+		case err != nil && !tc.err:
+			t.Fatalf("unable to create policy from test case '%s': %v", tc.name, err)
+		}
+
+		if check && !reflect.DeepEqual(res.IsAllowed, tc.want) {
+			t.Fatalf("failed test case: '%s', wanted %v got %v", tc.name, tc.want, res.IsAllowed)
+		}
+	}
+}
+
+// TestPrincipalAccess checks identity-policy evaluation logic for statements
+func TestPrincipalAccess(t *testing.T) {
+	type test struct {
+		name  string
+		event Event
+		want  []policy.Effect
+		opts  Options
+		err   bool
+	}
+
+	tests := []test{
+		{
+			name: "implicit_deny",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:              "arn:aws:iam::88888:role/myrole",
+					InlinePolicies:   nil,
+					AttachedPolicies: nil,
+				},
+				Resource: &entities.Resource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+			},
+			want: []policy.Effect(nil),
+		},
+		{
+			name: "simple_inline_policy",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn: "arn:aws:iam::88888:role/myrole",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+			},
+			want: []policy.Effect{policy.EFFECT_ALLOW},
+		},
+		{
+			name: "simple_attached_policy",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn: "arn:aws:iam::88888:role/myrole",
+					AttachedPolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+			},
+			want: []policy.Effect{policy.EFFECT_ALLOW},
+		},
+		{
+			name: "simple_inline_deny",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn: "arn:aws:iam::88888:role/myrole",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_DENY,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+			},
+			want: []policy.Effect{policy.EFFECT_DENY},
+		},
+		{
+			name: "simple_attached_deny",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn: "arn:aws:iam::88888:role/myrole",
+					AttachedPolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_DENY,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+			},
+			want: []policy.Effect{policy.EFFECT_DENY},
+		},
+		{
+			name: "allow_and_deny",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn: "arn:aws:iam::88888:role/myrole",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+					AttachedPolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_DENY,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+			},
+			want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
+		},
+		{
+			name: "error_nonexistent_condition",
+			event: Event{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn: "arn:aws:iam::88888:role/myrole",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+									Principal: policy.Principal{
+										AWS: []string{"arn:aws:iam::88888:role/myrole"},
+									},
+									Condition: map[string]map[string]policy.Value{
+										"StringEqualsThisDoesNotExist": nil,
+									},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+			},
+			opts: Options{FailOnUnknownCondition: true},
+			err:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Logf("running test case: %s", tc.name)
+
+		trc := Trace{}
+		res, err := evalPrincipalAccess(&tc.opts, &tc.event, &trc)
+
+		check := true
+		switch {
+		case err == nil && tc.err:
+			t.Fatalf("expected error, got success for test case '%s': %v", tc.name, err)
+		case err != nil && tc.err:
+			// expected error; got error
+			t.Logf("test saw expected error: %v", err)
+			check = false
+		case err == nil && !tc.err:
+			// no error and not expecting one, continue
+		case err != nil && !tc.err:
+			t.Fatalf("unable to create policy from test case '%s': %v", tc.name, err)
+		}
+
+		if check && !reflect.DeepEqual(res.Effects(), tc.want) {
+			t.Fatalf("failed test case: '%s', wanted %v got %v", tc.name, tc.want, res.Effects())
+		}
+	}
+}
+
 // TestResourceAccess checks resource-policy evaluation logic for statements
 func TestResourceAccess(t *testing.T) {
 	type test struct {
@@ -18,7 +704,6 @@ func TestResourceAccess(t *testing.T) {
 		err   bool
 	}
 
-	// TODO(nsiow) move gate + effect set out of sim top level package
 	tests := []test{
 		{
 			name: "implicit_deny",
@@ -47,6 +732,7 @@ func TestResourceAccess(t *testing.T) {
 						Statement: []policy.Statement{
 							{
 								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:listbucket"},
 								Resource: []string{"arn:aws:s3:::mybucket"},
 								Principal: policy.Principal{
 									AWS: []string{"arn:aws:iam::88888:role/myrole"},
@@ -71,6 +757,7 @@ func TestResourceAccess(t *testing.T) {
 						Statement: []policy.Statement{
 							{
 								Effect:   policy.EFFECT_DENY,
+								Action:   []string{"s3:listbucket"},
 								Resource: []string{"arn:aws:s3:::mybucket"},
 								Principal: policy.Principal{
 									AWS: []string{"arn:aws:iam::88888:role/myrole"},
@@ -95,6 +782,7 @@ func TestResourceAccess(t *testing.T) {
 						Statement: []policy.Statement{
 							{
 								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:listbucket"},
 								Resource: []string{"arn:aws:s3:::mybucket"},
 								Principal: policy.Principal{
 									AWS: []string{"arn:aws:iam::88888:role/myrole"},
@@ -102,6 +790,7 @@ func TestResourceAccess(t *testing.T) {
 							},
 							{
 								Effect:   policy.EFFECT_DENY,
+								Action:   []string{"s3:listbucket"},
 								Resource: []string{"arn:aws:s3:::mybucket"},
 								Principal: policy.Principal{
 									AWS: []string{"*"},
@@ -126,6 +815,7 @@ func TestResourceAccess(t *testing.T) {
 						Statement: []policy.Statement{
 							{
 								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:listbucket"},
 								Resource: []string{"arn:aws:s3:::mybucket"},
 								Principal: policy.Principal{
 									AWS: []string{"arn:aws:iam::88888:role/myrole"},
@@ -148,18 +838,23 @@ func TestResourceAccess(t *testing.T) {
 
 		trc := Trace{}
 		res, err := evalResourceAccess(&tc.opts, &tc.event, &trc)
-		if err != nil {
-			if tc.err {
-				t.Logf("observed expected error: %v", err)
-				continue
-			} else {
-				t.Fatalf("observed unexpected error: %v", err)
-			}
-		}
-		got := res.Effects()
 
-		if !reflect.DeepEqual(got, tc.want) {
-			t.Fatalf("failed test case: '%s', wanted %v got %v", tc.name, tc.want, got)
+		check := true
+		switch {
+		case err == nil && tc.err:
+			t.Fatalf("expected error, got success for test case '%s': %v", tc.name, err)
+		case err != nil && tc.err:
+			// expected error; got error
+			t.Logf("test saw expected error: %v", err)
+			check = false
+		case err == nil && !tc.err:
+			// no error and not expecting one, continue
+		case err != nil && !tc.err:
+			t.Fatalf("unable to create policy from test case '%s': %v", tc.name, err)
+		}
+
+		if check && !reflect.DeepEqual(res.Effects(), tc.want) {
+			t.Fatalf("failed test case: '%s', wanted %v got %v", tc.name, tc.want, res.Effects())
 		}
 	}
 }
@@ -436,11 +1131,6 @@ func TestStatementMatchesResource(t *testing.T) {
 // TestStatementMatchesCondition checks condition-matching logic for statements
 func TestStatementMatchesCondition(t *testing.T) {
 	// FIXME(nsiow)
-	opts := Options{}
-	evt := Event{}
-	trc := Trace{}
-	stmt := policy.Statement{}
-	evalStatementMatchesCondition(&opts, &evt, &trc, &stmt)
 }
 
 // TestEvalIsSameAccount checks same vs x-account checking behavior
