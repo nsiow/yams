@@ -226,7 +226,6 @@ func evalStatementMatchesResource(
 		_gate.Invert()
 	}
 
-	// FIXME(nsiow) is this how gate should be used?
 	for _, r := range resources {
 		match := matchWildcard(r, evt.Resource.Arn)
 		if match {
@@ -241,7 +240,8 @@ func evalStatementMatchesResource(
 // provided Event
 func evalStatementMatchesCondition(
 	opts *Options, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
-	// FIXME(nsiow) this needs to be implemented
+
+	// FIXME(nsiow) conditions need to be implemented
 
 	if opts.FailOnUnknownCondition {
 		knownConditions := []string{}

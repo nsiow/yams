@@ -1130,7 +1130,7 @@ func TestStatementMatchesResource(t *testing.T) {
 
 // TestStatementMatchesCondition checks condition-matching logic for statements
 func TestStatementMatchesCondition(t *testing.T) {
-	// FIXME(nsiow)
+	// FIXME(nsiow) conditions need to be implemented
 }
 
 // TestEvalIsSameAccount checks same vs x-account checking behavior
