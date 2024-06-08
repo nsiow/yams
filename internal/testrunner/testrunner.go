@@ -34,7 +34,7 @@ func RunTestSuite[I, O any](
 				return
 			case err == nil && !tc.ShouldErr:
 				if !reflect.DeepEqual(got, tc.Want) {
-					t.Fatalf("failed test case; wanted %+v got %+v", tc.Want, got)
+					t.Fatalf("failed test case; wanted:\n%+v\n\ngot:\n%+v", tc.Want, got)
 				}
 			case err != nil && !tc.ShouldErr:
 				t.Fatalf("unexpected error during test case: %v", err)

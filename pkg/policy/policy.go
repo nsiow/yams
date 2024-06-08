@@ -85,7 +85,7 @@ func (s *Statement) Validate() error {
 	return nil
 }
 
-// Effect corresponds
+// Effect corresponds to the Allow/Deny directive of the Policy
 type Effect string
 
 // EFFECT_Allow corresponds to Effect=Allow in an IAM policy

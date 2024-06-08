@@ -112,7 +112,6 @@ func TestLoadJsonValid(t *testing.T) {
 		data, err := os.ReadFile(fp)
 		if err != nil {
 			t.Fatalf("error while attempting to read test file '%s': %v", fp, err)
-			return entities.Environment{}, err
 		}
 
 		// Call the correct loader based on input type
@@ -277,6 +276,28 @@ var simple1Output entities.Environment = entities.Environment{
 			Arn:     "arn:aws:sqs:us-west-2:000000000000:SimpleQueue",
 			Policy:  policy.Policy{},
 			Tags:    []entities.Tag{},
+		},
+		{
+			Type:    "AWS::SNS::Topic",
+			Account: "999999999999",
+			Region:  "us-west-2",
+			Arn:     "arn:aws:sns:us-west-2:999999999999:SimpleTopic",
+			Policy: policy.Policy{
+				Version: "2012-10-17",
+				Id:      "__default_policy_ID",
+				Statement: []policy.Statement{
+					{
+						Sid:    "__default_statement_ID",
+						Effect: "Deny",
+						Principal: policy.Principal{
+							AWS: []string{"*"},
+						},
+						Action:   []string{"SNS:Subscribe"},
+						Resource: []string{"arn:aws:sns:us-west-2:999999999999:SimpleTopic"},
+					},
+				},
+			},
+			Tags: []entities.Tag{},
 		},
 	},
 }

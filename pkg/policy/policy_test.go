@@ -52,6 +52,36 @@ func TestPolicyGrammar(t *testing.T) {
 			},
 		},
 		{
+			Name: "effect_deny",
+			Input: `
+				{
+				  "Statement": {
+						"Effect": "Deny"
+					}
+				}
+			`,
+			Want: Policy{
+				Version: "",
+				Id:      "",
+				Statement: []Statement{
+					{
+						Effect: EFFECT_DENY,
+					},
+				},
+			},
+		},
+		{
+			Name: "invalid_effect_other",
+			Input: `
+				{
+				  "Statement": {
+						"Effect": "Other"
+					}
+				}
+			`,
+			ShouldErr: true,
+		},
+		{
 			Name: "invalid_small_statement",
 			Input: `
 				{

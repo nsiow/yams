@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/nsiow/yams/pkg/policy"
@@ -28,16 +29,16 @@ type Resource struct {
 }
 
 // Service derives the AWS service name from the resource type in form AWS::<Service>::<Type>
-func (r *Resource) Service() string {
-	return strings.ToLower(strings.Split(r.Type, "::")[1])
+func (r *Resource) Service() (string, error) {
+	components := strings.Split(r.Type, "::")
+	if len(components) != 3 {
+		return "", fmt.Errorf("cannot determined service from malformed type: %s", r.Type)
+	}
+
+	return strings.ToLower(components[1]), nil
 }
 
 // SubresourceArn returns the ARN of the specified subresource
 func (r *Resource) SubresourceArn(subpath string) string {
-	arn := r.Arn
-	if !strings.HasPrefix(arn, "/") {
-		arn += "/"
-	}
-
-	return arn + subpath
+	return strings.TrimRight(r.Arn, "/") + "/" + strings.TrimLeft(subpath, "/")
 }

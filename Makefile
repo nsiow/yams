@@ -57,7 +57,7 @@ GO_COVER_TOOL   ?= go tool cover
 GO_COVER_FLAGS  ?= -html $(COVERAGE_FILE)
 
 # Track coverage of library; not helpers or codegen files
-COVERAGE_OMIT   ?= '(yams/cmd|zzz)'
+COVERAGE_OMIT   ?= '(yams/cmd|yams/internal/testrunner|zzz)'
 
 .PHONY: cov
 cov: $(COVERAGE_FILE)

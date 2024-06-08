@@ -75,7 +75,7 @@ func TestEffectSet(t *testing.T) {
 		}
 
 		// Ensure size of data never surpasses 2
-		if len(es.effects) > 2 {
+		if len(es.Effects()) > 2 {
 			t.Fatalf("EffectSet size should never be >2, but saw %d", len(es.effects))
 		}
 
