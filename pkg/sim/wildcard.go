@@ -17,6 +17,11 @@ func matchWildcard(pattern, value string) bool {
 		return true
 	}
 
+	// Empty pattern case -- '' matches absolutely nothing
+	if pattern == "" {
+		return false
+	}
+
 	// Otherwise we do wildcard matches separated by ':' boundaries
 	patternSegments := strings.Split(pattern, ":")
 	valueSegments := strings.Split(value, ":")

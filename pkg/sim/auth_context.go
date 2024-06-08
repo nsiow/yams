@@ -12,3 +12,7 @@ type AuthContext struct {
 	Resource   *entities.Resource
 	Properties map[string]policy.Value
 }
+
+func (a *AuthContext) Key(key string) string {
+	return ""
+}
