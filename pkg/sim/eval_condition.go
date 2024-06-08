@@ -2,7 +2,6 @@ package sim
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/nsiow/yams/pkg/policy"
@@ -23,7 +22,7 @@ var ErrUnknownConditionKey = errors.New("unknown condition key")
 //
 // The function should take in two strings where `left` is the observed value and `right` is what
 // we are trying to match against
-type ConditionOperator = func(left string, right string) (bool, error)
+type ConditionOperator = func(trc *Trace, left string, right string) bool
 
 // ConditionMod defines a function which wraps a ConditionOperator
 type ConditionMod = func(ConditionOperator) ConditionOperator
@@ -46,8 +45,8 @@ var ConditionOperatorMap = map[string]ConditionOperator{
 
 // Cond_StringEquals defines the `StringEquals` condition function
 // TODO(nsiow) determine if trace should get passed all the way down here
-func Cond_StringEquals(left, right string) (bool, error) {
-	return left == right, nil
+func Cond_StringEquals(trc *Trace, left, right string) bool {
+	return left == right
 }
 
 // --------------------------------------------------------------------------------
@@ -56,38 +55,37 @@ func Cond_StringEquals(left, right string) (bool, error) {
 
 // Mod_Not defines a Condition modifier which flips the result of the underlying func
 func Mod_Not(f ConditionOperator) ConditionOperator {
-	return func(left, right string) (bool, error) {
-		x, err := f(left, right)
-		return !x, err
+	return func(trc *Trace, left, right string) bool {
+		return !f(trc, left, right)
 	}
 }
 
 // Mod_MustExist defines a Condition modifier which returns false if the key is not found
 func Mod_MustExist(f ConditionOperator) ConditionOperator {
-	return func(left, right string) (bool, error) {
+	return func(trc *Trace, left, right string) bool {
 		if left == "" {
-			return false, nil
+			return false
 		}
 
-		return f(left, right)
+		return f(trc, left, right)
 	}
 }
 
 // Mod_IfExists defines a Condition modifier which returns true if the key is not found
 func Mod_IfExists(f ConditionOperator) ConditionOperator {
-	return func(left, right string) (bool, error) {
+	return func(trc *Trace, left, right string) bool {
 		if left == "" {
-			return true, nil
+			return true
 		}
 
-		return f(left, right)
+		return f(trc, left, right)
 	}
 }
 
 // Mod_CaseInsensitive defines a Condition modifier which ignores character casing
 func Mod_CaseInsensitive(f ConditionOperator) ConditionOperator {
-	return func(left, right string) (bool, error) {
-		return f(strings.ToLower(left), strings.ToLower(right))
+	return func(trc *Trace, left, right string) bool {
+		return f(trc, strings.ToLower(left), strings.ToLower(right))
 	}
 }
 
@@ -124,24 +122,17 @@ func ConditionResolveOperator(op string) (ConditionOperator, bool) {
 
 // evalCondition is an evaluation helper function which performs a condition check over a single
 // operation / key / value 3-tuple
-func evalCondition(ac AuthContext, op string, key string, values policy.Value) (bool, error) {
-	f, exists := ConditionResolveOperator(op)
-	if !exists {
-		return false, fmt.Errorf("unknown operator '%s': %w", op, ErrUnknownOperator)
-	}
+func evalCondition(ac AuthContext, trc *Trace, f ConditionOperator, key string,
+	values policy.Value) bool {
 
+	// FIXME(nsiow) you are debugging this w.r.t. StringNotEquals and its incorrect behavior
 	left := ac.Key(key)
 	for _, right := range values {
-		isTrue, err := f(left, right)
-		if err != nil {
-			// TODO(nsiow) add this to trace
-			continue
-		}
-
+		isTrue := f(trc, left, right)
 		if isTrue {
-			return true, nil
+			return true
 		}
 	}
 
-	return false, nil
+	return false
 }
