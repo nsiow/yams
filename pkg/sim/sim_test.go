@@ -66,15 +66,15 @@ func TestSimulatorEnvironment(t *testing.T) {
 	}
 }
 
-// TestSimulateEvent validates the simulator's ability to correctly simulate a single event
+// TestSimulate validates the simulator's ability to correctly simulate a single event
 //
 // We are keeping these tests simple in terms of evaluation logic, as we really just want to test
 // the simulator interface vs the logic which is tested deeply elsewhere
-func TestSimulateEvent(t *testing.T) {
-	tests := []testrunner.TestCase[Event, bool]{
+func TestSimulate(t *testing.T) {
+	tests := []testrunner.TestCase[AuthContext, bool]{
 		{
 			Name: "same_account_implicit_deny",
-			Input: Event{
+			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
@@ -92,7 +92,7 @@ func TestSimulateEvent(t *testing.T) {
 		},
 		{
 			Name: "same_account_simple_allow",
-			Input: Event{
+			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:     "arn:aws:iam::88888:role/myrole",
@@ -118,9 +118,9 @@ func TestSimulateEvent(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(e Event) (bool, error) {
+	testrunner.RunTestSuite(t, tests, func(e AuthContext) (bool, error) {
 		sim, _ := NewSimulator()
-		res, err := sim.SimulateEvent(&e)
+		res, err := sim.Simulate(&e)
 		if err != nil {
 			return false, err
 		}

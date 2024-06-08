@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/nsiow/yams/pkg/entities"
+	"github.com/nsiow/yams/pkg/policy"
 )
 
 // Simulator provides the ability to simulate IAM policies and the interactions between
@@ -41,46 +42,47 @@ func (s *Simulator) SetEnvironment(env *entities.Environment) {
 	s.env = env
 }
 
-// SimulateEvent determines whether the provided Event would be allowed
-func (s *Simulator) SimulateEvent(evt *Event) (*Result, error) {
-	return evalOverallAccess(&s.options, evt)
+// Simulate determines whether the provided AuthContext would be allowed
+func (s *Simulator) Simulate(ac *AuthContext) (*Result, error) {
+	// TODO(nsiow) perform AuthContext validation
+	return evalOverallAccess(&s.options, ac)
 }
 
 // SimulateByArn determines whether the operation would be allowed
-func (s *Simulator) SimulateByArn(action, principal, resource string, ac *AuthContext) (*Result, error) {
+func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[string]policy.Value) (*Result, error) {
 
 	// Validate that an Environment was set previously
 	if s.env == nil {
 		return nil, fmt.Errorf("Simulator has no environment set; use SetEnvironment(...) first")
 	}
 
-	evt := Event{}
-	evt.Action = action
-	evt.AuthContext = ac
+	ac := AuthContext{}
+	ac.Action = action
+	ac.Properties = ctx
 
 	// Locate Principal
 	for _, p := range s.env.Principals {
 		if p.Arn == principal {
-			evt.Principal = &p
+			ac.Principal = &p
 			break
 		}
 	}
-	if evt.Principal == nil {
+	if ac.Principal == nil {
 		return nil, fmt.Errorf("simulator environment does not have Principal with Arn=%s", principal)
 	}
 
 	// Locate resource
 	for _, r := range s.env.Resources {
 		if r.Arn == resource {
-			evt.Resource = &r
+			ac.Resource = &r
 			break
 		}
 	}
-	if evt.Resource == nil {
+	if ac.Resource == nil {
 		return nil, fmt.Errorf("simulator environment does not have Resource with Arn=%s", resource)
 	}
 
-	return s.SimulateEvent(&evt)
+	return s.Simulate(&ac)
 }
 
 // ComputeAccessSummary generates a numerical summary of access within the provided Environment
@@ -102,7 +104,8 @@ func (s *Simulator) ComputeAccessSummary(actions []string) (map[string]int, erro
 
 		for _, p := range s.env.Principals {
 			for _, a := range actions {
-				result, err := s.SimulateEvent(&Event{a, &p, &r, &AuthContext{}})
+				ac := &AuthContext{a, &p, &r, nil}
+				result, err := s.Simulate(ac)
 				if err != nil {
 					return nil, errors.Join(fmt.Errorf("error during simulation"), err)
 				}

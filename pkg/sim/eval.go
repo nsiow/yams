@@ -13,17 +13,17 @@ import (
 
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
 // and different-account evaluations
-func evalOverallAccess(opts *Options, evt *Event) (*Result, error) {
+func evalOverallAccess(opts *Options, ac *AuthContext) (*Result, error) {
 
 	trc := Trace{}
 	res := Result{Trace: &trc}
 
 	// Calculate Principal access
-	pAccess, err := evalPrincipalAccess(opts, evt, &trc)
+	pAccess, err := evalPrincipalAccess(opts, ac, &trc)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("error evaluating principal access"), err)
 	}
-	rAccess, err := evalResourceAccess(opts, evt, &trc)
+	rAccess, err := evalResourceAccess(opts, ac, &trc)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("error evaluating resource access"), err)
 	}
@@ -41,7 +41,7 @@ func evalOverallAccess(opts *Options, evt *Event) (*Result, error) {
 	}
 
 	// If same account, access is granted if the Principal has access
-	if evalIsSameAccount(evt.Principal, evt.Resource) {
+	if evalIsSameAccount(ac.Principal, ac.Resource) {
 		if pAccess.Contains(policy.EFFECT_ALLOW) {
 			res.IsAllowed = true
 			trc.Add("[allow] access granted via same-account identity policy")
@@ -79,15 +79,15 @@ func evalOverallAccess(opts *Options, evt *Event) (*Result, error) {
 }
 
 // statementEvalFunction is the blueprint of a function that allows us to evaluate a single statement
-type statementEvalFunction func(*Options, *Event, *Trace, *policy.Statement) (bool, error)
+type statementEvalFunction func(*Options, *AuthContext, *Trace, *policy.Statement) (bool, error)
 
 // evalPrincipalAccess calculates the Principal-side access to the specified Resource
-func evalPrincipalAccess(opts *Options, evt *Event, trc *Trace) (*effectset.EffectSet, error) {
+func evalPrincipalAccess(opts *Options, ac *AuthContext, trc *Trace) (*effectset.EffectSet, error) {
 
 	// Specify the types of policies we will consider for Principal access
 	effectivePolicies := [][]policy.Policy{
-		evt.Principal.InlinePolicies,
-		evt.Principal.AttachedPolicies,
+		ac.Principal.InlinePolicies,
+		ac.Principal.AttachedPolicies,
 	}
 
 	// Specify the statement evaluation functions we will consider for Principal access
@@ -105,7 +105,7 @@ func evalPrincipalAccess(opts *Options, evt *Event, trc *Trace) (*effectset.Effe
 
 				matchedAll := true
 				for _, f := range functions {
-					match, err := f(opts, evt, trc, &stmt)
+					match, err := f(opts, ac, trc, &stmt)
 					if err != nil {
 						return nil, errors.Join(
 							fmt.Errorf("error evaluating principal policy statement[sid=%s]", stmt.Sid),
@@ -128,7 +128,7 @@ func evalPrincipalAccess(opts *Options, evt *Event, trc *Trace) (*effectset.Effe
 }
 
 // evalResourceAccess calculates the Resource-side access with regard to the specified Principal
-func evalResourceAccess(opts *Options, evt *Event, trc *Trace) (*effectset.EffectSet, error) {
+func evalResourceAccess(opts *Options, ac *AuthContext, trc *Trace) (*effectset.EffectSet, error) {
 
 	// Specify the statement evaluation functions we will consider for Principal access
 	functions := []statementEvalFunction{
@@ -139,10 +139,10 @@ func evalResourceAccess(opts *Options, evt *Event, trc *Trace) (*effectset.Effec
 
 	// Iterate over resource policy statements to evaluate access
 	effects := effectset.EffectSet{}
-	for _, stmt := range evt.Resource.Policy.Statement {
+	for _, stmt := range ac.Resource.Policy.Statement {
 		matchedAll := true
 		for _, f := range functions {
-			match, err := f(opts, evt, trc, &stmt)
+			match, err := f(opts, ac, trc, &stmt)
 			if err != nil {
 				return nil, errors.Join(
 					fmt.Errorf("error evaluating principal policy statement[sid=%s]", stmt.Sid),
@@ -163,9 +163,9 @@ func evalResourceAccess(opts *Options, evt *Event, trc *Trace) (*effectset.Effec
 
 }
 
-// evalStatementMatchesAction computes whether the Statement matches the Event's Action
+// evalStatementMatchesAction computes whether the Statement matches the AuthContext's Action
 func evalStatementMatchesAction(
-	opts *Options, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, ac *AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Action block to use
 	var _gate gate.Gate
@@ -178,7 +178,7 @@ func evalStatementMatchesAction(
 	}
 
 	for _, a := range action {
-		match := matchWildcardIgnoreCase(a, evt.Action)
+		match := matchWildcardIgnoreCase(a, ac.Action)
 		if match {
 			return _gate.Apply(true), nil
 		}
@@ -187,9 +187,9 @@ func evalStatementMatchesAction(
 	return _gate.Apply(false), nil
 }
 
-// evalStatementMatchesPrincipal computes whether the Statement matches the Event's Principal
+// evalStatementMatchesPrincipal computes whether the Statement matches the AuthContext's Principal
 func evalStatementMatchesPrincipal(
-	opts *Options, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, ac *AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Principal block to use
 	var _gate gate.Gate
@@ -203,7 +203,7 @@ func evalStatementMatchesPrincipal(
 
 	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
 	for _, p := range principals.AWS {
-		match := matchWildcard(p, evt.Principal.Arn)
+		match := matchWildcard(p, ac.Principal.Arn)
 		if match {
 			return _gate.Apply(true), nil
 		}
@@ -212,9 +212,9 @@ func evalStatementMatchesPrincipal(
 	return _gate.Apply(false), nil
 }
 
-// evalStatementMatchesResource computes whether the Statement matches the Event's Resource
+// evalStatementMatchesResource computes whether the Statement matches the AuthContext's Resource
 func evalStatementMatchesResource(
-	opts *Options, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, ac *AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Resource block to use
 	var _gate gate.Gate
@@ -227,7 +227,7 @@ func evalStatementMatchesResource(
 	}
 
 	for _, r := range resources {
-		match := matchWildcard(r, evt.Resource.Arn)
+		match := matchWildcard(r, ac.Resource.Arn)
 		if match {
 			return _gate.Apply(true), nil
 		}
@@ -237,9 +237,9 @@ func evalStatementMatchesResource(
 }
 
 // evalStatementMatchesCondition computes whether the Statement's Conditions hold true given the
-// provided Event
+// provided AuthContext
 func evalStatementMatchesCondition(
-	opts *Options, evt *Event, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, ac *AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// FIXME(nsiow) conditions need to be implemented
 
