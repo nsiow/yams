@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/nsiow/yams/pkg/policy"
+	cond "github.com/nsiow/yams/pkg/policy/condition"
 )
 
 var ErrorUnknownOperator = errors.New("unknown operation")
@@ -14,12 +15,13 @@ type ConditionOperator = func(left string, right string) (bool, error)
 type ConditionMod = func(ConditionOperator) ConditionOperator
 
 var ConditionOperatorMap = map[string]ConditionOperator{
-	"StringEquals":              Cond_StringEquals,
-	"StringNotEquals":           Mod_Not(Cond_StringEquals),
-	"StringEqualsIgnoreCase":    Mod_CaseInsensitive(Cond_StringEquals),
-	"StringNotEqualsIgnoreCase": Mod_CaseInsensitive(Mod_Not(Cond_StringEquals)),
+	cond.Op_StringEquals:              Cond_StringEquals,
+	cond.Op_StringNotEquals:           Mod_Not(Cond_StringEquals),
+	cond.Op_StringEqualsIgnoreCase:    Mod_CaseInsensitive(Cond_StringEquals),
+	cond.Op_StringNotEqualsIgnoreCase: Mod_CaseInsensitive(Mod_Not(Cond_StringEquals)),
 }
 
+// TODO(nsiow) determine if trace should get passed all the way down here
 func Cond_StringEquals(left, right string) (bool, error) {
 	return left == right, nil
 }

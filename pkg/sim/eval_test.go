@@ -190,7 +190,9 @@ func TestOverallAccess_XAccount(t *testing.T) {
 										AWS: []string{"arn:aws:iam::88888:role/myrole"},
 									},
 									Condition: map[string]map[string]policy.Value{
-										"StringEqualsThisDoesNotExist": nil,
+										"StringEqualsThisDoesNotExist": {
+											"foo": []string{"bar"},
+										},
 									},
 								},
 							},
@@ -225,7 +227,9 @@ func TestOverallAccess_XAccount(t *testing.T) {
 									AWS: []string{"arn:aws:iam::88888:role/myrole"},
 								},
 								Condition: map[string]map[string]policy.Value{
-									"StringEqualsThisDoesNotExist": nil,
+									"StringEqualsThisDoesNotExist": {
+										"foo": []string{"bar"},
+									},
 								},
 							},
 						},
@@ -236,13 +240,13 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(e AuthContext) (bool, error) {
-		if e.Principal.Account == e.Resource.Account {
-			t.Fatalf("supposed to be testing x-account, but saw same account for: %+v", e)
+	testrunner.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
+		if ac.Principal.Account == ac.Resource.Account {
+			t.Fatalf("supposed to be testing x-account, but saw same account for: %+v", ac)
 		}
 
 		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalOverallAccess(&opts, &e)
+		res, err := evalOverallAccess(&opts, ac)
 		if err != nil {
 			return false, err
 		}
@@ -380,7 +384,9 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 										AWS: []string{"arn:aws:iam::88888:role/myrole"},
 									},
 									Condition: map[string]map[string]policy.Value{
-										"StringEqualsThisDoesNotExist": nil,
+										"StringEqualsThisDoesNotExist": {
+											"foo": []string{"bar"},
+										},
 									},
 								},
 							},
@@ -424,13 +430,13 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		// },
 	}
 
-	testrunner.RunTestSuite(t, tests, func(e AuthContext) (bool, error) {
-		if e.Principal.Account != e.Resource.Account {
-			t.Fatalf("supposed to be testing same account, but saw x-account for: %+v", e)
+	testrunner.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
+		if ac.Principal.Account != ac.Resource.Account {
+			t.Fatalf("supposed to be testing same account, but saw x-account for: %+v", ac)
 		}
 
 		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalOverallAccess(&opts, &e)
+		res, err := evalOverallAccess(&opts, ac)
 		if err != nil {
 			return false, err
 		}
@@ -605,7 +611,9 @@ func TestPrincipalAccess(t *testing.T) {
 										AWS: []string{"arn:aws:iam::88888:role/myrole"},
 									},
 									Condition: map[string]map[string]policy.Value{
-										"StringEqualsThisDoesNotExist": nil,
+										"StringEqualsThisDoesNotExist": {
+											"foo": []string{"bar"},
+										},
 									},
 								},
 							},
@@ -620,9 +628,9 @@ func TestPrincipalAccess(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(e AuthContext) ([]policy.Effect, error) {
+	testrunner.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
 		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalPrincipalAccess(&opts, &e, &Trace{})
+		res, err := evalPrincipalAccess(&opts, ac, &Trace{})
 		if err != nil {
 			return nil, err
 		}
@@ -750,7 +758,9 @@ func TestResourceAccess(t *testing.T) {
 									AWS: []string{"arn:aws:iam::88888:role/myrole"},
 								},
 								Condition: map[string]map[string]policy.Value{
-									"StringEqualsThisDoesNotExist": nil,
+									"StringEqualsThisDoesNotExist": {
+										"foo": []string{"bar"},
+									},
 								},
 							},
 						},
@@ -761,9 +771,9 @@ func TestResourceAccess(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(e AuthContext) ([]policy.Effect, error) {
+	testrunner.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
 		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalResourceAccess(&opts, &e, &Trace{})
+		res, err := evalResourceAccess(&opts, ac, &Trace{})
 		if err != nil {
 			return nil, err
 		}
@@ -866,7 +876,7 @@ func TestStatementMatchesAction(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesAction(&Options{}, &i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesAction(&Options{}, i.ac, &Trace{}, &i.stmt)
 	})
 }
 
@@ -966,7 +976,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesPrincipal(&Options{}, &i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesPrincipal(&Options{}, i.ac, &Trace{}, &i.stmt)
 	})
 }
 
@@ -1052,7 +1062,7 @@ func TestStatementMatchesResource(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesResource(&Options{}, &i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesResource(&Options{}, i.ac, &Trace{}, &i.stmt)
 	})
 }
 

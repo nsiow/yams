@@ -43,7 +43,7 @@ func (s *Simulator) SetEnvironment(env *entities.Environment) {
 }
 
 // Simulate determines whether the provided AuthContext would be allowed
-func (s *Simulator) Simulate(ac *AuthContext) (*Result, error) {
+func (s *Simulator) Simulate(ac AuthContext) (*Result, error) {
 	// TODO(nsiow) perform AuthContext validation
 	return evalOverallAccess(&s.options, ac)
 }
@@ -82,7 +82,7 @@ func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[st
 		return nil, fmt.Errorf("simulator environment does not have Resource with Arn=%s", resource)
 	}
 
-	return s.Simulate(&ac)
+	return s.Simulate(ac)
 }
 
 // ComputeAccessSummary generates a numerical summary of access within the provided Environment
@@ -104,7 +104,7 @@ func (s *Simulator) ComputeAccessSummary(actions []string) (map[string]int, erro
 
 		for _, p := range s.env.Principals {
 			for _, a := range actions {
-				ac := &AuthContext{a, &p, &r, nil}
+				ac := AuthContext{a, &p, &r, nil}
 				result, err := s.Simulate(ac)
 				if err != nil {
 					return nil, errors.Join(fmt.Errorf("error during simulation"), err)

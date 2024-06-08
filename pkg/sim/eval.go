@@ -3,7 +3,6 @@ package sim
 import (
 	"errors"
 	"fmt"
-	"slices"
 
 	e "github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
@@ -13,7 +12,7 @@ import (
 
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
 // and different-account evaluations
-func evalOverallAccess(opts *Options, ac *AuthContext) (*Result, error) {
+func evalOverallAccess(opts *Options, ac AuthContext) (*Result, error) {
 
 	trc := Trace{}
 	res := Result{Trace: &trc}
@@ -79,10 +78,10 @@ func evalOverallAccess(opts *Options, ac *AuthContext) (*Result, error) {
 }
 
 // statementEvalFunction is the blueprint of a function that allows us to evaluate a single statement
-type statementEvalFunction func(*Options, *AuthContext, *Trace, *policy.Statement) (bool, error)
+type statementEvalFunction func(*Options, AuthContext, *Trace, *policy.Statement) (bool, error)
 
 // evalPrincipalAccess calculates the Principal-side access to the specified Resource
-func evalPrincipalAccess(opts *Options, ac *AuthContext, trc *Trace) (*effectset.EffectSet, error) {
+func evalPrincipalAccess(opts *Options, ac AuthContext, trc *Trace) (*effectset.EffectSet, error) {
 
 	// Specify the types of policies we will consider for Principal access
 	effectivePolicies := [][]policy.Policy{
@@ -128,7 +127,7 @@ func evalPrincipalAccess(opts *Options, ac *AuthContext, trc *Trace) (*effectset
 }
 
 // evalResourceAccess calculates the Resource-side access with regard to the specified Principal
-func evalResourceAccess(opts *Options, ac *AuthContext, trc *Trace) (*effectset.EffectSet, error) {
+func evalResourceAccess(opts *Options, ac AuthContext, trc *Trace) (*effectset.EffectSet, error) {
 
 	// Specify the statement evaluation functions we will consider for Principal access
 	functions := []statementEvalFunction{
@@ -165,7 +164,7 @@ func evalResourceAccess(opts *Options, ac *AuthContext, trc *Trace) (*effectset.
 
 // evalStatementMatchesAction computes whether the Statement matches the AuthContext's Action
 func evalStatementMatchesAction(
-	opts *Options, ac *AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, ac AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Action block to use
 	var _gate gate.Gate
@@ -189,7 +188,7 @@ func evalStatementMatchesAction(
 
 // evalStatementMatchesPrincipal computes whether the Statement matches the AuthContext's Principal
 func evalStatementMatchesPrincipal(
-	opts *Options, ac *AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, ac AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Principal block to use
 	var _gate gate.Gate
@@ -214,7 +213,7 @@ func evalStatementMatchesPrincipal(
 
 // evalStatementMatchesResource computes whether the Statement matches the AuthContext's Resource
 func evalStatementMatchesResource(
-	opts *Options, ac *AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, ac AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Resource block to use
 	var _gate gate.Gate
@@ -239,15 +238,27 @@ func evalStatementMatchesResource(
 // evalStatementMatchesCondition computes whether the Statement's Conditions hold true given the
 // provided AuthContext
 func evalStatementMatchesCondition(
-	opts *Options, ac *AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, ac AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
 
-	// FIXME(nsiow) conditions need to be implemented
+	for op, cond := range stmt.Condition {
 
-	if opts.FailOnUnknownCondition {
-		knownConditions := []string{}
-		for op := range stmt.Condition {
-			if !slices.Contains(knownConditions, op) {
-				return false, fmt.Errorf("unknown condition: %s", op)
+		// An empty condition should actually evaluate to false
+		if len(cond) == 0 {
+			return false, nil
+		}
+
+		for k, v := range cond {
+			match, err := evalCondition(ac, op, k, v)
+			if err != nil {
+				if errors.Is(err, ErrorUnknownOperator) && !opts.FailOnUnknownCondition {
+					return false, nil
+				}
+
+				return false, err
+			}
+
+			if !match {
+				return false, nil
 			}
 		}
 	}

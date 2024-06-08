@@ -7,9 +7,10 @@ import (
 
 // TestCase defines a single executable test case meant to be part of a suite
 type TestCase[I, O any] struct {
-	Name      string
-	Input     I
-	Want      O
+	Name  string
+	Input I
+	Want  O
+	// TODO(nsiow) switch this to an error type and use errors.Is(...)
 	ShouldErr bool
 }
 

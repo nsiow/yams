@@ -118,9 +118,9 @@ func TestSimulate(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(e AuthContext) (bool, error) {
+	testrunner.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
 		sim, _ := NewSimulator()
-		res, err := sim.Simulate(&e)
+		res, err := sim.Simulate(ac)
 		if err != nil {
 			return false, err
 		}
@@ -287,7 +287,9 @@ func TestComputeAccessSummary(t *testing.T) {
 											AWS: []string{"arn:aws:iam::88888:role/role1"},
 										},
 										Condition: map[string]map[string]policy.Value{
-											"StringEqualsThisDoesNotExist": nil,
+											"StringEqualsThisDoesNotExist": {
+												"foo": []string{"bar"},
+											},
 										},
 									},
 								},
