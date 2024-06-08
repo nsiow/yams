@@ -3,48 +3,43 @@ package effectset
 import (
 	"testing"
 
+	"github.com/nsiow/yams/internal/testrunner"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
 func TestEffectSet(t *testing.T) {
-	type test struct {
-		name    string
-		input   []policy.Effect
-		allowed bool
-	}
-
-	tests := []test{
+	tests := []testrunner.TestCase[[]policy.Effect, bool]{
 		{
-			name:    "implicit_deny",
-			input:   []policy.Effect{},
-			allowed: false,
+			Name:  "implicit_deny",
+			Input: []policy.Effect{},
+			Want:  false,
 		},
 		{
-			name: "simple_allow",
-			input: []policy.Effect{
+			Name: "simple_allow",
+			Input: []policy.Effect{
 				policy.EFFECT_ALLOW,
 			},
-			allowed: true,
+			Want: true,
 		},
 		{
-			name: "simple_deny",
-			input: []policy.Effect{
+			Name: "simple_deny",
+			Input: []policy.Effect{
 				policy.EFFECT_DENY,
 			},
-			allowed: false,
+			Want: false,
 		},
 
 		{
-			name: "explicit_deny",
-			input: []policy.Effect{
+			Name: "explicit_deny",
+			Input: []policy.Effect{
 				policy.EFFECT_ALLOW,
 				policy.EFFECT_DENY,
 			},
-			allowed: false,
+			Want: false,
 		},
 		{
-			name: "many_allows",
-			input: []policy.Effect{
+			Name: "many_allows",
+			Input: []policy.Effect{
 				policy.EFFECT_ALLOW,
 				policy.EFFECT_ALLOW,
 				policy.EFFECT_ALLOW,
@@ -53,11 +48,11 @@ func TestEffectSet(t *testing.T) {
 				policy.EFFECT_ALLOW,
 				policy.EFFECT_ALLOW,
 			},
-			allowed: true,
+			Want: true,
 		},
 		{
-			name: "many_denies",
-			input: []policy.Effect{
+			Name: "many_denies",
+			Input: []policy.Effect{
 				policy.EFFECT_DENY,
 				policy.EFFECT_DENY,
 				policy.EFFECT_DENY,
@@ -66,28 +61,24 @@ func TestEffectSet(t *testing.T) {
 				policy.EFFECT_DENY,
 				policy.EFFECT_DENY,
 			},
-			allowed: false,
+			Want: false,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Logf("running test case: %s", tc.name)
-
-		// Add effects to effect set
+	testrunner.RunTestSuite(t, tests, func(e []policy.Effect) (bool, error) {
+		// Create empty effectset
 		es := EffectSet{}
-		for _, effect := range tc.input {
-			es.Add(effect)
+
+		// Add our effect rules in
+		for _, i := range e {
+			es.Add(i)
 		}
 
-		// Ensure that we never go over 2 elements
+		// Ensure size of data never surpasses 2
 		if len(es.Effects()) > 2 {
-			t.Fatalf("saw %d elements in EffectSet; expected a maximum of 2", len(es.effects))
+			t.Fatalf("EffectSet size should never be >2, but saw %d", len(es.effects))
 		}
 
-		// Check results
-		got := es.Allowed()
-		if tc.allowed != got {
-			t.Fatalf("failed test case '%s': wanted %v got %v", tc.name, tc.allowed, es.Allowed())
-		}
-	}
+		return es.Allowed(), nil
+	})
 }

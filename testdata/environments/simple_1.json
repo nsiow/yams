@@ -187,7 +187,7 @@
     },
     "tags": []
   },
-{
+  {
     "arn": "arn:aws:sqs:us-west-2:000000000000:SimpleQueue",
     "resourceType": "AWS::SQS::Queue",
     "awsRegion": null,
@@ -207,6 +207,22 @@
       "Tags": {}
     },
     "tags": []
+  },
+  {
+    "arn": "arn:aws:sns:us-west-2:999999999999:SimpleTopic",
+    "resourceType": "AWS::SNS::Topic",
+    "awsRegion": "us-west-2",
+    "accountId": "999999999999",
+    "configuration": {
+      "Policy": "{\"Version\":\"2012-10-17\",\"Id\":\"__default_policy_ID\",\"Statement\":[{\"Sid\":\"__default_statement_ID\",\"Effect\":\"Deny\",\"Principal\":{\"AWS\":\"*\"},\"Action\":[\"SNS:Subscribe\"],\"Resource\":\"arn:aws:sns:us-west-2:999999999999:SimpleTopic\"}]}",
+      "Owner": "999999999999",
+      "TopicArn": "arn:aws:sns:us-west-2:999999999999:SimpleTopic",
+      "EffectiveDeliveryPolicy": "{\"http\":{\"defaultHealthyRetryPolicy\":{\"minDelayTarget\":20,\"maxDelayTarget\":20,\"numRetries\":3,\"numMaxDelayRetries\":0,\"numNoDelayRetries\":0,\"numMinDelayRetries\":0,\"backoffFunction\":\"linear\"},\"disableSubscriptionOverrides\":false,\"defaultRequestPolicy\":{\"headerContentType\":\"text/plain; charset=UTF-8\"}}}",
+      "DisplayName": ""
+    },
+    "supplementaryConfiguration": {
+      "Tags": []
+    },
+    "tags": []
   }
-
 ]

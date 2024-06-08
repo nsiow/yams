@@ -21,10 +21,16 @@ func (p *encodedPolicy) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("error in initial unwrapping of encoded policy (%v) for input %s", err, data)
 	}
 
+	// Empty string == empty policy
+	if len(policyString) == 0 {
+		*p = encodedPolicy(policy.Policy{})
+		return nil
+	}
+
 	// Attempt to decode
 	policy, err := decodePolicyString(policyString)
 	if err != nil {
-		return fmt.Errorf("error decoding policy string")
+		return fmt.Errorf("error decoding policy string: %w", err)
 	}
 
 	// Save to our policy
@@ -41,7 +47,7 @@ func decodePolicyString(policyString string) (policy.Policy, error) {
 		var inner string
 		err := json.Unmarshal([]byte(policyString), &inner)
 		if err != nil || len(inner) == 0 {
-			return p, fmt.Errorf("error unwrapping nested JSON string: %v for input:\n%s", err, policyString)
+			return p, fmt.Errorf("error unwrapping nested JSON string: %v for input: %s", err, policyString)
 		}
 		policyString = inner
 	}
@@ -49,13 +55,13 @@ func decodePolicyString(policyString string) (policy.Policy, error) {
 	// Attempt unescaping
 	escaped, err := url.QueryUnescape(policyString)
 	if err != nil {
-		return p, fmt.Errorf("error unescaping string: %v for input:\n%s", err, escaped)
+		return p, fmt.Errorf("error unescaping string: %v for input:\n%s", err, policyString)
 	}
 
 	// Attempt JSON unmarshalling
 	err = json.Unmarshal([]byte(escaped), &p)
 	if err != nil {
-		return p, fmt.Errorf("error converting decoded policy into struct: %v for input:\n%s", err, escaped)
+		return p, fmt.Errorf("error converting decoded policy into struct: %v for input: %s", err, policyString)
 	}
 
 	return p, nil

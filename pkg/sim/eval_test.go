@@ -1,9 +1,9 @@
 package sim
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/nsiow/yams/internal/testrunner"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
@@ -11,18 +11,10 @@ import (
 // TestOverallAccess_XAccount checks both principal-side and resource-side logic where the
 // resource + principal reside within the same account
 func TestOverallAccess_XAccount(t *testing.T) {
-	type test struct {
-		name  string
-		event Event
-		want  bool
-		opts  Options
-		err   bool
-	}
-
-	tests := []test{
+	tests := []testrunner.TestCase[Event, bool]{
 		{
-			name: "x_account_implicit_deny",
-			event: Event{
+			Name: "x_account_implicit_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
@@ -36,11 +28,11 @@ func TestOverallAccess_XAccount(t *testing.T) {
 					Policy:  policy.Policy{},
 				},
 			},
-			want: false,
+			Want: false,
 		},
 		{
-			name: "x_account_principal_only_allow",
-			event: Event{
+			Name: "x_account_principal_only_allow",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:     "arn:aws:iam::88888:role/myrole",
@@ -62,11 +54,11 @@ func TestOverallAccess_XAccount(t *testing.T) {
 					Account: "11111",
 				},
 			},
-			want: false,
+			Want: false,
 		},
 		{
-			name: "x_account_resource_only_allow",
-			event: Event{
+			Name: "x_account_resource_only_allow",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:     "arn:aws:iam::88888:role/myrole",
@@ -89,12 +81,12 @@ func TestOverallAccess_XAccount(t *testing.T) {
 					},
 				},
 			},
-			want: false,
+			Want: false,
 		},
 		{
 
-			name: "x_account_principal_deny",
-			event: Event{
+			Name: "x_account_principal_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:     "arn:aws:iam::88888:role/myrole",
@@ -116,11 +108,11 @@ func TestOverallAccess_XAccount(t *testing.T) {
 					Account: "11111",
 				},
 			},
-			want: false,
+			Want: false,
 		},
 		{
-			name: "x_account_resource_deny",
-			event: Event{
+			Name: "x_account_resource_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:     "arn:aws:iam::88888:role/myrole",
@@ -140,11 +132,11 @@ func TestOverallAccess_XAccount(t *testing.T) {
 					},
 				},
 			},
-			want: false,
+			Want: false,
 		},
 		{
-			name: "x_account_allow_and_allow",
-			event: Event{
+			Name: "x_account_allow_and_allow",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:     "arn:aws:iam::88888:role/myrole",
@@ -178,11 +170,11 @@ func TestOverallAccess_XAccount(t *testing.T) {
 					},
 				},
 			},
-			want: true,
+			Want: true,
 		},
 		{
-			name: "x_account_error_nonexistent_principal_condition",
-			event: Event{
+			Name: "x_account_error_nonexistent_principal_condition",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:     "arn:aws:iam::88888:role/myrole",
@@ -210,12 +202,11 @@ func TestOverallAccess_XAccount(t *testing.T) {
 					Account: "11111",
 				},
 			},
-			opts: Options{FailOnUnknownCondition: true},
-			err:  true,
+			ShouldErr: true,
 		},
 		{
-			name: "x_account_error_nonexistent_resource_condition",
-			event: Event{
+			Name: "x_account_error_nonexistent_resource_condition",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:     "arn:aws:iam::88888:role/myrole",
@@ -241,51 +232,32 @@ func TestOverallAccess_XAccount(t *testing.T) {
 					},
 				},
 			},
-			opts: Options{FailOnUnknownCondition: true},
-			err:  true,
+			ShouldErr: true,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Logf("running test case: %s", tc.name)
-
-		res, err := evalOverallAccess(&tc.opts, &tc.event)
-
-		check := true
-		switch {
-		case err == nil && tc.err:
-			t.Fatalf("expected error, got success for test case '%s': %v", tc.name, err)
-		case err != nil && tc.err:
-			// expected error; got error
-			t.Logf("test saw expected error: %v", err)
-			check = false
-		case err == nil && !tc.err:
-			// no error and not expecting one, continue
-		case err != nil && !tc.err:
-			t.Fatalf("unable to create policy from test case '%s': %v", tc.name, err)
+	testrunner.RunTestSuite(t, tests, func(e Event) (bool, error) {
+		if e.Principal.Account == e.Resource.Account {
+			t.Fatalf("supposed to be testing x-account, but saw same account for: %+v", e)
 		}
 
-		if check && !reflect.DeepEqual(res.IsAllowed, tc.want) {
-			t.Fatalf("failed test case: '%s', wanted %v got %v", tc.name, tc.want, res.IsAllowed)
+		opts := Options{FailOnUnknownCondition: true}
+		res, err := evalOverallAccess(&opts, &e)
+		if err != nil {
+			return false, err
 		}
-	}
+
+		return res.IsAllowed, nil
+	})
 }
 
 // TestOverallAccess_SameAccount checks both principal-side and resource-side logic where the
 // resource + principal reside within the same account
 func TestOverallAccess_SameAccount(t *testing.T) {
-	type test struct {
-		name  string
-		event Event
-		want  bool
-		opts  Options
-		err   bool
-	}
-
-	tests := []test{
+	tests := []testrunner.TestCase[Event, bool]{
 		{
-			name: "same_account_implicit_deny",
-			event: Event{
+			Name: "same_account_implicit_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
@@ -299,11 +271,11 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					Policy:  policy.Policy{},
 				},
 			},
-			want: false,
+			Want: false,
 		},
 		{
-			name: "same_account_simple_allow",
-			event: Event{
+			Name: "same_account_simple_allow",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:     "arn:aws:iam::88888:role/myrole",
@@ -325,11 +297,11 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					Account: "88888",
 				},
 			},
-			want: true,
+			Want: true,
 		},
 		{
-			name: "same_account_simple_deny",
-			event: Event{
+			Name: "same_account_simple_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:     "arn:aws:iam::88888:role/myrole",
@@ -351,11 +323,11 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					Account: "88888",
 				},
 			},
-			want: false,
+			Want: false,
 		},
 		{
-			name: "allow_and_deny",
-			event: Event{
+			Name: "allow_and_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:     "arn:aws:iam::88888:role/myrole",
@@ -388,11 +360,11 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					Account: "88888",
 				},
 			},
-			want: false,
+			Want: false,
 		},
 		{
-			name: "same_account_error_nonexistent_condition",
-			event: Event{
+			Name: "same_account_error_nonexistent_condition",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:     "arn:aws:iam::88888:role/myrole",
@@ -420,13 +392,12 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					Account: "88888",
 				},
 			},
-			opts: Options{FailOnUnknownCondition: true},
-			err:  true,
+			ShouldErr: true,
 		},
 		// FIXME(nsiow) uncomment this test when ready for same-account edge case handling
 		// {
-		// 	name: "same_account_resource_access",
-		// 	event: Event{
+		// 	Name: "same_account_resource_access",
+		// 	Input: Event{
 		// 		Action: "s3:listbucket",
 		// 		Principal: &entities.Principal{
 		// 			Arn: "arn:aws:iam::88888:role/myrole",
@@ -449,49 +420,31 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		// 			},
 		// 		},
 		// 	},
-		// 	want: []policy.Effect{policy.EFFECT_ALLOW},
+		// 	Want: []policy.Effect{policy.EFFECT_ALLOW},
 		// },
 	}
 
-	for _, tc := range tests {
-		t.Logf("running test case: %s", tc.name)
-
-		res, err := evalOverallAccess(&tc.opts, &tc.event)
-
-		check := true
-		switch {
-		case err == nil && tc.err:
-			t.Fatalf("expected error, got success for test case '%s': %v", tc.name, err)
-		case err != nil && tc.err:
-			// expected error; got error
-			t.Logf("test saw expected error: %v", err)
-			check = false
-		case err == nil && !tc.err:
-			// no error and not expecting one, continue
-		case err != nil && !tc.err:
-			t.Fatalf("unable to create policy from test case '%s': %v", tc.name, err)
+	testrunner.RunTestSuite(t, tests, func(e Event) (bool, error) {
+		if e.Principal.Account != e.Resource.Account {
+			t.Fatalf("supposed to be testing same account, but saw x-account for: %+v", e)
 		}
 
-		if check && !reflect.DeepEqual(res.IsAllowed, tc.want) {
-			t.Fatalf("failed test case: '%s', wanted %v got %v", tc.name, tc.want, res.IsAllowed)
+		opts := Options{FailOnUnknownCondition: true}
+		res, err := evalOverallAccess(&opts, &e)
+		if err != nil {
+			return false, err
 		}
-	}
+
+		return res.IsAllowed, nil
+	})
 }
 
 // TestPrincipalAccess checks identity-policy evaluation logic for statements
 func TestPrincipalAccess(t *testing.T) {
-	type test struct {
-		name  string
-		event Event
-		want  []policy.Effect
-		opts  Options
-		err   bool
-	}
-
-	tests := []test{
+	tests := []testrunner.TestCase[Event, []policy.Effect]{
 		{
-			name: "implicit_deny",
-			event: Event{
+			Name: "implicit_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
@@ -502,11 +455,11 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			want: []policy.Effect(nil),
+			Want: []policy.Effect(nil),
 		},
 		{
-			name: "simple_inline_policy",
-			event: Event{
+			Name: "simple_inline_policy",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
@@ -526,11 +479,11 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			want: []policy.Effect{policy.EFFECT_ALLOW},
+			Want: []policy.Effect{policy.EFFECT_ALLOW},
 		},
 		{
-			name: "simple_attached_policy",
-			event: Event{
+			Name: "simple_attached_policy",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
@@ -550,11 +503,11 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			want: []policy.Effect{policy.EFFECT_ALLOW},
+			Want: []policy.Effect{policy.EFFECT_ALLOW},
 		},
 		{
-			name: "simple_inline_deny",
-			event: Event{
+			Name: "simple_inline_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
@@ -574,11 +527,11 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			want: []policy.Effect{policy.EFFECT_DENY},
+			Want: []policy.Effect{policy.EFFECT_DENY},
 		},
 		{
-			name: "simple_attached_deny",
-			event: Event{
+			Name: "simple_attached_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
@@ -598,11 +551,11 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			want: []policy.Effect{policy.EFFECT_DENY},
+			Want: []policy.Effect{policy.EFFECT_DENY},
 		},
 		{
-			name: "allow_and_deny",
-			event: Event{
+			Name: "allow_and_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
@@ -633,11 +586,11 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
+			Want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
 		},
 		{
-			name: "error_nonexistent_condition",
-			event: Event{
+			Name: "error_nonexistent_condition",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
@@ -663,51 +616,27 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			opts: Options{FailOnUnknownCondition: true},
-			err:  true,
+			ShouldErr: true,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Logf("running test case: %s", tc.name)
-
-		trc := Trace{}
-		res, err := evalPrincipalAccess(&tc.opts, &tc.event, &trc)
-
-		check := true
-		switch {
-		case err == nil && tc.err:
-			t.Fatalf("expected error, got success for test case '%s': %v", tc.name, err)
-		case err != nil && tc.err:
-			// expected error; got error
-			t.Logf("test saw expected error: %v", err)
-			check = false
-		case err == nil && !tc.err:
-			// no error and not expecting one, continue
-		case err != nil && !tc.err:
-			t.Fatalf("unable to create policy from test case '%s': %v", tc.name, err)
+	testrunner.RunTestSuite(t, tests, func(e Event) ([]policy.Effect, error) {
+		opts := Options{FailOnUnknownCondition: true}
+		res, err := evalPrincipalAccess(&opts, &e, &Trace{})
+		if err != nil {
+			return nil, err
 		}
 
-		if check && !reflect.DeepEqual(res.Effects(), tc.want) {
-			t.Fatalf("failed test case: '%s', wanted %v got %v", tc.name, tc.want, res.Effects())
-		}
-	}
+		return res.Effects(), nil
+	})
 }
 
 // TestResourceAccess checks resource-policy evaluation logic for statements
 func TestResourceAccess(t *testing.T) {
-	type test struct {
-		name  string
-		event Event
-		want  []policy.Effect
-		opts  Options
-		err   bool
-	}
-
-	tests := []test{
+	tests := []testrunner.TestCase[Event, []policy.Effect]{
 		{
-			name: "implicit_deny",
-			event: Event{
+			Name: "implicit_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
@@ -717,11 +646,11 @@ func TestResourceAccess(t *testing.T) {
 					Policy: policy.Policy{},
 				},
 			},
-			want: []policy.Effect(nil),
+			Want: []policy.Effect(nil),
 		},
 		{
-			name: "simple_match",
-			event: Event{
+			Name: "simple_match",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
@@ -742,11 +671,11 @@ func TestResourceAccess(t *testing.T) {
 					},
 				},
 			},
-			want: []policy.Effect{policy.EFFECT_ALLOW},
+			Want: []policy.Effect{policy.EFFECT_ALLOW},
 		},
 		{
-			name: "explicit_deny",
-			event: Event{
+			Name: "explicit_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
@@ -767,11 +696,11 @@ func TestResourceAccess(t *testing.T) {
 					},
 				},
 			},
-			want: []policy.Effect{policy.EFFECT_DENY},
+			Want: []policy.Effect{policy.EFFECT_DENY},
 		},
 		{
-			name: "allow_and_deny",
-			event: Event{
+			Name: "allow_and_deny",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
@@ -800,11 +729,11 @@ func TestResourceAccess(t *testing.T) {
 					},
 				},
 			},
-			want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
+			Want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
 		},
 		{
-			name: "error_nonexistent_condition",
-			event: Event{
+			Name: "error_nonexistent_condition",
+			Input: Event{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
@@ -828,304 +757,303 @@ func TestResourceAccess(t *testing.T) {
 					},
 				},
 			},
-			opts: Options{FailOnUnknownCondition: true},
-			err:  true,
+			ShouldErr: true,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Logf("running test case: %s", tc.name)
-
-		trc := Trace{}
-		res, err := evalResourceAccess(&tc.opts, &tc.event, &trc)
-
-		check := true
-		switch {
-		case err == nil && tc.err:
-			t.Fatalf("expected error, got success for test case '%s': %v", tc.name, err)
-		case err != nil && tc.err:
-			// expected error; got error
-			t.Logf("test saw expected error: %v", err)
-			check = false
-		case err == nil && !tc.err:
-			// no error and not expecting one, continue
-		case err != nil && !tc.err:
-			t.Fatalf("unable to create policy from test case '%s': %v", tc.name, err)
+	testrunner.RunTestSuite(t, tests, func(e Event) ([]policy.Effect, error) {
+		opts := Options{FailOnUnknownCondition: true}
+		res, err := evalResourceAccess(&opts, &e, &Trace{})
+		if err != nil {
+			return nil, err
 		}
 
-		if check && !reflect.DeepEqual(res.Effects(), tc.want) {
-			t.Fatalf("failed test case: '%s', wanted %v got %v", tc.name, tc.want, res.Effects())
-		}
-	}
+		return res.Effects(), nil
+	})
 }
 
 // TestStatementMatchesAction checks action-matching logic for statements
 func TestStatementMatchesAction(t *testing.T) {
-	type test struct {
-		name  string
-		event Event
-		stmt  policy.Statement
-		want  bool
+	type input struct {
+		evt  Event
+		stmt policy.Statement
 	}
 
-	tests := []test{
+	tests := []testrunner.TestCase[input, bool]{
 		// Action
 		{
-			name:  "simple_wildcard",
-			event: Event{Action: "s3:getobject"},
-			stmt:  policy.Statement{Action: []string{"*"}},
-			want:  true,
+			Name: "simple_wildcard",
+			Input: input{
+				evt:  Event{Action: "s3:getobject"},
+				stmt: policy.Statement{Action: []string{"*"}},
+			},
+			Want: true,
 		},
 		{
-			name:  "simple_direct_match",
-			event: Event{Action: "s2:getobject"},
-			stmt:  policy.Statement{Action: []string{"s2:getobject"}},
-			want:  true,
+			Name: "simple_direct_match",
+			Input: input{
+				evt:  Event{Action: "s2:getobject"},
+				stmt: policy.Statement{Action: []string{"s2:getobject"}},
+			},
+			Want: true,
 		},
 		{
-			name:  "other_action",
-			event: Event{Action: "s3:putobject"},
-			stmt:  policy.Statement{Action: []string{"s3:getobject"}},
-			want:  false,
+			Name: "other_action",
+			Input: input{
+				evt:  Event{Action: "s3:putobject"},
+				stmt: policy.Statement{Action: []string{"s3:getobject"}},
+			},
+			Want: false,
 		},
 		{
-			name:  "two_actions",
-			event: Event{Action: "s3:getobject"},
-			stmt:  policy.Statement{Action: []string{"s3:putobject", "s3:getobject"}},
-			want:  true,
+			Name: "two_actions",
+			Input: input{
+				evt:  Event{Action: "s3:getobject"},
+				stmt: policy.Statement{Action: []string{"s3:putobject", "s3:getobject"}},
+			},
+			Want: true,
 		},
 		{
-			name:  "diff_casing",
-			event: Event{Action: "s3:gEtObJeCt"},
-			stmt:  policy.Statement{Action: []string{"s3:putobject", "s3:getobject"}},
-			want:  true,
+			Name: "diff_casing",
+			Input: input{
+				evt:  Event{Action: "s3:gEtObJeCt"},
+				stmt: policy.Statement{Action: []string{"s3:putobject", "s3:getobject"}},
+			},
+			Want: true,
 		},
 
 		// NotAction
 		{
-			name:  "notaction_simple_wildcard",
-			event: Event{Action: "s3:getobject"},
-			stmt:  policy.Statement{NotAction: []string{"*"}},
-			want:  false,
+			Name: "notaction_simple_wildcard",
+			Input: input{
+				evt:  Event{Action: "s3:getobject"},
+				stmt: policy.Statement{NotAction: []string{"*"}},
+			},
+			Want: false,
 		},
 		{
-			name:  "notaction_simple_direct_match",
-			event: Event{Action: "s3:getobject"},
-			stmt:  policy.Statement{NotAction: []string{"s3:getobject"}},
-			want:  false,
+			Name: "notaction_simple_direct_match",
+			Input: input{
+				evt:  Event{Action: "s3:getobject"},
+				stmt: policy.Statement{NotAction: []string{"s3:getobject"}},
+			},
+			Want: false,
 		},
 		{
-			name:  "notaction_other_action",
-			event: Event{Action: "sqs:sendmessage"},
-			stmt:  policy.Statement{NotAction: []string{"s3:getobject"}},
-			want:  true,
+			Name: "notaction_other_action",
+			Input: input{
+				evt:  Event{Action: "sqs:sendmessage"},
+				stmt: policy.Statement{NotAction: []string{"s3:getobject"}},
+			},
+			Want: true,
 		},
 		{
-			name:  "notaction_two_actions",
-			event: Event{Action: "s3:getobject"},
-			stmt:  policy.Statement{NotAction: []string{"s3:putobject", "s3:getobject"}},
-			want:  false,
+			Name: "notaction_two_actions",
+			Input: input{
+				evt:  Event{Action: "s3:getobject"},
+				stmt: policy.Statement{NotAction: []string{"s3:putobject", "s3:getobject"}},
+			},
+			Want: false,
 		},
 		{
-			name:  "notaction_diff_casing",
-			event: Event{Action: "s3:gEtObJeCt"},
-			stmt:  policy.Statement{NotAction: []string{"s3:putobject", "s3:getobject"}},
-			want:  false,
+			Name: "notaction_diff_casing",
+			Input: input{
+				evt:  Event{Action: "s3:gEtObJeCt"},
+				stmt: policy.Statement{NotAction: []string{"s3:putobject", "s3:getobject"}},
+			},
+			Want: false,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Logf("running test case: %s", tc.name)
-
-		opts := Options{}
-		trc := Trace{}
-		got, err := evalStatementMatchesAction(&opts, &tc.event, &trc, &tc.stmt)
-		if err != nil {
-			t.Fatalf("observed unexpected error: %v", err)
-		}
-
-		if got != tc.want {
-			t.Fatalf("failed test case: '%s', wanted %v got %v", tc.name, tc.want, got)
-		}
-	}
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesAction(&Options{}, &i.evt, &Trace{}, &i.stmt)
+	})
 }
 
 // TestStatementMatchesPrincipal checks principal-matching logic for statements
 func TestStatementMatchesPrincipal(t *testing.T) {
-	type test struct {
-		name  string
-		event Event
-		stmt  policy.Statement
-		want  bool
+	type input struct {
+		evt  Event
+		stmt policy.Statement
 	}
 
-	tests := []test{
+	tests := []testrunner.TestCase[input, bool]{
 		// Principal
 		{
-			name:  "simple_wildcard",
-			event: Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
-			stmt:  policy.Statement{Principal: policy.Principal{AWS: []string{"*"}}},
-			want:  true,
+			Name: "simple_wildcard",
+			Input: input{
+				evt:  Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"*"}}},
+			},
+			Want: true,
 		},
 		{
-			name:  "simple_direct_match",
-			event: Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
-			stmt:  policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerole"}}},
-			want:  true,
+			Name: "simple_direct_match",
+			Input: input{
+				evt:  Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerole"}}},
+			},
+			Want: true,
 		},
 		{
-			name:  "other_principal",
-			event: Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
-			stmt:  policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerandomrole"}}},
-			want:  false,
+			Name: "other_principal",
+			Input: input{
+				evt:  Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerandomrole"}}},
+			},
+			Want: false,
 		},
 		{
-			name:  "two_principals",
-			event: Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/secondrole"}},
-			stmt: policy.Statement{Principal: policy.Principal{AWS: []string{
-				"arn:aws:iam::88888:role/firstrole",
-				"arn:aws:iam::88888:role/secondrole"}}},
-			want: true,
+			Name: "two_principals",
+			Input: input{
+				evt: Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/secondrole"}},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{
+					"arn:aws:iam::88888:role/firstrole",
+					"arn:aws:iam::88888:role/secondrole"}}}},
+			Want: true,
 		},
 		{
-			name:  "other_service",
-			event: Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
-			stmt:  policy.Statement{Principal: policy.Principal{Federated: []string{"*"}}},
-			want:  false,
+			Name: "other_service",
+			Input: input{
+				evt:  Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{Principal: policy.Principal{Federated: []string{"*"}}},
+			},
+			Want: false,
 		},
 
 		// NotPrincipal
 		{
-			name:  "notprincipal_simple_wildcard",
-			event: Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
-			stmt:  policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"*"}}},
-			want:  false,
+			Name: "notprincipal_simple_wildcard",
+			Input: input{
+				evt:  Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"*"}}},
+			},
+			Want: false,
 		},
 		{
-			name:  "notprincipal_simple_direct_match",
-			event: Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
-			stmt:  policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerole"}}},
-			want:  false,
+			Name: "notprincipal_simple_direct_match",
+			Input: input{
+				evt:  Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerole"}}},
+			},
+			Want: false,
 		},
 		{
-			name:  "notprincipal_other_principal",
-			event: Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
-			stmt:  policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerandomrole"}}},
-			want:  true,
+			Name: "notprincipal_other_principal",
+			Input: input{
+				evt:  Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerandomrole"}}},
+			},
+			Want: true,
 		},
 		{
-			name:  "notprincipal_two_principals",
-			event: Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/secondrole"}},
-			stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{
-				"arn:aws:iam::88888:role/firstrole",
-				"arn:aws:iam::88888:role/secondrole"}}},
-			want: false,
+			Name: "notprincipal_two_principals",
+			Input: input{
+				evt: Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/secondrole"}},
+				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{
+					"arn:aws:iam::88888:role/firstrole",
+					"arn:aws:iam::88888:role/secondrole"}}}},
+			Want: false,
 		},
 		{
-			name:  "notprincipal_other_service",
-			event: Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
-			stmt:  policy.Statement{NotPrincipal: policy.Principal{Federated: []string{"*"}}},
-			want:  true,
+			Name: "notprincipal_other_service",
+			Input: input{
+				evt:  Event{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{NotPrincipal: policy.Principal{Federated: []string{"*"}}},
+			},
+			Want: true,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Logf("running test case: %s", tc.name)
-
-		opts := Options{}
-		trc := Trace{}
-		got, err := evalStatementMatchesPrincipal(&opts, &tc.event, &trc, &tc.stmt)
-		if err != nil {
-			t.Fatalf("observed unexpected error: %v", err)
-		}
-
-		if got != tc.want {
-			t.Fatalf("failed test case: '%s', wanted %v got %v", tc.name, tc.want, got)
-		}
-	}
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesPrincipal(&Options{}, &i.evt, &Trace{}, &i.stmt)
+	})
 }
 
 // TestStatementMatchesResource checks resource-matching logic for statements
 func TestStatementMatchesResource(t *testing.T) {
-	type test struct {
-		name  string
-		event Event
-		stmt  policy.Statement
-		want  bool
+	type input struct {
+		evt  Event
+		stmt policy.Statement
 	}
 
-	tests := []test{
+	tests := []testrunner.TestCase[input, bool]{
 		// Resource
 		{
-			name:  "simple_wildcard",
-			event: Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
-			stmt:  policy.Statement{Resource: []string{"*"}},
-			want:  true,
+			Name: "simple_wildcard",
+			Input: input{
+				evt:  Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
+				stmt: policy.Statement{Resource: []string{"*"}},
+			},
+			Want: true,
 		},
 		{
-			name:  "simple_direct_match",
-			event: Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
-			stmt:  policy.Statement{Resource: []string{"arn:aws:s3:::somebucket"}},
-			want:  true,
+			Name: "simple_direct_match",
+			Input: input{
+				evt:  Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
+				stmt: policy.Statement{Resource: []string{"arn:aws:s3:::somebucket"}},
+			},
+			Want: true,
 		},
 		{
-			name:  "other_resource",
-			event: Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
-			stmt:  policy.Statement{Resource: []string{"arn:aws:s3:::adifferentbucket"}},
-			want:  false,
+			Name: "other_resource",
+			Input: input{
+				evt:  Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
+				stmt: policy.Statement{Resource: []string{"arn:aws:s3:::adifferentbucket"}},
+			},
+			Want: false,
 		},
 		{
-			name:  "two_resources",
-			event: Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::secondbucket"}},
-			stmt: policy.Statement{Resource: []string{
-				"arn:aws:s3:::firstbucket",
-				"arn:aws:s3:::secondbucket"}},
-			want: true,
+			Name: "two_resources",
+			Input: input{
+				evt: Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::secondbucket"}},
+				stmt: policy.Statement{Resource: []string{
+					"arn:aws:s3:::firstbucket",
+					"arn:aws:s3:::secondbucket"}},
+			},
+			Want: true,
 		},
 
 		// NotResource
 		{
-			name:  "notresource_simple_wildcard",
-			event: Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
-			stmt:  policy.Statement{NotResource: []string{"*"}},
-			want:  false,
+			Name: "notresource_simple_wildcard",
+			Input: input{
+				evt:  Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
+				stmt: policy.Statement{NotResource: []string{"*"}},
+			},
+			Want: false,
 		},
 		{
-			name:  "notresource_simple_direct_match",
-			event: Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
-			stmt:  policy.Statement{NotResource: []string{"arn:aws:s3:::somebucket"}},
-			want:  false,
+			Name: "notresource_simple_direct_match",
+			Input: input{
+				evt:  Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
+				stmt: policy.Statement{NotResource: []string{"arn:aws:s3:::somebucket"}},
+			},
+			Want: false,
 		},
 		{
-			name:  "notresource_other_resource",
-			event: Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
-			stmt:  policy.Statement{NotResource: []string{"arn:aws:s3:::adifferentbucket"}},
-			want:  true,
+			Name: "notresource_other_resource",
+			Input: input{
+				evt:  Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
+				stmt: policy.Statement{NotResource: []string{"arn:aws:s3:::adifferentbucket"}},
+			},
+			Want: true,
 		},
 		{
-			name:  "notresource_two_resources",
-			event: Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::secondbucket"}},
-			stmt: policy.Statement{NotResource: []string{
-				"arn:aws:s3:::firstbucket",
-				"arn:aws:s3:::secondbucket"}},
-			want: false,
+			Name: "notresource_two_resources",
+			Input: input{
+				evt: Event{Resource: &entities.Resource{Arn: "arn:aws:s3:::secondbucket"}},
+				stmt: policy.Statement{NotResource: []string{
+					"arn:aws:s3:::firstbucket",
+					"arn:aws:s3:::secondbucket"}},
+			},
+			Want: false,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Logf("running test case: %s", tc.name)
-
-		opts := Options{}
-		trc := Trace{}
-		got, err := evalStatementMatchesResource(&opts, &tc.event, &trc, &tc.stmt)
-		if err != nil {
-			t.Fatalf("observed unexpected error: %v", err)
-		}
-
-		if got != tc.want {
-			t.Fatalf("failed test case: '%s', wanted %v got %v", tc.name, tc.want, got)
-		}
-	}
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesResource(&Options{}, &i.evt, &Trace{}, &i.stmt)
+	})
 }
 
 // TestStatementMatchesCondition checks condition-matching logic for statements
@@ -1135,29 +1063,29 @@ func TestStatementMatchesCondition(t *testing.T) {
 
 // TestEvalIsSameAccount checks same vs x-account checking behavior
 func TestEvalIsSameAccount(t *testing.T) {
-	type test struct {
+	type input struct {
 		principal entities.Principal
 		resource  entities.Resource
-		want      bool
 	}
 
-	tests := []test{
+	tests := []testrunner.TestCase[input, bool]{
 		{
-			principal: entities.Principal{Account: "88888"},
-			resource:  entities.Resource{Account: "88888"},
-			want:      true,
+			Input: input{
+				principal: entities.Principal{Account: "88888"},
+				resource:  entities.Resource{Account: "88888"},
+			},
+			Want: true,
 		},
 		{
-			principal: entities.Principal{Account: "88888"},
-			resource:  entities.Resource{Account: "12345"},
-			want:      false,
+			Input: input{
+				principal: entities.Principal{Account: "88888"},
+				resource:  entities.Resource{Account: "12345"},
+			},
+			Want: false,
 		},
 	}
 
-	for _, tc := range tests {
-		got := evalIsSameAccount(&tc.principal, &tc.resource)
-		if got != tc.want {
-			t.Fatalf("failed, wanted %v got %v for test case: %v", tc.want, got, tc)
-		}
-	}
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalIsSameAccount(&i.principal, &i.resource), nil
+	})
 }

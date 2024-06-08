@@ -2,54 +2,39 @@ package awsconfig
 
 import (
 	"testing"
+
+	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/pkg/policy"
 )
 
 // Testing a handful of edge cases that cannot be reached from elsewhere in the code
 
 // TestExtractInlinePoliciesInvalid confirms correct error handling behavior for unexpected types
 func TestExtractInlinePoliciesInvalid(t *testing.T) {
-	type test struct {
-		input ConfigItem
-	}
-
-	tests := []test{
+	tests := []testrunner.TestCase[ConfigItem, []policy.Policy]{
 		{
-			input: ConfigItem{
+			Input: ConfigItem{
 				Type: "AWS::IAM::Policy",
 			},
+			ShouldErr: true,
 		},
 	}
 
-	for _, tc := range tests {
-		_, err := extractInlinePolicies(tc.input)
-		if err == nil {
-			t.Fatalf("expected error but saw success for input: %#v", tc.input)
-		}
-
-		t.Logf("saw expected error: %v", err)
-	}
+	testrunner.RunTestSuite(t, tests, extractInlinePolicies)
 }
 
 // TestExtractManagedPoliciesInvalid confirms correct error handling behavior for unexpected types
 func TestExtractManagedPoliciesInvalid(t *testing.T) {
-	type test struct {
-		input ConfigItem
-	}
-
-	tests := []test{
+	tests := []testrunner.TestCase[ConfigItem, []policy.Policy]{
 		{
-			input: ConfigItem{
+			Input: ConfigItem{
 				Type: "AWS::IAM::Policy",
 			},
+			ShouldErr: true,
 		},
 	}
 
-	for _, tc := range tests {
-		_, err := extractManagedPolicies(tc.input, nil)
-		if err == nil {
-			t.Fatalf("expected error but saw success for input: %#v", tc.input)
-		}
-
-		t.Logf("saw expected error: %v", err)
-	}
+	testrunner.RunTestSuite(t, tests, func(c ConfigItem) ([]policy.Policy, error) {
+		return extractManagedPolicies(c, nil)
+	})
 }

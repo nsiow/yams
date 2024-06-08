@@ -47,6 +47,7 @@ func (l *Loader) Environment() entities.Environment {
 }
 
 // LoadJson loads data from a provided JSON array
+// TODO(nsiow) consider having this load from io.Reader instead
 func (a *Loader) LoadJson(data []byte) error {
 	var items []ConfigItem
 	err := json.Unmarshal(data, &items)

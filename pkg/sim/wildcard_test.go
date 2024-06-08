@@ -2,111 +2,142 @@ package sim
 
 import (
 	"testing"
+
+	"github.com/nsiow/yams/internal/testrunner"
 )
 
 func TestWildcard(t *testing.T) {
-	type test struct {
+	type input struct {
 		pattern    string
 		value      string
-		want       bool
 		ignoreCase bool
 	}
 
-	tests := []test{
+	tests := []testrunner.TestCase[input, bool]{
 		{
-			pattern: "foo",
-			value:   "foo",
-			want:    true,
+			Input: input{
+				pattern: "foo",
+				value:   "foo",
+			},
+			Want: true,
 		},
 		{
-			pattern: "foo",
-			value:   "bar",
-			want:    false,
+			Input: input{
+				pattern: "foo",
+				value:   "bar",
+			},
+			Want: false,
 		},
 		{
-			pattern: "*",
-			value:   "bar",
-			want:    true,
+			Input: input{
+				pattern: "*",
+				value:   "bar",
+			},
+			Want: true,
 		},
 		{
-			pattern: "arn:aws:s3::bucket",
-			value:   "arn:aws:s3:::bucket",
-			want:    false,
+			Input: input{
+				pattern: "arn:aws:s3::bucket",
+				value:   "arn:aws:s3:::bucket",
+			},
+			Want: false,
 		},
 		{
-			pattern: "arn:aws:sns:us-east-1:*:topic",
-			value:   "arn:aws:sns:us-east-1:55555:topic",
-			want:    true,
+			Input: input{
+				pattern: "arn:aws:sns:us-east-1:*:topic",
+				value:   "arn:aws:sns:us-east-1:55555:topic",
+			},
+			Want: true,
 		},
 		{
-			pattern: "arn:aws:sns:us-east-1::topic",
-			value:   "arn:aws:sns:us-east-1:55555:topic",
-			want:    false,
+			Input: input{
+				pattern: "arn:aws:sns:us-east-1::topic",
+				value:   "arn:aws:sns:us-east-1:55555:topic",
+			},
+			Want: false,
 		},
 		{
-			pattern: "arn:aws:sns:us-east-1:55555:*-backup",
-			value:   "arn:aws:sns:us-east-1:55555:topic-backup",
-			want:    true,
+			Input: input{
+				pattern: "arn:aws:sns:us-east-1:55555:*-backup",
+				value:   "arn:aws:sns:us-east-1:55555:topic-backup",
+			},
+			Want: true,
 		},
 		{
-			pattern: "arn:aws:sns:us-east-1:55555:*-backup",
-			value:   "arn:aws:sns:us-east-1:55555:topicbackup",
-			want:    false,
+			Input: input{
+				pattern: "arn:aws:sns:us-east-1:55555:*-backup",
+				value:   "arn:aws:sns:us-east-1:55555:topicbackup",
+			},
+			Want: false,
 		},
 		{
-			pattern: "arn:aws:sns:us-east-1:55555:topic-for-*",
-			value:   "arn:aws:sns:us-east-1:55555:topic-for-sale",
-			want:    true,
+			Input: input{
+				pattern: "arn:aws:sns:us-east-1:55555:topic-for-*",
+				value:   "arn:aws:sns:us-east-1:55555:topic-for-sale",
+			},
+			Want: true,
 		},
 		{
-			pattern: "arn:aws:sns:us-east-1:55555:topic-for-*",
-			value:   "arn:aws:sns:us-east-1:55555:topic-by-sale",
-			want:    false,
+			Input: input{
+				pattern: "arn:aws:sns:us-east-1:55555:topic-for-*",
+				value:   "arn:aws:sns:us-east-1:55555:topic-by-sale",
+			},
+			Want: false,
 		},
 		{
-			pattern: "arn:aws:sns:us-east-?:123*:*-in-the-*",
-			value:   "arn:aws:sns:us-east-1:12345:right-in-the-middle",
-			want:    true,
+			Input: input{
+				pattern: "arn:aws:sns:us-east-?:123*:*-in-the-*",
+				value:   "arn:aws:sns:us-east-1:12345:right-in-the-middle",
+			},
+			Want: true,
 		},
 		{
-			pattern: "s3:*object",
-			value:   "s3:getobject",
-			want:    true,
+			Input: input{
+				pattern: "s3:*object",
+				value:   "s3:getobject",
+			},
+			Want: true,
 		},
 		{
-			pattern: "s3:List*",
-			value:   "s3:ListBucket",
-			want:    true,
+			Input: input{
+				pattern: "s3:List*",
+				value:   "s3:ListBucket",
+			},
+			Want: true,
 		},
 		{
-			pattern: "s3:getobject",
-			value:   "s3:GetObject",
-			want:    false,
+			Input: input{
+				pattern: "s3:getobject",
+				value:   "s3:GetObject",
+			},
+			Want: false,
 		},
 		{
-			pattern:    "s3:getobject",
-			value:      "s3:GetObject",
-			ignoreCase: true,
-			want:       true,
+			Input: input{
+				pattern:    "s3:getobject",
+				value:      "s3:GetObject",
+				ignoreCase: true,
+			},
+			Want: true,
 		},
 		{
-			pattern:    "s3:*?*)][]*([][][?",
-			value:      "s3:getobject",
-			ignoreCase: false,
+			Input: input{
+				pattern:    "s3:*?*)][]*([][][?",
+				value:      "s3:getobject",
+				ignoreCase: false,
+			},
 		},
 	}
 
-	for _, tc := range tests {
-		// Check results
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		// Determine the correct function to call
 		var got bool
-		if tc.ignoreCase {
-			got = matchWildcardIgnoreCase(tc.pattern, tc.value)
+		if i.ignoreCase {
+			got = matchWildcardIgnoreCase(i.pattern, i.value)
 		} else {
-			got = matchWildcard(tc.pattern, tc.value)
+			got = matchWildcard(i.pattern, i.value)
 		}
 
-		if got != tc.want {
-			t.Fatalf("failed test case, wanted %v got %v for test case: %+v", tc.want, got, tc)
-		}
-	}
+		return got, nil
+	})
 }
