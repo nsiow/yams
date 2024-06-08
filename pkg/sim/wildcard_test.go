@@ -23,6 +23,13 @@ func TestWildcard(t *testing.T) {
 		},
 		{
 			Input: input{
+				pattern: "",
+				value:   "",
+			},
+			Want: false,
+		},
+		{
+			Input: input{
 				pattern: "foo",
 				value:   "bar",
 			},
