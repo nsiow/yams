@@ -76,7 +76,7 @@ func TestStatementBase(t *testing.T) {
 	})
 }
 
-// TestStringEquals validates StringEquals/StringNotEquals behavior
+// TestStringEquals validates StringEquals behavior
 func TestStringEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -96,38 +96,6 @@ func TestStringEquals(t *testing.T) {
 			Want: true,
 		},
 		{
-			Name: "simple_inverted_match",
-			Input: input{
-				ac: AuthContext{
-					Resource: &entities.Resource{Account: "55555"},
-				},
-				stmt: policy.Statement{
-					Condition: policy.ConditionBlock{
-						"StringNotEquals": {
-							"aws:ResourceAccount": []string{"88888", "12345"},
-						},
-					},
-				},
-			},
-			Want: true,
-		},
-		{
-			Name: "simple_inverted_nomatch",
-			Input: input{
-				ac: AuthContext{
-					Resource: &entities.Resource{Account: "55555"},
-				},
-				stmt: policy.Statement{
-					Condition: policy.ConditionBlock{
-						"StringNotEquals": {
-							"aws:ResourceAccount": []string{"55555", "12345"},
-						},
-					},
-				},
-			},
-			Want: false,
-		},
-		{
 			Name: "partial_match",
 			Input: input{
 				ac: AuthContext{
@@ -145,6 +113,16 @@ func TestStringEquals(t *testing.T) {
 			},
 			Want: false,
 		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestStringEqualsIgnoreCase validates StringEqualsIgnoreCase behavior
+func TestStringEqualsIgnoreCase(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
 		{
 			Name: "ignorecase_match",
 			Input: input{
@@ -184,7 +162,91 @@ func TestStringEquals(t *testing.T) {
 	})
 }
 
-// TestStringLike validates StringLike/StringNotEquals behavior
+// TestStringNotEquals validates StringNotEquals behavior
+func TestStringNotEquals(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_inverted_match",
+			Input: input{
+				ac: AuthContext{
+					Resource: &entities.Resource{Account: "55555"},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringNotEquals": {
+							"aws:ResourceAccount": []string{"88888", "12345"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_inverted_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Resource: &entities.Resource{Account: "55555"},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringNotEquals": {
+							"aws:ResourceAccount": []string{"55555", "12345"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestStringNotEqualsIgnoreCase validates StringNotEqualsIgnoreCase behavior
+func TestStringNotEqualsIgnoreCase(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "ignorecase_match",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.Principal{Arn: "arn:aws:iam::55555:role/myrole"},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringNotEqualsIgnoreCase": {
+							"aws:PrincipalArn": []string{"foo", "arn:aws:iam::55555:role/mYrOlE"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "ignorecase_no_match",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.Principal{Arn: "arn:aws:iam::55555:role/myrole"},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringNotEqualsIgnoreCase": {
+							"aws:PrincipalArn": []string{"arn:aws:iam::55555:role/myrolee"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestStringLike validates StringLike/StringNotLike behavior
 func TestStringLike(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -247,6 +309,100 @@ func TestStringLike(t *testing.T) {
 						"StringLike": {
 							"aws:PrincipalAccount": []string{"555*"},
 							"aws:ResourceAccount":  []string{"555*", "12*45"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestNumericEquals validates NumericEquals/NumericNotEquals behavior
+func TestNumericEquals(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericEquals": {
+							// TODO(nsiow) validate that this is correct behavior for multivalue keys
+							"aws:SomeNumericKey": []string{"123", "100"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericEquals": {
+							"aws:SomeNumericKey": []string{"500"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestNumericLessThan validates NumericLessThan behavior
+func TestNumericLessThan(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericLessThan": {
+							// TODO(nsiow) validate that this is correct behavior for multivalue keys
+							"aws:SomeNumericKey": []string{"150", "50"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericLessThan": {
+							"aws:SomeNumericKey": []string{"50"},
 						},
 					},
 				},

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/policy/condition"
@@ -93,23 +94,60 @@ var ConditionOperatorMap = map[string]ConditionOperator{
 			),
 		),
 	),
-	condition.NumericLessThan: Cond_MatchNone(
+	condition.NumericLessThan: Cond_MatchAny(
 		Mod_Number(
 			Cond_NumericLessThan,
 		),
 	),
-	condition.NumericLessThanEquals: Cond_MatchNone(
+	condition.NumericLessThanEquals: Cond_MatchAny(
 		Mod_Number(
 			Cond_NumericLessThanEquals,
 		),
 	),
-	condition.NumericGreaterThan: Cond_MatchNone(
+	condition.NumericGreaterThan: Cond_MatchAny(
 		Mod_Number(
 			Cond_NumericGreaterThan,
 		),
 	),
-	condition.NumericGreaterThanEquals: Cond_MatchNone(
+	condition.NumericGreaterThanEquals: Cond_MatchAny(
 		Mod_Number(
+			Cond_NumericGreaterThanEquals,
+		),
+	),
+
+	// ------------------------------------------------------------------------------
+	// Date Functions
+	// ------------------------------------------------------------------------------
+
+	condition.DateEquals: Cond_MatchAny(
+		Mod_Date(
+			Cond_NumericEquals,
+		),
+	),
+	condition.DateNotEquals: Cond_MatchNone(
+		Mod_Not(
+			Mod_Date(
+				Cond_NumericEquals,
+			),
+		),
+	),
+	condition.DateLessThan: Cond_MatchNone(
+		Mod_Date(
+			Cond_NumericLessThan,
+		),
+	),
+	condition.DateLessThanEquals: Cond_MatchNone(
+		Mod_Date(
+			Cond_NumericLessThanEquals,
+		),
+	),
+	condition.DateGreaterThan: Cond_MatchNone(
+		Mod_Date(
+			Cond_NumericGreaterThan,
+		),
+	),
+	condition.DateGreaterThanEquals: Cond_MatchNone(
+		Mod_Date(
 			Cond_NumericGreaterThanEquals,
 		),
 	),
@@ -241,6 +279,27 @@ func Mod_Number(f func(*Trace, int, int) bool) Compare {
 			// TODO(nsiow) find a good place to log errors
 			return false
 		}
+
+		return f(trc, nLeft, nRight)
+	}
+}
+
+// Mod_Date converts the string inputs to dates, allowing datewise comparisons
+func Mod_Date(f func(*Trace, int, int) bool) Compare {
+	return func(trc *Trace, left, right string) bool {
+		tLeft, err := time.Parse(TIME_FORMAT, left)
+		if err != nil {
+			// TODO(nsiow) find a good place to log errors
+			return false
+		}
+		nLeft := int(tLeft.Unix())
+
+		rRight, err := time.Parse(TIME_FORMAT, left)
+		if err != nil {
+			// TODO(nsiow) find a good place to log errors
+			return false
+		}
+		nRight := int(rRight.Unix())
 
 		return f(trc, nLeft, nRight)
 	}

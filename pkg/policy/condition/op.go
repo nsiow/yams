@@ -23,4 +23,12 @@ const (
 	NumericLessThanEquals    = "NumericLessThanEquals"
 	NumericGreaterThan       = "NumericGreaterThan"
 	NumericGreaterThanEquals = "NumericGreaterThanEqual"
+
+	// Date Functions
+	DateEquals            = "DateEquals"
+	DateNotEquals         = "DateNotEquals"
+	DateLessThan          = "DateLessThan"
+	DateLessThanEquals    = "DateLessThanEquals"
+	DateGreaterThan       = "DateGreaterThan"
+	DateGreaterThanEquals = "DateGreaterThanEqual"
 )

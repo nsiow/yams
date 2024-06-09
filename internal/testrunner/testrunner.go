@@ -24,6 +24,7 @@ func RunTestSuite[I, O any](
 	for _, tc := range testCases {
 		tc := tc // local variable in case we need to use pointer to loop var
 		t.Run(tc.Name, func(t *testing.T) {
+			t.Helper()
 			got, err := f(tc.Input)
 
 			switch {
