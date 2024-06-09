@@ -322,7 +322,7 @@ func TestStringLike(t *testing.T) {
 	})
 }
 
-// TestNumericEquals validates NumericEquals/NumericNotEquals behavior
+// TestNumericEquals validates NumericEquals behavior
 func TestNumericEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -361,6 +361,53 @@ func TestNumericEquals(t *testing.T) {
 				},
 			},
 			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestNumericNotEquals validates NumericEquals behavior
+func TestNumericNotEquals(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericNotEquals": {
+							// TODO(nsiow) validate that this is correct behavior for multivalue keys
+							"aws:SomeNumericKey": []string{"123", "100"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericNotEquals": {
+							"aws:SomeNumericKey": []string{"500"},
+						},
+					},
+				},
+			},
+			Want: true,
 		},
 	}
 
@@ -408,6 +455,183 @@ func TestNumericLessThan(t *testing.T) {
 				},
 			},
 			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestNumericLessThanEquals validates NumericLessThanEquals behavior
+func TestNumericLessThanEquals(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericLessThanEquals": {
+							// TODO(nsiow) validate that this is correct behavior for multivalue keys
+							"aws:SomeNumericKey": []string{"150", "50"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_equals_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericLessThanEquals": {
+							"aws:SomeNumericKey": []string{"100", "50"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericLessThanEquals": {
+							"aws:SomeNumericKey": []string{"50"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestNumericGreaterThan validates NumericGreaterThan behavior
+func TestNumericGreaterThan(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericGreaterThan": {
+							// TODO(nsiow) validate that this is correct behavior for multivalue keys
+							"aws:SomeNumericKey": []string{"150", "50"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericGreaterThan": {
+							"aws:SomeNumericKey": []string{"50"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestNumericGreaterThanEquals validates NumericGreaterThanEquals behavior
+func TestNumericGreaterThanEquals(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericGreaterThanEquals": {
+							// TODO(nsiow) validate that this is correct behavior for multivalue keys
+							"aws:SomeNumericKey": []string{"150", "50"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_equals_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericGreaterThanEquals": {
+							"aws:SomeNumericKey": []string{"100", "50"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericGreaterThanEquals": {
+							"aws:SomeNumericKey": []string{"50"},
+						},
+					},
+				},
+			},
+			Want: true,
 		},
 	}
 

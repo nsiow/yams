@@ -57,7 +57,9 @@ var ConditionOperatorMap = map[string]ConditionOperator{
 	),
 	condition.StringEqualsIgnoreCase: Mod_ResolveVariables(
 		Cond_MatchAny(
-			Mod_IgnoreCase(Cond_StringEquals),
+			Mod_IgnoreCase(
+				Cond_StringEquals,
+			),
 		),
 	),
 	condition.StringNotEqualsIgnoreCase: Mod_ResolveVariables(
@@ -88,10 +90,8 @@ var ConditionOperatorMap = map[string]ConditionOperator{
 		),
 	),
 	condition.NumericNotEquals: Cond_MatchNone(
-		Mod_Not(
-			Mod_Number(
-				Cond_NumericEquals,
-			),
+		Mod_Number(
+			Cond_NumericEquals,
 		),
 	),
 	condition.NumericLessThan: Cond_MatchAny(
