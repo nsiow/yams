@@ -18,11 +18,15 @@ var ErrUnknownOperator = errors.New("unknown operation")
 // Error indicating that an unknown Condition key was specified
 var ErrUnknownConditionKey = errors.New("unknown condition key")
 
-// ConditionOperator defines the shape of a Condition operator function
+// Compare defines a function used to compare a value to a single other value
 //
 // The function should take in two strings where `left` is the observed value and `right` is what
 // we are trying to match against
-type ConditionOperator = func(trc *Trace, left string, right string) bool
+type Compare = func(trc *Trace, left string, right string) bool
+
+// ConditionOperator defines a function used to compare a value against a list of possible other
+// values
+type ConditionOperator = func(trc *Trace, left string, right policy.Value) bool
 
 // ConditionMod defines a function which wraps a ConditionOperator
 type ConditionMod = func(ConditionOperator) ConditionOperator
@@ -33,18 +37,43 @@ type ConditionMod = func(ConditionOperator) ConditionOperator
 
 // ConditionOperatorMap defines the mapping between operator names and functions
 var ConditionOperatorMap = map[string]ConditionOperator{
-	condition.Op_StringEquals:              Cond_StringEquals,
-	condition.Op_StringNotEquals:           Mod_Not(Cond_StringEquals),
-	condition.Op_StringEqualsIgnoreCase:    Mod_CaseInsensitive(Cond_StringEquals),
-	condition.Op_StringNotEqualsIgnoreCase: Mod_CaseInsensitive(Mod_Not(Cond_StringEquals)),
+	condition.Op_StringEquals:    Cond_MatchAny(Cond_StringEquals),
+	condition.Op_StringNotEquals: Cond_MatchNone(Cond_StringEquals),
+	condition.Op_StringEqualsIgnoreCase: Cond_MatchAny(
+		Mod_CaseInsensitive(Cond_StringEquals),
+	),
+	condition.Op_StringNotEqualsIgnoreCase: Cond_MatchNone(
+		Mod_CaseInsensitive(Cond_StringEquals),
+	),
 }
 
 // --------------------------------------------------------------------------------
-// Condition operators
+// Condition evaluation functions
+// --------------------------------------------------------------------------------
+
+func Cond_MatchAny(f Compare) ConditionOperator {
+	return func(trc *Trace, left string, right policy.Value) bool {
+		for _, value := range right {
+			if f(trc, left, value) {
+				return true
+			}
+		}
+
+		return false
+	}
+}
+
+func Cond_MatchNone(f Compare) ConditionOperator {
+	return func(trc *Trace, left string, right policy.Value) bool {
+		return !Cond_MatchAny(f)(trc, left, right)
+	}
+}
+
+// --------------------------------------------------------------------------------
+// Condition comparison functions
 // --------------------------------------------------------------------------------
 
 // Cond_StringEquals defines the `StringEquals` condition function
-// TODO(nsiow) determine if trace should get passed all the way down here
 func Cond_StringEquals(trc *Trace, left, right string) bool {
 	return left == right
 }
@@ -54,7 +83,7 @@ func Cond_StringEquals(trc *Trace, left, right string) bool {
 // --------------------------------------------------------------------------------
 
 // Mod_Not defines a Condition modifier which flips the result of the underlying func
-func Mod_Not(f ConditionOperator) ConditionOperator {
+func Mod_Not(f Compare) Compare {
 	return func(trc *Trace, left, right string) bool {
 		return !f(trc, left, right)
 	}
@@ -62,7 +91,7 @@ func Mod_Not(f ConditionOperator) ConditionOperator {
 
 // Mod_MustExist defines a Condition modifier which returns false if the key is not found
 func Mod_MustExist(f ConditionOperator) ConditionOperator {
-	return func(trc *Trace, left, right string) bool {
+	return func(trc *Trace, left string, right policy.Value) bool {
 		if left == "" {
 			return false
 		}
@@ -73,7 +102,7 @@ func Mod_MustExist(f ConditionOperator) ConditionOperator {
 
 // Mod_IfExists defines a Condition modifier which returns true if the key is not found
 func Mod_IfExists(f ConditionOperator) ConditionOperator {
-	return func(trc *Trace, left, right string) bool {
+	return func(trc *Trace, left string, right policy.Value) bool {
 		if left == "" {
 			return true
 		}
@@ -83,7 +112,7 @@ func Mod_IfExists(f ConditionOperator) ConditionOperator {
 }
 
 // Mod_CaseInsensitive defines a Condition modifier which ignores character casing
-func Mod_CaseInsensitive(f ConditionOperator) ConditionOperator {
+func Mod_CaseInsensitive(f Compare) Compare {
 	return func(trc *Trace, left, right string) bool {
 		return f(trc, strings.ToLower(left), strings.ToLower(right))
 	}
@@ -123,16 +152,9 @@ func ConditionResolveOperator(op string) (ConditionOperator, bool) {
 // evalCondition is an evaluation helper function which performs a condition check over a single
 // operation / key / value 3-tuple
 func evalCondition(ac AuthContext, trc *Trace, f ConditionOperator, key string,
-	values policy.Value) bool {
+	right policy.Value) bool {
 
 	// FIXME(nsiow) you are debugging this w.r.t. StringNotEquals and its incorrect behavior
 	left := ac.Key(key)
-	for _, right := range values {
-		isTrue := f(trc, left, right)
-		if isTrue {
-			return true
-		}
-	}
-
-	return false
+	return f(trc, left, right)
 }
