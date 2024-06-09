@@ -2,10 +2,12 @@ package sim
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/policy/condition"
+	"github.com/nsiow/yams/pkg/sim/wildcard"
 )
 
 // --------------------------------------------------------------------------------
@@ -26,7 +28,7 @@ type Compare = func(trc *Trace, left string, right string) bool
 
 // ConditionOperator defines a function used to compare a value against a list of possible other
 // values
-type ConditionOperator = func(trc *Trace, left string, right policy.Value) bool
+type ConditionOperator = func(ac AuthContext, trc *Trace, left string, right policy.Value) bool
 
 // ConditionMod defines a function which wraps a ConditionOperator
 type ConditionMod = func(ConditionOperator) ConditionOperator
@@ -37,13 +39,79 @@ type ConditionMod = func(ConditionOperator) ConditionOperator
 
 // ConditionOperatorMap defines the mapping between operator names and functions
 var ConditionOperatorMap = map[string]ConditionOperator{
-	condition.Op_StringEquals:    Cond_MatchAny(Cond_StringEquals),
-	condition.Op_StringNotEquals: Cond_MatchNone(Cond_StringEquals),
-	condition.Op_StringEqualsIgnoreCase: Cond_MatchAny(
-		Mod_CaseInsensitive(Cond_StringEquals),
+
+	// ------------------------------------------------------------------------------
+	// String Functions
+	// ------------------------------------------------------------------------------
+
+	condition.StringEquals: Mod_ResolveVariables(
+		Cond_MatchAny(
+			Cond_StringEquals,
+		),
 	),
-	condition.Op_StringNotEqualsIgnoreCase: Cond_MatchNone(
-		Mod_CaseInsensitive(Cond_StringEquals),
+	condition.StringNotEquals: Mod_ResolveVariables(
+		Cond_MatchNone(
+			Cond_StringEquals,
+		),
+	),
+	condition.StringEqualsIgnoreCase: Mod_ResolveVariables(
+		Cond_MatchAny(
+			Mod_IgnoreCase(Cond_StringEquals),
+		),
+	),
+	condition.StringNotEqualsIgnoreCase: Mod_ResolveVariables(
+		Cond_MatchNone(
+			Mod_IgnoreCase(
+				Cond_StringEquals,
+			),
+		),
+	),
+	condition.StringLike: Mod_ResolveVariables(
+		Cond_MatchAny(
+			Cond_StringLike,
+		),
+	),
+	condition.StringNotLike: Mod_ResolveVariables(
+		Cond_MatchNone(
+			Cond_StringLike,
+		),
+	),
+
+	// ------------------------------------------------------------------------------
+	// Numeric Functions
+	// ------------------------------------------------------------------------------
+
+	condition.NumericEquals: Cond_MatchAny(
+		Mod_Number(
+			Cond_NumericEquals,
+		),
+	),
+	condition.NumericNotEquals: Cond_MatchNone(
+		Mod_Not(
+			Mod_Number(
+				Cond_NumericEquals,
+			),
+		),
+	),
+	condition.NumericLessThan: Cond_MatchNone(
+		Mod_Number(
+			Cond_NumericLessThan,
+		),
+	),
+	condition.NumericLessThanEquals: Cond_MatchNone(
+		Mod_Number(
+			Cond_NumericLessThanEquals,
+		),
+	),
+	condition.NumericGreaterThan: Cond_MatchNone(
+		Mod_Number(
+			Cond_NumericGreaterThan,
+		),
+	),
+	condition.NumericGreaterThanEquals: Cond_MatchNone(
+		Mod_Number(
+			Cond_NumericGreaterThanEquals,
+		),
 	),
 }
 
@@ -52,7 +120,7 @@ var ConditionOperatorMap = map[string]ConditionOperator{
 // --------------------------------------------------------------------------------
 
 func Cond_MatchAny(f Compare) ConditionOperator {
-	return func(trc *Trace, left string, right policy.Value) bool {
+	return func(_ AuthContext, trc *Trace, left string, right policy.Value) bool {
 		for _, value := range right {
 			if f(trc, left, value) {
 				return true
@@ -64,8 +132,8 @@ func Cond_MatchAny(f Compare) ConditionOperator {
 }
 
 func Cond_MatchNone(f Compare) ConditionOperator {
-	return func(trc *Trace, left string, right policy.Value) bool {
-		return !Cond_MatchAny(f)(trc, left, right)
+	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
+		return !Cond_MatchAny(f)(ac, trc, left, right)
 	}
 }
 
@@ -76,6 +144,37 @@ func Cond_MatchNone(f Compare) ConditionOperator {
 // Cond_StringEquals defines the `StringEquals` condition function
 func Cond_StringEquals(trc *Trace, left, right string) bool {
 	return left == right
+}
+
+// Cond_StringLike defines the `StringLike` condition function
+func Cond_StringLike(trc *Trace, left, right string) bool {
+	// TODO(nsiow) maybe swap ordering of arguments in matchWildcard to better match go stdlib
+	return wildcard.MatchString(right, left)
+}
+
+// Cond_NumericEquals defines the `NumericEquals` condition function
+func Cond_NumericEquals(trc *Trace, left, right int) bool {
+	return left == right
+}
+
+// Cond_NumericLessThan defines the `NumericLessThan` condition function
+func Cond_NumericLessThan(trc *Trace, left, right int) bool {
+	return left < right
+}
+
+// Cond_NumericLessThanEquals defines the `NumericLessThanEquals` condition function
+func Cond_NumericLessThanEquals(trc *Trace, left, right int) bool {
+	return left <= right
+}
+
+// Cond_NumericGreaterThan defines the `NumericGreaterThan` condition function
+func Cond_NumericGreaterThan(trc *Trace, left, right int) bool {
+	return left > right
+}
+
+// Cond_NumericGreaterThanEquals defines the `NumericGreaterThanEquals` condition function
+func Cond_NumericGreaterThanEquals(trc *Trace, left, right int) bool {
+	return left >= right
 }
 
 // --------------------------------------------------------------------------------
@@ -89,32 +188,61 @@ func Mod_Not(f Compare) Compare {
 	}
 }
 
+// Mod_ResolveVariables resolves and replaces all IAM variables within the provided values
+func Mod_ResolveVariables(f ConditionOperator) ConditionOperator {
+	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
+		for i := range right {
+			right[i] = ac.Resolve(right[i])
+		}
+		return f(ac, trc, left, right)
+	}
+}
+
 // Mod_MustExist defines a Condition modifier which returns false if the key is not found
 func Mod_MustExist(f ConditionOperator) ConditionOperator {
-	return func(trc *Trace, left string, right policy.Value) bool {
+	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
 		if left == "" {
 			return false
 		}
 
-		return f(trc, left, right)
+		return f(ac, trc, left, right)
 	}
 }
 
 // Mod_IfExists defines a Condition modifier which returns true if the key is not found
 func Mod_IfExists(f ConditionOperator) ConditionOperator {
-	return func(trc *Trace, left string, right policy.Value) bool {
+	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
 		if left == "" {
 			return true
 		}
 
-		return f(trc, left, right)
+		return f(ac, trc, left, right)
 	}
 }
 
-// Mod_CaseInsensitive defines a Condition modifier which ignores character casing
-func Mod_CaseInsensitive(f Compare) Compare {
+// Mod_IgnoreCase defines a Condition modifier which ignores character casing
+func Mod_IgnoreCase(f Compare) Compare {
 	return func(trc *Trace, left, right string) bool {
 		return f(trc, strings.ToLower(left), strings.ToLower(right))
+	}
+}
+
+// Mod_Number converts the string inputs to numbers, allowing numerical comparisons
+func Mod_Number(f func(*Trace, int, int) bool) Compare {
+	return func(trc *Trace, left, right string) bool {
+		nLeft, err := strconv.Atoi(left)
+		if err != nil {
+			// TODO(nsiow) find a good place to log errors
+			return false
+		}
+
+		nRight, err := strconv.Atoi(right)
+		if err != nil {
+			// TODO(nsiow) find a good place to log errors
+			return false
+		}
+
+		return f(trc, nLeft, nRight)
 	}
 }
 
@@ -153,8 +281,8 @@ func ConditionResolveOperator(op string) (ConditionOperator, bool) {
 // operation / key / value 3-tuple
 func evalCondition(ac AuthContext, trc *Trace, f ConditionOperator, key string,
 	right policy.Value) bool {
-
-	// FIXME(nsiow) you are debugging this w.r.t. StringNotEquals and its incorrect behavior
 	left := ac.Key(key)
-	return f(trc, left, right)
+	// TODO(nsiow) `right` should get its policy variables expanded where relevant
+	// except not here because it depends on the operator!
+	return f(ac, trc, left, right)
 }

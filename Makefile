@@ -47,9 +47,15 @@ lint:
 
 GO_TEST_RUNNER ?= go test
 
+GO_TEST_FLAGS ?=
+
 .PHONY: test
 test:
 	$(GO_TEST_RUNNER) $(GO_TEST_FLAGS) $(GO_TOOL_TARGET)
+
+.PHONY: testv
+testv: GO_TEST_FLAGS+=-v
+testv: test
 
 COVERAGE_FILE   ?= coverage.out
 COVERAGE_REPORT ?= coverage.html

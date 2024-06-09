@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/nsiow/yams/pkg/entities"
-	"github.com/nsiow/yams/pkg/policy"
 )
 
 // Simulator provides the ability to simulate IAM policies and the interactions between
@@ -49,7 +48,7 @@ func (s *Simulator) Simulate(ac AuthContext) (*Result, error) {
 }
 
 // SimulateByArn determines whether the operation would be allowed
-func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[string]policy.Value) (*Result, error) {
+func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[string]string) (*Result, error) {
 
 	// Validate that an Environment was set previously
 	if s.env == nil {

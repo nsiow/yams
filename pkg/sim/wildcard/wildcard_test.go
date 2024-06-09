@@ -1,4 +1,4 @@
-package sim
+package wildcard
 
 import (
 	"testing"
@@ -140,9 +140,9 @@ func TestWildcard(t *testing.T) {
 		// Determine the correct function to call
 		var got bool
 		if i.ignoreCase {
-			got = matchWildcardIgnoreCase(i.pattern, i.value)
+			got = MatchSegmentsIgnoreCase(i.pattern, i.value)
 		} else {
-			got = matchWildcard(i.pattern, i.value)
+			got = MatchSegments(i.pattern, i.value)
 		}
 
 		return got, nil

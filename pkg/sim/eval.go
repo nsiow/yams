@@ -8,6 +8,7 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim/effectset"
 	"github.com/nsiow/yams/pkg/sim/gate"
+	"github.com/nsiow/yams/pkg/sim/wildcard"
 )
 
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
@@ -177,7 +178,7 @@ func evalStatementMatchesAction(
 	}
 
 	for _, a := range action {
-		match := matchWildcardIgnoreCase(a, ac.Action)
+		match := wildcard.MatchSegmentsIgnoreCase(a, ac.Action)
 		if match {
 			return _gate.Apply(true), nil
 		}
@@ -200,9 +201,9 @@ func evalStatementMatchesPrincipal(
 		_gate.Invert()
 	}
 
-	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
+	// TODO(nsiow) validate that this is how Principals are evaluated - exact matches?
 	for _, p := range principals.AWS {
-		match := matchWildcard(p, ac.Principal.Arn)
+		match := wildcard.MatchAllOrNothing(p, ac.Principal.Arn)
 		if match {
 			return _gate.Apply(true), nil
 		}
@@ -225,8 +226,9 @@ func evalStatementMatchesResource(
 		_gate.Invert()
 	}
 
+	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
 	for _, r := range resources {
-		match := matchWildcard(r, ac.Resource.Arn)
+		match := wildcard.MatchSegments(r, ac.Resource.Arn)
 		if match {
 			return _gate.Apply(true), nil
 		}
