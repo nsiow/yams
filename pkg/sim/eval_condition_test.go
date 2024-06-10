@@ -568,6 +568,24 @@ func TestNumericGreaterThan(t *testing.T) {
 			},
 			Want: true,
 		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericGreaterThanEquals": {
+							"aws:SomeNumericKey": []string{"150"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
@@ -579,7 +597,7 @@ func TestNumericGreaterThan(t *testing.T) {
 func TestNumericGreaterThanEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
-			Name: "simple_nomatch",
+			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
 					Properties: map[string]string{
@@ -598,7 +616,7 @@ func TestNumericGreaterThanEquals(t *testing.T) {
 			Want: true,
 		},
 		{
-			Name: "simple_equals_nomatch",
+			Name: "simple_match_equals",
 			Input: input{
 				ac: AuthContext{
 					Properties: map[string]string{
@@ -616,7 +634,7 @@ func TestNumericGreaterThanEquals(t *testing.T) {
 			Want: true,
 		},
 		{
-			Name: "simple_match",
+			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
 					Properties: map[string]string{
@@ -626,12 +644,12 @@ func TestNumericGreaterThanEquals(t *testing.T) {
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
 						"NumericGreaterThanEquals": {
-							"aws:SomeNumericKey": []string{"50"},
+							"aws:SomeNumericKey": []string{"150"},
 						},
 					},
 				},
 			},
-			Want: true,
+			Want: false,
 		},
 	}
 

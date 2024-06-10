@@ -51,8 +51,10 @@ var ConditionOperatorMap = map[string]ConditionOperator{
 		),
 	),
 	condition.StringNotEquals: Mod_ResolveVariables(
-		Cond_MatchNone(
-			Cond_StringEquals,
+		Mod_Not(
+			Cond_MatchAny(
+				Cond_StringEquals,
+			),
 		),
 	),
 	condition.StringEqualsIgnoreCase: Mod_ResolveVariables(
@@ -63,9 +65,11 @@ var ConditionOperatorMap = map[string]ConditionOperator{
 		),
 	),
 	condition.StringNotEqualsIgnoreCase: Mod_ResolveVariables(
-		Cond_MatchNone(
-			Mod_IgnoreCase(
-				Cond_StringEquals,
+		Mod_Not(
+			Cond_MatchAny(
+				Mod_IgnoreCase(
+					Cond_StringEquals,
+				),
 			),
 		),
 	),
@@ -75,8 +79,10 @@ var ConditionOperatorMap = map[string]ConditionOperator{
 		),
 	),
 	condition.StringNotLike: Mod_ResolveVariables(
-		Cond_MatchNone(
-			Cond_StringLike,
+		Mod_Not(
+			Cond_MatchAny(
+				Cond_StringLike,
+			),
 		),
 	),
 
@@ -89,9 +95,11 @@ var ConditionOperatorMap = map[string]ConditionOperator{
 			Cond_NumericEquals,
 		),
 	),
-	condition.NumericNotEquals: Cond_MatchNone(
-		Mod_Number(
-			Cond_NumericEquals,
+	condition.NumericNotEquals: Mod_Not(
+		Cond_MatchAny(
+			Mod_Number(
+				Cond_NumericEquals,
+			),
 		),
 	),
 	condition.NumericLessThan: Cond_MatchAny(
@@ -124,29 +132,29 @@ var ConditionOperatorMap = map[string]ConditionOperator{
 			Cond_NumericEquals,
 		),
 	),
-	condition.DateNotEquals: Cond_MatchNone(
-		Mod_Not(
+	condition.DateNotEquals: Mod_Not(
+		Cond_MatchAny(
 			Mod_Date(
 				Cond_NumericEquals,
 			),
 		),
 	),
-	condition.DateLessThan: Cond_MatchNone(
+	condition.DateLessThan: Cond_MatchAny(
 		Mod_Date(
 			Cond_NumericLessThan,
 		),
 	),
-	condition.DateLessThanEquals: Cond_MatchNone(
+	condition.DateLessThanEquals: Cond_MatchAny(
 		Mod_Date(
 			Cond_NumericLessThanEquals,
 		),
 	),
-	condition.DateGreaterThan: Cond_MatchNone(
+	condition.DateGreaterThan: Cond_MatchAny(
 		Mod_Date(
 			Cond_NumericGreaterThan,
 		),
 	),
-	condition.DateGreaterThanEquals: Cond_MatchNone(
+	condition.DateGreaterThanEquals: Cond_MatchAny(
 		Mod_Date(
 			Cond_NumericGreaterThanEquals,
 		),
@@ -166,12 +174,6 @@ func Cond_MatchAny(f Compare) ConditionOperator {
 		}
 
 		return false
-	}
-}
-
-func Cond_MatchNone(f Compare) ConditionOperator {
-	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
-		return !Cond_MatchAny(f)(ac, trc, left, right)
 	}
 }
 
@@ -219,10 +221,10 @@ func Cond_NumericGreaterThanEquals(trc *Trace, left, right int) bool {
 // Condition modifiers
 // --------------------------------------------------------------------------------
 
-// Mod_Not defines a Condition modifier which flips the result of the underlying func
-func Mod_Not(f Compare) Compare {
-	return func(trc *Trace, left, right string) bool {
-		return !f(trc, left, right)
+// Mod_Not inverts the provided ConditionOperator
+func Mod_Not(f ConditionOperator) ConditionOperator {
+	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
+		return !f(ac, trc, left, right)
 	}
 }
 
@@ -316,7 +318,7 @@ func Mod_Date(f func(*Trace, int, int) bool) Compare {
 func ConditionResolveOperator(op string) (ConditionOperator, bool) {
 	// Handle function modifiers
 	mods := []ConditionMod{}
-	if strings.HasSuffix(op, "IfExists") {
+	if strings.HasSuffix(op, "IfExists") && !strings.HasPrefix(op, "Null") {
 		mods = append(mods, Mod_IfExists)
 		op = strings.TrimSuffix(op, "IfExists")
 	} else {
@@ -341,7 +343,5 @@ func ConditionResolveOperator(op string) (ConditionOperator, bool) {
 func evalCondition(ac AuthContext, trc *Trace, f ConditionOperator, key string,
 	right policy.Value) bool {
 	left := ac.Key(key)
-	// TODO(nsiow) `right` should get its policy variables expanded where relevant
-	// except not here because it depends on the operator!
 	return f(ac, trc, left, right)
 }
