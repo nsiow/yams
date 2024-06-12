@@ -780,7 +780,7 @@ func TestDateNotEquals(t *testing.T) {
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
 						"DateNotEquals": {
-							"aws:SomeDateKey": []string{"1212-12-12:12:12"},
+							"aws:SomeDateKey": []string{"1212-12-12T12:12:12"},
 						},
 					},
 				},
@@ -828,6 +828,315 @@ func TestDateNotEquals(t *testing.T) {
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
 	})
+}
 
-	// FIXME(nsiow) you need to implement tests for the other date functions
+// TestDateLessThan validates DateLessThan behavior
+func TestDateLessThan(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1212-12-12T12:12:12",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateLessThan": {
+							"aws:SomeDateKey": []string{"2024-01-01T10:11:12"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "2024-01-01T10:11:12",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateLessThan": {
+							"aws:SomeDateKey": []string{"2023-01-01T03:04:05", "1212-12-12T12:12:12"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "simple_match_epoch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1704103872",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateLessThan": {
+							"aws:SomeDateKey": []string{"2025-01-01T03:04:05"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestDateLessThanEquals validates DateLessThanEquals behavior
+func TestDateLessThanEquals(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1212-12-12T12:12:12",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateLessThanEquals": {
+							"aws:SomeDateKey": []string{"2024-01-01T10:11:12"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "2024-01-01T10:11:12",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateLessThanEquals": {
+							"aws:SomeDateKey": []string{"2023-01-01T03:04:05", "1212-12-12T12:12:12"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "simple_match_epoch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1704103872",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateLessThanEquals": {
+							"aws:SomeDateKey": []string{"2025-01-01T03:04:05"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_equals_epoch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1704103872",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateLessThanEquals": {
+							"aws:SomeDateKey": []string{"1704103872"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestDateGreaterThan validates DateGreaterThan behavior
+func TestDateGreaterThan(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "2024-01-01T10:11:12",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateGreaterThan": {
+							"aws:SomeDateKey": []string{"2023-01-01T03:04:05", "1212-12-12T12:12:12"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1212-12-12T12:12:12",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateGreaterThan": {
+							"aws:SomeDateKey": []string{"2024-01-01T10:11:12"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+
+		{
+			Name: "simple_match_epoch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1804103872",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateGreaterThan": {
+							"aws:SomeDateKey": []string{"2025-01-01T03:04:05"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_equals_epoch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1704103872",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateGreaterThan": {
+							"aws:SomeDateKey": []string{"1704103872"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestDateGreaterThanEquals validates DateGreaterThanEquals behavior
+func TestDateGreaterThanEquals(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "2024-01-01T10:11:12",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateGreaterThanEquals": {
+							"aws:SomeDateKey": []string{"2023-01-01T03:04:05", "1212-12-12T12:12:12"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1212-12-12T12:12:12",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateGreaterThanEquals": {
+							"aws:SomeDateKey": []string{"2024-01-01T10:11:12"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "simple_match_epoch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1804103872",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateGreaterThanEquals": {
+							"aws:SomeDateKey": []string{"2025-01-01T03:04:05"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_equals_epoch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1704103872",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateGreaterThanEquals": {
+							"aws:SomeDateKey": []string{"1704103872"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
 }
