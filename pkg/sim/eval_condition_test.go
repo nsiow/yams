@@ -96,6 +96,22 @@ func TestStringEquals(t *testing.T) {
 			Want: true,
 		},
 		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Resource: &entities.Resource{Account: "55555"},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringEquals": {
+							"aws:ResourceAccount": []string{"77777"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
 			Name: "partial_match",
 			Input: input{
 				ac: AuthContext{
@@ -246,7 +262,7 @@ func TestStringNotEqualsIgnoreCase(t *testing.T) {
 	})
 }
 
-// TestStringLike validates StringLike/StringNotLike behavior
+// TestStringLike validates StringLike behavior
 func TestStringLike(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -265,6 +281,34 @@ func TestStringLike(t *testing.T) {
 			},
 			Want: true,
 		},
+		{
+			Name: "partial_match",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.Principal{Account: "12345"},
+					Resource:  &entities.Resource{Account: "55555"},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringLike": {
+							"aws:PrincipalAccount": []string{"555*"},
+							"aws:ResourceAccount":  []string{"555*", "12*45"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestStringNotLike validates StringNotLike behavior
+func TestStringNotLike(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
 		{
 			Name: "simple_inverted_match",
 			Input: input{
@@ -291,24 +335,6 @@ func TestStringLike(t *testing.T) {
 					Condition: policy.ConditionBlock{
 						"StringNotLike": {
 							"aws:ResourceAccount": []string{"555*", "12*45"},
-						},
-					},
-				},
-			},
-			Want: false,
-		},
-		{
-			Name: "partial_match",
-			Input: input{
-				ac: AuthContext{
-					Principal: &entities.Principal{Account: "12345"},
-					Resource:  &entities.Resource{Account: "55555"},
-				},
-				stmt: policy.Statement{
-					Condition: policy.ConditionBlock{
-						"StringLike": {
-							"aws:PrincipalAccount": []string{"555*"},
-							"aws:ResourceAccount":  []string{"555*", "12*45"},
 						},
 					},
 				},
@@ -373,6 +399,24 @@ func TestNumericEquals(t *testing.T) {
 func TestNumericNotEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "100",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericNotEquals": {
+							"aws:SomeNumericKey": []string{"500"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
@@ -390,24 +434,6 @@ func TestNumericNotEquals(t *testing.T) {
 				},
 			},
 			Want: false,
-		},
-		{
-			Name: "simple_match",
-			Input: input{
-				ac: AuthContext{
-					Properties: map[string]string{
-						"aws:SomeNumericKey": "100",
-					},
-				},
-				stmt: policy.Statement{
-					Condition: policy.ConditionBlock{
-						"NumericNotEquals": {
-							"aws:SomeNumericKey": []string{"500"},
-						},
-					},
-				},
-			},
-			Want: true,
 		},
 	}
 
@@ -578,7 +604,7 @@ func TestNumericGreaterThan(t *testing.T) {
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
-						"NumericGreaterThanEquals": {
+						"NumericGreaterThan": {
 							"aws:SomeNumericKey": []string{"150"},
 						},
 					},
@@ -656,4 +682,152 @@ func TestNumericGreaterThanEquals(t *testing.T) {
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
 	})
+}
+
+// TestDateEquals validates DateEquals behavior
+func TestDateEquals(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "2024-01-01T10:11:12",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateEquals": {
+							"aws:SomeDateKey": []string{"2023-01-01T03:04:05", "2024-01-01T10:11:12"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_match_epoch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1704103872",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateEquals": {
+							"aws:SomeDateKey": []string{"2023-01-01T03:04:05", "2024-01-01T10:11:12"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "2024-01-01T10:11:12",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateEquals": {
+							"aws:SomeDateKey": []string{"2024-01-01T10:12:11"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "invalid_type",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "foo",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateEquals": {
+							"aws:SomeDateKey": []string{"foo", "foo"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestDateNotEquals validates DateNotEquals behavior
+func TestDateNotEquals(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "2024-01-01T10:11:12",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateNotEquals": {
+							"aws:SomeDateKey": []string{"1212-12-12:12:12"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "2024-01-01T10:11:12",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateNotEquals": {
+							"aws:SomeDateKey": []string{"2023-01-01T03:04:05", "2024-01-01T10:11:12"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "simple_nomatch_epoch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "1704103872",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateNotEquals": {
+							"aws:SomeDateKey": []string{"2023-01-01T03:04:05", "2024-01-01T10:11:12"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+
+	// FIXME(nsiow) you need to implement tests for the other date functions
 }

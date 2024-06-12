@@ -2,6 +2,7 @@ package sim
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -159,6 +160,20 @@ var ConditionOperatorMap = map[string]ConditionOperator{
 			Cond_NumericGreaterThanEquals,
 		),
 	),
+
+	// ------------------------------------------------------------------------------
+	// Bool Functions
+	// ------------------------------------------------------------------------------
+
+	condition.Bool: Mod_ResolveVariables(
+		Cond_MatchAny(
+			Mod_Bool(
+				Mod_IgnoreCase(
+					Cond_StringEquals,
+				),
+			),
+		),
+	),
 }
 
 // --------------------------------------------------------------------------------
@@ -286,24 +301,55 @@ func Mod_Number(f func(*Trace, int, int) bool) Compare {
 	}
 }
 
+// parseEpochFromString is a helper function allowing us to extract an epoch timestamp from a
+// string
+func parseEpochFromString(s string) (int, error) {
+	asDatetime, err := time.Parse(TIME_FORMAT, s)
+	if err == nil {
+		return int(asDatetime.Unix()), nil
+	}
+
+	asEpoch, err := strconv.Atoi(s)
+	if err == nil {
+		return asEpoch, nil
+	}
+
+	return -1, fmt.Errorf("unable to parse time '%s' as either datetime or epoch", s)
+}
+
 // Mod_Date converts the string inputs to dates, allowing datewise comparisons
 func Mod_Date(f func(*Trace, int, int) bool) Compare {
 	return func(trc *Trace, left, right string) bool {
-		tLeft, err := time.Parse(TIME_FORMAT, left)
+		nLeft, err := parseEpochFromString(left)
 		if err != nil {
 			// TODO(nsiow) find a good place to log errors
 			return false
 		}
-		nLeft := int(tLeft.Unix())
 
-		rRight, err := time.Parse(TIME_FORMAT, left)
+		nRight, err := parseEpochFromString(right)
 		if err != nil {
 			// TODO(nsiow) find a good place to log errors
 			return false
 		}
-		nRight := int(rRight.Unix())
 
 		return f(trc, nLeft, nRight)
+	}
+}
+
+// Mod_Bool converts the string inputs to bools, allowing boolean operations
+func Mod_Bool(f func(*Trace, string, string) bool) Compare {
+	return func(trc *Trace, left, right string) bool {
+		bLeft := strings.ToLower(left)
+		if bLeft != TRUE && bLeft != FALSE {
+			return false
+		}
+
+		bRight := strings.ToLower(right)
+		if bRight != TRUE && bRight != FALSE {
+			return false
+		}
+
+		return f(trc, bLeft, bRight)
 	}
 }
 

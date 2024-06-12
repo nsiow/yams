@@ -31,4 +31,7 @@ const (
 	DateLessThanEquals    = "DateLessThanEquals"
 	DateGreaterThan       = "DateGreaterThan"
 	DateGreaterThanEquals = "DateGreaterThanEqual"
+
+	// Bool Functions
+	Bool = "Bool"
 )
