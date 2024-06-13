@@ -103,7 +103,11 @@ func (s *Simulator) ComputeAccessSummary(actions []string) (map[string]int, erro
 
 		for _, p := range s.env.Principals {
 			for _, a := range actions {
-				ac := AuthContext{a, &p, &r, nil}
+				ac := AuthContext{
+					Action:     a,
+					Principal:  &p,
+					Resource:   &r,
+					Properties: map[string]string{}}
 				result, err := s.Simulate(ac)
 				if err != nil {
 					return nil, errors.Join(fmt.Errorf("error during simulation"), err)

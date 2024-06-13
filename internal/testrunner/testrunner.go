@@ -3,7 +3,18 @@ package testrunner
 import (
 	"reflect"
 	"testing"
+	"time"
 )
+
+// TestTime is a helper function that allows us to use a specific time across all tests
+func TestTime() time.Time {
+	t, err := time.Parse(time.DateTime, time.DateTime)
+	if err != nil {
+		panic("somehow failed to generate a reference time for testing")
+	}
+
+	return t
+}
 
 // TestCase defines a single executable test case meant to be part of a suite
 type TestCase[I, O any] struct {
