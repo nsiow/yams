@@ -9,7 +9,7 @@ import (
 
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/loaders/awsconfig"
-	"github.com/nsiow/yams/pkg/policy/condition"
+	condkey "github.com/nsiow/yams/pkg/policy/condition/keys"
 )
 
 // TODO(nsiow) decide if principal/resource should be pointers or values; if pointers, implement null checks
@@ -42,70 +42,70 @@ var VariableExpansionRegex = regexp.MustCompile(`\${([a-zA-Z0-9]+:\S+?)}`)
 func (ac *AuthContext) Key(key string) string {
 	// Try handling prefixes first...
 	switch {
-	case strings.HasPrefix(key, condition.Key_AwsPrincipalTagPrefix):
+	case strings.HasPrefix(key, condkey.PrincipalTagPrefix):
 		return ac.extractTag(key, ac.Principal.Tags)
-	case strings.HasPrefix(key, condition.Key_AwsResourceTagPrefix):
+	case strings.HasPrefix(key, condkey.ResourceTagPrefix):
 		return ac.extractTag(key, ac.Resource.Tags)
-	case strings.HasPrefix(key, condition.Key_AwsRequestTagPrefix):
+	case strings.HasPrefix(key, condkey.RequestTagPrefix):
 		break // it's not a prefix, so process it as a key
 	}
 
 	// ... otherwise handle as a static key
 	switch key {
-	case condition.Key_AwsPrincipalArn:
+	case condkey.PrincipalArn:
 		return ac.Principal.Arn
-	case condition.Key_AwsPrincipalAccount:
+	case condkey.PrincipalAccount:
 		return ac.Principal.Account
-	case condition.Key_AwsPrincipalIsAwsService:
+	case condkey.PrincipalIsAwsService:
 		break
-	case condition.Key_AwsPrincipalServiceName:
+	case condkey.PrincipalServiceName:
 		break
-	case condition.Key_AwsPrincipalType:
+	case condkey.PrincipalType:
 		return ac.principalType()
-	case condition.Key_AwsResourceAccount:
+	case condkey.ResourceAccount:
 		return ac.Resource.Account
-	case condition.Key_AwsRequestCurrentTime:
+	case condkey.CurrentTime:
 		return ac.now().UTC().Format(TIME_FORMAT)
-	case condition.Key_AwsRequestEpochTime:
+	case condkey.EpochTime:
 		// TODO(nsiow) make sure we are not losing accuracy
 		epoch := int(ac.now().Unix())
 		return strconv.Itoa(epoch)
 
 	// TODO(nsiow) revisit when we have org support
-	// case condition.Key_AwsPrincipalOrgId:
+	// case condkey.PrincipalOrgId:
 	// 	break
-	// case condition.Key_AwsResourceOrgId:
+	// case condkey.ResourceOrgId:
 	// 	break
 
 	// We'll enumerate these for potential special handling in the future, but otherwise just use
 	// default behavior
+	// TODO(nsiow) consider switching this to condkey.SourceIp etc, in a separate package
 	case
-		condition.Key_AwsNetworkSourceIp,
-		condition.Key_AwsNetworkSourceVpc,
-		condition.Key_AwsNetworkSourceVpce,
-		condition.Key_AwsNetworkVpcSourceIp,
-		condition.Key_AwsPrincipalServiceNamesList,
-		condition.Key_AwsPrincipalUserId,
-		condition.Key_AwsPrincipalUsername,
-		condition.Key_AwsRequestCalledViaFirst,
-		condition.Key_AwsRequestCalledViaLast,
-		condition.Key_AwsRequestReferer,
-		condition.Key_AwsRequestRequestedRegion,
-		condition.Key_AwsRequestSecureTransport,
-		condition.Key_AwsRequestSourceAccount,
-		condition.Key_AwsRequestSourceArn,
-		condition.Key_AwsRequestSourceOrgId,
-		condition.Key_AwsRequestUserAgent,
-		condition.Key_AwsRequestViaAwsService,
-		condition.Key_AwsSessionFederatedProvider,
-		condition.Key_AwsSessionMfaAge,
-		condition.Key_AwsSessionMfaPresent,
-		condition.Key_AwsSessionRoleDelivery,
-		condition.Key_AwsSessionSourceIdentity,
-		condition.Key_AwsSessionSourceInstanceArn,
-		condition.Key_AwsSessionSourceIpv4,
-		condition.Key_AwsSessionSourceVpc,
-		condition.Key_AwsSessionTokenIssueTime:
+		condkey.SourceIp,
+		condkey.SourceVpc,
+		condkey.SourceVpce,
+		condkey.VpcSourceIp,
+		condkey.PrincipalServiceNamesList,
+		condkey.UserId,
+		condkey.Username,
+		condkey.CalledViaFirst,
+		condkey.CalledViaLast,
+		condkey.Referer,
+		condkey.RequestedRegion,
+		condkey.SecureTransport,
+		condkey.SourceAccount,
+		condkey.SourceArn,
+		condkey.SourceOrgId,
+		condkey.UserAgent,
+		condkey.ViaAwsService,
+		condkey.FederatedProvider,
+		condkey.MultiFactorAuthAge,
+		condkey.MultiFactorAuthPresent,
+		condkey.RoleDelivery,
+		condkey.SourceIdentity,
+		condkey.SourceInstanceArn,
+		condkey.Ec2InstanceSourcePrivateIPv4,
+		condkey.TokenIssueTime:
 		break
 	}
 
@@ -115,16 +115,16 @@ func (ac *AuthContext) Key(key string) string {
 // MultiKey retrieves the values for the requested key from the AuthContext
 func (ac *AuthContext) MultiKey(key string) []string {
 	switch key {
-	case condition.Key_AwsPrincipalServiceNamesList,
-		condition.Key_AwsRequestCalledVia,
-		condition.Key_AwsRequestTagKeys,
-		condition.Key_AwsRequestSourceOrgPaths:
+	case condkey.PrincipalServiceNamesList,
+		condkey.CalledVia,
+		condkey.TagKeys,
+		condkey.SourceOrgPaths:
 		break
 
 		// TODO(nsiow) revisit when we have org support
-		// case condition.Key_AwsPrincipalOrgPaths:
+		// case condkey.PrincipalOrgPaths:
 		// 	break
-		// case condition.Key_AwsResourceOrgPaths:
+		// case condkey.ResourceOrgPaths:
 		// 	break
 	}
 
