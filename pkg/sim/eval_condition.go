@@ -275,6 +275,22 @@ func Mod_IfExists(f ConditionOperator) ConditionOperator {
 	}
 }
 
+// Mod_ForAllValues defines a Condition modifier targeting match-all logic for multivalued
+// conditions
+func Mod_ForAllValues(f ConditionOperator) ConditionOperator {
+	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
+		panic("not yet implemented")
+	}
+}
+
+// Mod_ForAnyValues defines a Condition modifier targeting match-any logic for multivalued
+// conditions
+func Mod_ForAnyValues(f ConditionOperator) ConditionOperator {
+	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
+		panic("not yet implemented")
+	}
+}
+
 // Mod_IgnoreCase defines a Condition modifier which ignores character casing
 func Mod_IgnoreCase(f Compare) Compare {
 	return func(trc *Trace, left, right string) bool {
@@ -371,6 +387,14 @@ func ConditionResolveOperator(op string) (ConditionOperator, bool) {
 		mods = append(mods, Mod_MustExist)
 	}
 
+	// Handle stripping prefixes of For{All, Any}Values preambles; we'll handle the actual
+	// evaluation logic change elsewhere
+	if strings.HasPrefix(op, "ForAllValues:") {
+		op = strings.TrimPrefix(op, "ForAllValues:")
+	} else if strings.HasPrefix(op, "ForAnyValues:") {
+		op = strings.TrimPrefix(op, "ForAnyValues:")
+	}
+
 	// Attempt to look up function
 	f, exists := ConditionOperatorMap[op]
 	if !exists {
@@ -384,10 +408,38 @@ func ConditionResolveOperator(op string) (ConditionOperator, bool) {
 	return f, true
 }
 
-// evalCondition is an evaluation helper function which performs a condition check over a single
-// operation / key / value 3-tuple
-func evalCondition(ac AuthContext, trc *Trace, f ConditionOperator, key string,
-	right policy.Value) bool {
+// EvalForSingleValue handles the logic for comparison a set of right-hand values against a single
+// left-hand value (the default)
+func EvalForSingleValue(ac AuthContext, trc *Trace, f ConditionOperator,
+	key string, right policy.Value) bool {
 	left := ac.Key(key)
 	return f(ac, trc, left, right)
+}
+
+// EvalForAllValues handles the logic for comparison a set of right-hand values against multiple
+// left hand values, ensuring that ALL left hand values match
+func EvalForAllValues(ac AuthContext, trc *Trace, f ConditionOperator,
+	key string, right policy.Value) bool {
+	lefts := ac.MultiKey(key)
+	for _, left := range lefts {
+		if !f(ac, trc, left, right) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// EvalForAnyValues handles the logic for comparison a set of right-hand values against multiple
+// left hand values, ensuring that at least one of the left hand values match
+func EvalForAnyValues(ac AuthContext, trc *Trace, f ConditionOperator,
+	key string, right policy.Value) bool {
+	lefts := ac.MultiKey(key)
+	for _, left := range lefts {
+		if f(ac, trc, left, right) {
+			return true
+		}
+	}
+
+	return false
 }

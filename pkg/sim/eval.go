@@ -3,6 +3,7 @@ package sim
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	e "github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
@@ -258,9 +259,20 @@ func evalStatementMatchesCondition(
 			continue
 		}
 
+		// Determine which evaluation flow to use
+		var eval func(AuthContext, *Trace, ConditionOperator, string, policy.Value) bool
+		switch {
+		case strings.HasPrefix(op, "ForAllValues:"):
+			eval = EvalForAllValues
+		case strings.HasPrefix(op, "ForAnyValues:"):
+			eval = EvalForAnyValues
+		default:
+			eval = EvalForSingleValue
+		}
+
 		// Check condition evaluation against actual values
 		for k, v := range cond {
-			match := evalCondition(ac, trc, f, k, v)
+			match := eval(ac, trc, f, k, v)
 			if !match {
 				return false, nil
 			}
