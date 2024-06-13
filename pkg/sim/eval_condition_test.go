@@ -1140,3 +1140,121 @@ func TestDateGreaterThanEquals(t *testing.T) {
 		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
 	})
 }
+
+// TestBool validates Bool behavior
+func TestBool(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_true",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SecureTransport": "true",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Bool": {
+							"aws:SecureTransport": []string{"true"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_false",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SecureTransport": "false",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Bool": {
+							"aws:SecureTransport": []string{"false"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_true_false",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SecureTransport": "true",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Bool": {
+							"aws:SecureTransport": []string{"false"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "simple_false_true",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SecureTransport": "false",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Bool": {
+							"aws:SecureTransport": []string{"true"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "ignore_case_true",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SecureTransport": "true",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Bool": {
+							"aws:SecureTransport": []string{"tRuE"},
+						},
+					},
+				},
+			},
+			Want: true, // TODO(nsiow) validate that this is actually how Bool handles casing
+		},
+		{
+			Name: "invalid_value",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SecureTransport": "true",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Bool": {
+							"aws:SecureTransport": []string{"foo"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}

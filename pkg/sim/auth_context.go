@@ -11,6 +11,8 @@ import (
 	"github.com/nsiow/yams/pkg/policy/condition"
 )
 
+// TODO(nsiow) check condition key reference for single vs multi values
+
 // AuthContext defines the tertiary context of a request that can be used for authz decisions
 type AuthContext struct {
 	Action    string
