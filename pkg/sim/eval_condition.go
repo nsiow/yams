@@ -28,11 +28,19 @@ var ErrUnknownConditionKey = errors.New("unknown condition key")
 // we are trying to match against
 type Compare = func(trc *Trace, left string, right string) bool
 
+// TODO(nsiow) revisit the naming of the constructs below
+
 // ConditionOperator defines a function used to compare a value against a list of possible other
 // values
 type ConditionOperator = func(ac AuthContext, trc *Trace, left string, right policy.Value) bool
 
-// ConditionMod defines a function which wraps a ConditionOperator
+// ConditionEvaluator defines a function that can be used to fully evaluate a Condition block
+type ConditionEvaluator = func(ac AuthContext, trc *Trace, key string, right policy.Value) bool
+
+// ConditionPredicate defines the predicate that must be true in order for a condition to succeed
+type ConditionPredicate = func(ConditionOperator) ConditionEvaluator
+
+// ConditionMod defines a function which wraps a ConditionOperator to change its behavior
 type ConditionMod = func(ConditionOperator) ConditionOperator
 
 // --------------------------------------------------------------------------------
@@ -275,6 +283,45 @@ func Mod_IfExists(f ConditionOperator) ConditionOperator {
 	}
 }
 
+// Mod_ForAllValues defines a Condition modifier targeting match-all logic for multivalued
+// conditions
+func Mod_ForAllValues(f ConditionOperator) ConditionEvaluator {
+	return func(ac AuthContext, trc *Trace, key string, right policy.Value) bool {
+		lefts := ac.MultiKey(key)
+		for _, left := range lefts {
+			if !f(ac, trc, left, right) {
+				return false
+			}
+		}
+
+		return true
+	}
+}
+
+// Mod_ForAnyValues defines a Condition modifier targeting match-any logic for multivalued
+// conditions
+func Mod_ForAnyValues(f ConditionOperator) ConditionEvaluator {
+	return func(ac AuthContext, trc *Trace, key string, right policy.Value) bool {
+		lefts := ac.MultiKey(key)
+		for _, left := range lefts {
+			if f(ac, trc, left, right) {
+				return true
+			}
+		}
+
+		return false
+	}
+}
+
+// Mod_ForSIngleValue defines a Condition modifier targeting match-any logic for single-valued
+// conditions (the default)
+func Mod_ForSingleValue(f ConditionOperator) ConditionEvaluator {
+	return func(ac AuthContext, trc *Trace, key string, right policy.Value) bool {
+		left := ac.Key(key)
+		return f(ac, trc, left, right)
+	}
+}
+
 // Mod_IgnoreCase defines a Condition modifier which ignores character casing
 func Mod_IgnoreCase(f Compare) Compare {
 	return func(trc *Trace, left, right string) bool {
@@ -357,11 +404,23 @@ func Mod_Bool(f func(*Trace, string, string) bool) Compare {
 // Externally facing functions
 // --------------------------------------------------------------------------------
 
-// ConditionResolveOperator takes in an operator name and resolves it to a function
+// ResolveConditionEvaluator takes in an operator name and resolves it to a function
 //
 // If the function could be resolved, the second return value is `true`. Otherwise, the second
 // return value is `false`
-func ConditionResolveOperator(op string) (ConditionOperator, bool) {
+func ResolveConditionEvaluator(op string) (ConditionEvaluator, bool) {
+	// Determine the condition predicate
+	var predicate ConditionPredicate
+	if strings.HasPrefix(op, "ForAllValues:") {
+		predicate = Mod_ForAllValues
+		op = strings.TrimPrefix(op, "ForAllValues:")
+	} else if strings.HasPrefix(op, "ForAnyValues:") {
+		predicate = Mod_ForAnyValues
+		op = strings.TrimPrefix(op, "ForAnyValues:")
+	} else {
+		predicate = Mod_ForSingleValue
+	}
+
 	// Handle function modifiers
 	mods := []ConditionMod{}
 	if strings.HasSuffix(op, "IfExists") && !strings.HasPrefix(op, "Null") {
@@ -369,14 +428,6 @@ func ConditionResolveOperator(op string) (ConditionOperator, bool) {
 		op = strings.TrimSuffix(op, "IfExists")
 	} else {
 		mods = append(mods, Mod_MustExist)
-	}
-
-	// Handle stripping prefixes of For{All, Any}Values preambles; we'll handle the actual
-	// evaluation logic change elsewhere
-	if strings.HasPrefix(op, "ForAllValues:") {
-		op = strings.TrimPrefix(op, "ForAllValues:")
-	} else if strings.HasPrefix(op, "ForAnyValues:") {
-		op = strings.TrimPrefix(op, "ForAnyValues:")
 	}
 
 	// Attempt to look up function
@@ -389,41 +440,5 @@ func ConditionResolveOperator(op string) (ConditionOperator, bool) {
 	for _, mod := range mods {
 		f = mod(f)
 	}
-	return f, true
-}
-
-// EvalForSingleValue handles the logic for comparison a set of right-hand values against a single
-// left-hand value (the default)
-func EvalForSingleValue(ac AuthContext, trc *Trace, f ConditionOperator,
-	key string, right policy.Value) bool {
-	left := ac.Key(key)
-	return f(ac, trc, left, right)
-}
-
-// EvalForAllValues handles the logic for comparison a set of right-hand values against multiple
-// left hand values, ensuring that ALL left hand values match
-func EvalForAllValues(ac AuthContext, trc *Trace, f ConditionOperator,
-	key string, right policy.Value) bool {
-	lefts := ac.MultiKey(key)
-	for _, left := range lefts {
-		if !f(ac, trc, left, right) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// EvalForAnyValues handles the logic for comparison a set of right-hand values against multiple
-// left hand values, ensuring that at least one of the left hand values match
-func EvalForAnyValues(ac AuthContext, trc *Trace, f ConditionOperator,
-	key string, right policy.Value) bool {
-	lefts := ac.MultiKey(key)
-	for _, left := range lefts {
-		if f(ac, trc, left, right) {
-			return true
-		}
-	}
-
-	return false
+	return predicate(f), true
 }

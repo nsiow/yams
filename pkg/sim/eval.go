@@ -3,7 +3,6 @@ package sim
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	e "github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
@@ -251,7 +250,7 @@ func evalStatementMatchesCondition(
 		}
 
 		// Check to see if the condition operator is supported
-		f, exists := ConditionResolveOperator(op)
+		f, exists := ResolveConditionEvaluator(op)
 		if !exists {
 			if opts.FailOnUnknownCondition {
 				return false, fmt.Errorf("unknown condition operator '%s'", op)
@@ -259,20 +258,9 @@ func evalStatementMatchesCondition(
 			continue
 		}
 
-		// Determine which evaluation flow to use
-		var eval func(AuthContext, *Trace, ConditionOperator, string, policy.Value) bool
-		switch {
-		case strings.HasPrefix(op, "ForAllValues:"):
-			eval = EvalForAllValues
-		case strings.HasPrefix(op, "ForAnyValues:"):
-			eval = EvalForAnyValues
-		default:
-			eval = EvalForSingleValue
-		}
-
 		// Check condition evaluation against actual values
 		for k, v := range cond {
-			match := eval(ac, trc, f, k, v)
+			match := f(ac, trc, k, v)
 			if !match {
 				return false, nil
 			}
