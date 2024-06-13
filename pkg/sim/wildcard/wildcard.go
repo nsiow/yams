@@ -92,6 +92,11 @@ func MatchSegmentsIgnoreCase(pattern, value string) bool {
 
 // MatchArn performs specialized ARN-matching logic for certain condition operators
 func MatchArn(pattern, value string) bool {
+	// TODO(nsiow) confirm that "*" actually matches all Principals... I am not sure of this
+	if pattern == "*" {
+		return true
+	}
+
 	// TODO(nsiow) check the value of 6
 	// arn:aws:iam:us-east-1:account:role/foo
 	patternSegments := strings.SplitN(pattern, ":", 6)

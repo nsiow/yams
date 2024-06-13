@@ -69,6 +69,21 @@ func TestStatementBase(t *testing.T) {
 			},
 			Want: true,
 		},
+		{
+			Name: "nonexistent_lhs",
+			Input: input{
+				ac:      AuthContext{},
+				options: Options{FailOnUnknownCondition: false},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringLike": {
+							"": []string{"bar"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
@@ -326,7 +341,7 @@ func TestStringNotLike(t *testing.T) {
 			Want: true,
 		},
 		{
-			Name: "simple_inverted:nomatch",
+			Name: "simple_inverted_nomatch",
 			Input: input{
 				ac: AuthContext{
 					Resource: &entities.Resource{Account: "55555"},
@@ -346,6 +361,53 @@ func TestStringNotLike(t *testing.T) {
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
 	})
+}
+
+// TestNumericConversion validates correct behavior of casting condition values to numbers
+func TestNumericConversion(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "non_numeric_lhs",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "foo",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericEquals": {
+							"aws:SomeNumericKey": []string{"1234"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "non_numeric_rhs",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeNumericKey": "123",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericEquals": {
+							"aws:SomeNumericKey": []string{"foo"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+
 }
 
 // TestNumericEquals validates NumericEquals behavior
@@ -742,7 +804,7 @@ func TestDateEquals(t *testing.T) {
 			Want: false,
 		},
 		{
-			Name: "invalid_type",
+			Name: "invalid_lhs",
 			Input: input{
 				ac: AuthContext{
 					Properties: map[string]string{
@@ -752,7 +814,25 @@ func TestDateEquals(t *testing.T) {
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
 						"DateEquals": {
-							"aws:SomeDateKey": []string{"foo", "foo"},
+							"aws:SomeDateKey": []string{"2024-01-01T10:12:11"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "invalid_rhs",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeDateKey": "2024-01-01T10:12:11",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"DateEquals": {
+							"aws:SomeDateKey": []string{"foo"},
 						},
 					},
 				},
@@ -1235,7 +1315,25 @@ func TestBool(t *testing.T) {
 			Want: true, // TODO(nsiow) validate that this is actually how Bool handles casing
 		},
 		{
-			Name: "invalid_value",
+			Name: "invalid_lhs",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SecureTransport": "foo",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Bool": {
+							"aws:SecureTransport": []string{"true"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "invalid_rhs",
 			Input: input{
 				ac: AuthContext{
 					Properties: map[string]string{
@@ -1273,6 +1371,24 @@ func TestIfExists(t *testing.T) {
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
 						"StringEqualsIfExists": {
+							"aws:SomeContextKey": []string{"foo"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "string_equals_if_exists_missing",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeContextKey": "foo",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringEqualsIfExists": {
 							"aws:SomeOtherRandomDifferentContextKey": []string{"bar"},
 						},
 					},
@@ -1281,7 +1397,7 @@ func TestIfExists(t *testing.T) {
 			Want: true,
 		},
 		{
-			Name: "numeric_equals_if_exists",
+			Name: "numeric_equals_if_exists_missing",
 			Input: input{
 				ac: AuthContext{
 					Properties: map[string]string{

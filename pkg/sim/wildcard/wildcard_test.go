@@ -133,6 +133,7 @@ func TestWildcard(t *testing.T) {
 				value:      "s3:getobject",
 				ignoreCase: false,
 			},
+			Want: false,
 		},
 	}
 
@@ -146,5 +147,147 @@ func TestWildcard(t *testing.T) {
 		}
 
 		return got, nil
+	})
+}
+
+// TestMatchAllOrNothing validates correct matching behavior for All/Nothing matches
+func TestMatchAllOrNothing(t *testing.T) {
+	type input struct {
+		pattern string
+		value   string
+	}
+
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Input: input{
+				pattern: "*",
+				value:   "anything",
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				pattern: "arn:aws:iam::88888:role/somerole",
+				value:   "arn:aws:iam::88888:role/somerole",
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				pattern: "arn:aws:iam::88888:role/somerole",
+				value:   "arn:aws:iam::88888:role/*role",
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return MatchAllOrNothing(i.pattern, i.value), nil
+	})
+}
+
+// TestMatchArn validates correct matching behavior for Arn matches
+func TestMatchArn(t *testing.T) {
+	type input struct {
+		pattern string
+		value   string
+	}
+
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Input: input{
+				pattern: "arn:aws:s3:::somebucket",
+				value:   "arn:aws:s3::somebucket",
+			},
+			Want: false,
+		},
+		{
+			Input: input{
+				pattern: "*",
+				value:   "arn:aws:sqs:us-east-1:88888:somequeue",
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				pattern: "*:aws:sqs:us-east-1:88888:somequeue",
+				value:   "arn:aws:sqs:us-east-1:88888:somequeue",
+			},
+			Want: false,
+		},
+		{
+			Input: input{
+				pattern: "arn:*:sqs:us-east-1:88888:somequeue",
+				value:   "arn:aws:sqs:us-east-1:88888:somequeue",
+			},
+			Want: false,
+		},
+		{
+			Input: input{
+				pattern: "arn:aws:*:us-east-1:88888:somequeue",
+				value:   "arn:aws:sqs:us-east-1:88888:somequeue",
+			},
+			Want: false,
+		},
+		{
+			Input: input{
+				pattern: "arn:aws:sqs:*:88888:somequeue",
+				value:   "arn:aws:sqs:us-east-1:88888:somequeue",
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				pattern: "arn:aws:sqs:us-west-*:88888:somequeue",
+				value:   "arn:aws:sqs:us-east-1:88888:somequeue",
+			},
+			Want: false,
+		},
+		{
+			Input: input{
+				pattern: "arn:aws:sqs:us-east-1:*:somequeue",
+				value:   "arn:aws:sqs:us-east-1:88888:somequeue",
+			},
+			Want: false,
+		},
+		{
+			Input: input{
+				pattern: "arn:aws:sqs:us-east-1:88888:*",
+				value:   "arn:aws:sqs:us-east-1:88888:somequeue",
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				pattern: "arn:aws:iam::88888:role/somerole",
+				value:   "arn:aws:iam::88888:user/somerole",
+			},
+			Want: false,
+		},
+		{
+			Input: input{
+				pattern: "arn:aws:iam::88888:role/somerole",
+				value:   "arn:aws:iam::88888:somerole",
+			},
+			Want: false,
+		},
+		{
+			Input: input{
+				pattern: "arn:aws:iam::88888:role/somerole",
+				value:   "arn:aws:iam::88888:role/otherrole",
+			},
+			Want: false,
+		},
+		{
+			Input: input{
+				pattern: "arn:aws:iam::88888:*/somerole",
+				value:   "arn:aws:iam::88888:role/somerole",
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return MatchArn(i.pattern, i.value), nil
 	})
 }
