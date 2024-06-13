@@ -1258,3 +1258,49 @@ func TestBool(t *testing.T) {
 		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
 	})
 }
+
+// TestIfExists validates the ...IfExists behavior of condition operators
+func TestIfExists(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "string_equals_if_exists",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeContextKey": "foo",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringEqualsIfExists": {
+							"aws:SomeOtherRandomDifferentContextKey": []string{"bar"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "numeric_equals_if_exists",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeContextKey": "8888",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericEqualsIfExists": {
+							"aws:SomeOtherRandomDifferentContextKey": []string{"1234"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
