@@ -1420,3 +1420,131 @@ func TestIfExists(t *testing.T) {
 		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
 	})
 }
+
+// TestForAllValues validates the ForAllValues: behavior of multivalue conditions
+func TestForAllValues(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_equals",
+			Input: input{
+				ac: AuthContext{
+					MVProperties: map[string][]string{
+						"aws:TagKeys": {
+							"foo", "bar", "baz",
+						},
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ForAllValues:StringEquals": {
+							"aws:TagKeys": []string{"foo", "bar", "baz"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_not_equals",
+			Input: input{
+				ac: AuthContext{
+					MVProperties: map[string][]string{
+						"aws:TagKeys": {
+							"foo", "bar", "baz", "other",
+						},
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ForAllValues:StringEquals": {
+							"aws:TagKeys": []string{"foo", "bar", "baz"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "absent_key",
+			Input: input{
+				ac: AuthContext{},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ForAllValues:StringEquals": {
+							"aws:SomeKey": []string{"foo"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// TestForAnyValues validates the ForAnyValues: behavior of multivalue conditions
+func TestForAnyValues(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_equals",
+			Input: input{
+				ac: AuthContext{
+					MVProperties: map[string][]string{
+						"aws:TagKeys": {
+							"baz",
+						},
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ForAnyValues:StringEquals": {
+							"aws:TagKeys": []string{"foo", "bar", "baz"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_not_equals",
+			Input: input{
+				ac: AuthContext{
+					MVProperties: map[string][]string{
+						"aws:TagKeys": {
+							"lots", "of", "other", "strings",
+						},
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ForAnyValues:StringEquals": {
+							"aws:TagKeys": []string{"foo", "bar", "baz"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "absent_key",
+			Input: input{
+				ac: AuthContext{},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ForAnyValues:StringEquals": {
+							"aws:SomeKey": []string{"foo"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}

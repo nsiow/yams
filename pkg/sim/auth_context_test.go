@@ -242,6 +242,38 @@ func TestAuthContextKeys(t *testing.T) {
 	})
 }
 
+// TestAuthContextMultiKeys validates correct retrieval of multi-valued Condition keys
+func TestAuthContextMultiKeys(t *testing.T) {
+	type input struct {
+		ac  AuthContext
+		key string
+	}
+
+	tests := []testrunner.TestCase[input, []string]{
+		{
+			Name: "principal_tag",
+			Input: input{
+				ac: AuthContext{
+					MVProperties: map[string][]string{
+						"aws:TagKeys": {
+							"foo",
+							"bar",
+							"baz",
+						},
+					},
+				},
+				key: "aws:TagKeys",
+			},
+			Want: []string{"foo", "bar", "baz"},
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) ([]string, error) {
+		got := i.ac.MultiKey(i.key)
+		return got, nil
+	})
+}
+
 // TestResolve validates the functionality of our variable resolution/expansion logic
 func TestResolve(t *testing.T) {
 	type input struct {

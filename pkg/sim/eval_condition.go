@@ -275,22 +275,6 @@ func Mod_IfExists(f ConditionOperator) ConditionOperator {
 	}
 }
 
-// Mod_ForAllValues defines a Condition modifier targeting match-all logic for multivalued
-// conditions
-func Mod_ForAllValues(f ConditionOperator) ConditionOperator {
-	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
-		panic("not yet implemented")
-	}
-}
-
-// Mod_ForAnyValues defines a Condition modifier targeting match-any logic for multivalued
-// conditions
-func Mod_ForAnyValues(f ConditionOperator) ConditionOperator {
-	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
-		panic("not yet implemented")
-	}
-}
-
 // Mod_IgnoreCase defines a Condition modifier which ignores character casing
 func Mod_IgnoreCase(f Compare) Compare {
 	return func(trc *Trace, left, right string) bool {
