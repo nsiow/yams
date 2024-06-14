@@ -30,25 +30,29 @@ type Compare = func(trc *Trace, left string, right string) bool
 
 // TODO(nsiow) revisit the naming of the constructs below
 
-// ConditionOperator defines a function used to compare a value against a list of possible other
-// values
-type ConditionOperator = func(ac AuthContext, trc *Trace, left string, right policy.Value) bool
+// CondOuter defines a function that accepts a key name and set of values and evaluates the
+// outcome of the condition
+type CondOuter = func(ac AuthContext, trc *Trace, key string, right policy.Value) bool
 
-// ConditionEvaluator defines a function that can be used to fully evaluate a Condition block
-type ConditionEvaluator = func(ac AuthContext, trc *Trace, key string, right policy.Value) bool
+// CondInner defines a function that accepts a left hand value and a right hand set of values
+// and evaluates the outcome of the condition
+type CondInner = func(ac AuthContext, trc *Trace, left string, right policy.Value) bool
 
-// ConditionPredicate defines the predicate that must be true in order for a condition to succeed
-type ConditionPredicate = func(ConditionOperator) ConditionEvaluator
+// CondLift defines a function which "lifts" a ConditionInner operator
+//
+// This function effectively contains the logic to map the "key" parameter of a ConditionOuter
+// function to the "left" parameter of a ConditionInner function
+type CondLift = func(CondInner) CondOuter
 
-// ConditionMod defines a function which wraps a ConditionOperator to change its behavior
-type ConditionMod = func(ConditionOperator) ConditionOperator
+// CondMod defines a function which wraps a ConditionOperator to change its behavior
+type CondMod = func(CondInner) CondInner
 
 // --------------------------------------------------------------------------------
 // Mappings
 // --------------------------------------------------------------------------------
 
 // ConditionOperatorMap defines the mapping between operator names and functions
-var ConditionOperatorMap = map[string]ConditionOperator{
+var ConditionOperatorMap = map[string]CondInner{
 
 	// ------------------------------------------------------------------------------
 	// String Functions
@@ -188,7 +192,7 @@ var ConditionOperatorMap = map[string]ConditionOperator{
 // Condition evaluation functions
 // --------------------------------------------------------------------------------
 
-func Cond_MatchAny(f Compare) ConditionOperator {
+func Cond_MatchAny(f Compare) CondInner {
 	return func(_ AuthContext, trc *Trace, left string, right policy.Value) bool {
 		for _, value := range right {
 			if f(trc, left, value) {
@@ -245,14 +249,14 @@ func Cond_NumericGreaterThanEquals(trc *Trace, left, right int) bool {
 // --------------------------------------------------------------------------------
 
 // Mod_Not inverts the provided ConditionOperator
-func Mod_Not(f ConditionOperator) ConditionOperator {
+func Mod_Not(f CondInner) CondInner {
 	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
 		return !f(ac, trc, left, right)
 	}
 }
 
 // Mod_ResolveVariables resolves and replaces all IAM variables within the provided values
-func Mod_ResolveVariables(f ConditionOperator) ConditionOperator {
+func Mod_ResolveVariables(f CondInner) CondInner {
 	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
 		for i := range right {
 			right[i] = ac.Resolve(right[i])
@@ -262,7 +266,7 @@ func Mod_ResolveVariables(f ConditionOperator) ConditionOperator {
 }
 
 // Mod_MustExist defines a Condition modifier which returns false if the key is not found
-func Mod_MustExist(f ConditionOperator) ConditionOperator {
+func Mod_MustExist(f CondInner) CondInner {
 	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
 		if left == "" {
 			return false
@@ -273,7 +277,7 @@ func Mod_MustExist(f ConditionOperator) ConditionOperator {
 }
 
 // Mod_IfExists defines a Condition modifier which returns true if the key is not found
-func Mod_IfExists(f ConditionOperator) ConditionOperator {
+func Mod_IfExists(f CondInner) CondInner {
 	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
 		if left == "" {
 			return true
@@ -285,7 +289,7 @@ func Mod_IfExists(f ConditionOperator) ConditionOperator {
 
 // Mod_ForAllValues defines a Condition modifier targeting match-all logic for multivalued
 // conditions
-func Mod_ForAllValues(f ConditionOperator) ConditionEvaluator {
+func Mod_ForAllValues(f CondInner) CondOuter {
 	return func(ac AuthContext, trc *Trace, key string, right policy.Value) bool {
 		lefts := ac.MultiKey(key)
 		for _, left := range lefts {
@@ -300,7 +304,7 @@ func Mod_ForAllValues(f ConditionOperator) ConditionEvaluator {
 
 // Mod_ForAnyValues defines a Condition modifier targeting match-any logic for multivalued
 // conditions
-func Mod_ForAnyValues(f ConditionOperator) ConditionEvaluator {
+func Mod_ForAnyValues(f CondInner) CondOuter {
 	return func(ac AuthContext, trc *Trace, key string, right policy.Value) bool {
 		lefts := ac.MultiKey(key)
 		for _, left := range lefts {
@@ -315,7 +319,7 @@ func Mod_ForAnyValues(f ConditionOperator) ConditionEvaluator {
 
 // Mod_ForSIngleValue defines a Condition modifier targeting match-any logic for single-valued
 // conditions (the default)
-func Mod_ForSingleValue(f ConditionOperator) ConditionEvaluator {
+func Mod_ForSingleValue(f CondInner) CondOuter {
 	return func(ac AuthContext, trc *Trace, key string, right policy.Value) bool {
 		left := ac.Key(key)
 		return f(ac, trc, left, right)
@@ -408,9 +412,9 @@ func Mod_Bool(f func(*Trace, string, string) bool) Compare {
 //
 // If the function could be resolved, the second return value is `true`. Otherwise, the second
 // return value is `false`
-func ResolveConditionEvaluator(op string) (ConditionEvaluator, bool) {
+func ResolveConditionEvaluator(op string) (CondOuter, bool) {
 	// Determine the condition predicate
-	var predicate ConditionPredicate
+	var predicate CondLift
 	if strings.HasPrefix(op, "ForAllValues:") {
 		predicate = Mod_ForAllValues
 		op = strings.TrimPrefix(op, "ForAllValues:")
@@ -422,7 +426,7 @@ func ResolveConditionEvaluator(op string) (ConditionEvaluator, bool) {
 	}
 
 	// Handle function modifiers
-	mods := []ConditionMod{}
+	mods := []CondMod{}
 	if strings.HasSuffix(op, "IfExists") && !strings.HasPrefix(op, "Null") {
 		mods = append(mods, Mod_IfExists)
 		op = strings.TrimSuffix(op, "IfExists")
