@@ -413,16 +413,16 @@ func Mod_Bool(f func(*Trace, string, string) bool) Compare {
 // If the function could be resolved, the second return value is `true`. Otherwise, the second
 // return value is `false`
 func ResolveConditionEvaluator(op string) (CondOuter, bool) {
-	// Determine the condition predicate
-	var predicate CondLift
+	// Determine the condition lift
+	var lift CondLift
 	if strings.HasPrefix(op, "ForAllValues:") {
-		predicate = Mod_ForAllValues
+		lift = Mod_ForAllValues
 		op = strings.TrimPrefix(op, "ForAllValues:")
 	} else if strings.HasPrefix(op, "ForAnyValues:") {
-		predicate = Mod_ForAnyValues
+		lift = Mod_ForAnyValues
 		op = strings.TrimPrefix(op, "ForAnyValues:")
 	} else {
-		predicate = Mod_ForSingleValue
+		lift = Mod_ForSingleValue
 	}
 
 	// Handle function modifiers
@@ -444,5 +444,5 @@ func ResolveConditionEvaluator(op string) (CondOuter, bool) {
 	for _, mod := range mods {
 		f = mod(f)
 	}
-	return predicate(f), true
+	return lift(f), true
 }
