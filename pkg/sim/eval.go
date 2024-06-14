@@ -250,7 +250,7 @@ func evalStatementMatchesCondition(
 		}
 
 		// Check to see if the condition operator is supported
-		f, exists := ConditionResolveOperator(op)
+		f, exists := ResolveConditionEvaluator(op)
 		if !exists {
 			if opts.FailOnUnknownCondition {
 				return false, fmt.Errorf("unknown condition operator '%s'", op)
@@ -260,7 +260,7 @@ func evalStatementMatchesCondition(
 
 		// Check condition evaluation against actual values
 		for k, v := range cond {
-			match := evalCondition(ac, trc, f, k, v)
+			match := f(ac, trc, k, v)
 			if !match {
 				return false, nil
 			}
