@@ -3,13 +3,25 @@ package testrunner
 import (
 	"reflect"
 	"testing"
+	"time"
 )
+
+// TestTime is a helper function that allows us to use a specific time across all tests
+func TestTime() time.Time {
+	t, err := time.Parse(time.DateTime, time.DateTime)
+	if err != nil {
+		panic("somehow failed to generate a reference time for testing")
+	}
+
+	return t
+}
 
 // TestCase defines a single executable test case meant to be part of a suite
 type TestCase[I, O any] struct {
-	Name      string
-	Input     I
-	Want      O
+	Name  string
+	Input I
+	Want  O
+	// TODO(nsiow) switch this to an error type and use errors.Is(...)
 	ShouldErr bool
 }
 
@@ -23,6 +35,7 @@ func RunTestSuite[I, O any](
 	for _, tc := range testCases {
 		tc := tc // local variable in case we need to use pointer to loop var
 		t.Run(tc.Name, func(t *testing.T) {
+			t.Helper()
 			got, err := f(tc.Input)
 
 			switch {

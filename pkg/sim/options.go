@@ -3,6 +3,7 @@ package sim
 // Sim contains all possible customizatons for simulator logic + runtime
 type Options struct {
 	// FailOnUnknownCondition determines whether or not to fail on unknown Condition evaluation
+	// TODO(nsiow) make opts.FailOnUnknownCondition default
 	FailOnUnknownCondition bool
 }
 

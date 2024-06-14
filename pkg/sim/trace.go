@@ -2,6 +2,7 @@ package sim
 
 // Trace provides contextual information around how the
 // TODO(nsiow) consider moving this to its own package
+// TODO(nsiow) implement as an in-memory logger front end
 type Trace struct {
 	log []string
 }
