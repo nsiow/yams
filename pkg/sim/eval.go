@@ -227,6 +227,7 @@ func evalStatementMatchesResource(
 	}
 
 	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
+	// TODO(nsiow) this needs to support variable expansion
 	for _, r := range resources {
 		match := wildcard.MatchSegments(r, ac.Resource.Arn)
 		if match {

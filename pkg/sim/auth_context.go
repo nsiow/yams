@@ -1,7 +1,6 @@
 package sim
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,7 +12,6 @@ import (
 )
 
 // TODO(nsiow) decide if principal/resource should be pointers or values; if pointers, implement null checks
-// TODO(nsiow) check condition key reference for single vs multi values
 
 // AuthContext defines the tertiary context of a request that can be used for authz decisions
 type AuthContext struct {
@@ -39,6 +37,7 @@ const (
 var VariableExpansionRegex = regexp.MustCompile(`\${([a-zA-Z0-9]+:\S+?)}`)
 
 // Key retrieves the value for the requested key from the AuthContext
+// TODO(nsiow) key retrieval should be case insensitive... I think
 func (ac *AuthContext) Key(key string) string {
 	// Try handling prefixes first...
 	switch {
@@ -139,7 +138,6 @@ func (ac *AuthContext) Resolve(value string) string {
 		placeholder := match[0]
 		variable := match[1]
 		resolved := ac.Key(variable)
-		fmt.Printf("placeholder = %s, variable = %s, resolved = %s\n", placeholder, variable, resolved)
 		value = strings.ReplaceAll(value, placeholder, resolved)
 	}
 

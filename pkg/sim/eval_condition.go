@@ -28,8 +28,6 @@ var ErrUnknownConditionKey = errors.New("unknown condition key")
 // we are trying to match against
 type Compare = func(trc *Trace, left string, right string) bool
 
-// TODO(nsiow) revisit the naming of the constructs below
-
 // CondOuter defines a function that accepts a key name and set of values and evaluates the
 // outcome of the condition
 type CondOuter = func(ac AuthContext, trc *Trace, key string, right policy.Value) bool
