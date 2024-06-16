@@ -1426,6 +1426,24 @@ func TestBinary(t *testing.T) {
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
 						"BinaryEquals": {
+							"aws:SomeBinaryKey": []string{"Zm9vCg=="},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "equal_but_invalid_reversed",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeBinaryKey": "Zm9vCg==",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"BinaryEquals": {
 							"aws:SomeBinaryKey": []string{"foo"},
 						},
 					},
