@@ -37,4 +37,8 @@ const (
 
 	// Binary Functions
 	BinaryEquals = "BinaryEquals"
+
+	// IP Address Functions
+	IpAddress    = "IpAddress"
+	NotIpAddress = "NotIpAddress"
 )

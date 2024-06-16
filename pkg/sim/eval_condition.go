@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/netip"
 	"strconv"
 	"strings"
 	"time"
@@ -197,6 +198,23 @@ var ConditionOperatorMap = map[string]CondInner{
 			Cond_StringEquals,
 		),
 	),
+
+	// ------------------------------------------------------------------------------
+	// IP Address Functions
+	// ------------------------------------------------------------------------------
+
+	condition.IpAddress: Cond_MatchAny(
+		Mod_Network(
+			Cond_IpAddress,
+		),
+	),
+	condition.NotIpAddress: Mod_Not(
+		Cond_MatchAny(
+			Mod_Network(
+				Cond_IpAddress,
+			),
+		),
+	),
 }
 
 // --------------------------------------------------------------------------------
@@ -253,6 +271,11 @@ func Cond_NumericGreaterThan(trc *Trace, left, right int) bool {
 // Cond_NumericGreaterThanEquals defines the `NumericGreaterThanEquals` condition function
 func Cond_NumericGreaterThanEquals(trc *Trace, left, right int) bool {
 	return left >= right
+}
+
+// Cond_IpAddress defines the `IpAddress` condition function
+func Cond_IpAddress(trc *Trace, left netip.Addr, right netip.Prefix) bool {
+	return right.Contains(left)
 }
 
 // --------------------------------------------------------------------------------
@@ -415,7 +438,7 @@ func Mod_Bool(f func(*Trace, string, string) bool) Compare {
 	}
 }
 
-// Mod_Binary validates and forward on the base64 encoded values, allowing binary expressions
+// Mod_Binary validates and forwards on the base64 encoded values, allowing binary expressions
 //
 // We reuse the string operators for this rather than a byte-by-byte comparison for ease, but for
 // slightly faster comparison we should perform the byte-by-byte comparison to avoid the base64
@@ -435,6 +458,25 @@ func Mod_Binary(f func(*Trace, string, string) bool) Compare {
 		}
 
 		return f(trc, left, right)
+	}
+}
+
+// Mod_Network converts the incoming strings into IP addresses/nets, allowing network expressions
+func Mod_Network(f func(*Trace, netip.Addr, netip.Prefix) bool) Compare {
+	return func(trc *Trace, left, right string) bool {
+		addr, err := netip.ParseAddr(right)
+		if err != nil {
+			// TODO(nsiow) add to Trace
+			return false
+		}
+
+		network, err := netip.ParsePrefix(right)
+		if err != nil {
+			// TODO(nsiow) add to Trace
+			return false
+		}
+
+		return f(trc, addr, network)
 	}
 }
 

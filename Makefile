@@ -80,6 +80,9 @@ report: $(COVERAGE_FILE)
 $(COVERAGE_REPORT): $(COVERAGE_FILE)
 	$(GO_COVER_TOOL) $(GO_COVER_FLAGS) -o $(COVERAGE_REPORT)
 
+.PHONY: html
+html: $(COVERAGE_REPORT)
+
 # --------------------------------------------------------------------------------
 # Codegen: generating code
 # --------------------------------------------------------------------------------
