@@ -2,7 +2,6 @@ package sim
 
 import (
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"net/netip"
 	"strconv"
@@ -17,14 +16,6 @@ import (
 // --------------------------------------------------------------------------------
 // Setup
 // --------------------------------------------------------------------------------
-
-// TODO(nsiow) make better use of the two error types below
-
-// Error indicating that an unknown Condition operator was specified
-var ErrUnknownOperator = errors.New("unknown operation")
-
-// Error indicating that an unknown Condition key was specified
-var ErrUnknownConditionKey = errors.New("unknown condition key")
 
 // Compare defines a function used to compare a value to a single other value
 //
