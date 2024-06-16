@@ -151,6 +151,10 @@ func TestStringEquals(t *testing.T) {
 	})
 }
 
+// --------------------------------------------------------------------------------
+// String tests
+// --------------------------------------------------------------------------------
+
 // TestStringEqualsIgnoreCase validates StringEqualsIgnoreCase behavior
 func TestStringEqualsIgnoreCase(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
@@ -362,6 +366,10 @@ func TestStringNotLike(t *testing.T) {
 		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
 	})
 }
+
+// --------------------------------------------------------------------------------
+// Numeric tests
+// --------------------------------------------------------------------------------
 
 // TestNumericConversion validates correct behavior of casting condition values to numbers
 func TestNumericConversion(t *testing.T) {
@@ -680,6 +688,10 @@ func TestNumericGreaterThan(t *testing.T) {
 		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
 	})
 }
+
+// --------------------------------------------------------------------------------
+// Date tests
+// --------------------------------------------------------------------------------
 
 // TestNumericGreaterThanEquals validates NumericGreaterThanEquals behavior
 func TestNumericGreaterThanEquals(t *testing.T) {
@@ -1221,6 +1233,10 @@ func TestDateGreaterThanEquals(t *testing.T) {
 	})
 }
 
+// --------------------------------------------------------------------------------
+// Boolean tests
+// --------------------------------------------------------------------------------
+
 // TestBool validates Bool behavior
 func TestBool(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
@@ -1356,6 +1372,77 @@ func TestBool(t *testing.T) {
 		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
 	})
 }
+
+// --------------------------------------------------------------------------------
+// Binary tests
+// --------------------------------------------------------------------------------
+
+func TestBinary(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_true",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeBinaryKey": "Zm9vCg==",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"BinaryEquals": {
+							"aws:SomeBinaryKey": []string{"Zm9vCg=="},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_false",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeBinaryKey": "YmFyCg==",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"BinaryEquals": {
+							"aws:SomeBinaryKey": []string{"Zm9vCg=="},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "equal_but_invalid",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SomeBinaryKey": "foo",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"BinaryEquals": {
+							"aws:SomeBinaryKey": []string{"foo"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// --------------------------------------------------------------------------------
+// Test weird stuff
+// --------------------------------------------------------------------------------
 
 // TestIfExists validates the ...IfExists behavior of condition operators
 func TestIfExists(t *testing.T) {
