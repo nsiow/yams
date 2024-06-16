@@ -42,6 +42,11 @@ func TestLoadJsonValid(t *testing.T) {
 			Input: `../../../testdata/environments/simple_1.jsonl`,
 			Want:  simple1Output,
 		},
+		{
+			Name:  "user_1_json",
+			Input: `../../../testdata/environments/user_1.json`,
+			Want:  user1Output,
+		},
 
 		// Invalid
 
@@ -298,6 +303,95 @@ var simple1Output entities.Environment = entities.Environment{
 				},
 			},
 			Tags: []entities.Tag{},
+		},
+	},
+}
+
+var user1Output entities.Environment = entities.Environment{
+	Principals: []entities.Principal{
+		{
+			Type:    "AWS::IAM::User",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:user/myuser",
+			Tags:    []entities.Tag{},
+			InlinePolicies: []policy.Policy{
+				{
+					Version: "2012-10-17",
+					Statement: []policy.Statement{
+						{
+							Sid:      "Statement1",
+							Effect:   "Allow",
+							Action:   []string{"s3:listbucket"},
+							Resource: []string{"arn:aws:s3:::mybucket5"},
+						},
+					},
+				},
+			},
+			AttachedPolicies: []policy.Policy{
+				{
+					Version: "2012-10-17",
+					Statement: []policy.Statement{
+						{
+							Effect:   "Allow",
+							Action:   []string{"sqs:ReceiveMessage"},
+							Resource: []string{"arn:aws:sqs:us-east-1:0000000000000:queue-5"},
+						},
+					},
+				},
+			},
+			GroupPolicies: []policy.Policy{
+				{
+					Version: "2012-10-17",
+					Statement: []policy.Statement{
+						{
+							Effect:   "Allow",
+							Action:   []string{"sqs:ReceiveMessage"},
+							Resource: []string{"arn:aws:sqs:us-east-1:0000000000000:queue-2"},
+						},
+					},
+				},
+				{
+					Version: "2012-10-17",
+					Statement: []policy.Statement{
+						{
+							Sid:      "Statement1",
+							Effect:   "Allow",
+							Action:   []string{"s3:listbucket"},
+							Resource: []string{"arn:aws:s3:::mybucket"},
+						},
+					},
+				},
+			},
+		},
+	},
+	Resources: []entities.Resource{
+		{
+			Type:    "AWS::IAM::Policy",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:policy/Common",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
+		},
+		{
+			Type:    "AWS::IAM::Policy",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:policy/Shared",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
+		},
+		{
+			Type:    "AWS::IAM::Group",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:group/family",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
+		},
+		{
+			Type:    "AWS::IAM::User",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:user/myuser",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
 		},
 	},
 }

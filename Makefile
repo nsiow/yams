@@ -27,6 +27,7 @@ clean:
 	rm -f $(CLI)
 	rm -f $(COVERAGE_FILE)
 	rm -f $(COVERAGE_REPORT)
+	rm -f $(TMPDIR)/yams.*.json
 
 # --------------------------------------------------------------------------------
 # Testing

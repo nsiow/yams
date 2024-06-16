@@ -29,4 +29,7 @@ type Principal struct {
 
 	// AttachedPolicies refers to the managed policies associated with the Principal
 	AttachedPolicies []policy.Policy
+
+	// GroupPolicies refers to the group inline/unattached policies associated with the Principal
+	GroupPolicies []policy.Policy
 }

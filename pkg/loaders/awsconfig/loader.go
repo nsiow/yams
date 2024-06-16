@@ -8,6 +8,7 @@ import (
 
 	"github.com/nsiow/yams/pkg/aws/managedpolicies"
 	"github.com/nsiow/yams/pkg/entities"
+	"github.com/nsiow/yams/pkg/policy"
 )
 
 // Loader provides the ability to load resources/principals from AWS Config data
@@ -105,8 +106,8 @@ func (a *Loader) loadItems(items []ConfigItem) error {
 
 	// Load AWS-managed policies into the managed policy map
 	// (required because AWS Config does not report on them)
-	for arn, policy := range managedpolicies.All() {
-		mp.Add(arn, policy)
+	for arn, pol := range managedpolicies.All() {
+		mp.Add(CONST_TYPE_AWS_IAM_POLICY, arn, []policy.Policy{pol})
 	}
 
 	// Load principals

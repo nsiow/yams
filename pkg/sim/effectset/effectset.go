@@ -6,6 +6,8 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
+// TODO(nsiow) consider renaming to Decision
+
 // EffectSet maintains a unique list of Effect values
 type EffectSet struct {
 	effects []policy.Effect

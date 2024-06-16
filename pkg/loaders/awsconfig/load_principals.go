@@ -1,25 +1,25 @@
 package awsconfig
 
 import (
-	"slices"
+	"fmt"
 
 	"github.com/nsiow/yams/pkg/entities"
 )
 
 // loadPrincipals takes a list of AWS Config items and extracts resources
-func loadPrincipals(items []ConfigItem, mpm *PolicyMap) ([]entities.Principal, error) {
+func loadPrincipals(items []ConfigItem, pm *PolicyMap) ([]entities.Principal, error) {
 	var ps []entities.Principal
 
 	// Iterate through our AWS Config items
 	for _, i := range items {
 
 		// Filter out only Principal types
-		if !slices.Contains(principalTypes, i.Type) {
+		if i.Type != CONST_TYPE_AWS_IAM_ROLE && i.Type != CONST_TYPE_AWS_IAM_USER {
 			continue
 		}
 
-		// Load the single principal
-		p, err := loadPrincipal(i, mpm)
+		// Load the principal
+		p, err := loadPrincipal(i, pm)
 		if err != nil {
 			return nil, err
 		}
@@ -31,7 +31,7 @@ func loadPrincipals(items []ConfigItem, mpm *PolicyMap) ([]entities.Principal, e
 }
 
 // loadPrincipal takes a single AWS Config item and returns a parsed principal object
-func loadPrincipal(i ConfigItem, mpm *PolicyMap) (entities.Principal, error) {
+func loadPrincipal(i ConfigItem, pm *PolicyMap) (entities.Principal, error) {
 	// Construct basic fields
 	p := entities.Principal{
 		Type:    i.Type,
@@ -41,18 +41,26 @@ func loadPrincipal(i ConfigItem, mpm *PolicyMap) (entities.Principal, error) {
 	}
 
 	// Extract both inline and managed policies
-	// TODO(nsiow) Give these errors improved context similar to managed policies
 	ip, err := extractInlinePolicies(i)
 	if err != nil {
-		return p, err
+		return p, fmt.Errorf("error extracting inline policies for '%s': %w", i.Arn, err)
 	}
 	p.InlinePolicies = ip
 
-	mp, err := extractManagedPolicies(i, mpm)
+	mp, err := extractManagedPolicies(i, pm)
 	if err != nil {
-		return p, err
+		return p, fmt.Errorf("error extracting attached policies for '%s': %w", i.Arn, err)
 	}
 	p.AttachedPolicies = mp
+
+	// If we are dealing with an IAM user, load its group policies as well
+	if i.Type == CONST_TYPE_AWS_IAM_USER {
+		gp, err := extractGroupPolicies(i, pm)
+		if err != nil {
+			return p, fmt.Errorf("error extracting group policies for '%s': %w", i.Arn, err)
+		}
+		p.GroupPolicies = gp
+	}
 
 	return p, nil
 }

@@ -7,7 +7,6 @@ import (
 
 // Policy represents the grammar and structure of an AWS IAM Policy
 type Policy struct {
-	// Context   string `json:"-"` // TODO(nsiow) implement context from Policy -> Statement for tracking
 	Version   string
 	Id        string
 	Statement StatementBlock

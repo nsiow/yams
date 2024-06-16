@@ -88,6 +88,7 @@ func evalPrincipalAccess(opts *Options, ac AuthContext, trc *Trace) (*effectset.
 	effectivePolicies := [][]policy.Policy{
 		ac.Principal.InlinePolicies,
 		ac.Principal.AttachedPolicies,
+		ac.Principal.GroupPolicies,
 	}
 
 	// Specify the statement evaluation functions we will consider for Principal access

@@ -7,17 +7,17 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestStorageRetrieval confirms the ability to store/retrieve managed policies correctly
-func TestStorageRetrieval(t *testing.T) {
+// TestPolicyStorageRetrieval confirms the ability to store/retrieve managed policies correctly
+func TestPolicyStorageRetrieval(t *testing.T) {
 	type input struct {
-		store  bool          // whether or not to store the provided policy before the test
-		arn    string        // the ARN to use for storage + retrieval
-		policy policy.Policy // the policy to store
+		store    bool            // whether or not to store the provided policy before the test
+		arn      string          // the ARN to use for storage + retrieval
+		policies []policy.Policy // the policy to store
 	}
 
 	type output struct {
-		exists bool          // whether or not we should expect the requested ARN to exist
-		policy policy.Policy // the policy we would expect to get back
+		exists   bool            // whether or not we should expect the requested ARN to exist
+		policies []policy.Policy // the policy we would expect to get back
 	}
 
 	// Define inputs
@@ -25,13 +25,13 @@ func TestStorageRetrieval(t *testing.T) {
 		{
 			Name: "empty_policy",
 			Input: input{
-				store:  true,
-				arn:    "arn:aws:iam::000000000000:policy/EmptyPolicy",
-				policy: policy.Policy{},
+				store:    true,
+				arn:      "arn:aws:iam::000000000000:policy/EmptyPolicy",
+				policies: nil,
 			},
 			Want: output{
-				exists: true,
-				policy: policy.Policy{},
+				exists:   true,
+				policies: nil,
 			},
 		},
 		{
@@ -39,19 +39,21 @@ func TestStorageRetrieval(t *testing.T) {
 			Input: input{
 				store: true,
 				arn:   "arn:aws:iam::000000000000:policy/AmazonFakeS3ReadOnlyAccess",
-				policy: policy.Policy{
-					Version: "2012-10-17",
-					Id:      "s3read",
-					Statement: []policy.Statement{
-						{
-							Effect: "Allow",
-							Action: []string{
-								"s3:GetObject",
-								"s3:ListBucket",
-							},
-							Resource: []string{
-								"arn:aws:s3:::foo-bucket",
-								"arn:aws:s3:::foo-bucket/*",
+				policies: []policy.Policy{
+					{
+						Version: "2012-10-17",
+						Id:      "s3read",
+						Statement: []policy.Statement{
+							{
+								Effect: "Allow",
+								Action: []string{
+									"s3:GetObject",
+									"s3:ListBucket",
+								},
+								Resource: []string{
+									"arn:aws:s3:::foo-bucket",
+									"arn:aws:s3:::foo-bucket/*",
+								},
 							},
 						},
 					},
@@ -59,19 +61,21 @@ func TestStorageRetrieval(t *testing.T) {
 			},
 			Want: output{
 				exists: true,
-				policy: policy.Policy{
-					Version: "2012-10-17",
-					Id:      "s3read",
-					Statement: []policy.Statement{
-						{
-							Effect: "Allow",
-							Action: []string{
-								"s3:GetObject",
-								"s3:ListBucket",
-							},
-							Resource: []string{
-								"arn:aws:s3:::foo-bucket",
-								"arn:aws:s3:::foo-bucket/*",
+				policies: []policy.Policy{
+					{
+						Version: "2012-10-17",
+						Id:      "s3read",
+						Statement: []policy.Statement{
+							{
+								Effect: "Allow",
+								Action: []string{
+									"s3:GetObject",
+									"s3:ListBucket",
+								},
+								Resource: []string{
+									"arn:aws:s3:::foo-bucket",
+									"arn:aws:s3:::foo-bucket/*",
+								},
 							},
 						},
 					},
@@ -81,37 +85,61 @@ func TestStorageRetrieval(t *testing.T) {
 		{
 			Name: "normalize_1",
 			Input: input{
-				store:  true,
-				arn:    "arn:aws:iam::aws:policy/NormalizationTest",
-				policy: policy.Policy{Id: "something_unique"},
+				store: true,
+				arn:   "arn:aws:iam::aws:policy/NormalizationTest",
+				policies: []policy.Policy{
+					{
+						Id: "something_unique",
+					},
+				},
 			},
 			Want: output{
 				exists: true,
-				policy: policy.Policy{Id: "something_unique"},
+				policies: []policy.Policy{
+					{
+						Id: "something_unique",
+					},
+				},
 			},
 		},
 		{
 			Name: "normalize_2",
 			Input: input{
-				store:  true,
-				arn:    "arn:aws:iam::aws:policy/aws-service-role/NormalizationTest",
-				policy: policy.Policy{Id: "something_unique"},
+				store: true,
+				arn:   "arn:aws:iam::aws:policy/aws-service-role/NormalizationTest",
+				policies: []policy.Policy{
+					{
+						Id: "something_unique",
+					},
+				},
 			},
 			Want: output{
 				exists: true,
-				policy: policy.Policy{Id: "something_unique"},
+				policies: []policy.Policy{
+					{
+						Id: "something_unique",
+					},
+				},
 			},
 		},
 		{
 			Name: "normalize_3",
 			Input: input{
-				store:  true,
-				arn:    "arn:aws:iam::aws:policy/service-role/NormalizationTest",
-				policy: policy.Policy{Id: "something_unique"},
+				store: true,
+				arn:   "arn:aws:iam::aws:policy/service-role/NormalizationTest",
+				policies: []policy.Policy{
+					{
+						Id: "something_unique",
+					},
+				},
 			},
 			Want: output{
 				exists: true,
-				policy: policy.Policy{Id: "something_unique"},
+				policies: []policy.Policy{
+					{
+						Id: "something_unique",
+					},
+				},
 			},
 		},
 		{
@@ -121,8 +149,8 @@ func TestStorageRetrieval(t *testing.T) {
 				arn:   "arn:aws:iam::aws:policy/NonexistentPolicy",
 			},
 			Want: output{
-				exists: false,
-				policy: policy.Policy{},
+				exists:   false,
+				policies: nil,
 			},
 		},
 	}
@@ -133,12 +161,12 @@ func TestStorageRetrieval(t *testing.T) {
 
 		// Store the policy if requested
 		if i.store {
-			m.Add(i.arn, i.policy)
+			m.Add(CONST_TYPE_AWS_IAM_POLICY, i.arn, i.policies)
 		}
 
 		// Retrieve + return the policy, formatting into `output`
-		pol, exists := m.Get(i.arn)
-		got := output{exists: exists, policy: pol}
+		policies, exists := m.Get(CONST_TYPE_AWS_IAM_POLICY, i.arn)
+		got := output{exists: exists, policies: policies}
 		return got, nil
 	})
 }
