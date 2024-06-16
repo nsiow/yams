@@ -15,11 +15,10 @@ import (
 
 // AuthContext defines the tertiary context of a request that can be used for authz decisions
 type AuthContext struct {
-	Time      time.Time
-	Action    string
-	Principal *entities.Principal
-	Resource  *entities.Resource
-	// TODO(nsiow) figure out if we want to keep string values or allow for multivalues, etc
+	Time         time.Time
+	Action       string
+	Principal    *entities.Principal
+	Resource     *entities.Resource
 	Properties   map[string]string
 	MVProperties map[string][]string
 }

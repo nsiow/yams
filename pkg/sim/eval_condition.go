@@ -1,6 +1,7 @@
 package sim
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"strconv"
@@ -15,6 +16,8 @@ import (
 // --------------------------------------------------------------------------------
 // Setup
 // --------------------------------------------------------------------------------
+
+// TODO(nsiow) make better use of the two error types below
 
 // Error indicating that an unknown Condition operator was specified
 var ErrUnknownOperator = errors.New("unknown operation")
@@ -182,6 +185,16 @@ var ConditionOperatorMap = map[string]CondInner{
 					Cond_StringEquals,
 				),
 			),
+		),
+	),
+
+	// ------------------------------------------------------------------------------
+	// Binary Functions
+	// ------------------------------------------------------------------------------
+
+	condition.BinaryEquals: Cond_MatchAny(
+		Mod_Binary(
+			Cond_StringEquals,
 		),
 	),
 }
@@ -399,6 +412,29 @@ func Mod_Bool(f func(*Trace, string, string) bool) Compare {
 		}
 
 		return f(trc, bLeft, bRight)
+	}
+}
+
+// Mod_Binary validates and forward on the base64 encoded values, allowing binary expressions
+//
+// We reuse the string operators for this rather than a byte-by-byte comparison for ease, but for
+// slightly faster comparison we should perform the byte-by-byte comparison to avoid the base64
+// encoding overhead
+func Mod_Binary(f func(*Trace, string, string) bool) Compare {
+	return func(trc *Trace, left, right string) bool {
+		_, err := base64.StdEncoding.DecodeString(left)
+		if err != nil {
+			// TODO(nsiow) add to Trace
+			return false
+		}
+
+		_, err = base64.StdEncoding.DecodeString(right)
+		if err != nil {
+			// TODO(nsiow) add to Trace
+			return false
+		}
+
+		return f(trc, left, right)
 	}
 }
 

@@ -34,4 +34,7 @@ const (
 
 	// Bool Functions
 	Bool = "Bool"
+
+	// Binary Functions
+	BinaryEquals = "BinaryEquals"
 )
