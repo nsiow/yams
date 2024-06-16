@@ -1695,6 +1695,334 @@ func TestNotIpAddress(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------------
+// Arn tests
+// --------------------------------------------------------------------------------
+
+func TestArnEquals(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnEquals": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:88888:mytopic"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnEquals": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:88888:othertopic"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "match_diff_region",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnEquals": {
+							"aws:SourceArn": []string{"arn:aws:sns:*:88888:mytopic"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "nomatch_diff_account",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnEquals": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:*:othertopic"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+func TestArnNotEquals(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnNotEquals": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:88888:mytopic"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnNotEquals": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:88888:othertopic"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "nomatch_diff_region",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnNotEquals": {
+							"aws:SourceArn": []string{"arn:aws:sns:*:88888:mytopic"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "match_diff_account",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnNotEquals": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:*:othertopic"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+func TestArnLike(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnLike": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:88888:mytopic"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnLike": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:88888:othertopic"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "match_diff_region",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnLike": {
+							"aws:SourceArn": []string{"arn:aws:sns:*:88888:mytopic"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "nomatch_diff_account",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnLike": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:*:othertopic"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+func TestArnNotLike(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnNotLike": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:88888:mytopic"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnNotLike": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:88888:othertopic"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "nomatch_diff_region",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnNotLike": {
+							"aws:SourceArn": []string{"arn:aws:sns:*:88888:mytopic"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "match_diff_account",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnNotLike": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:*:othertopic"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// --------------------------------------------------------------------------------
 // Test weird stuff
 // --------------------------------------------------------------------------------
 
