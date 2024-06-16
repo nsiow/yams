@@ -41,4 +41,10 @@ const (
 	// IP Address Functions
 	IpAddress    = "IpAddress"
 	NotIpAddress = "NotIpAddress"
+
+	// Arn functions
+	ArnEquals    = "ArnEquals"
+	ArnNotEquals = "ArnNotEquals"
+	ArnLike      = "ArnLike"
+	ArnNotLike   = "ArnNotLike"
 )

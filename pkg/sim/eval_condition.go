@@ -215,6 +215,35 @@ var ConditionOperatorMap = map[string]CondInner{
 			),
 		),
 	),
+
+	// ------------------------------------------------------------------------------
+	// ARN Functions
+	// ------------------------------------------------------------------------------
+
+	condition.ArnEquals: Mod_ResolveVariables(
+		Cond_MatchAny(
+			Cond_ArnLike,
+		),
+	),
+	condition.ArnNotEquals: Mod_ResolveVariables(
+		Mod_Not(
+			Cond_MatchAny(
+				Cond_ArnLike,
+			),
+		),
+	),
+	condition.ArnLike: Mod_ResolveVariables(
+		Cond_MatchAny(
+			Cond_ArnLike,
+		),
+	),
+	condition.ArnNotLike: Mod_ResolveVariables(
+		Mod_Not(
+			Cond_MatchAny(
+				Cond_ArnLike,
+			),
+		),
+	),
 }
 
 // --------------------------------------------------------------------------------
@@ -276,6 +305,11 @@ func Cond_NumericGreaterThanEquals(trc *Trace, left, right int) bool {
 // Cond_IpAddress defines the `IpAddress` condition function
 func Cond_IpAddress(trc *Trace, left netip.Addr, right netip.Prefix) bool {
 	return right.Contains(left)
+}
+
+// Cond_ArnLike defines the `ArnLike` condition function
+func Cond_ArnLike(trc *Trace, left, right string) bool {
+	return wildcard.MatchArn(right, left)
 }
 
 // --------------------------------------------------------------------------------
