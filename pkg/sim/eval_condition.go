@@ -464,7 +464,7 @@ func Mod_Binary(f func(*Trace, string, string) bool) Compare {
 // Mod_Network converts the incoming strings into IP addresses/nets, allowing network expressions
 func Mod_Network(f func(*Trace, netip.Addr, netip.Prefix) bool) Compare {
 	return func(trc *Trace, left, right string) bool {
-		addr, err := netip.ParseAddr(right)
+		addr, err := netip.ParseAddr(left)
 		if err != nil {
 			// TODO(nsiow) add to Trace
 			return false
