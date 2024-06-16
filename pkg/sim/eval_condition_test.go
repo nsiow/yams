@@ -91,7 +91,6 @@ func TestStatementBase(t *testing.T) {
 	})
 }
 
-// TestStringEquals validates StringEquals behavior
 func TestStringEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -155,7 +154,6 @@ func TestStringEquals(t *testing.T) {
 // String tests
 // --------------------------------------------------------------------------------
 
-// TestStringEqualsIgnoreCase validates StringEqualsIgnoreCase behavior
 func TestStringEqualsIgnoreCase(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -197,7 +195,6 @@ func TestStringEqualsIgnoreCase(t *testing.T) {
 	})
 }
 
-// TestStringNotEquals validates StringNotEquals behavior
 func TestStringNotEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -239,7 +236,6 @@ func TestStringNotEquals(t *testing.T) {
 	})
 }
 
-// TestStringNotEqualsIgnoreCase validates StringNotEqualsIgnoreCase behavior
 func TestStringNotEqualsIgnoreCase(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -281,7 +277,6 @@ func TestStringNotEqualsIgnoreCase(t *testing.T) {
 	})
 }
 
-// TestStringLike validates StringLike behavior
 func TestStringLike(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -325,7 +320,6 @@ func TestStringLike(t *testing.T) {
 	})
 }
 
-// TestStringNotLike validates StringNotLike behavior
 func TestStringNotLike(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -371,7 +365,6 @@ func TestStringNotLike(t *testing.T) {
 // Numeric tests
 // --------------------------------------------------------------------------------
 
-// TestNumericConversion validates correct behavior of casting condition values to numbers
 func TestNumericConversion(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -418,7 +411,6 @@ func TestNumericConversion(t *testing.T) {
 
 }
 
-// TestNumericEquals validates NumericEquals behavior
 func TestNumericEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -465,7 +457,6 @@ func TestNumericEquals(t *testing.T) {
 	})
 }
 
-// TestNumericNotEquals validates NumericEquals behavior
 func TestNumericNotEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -512,7 +503,6 @@ func TestNumericNotEquals(t *testing.T) {
 	})
 }
 
-// TestNumericLessThan validates NumericLessThan behavior
 func TestNumericLessThan(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -559,7 +549,6 @@ func TestNumericLessThan(t *testing.T) {
 	})
 }
 
-// TestNumericLessThanEquals validates NumericLessThanEquals behavior
 func TestNumericLessThanEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -624,7 +613,6 @@ func TestNumericLessThanEquals(t *testing.T) {
 	})
 }
 
-// TestNumericGreaterThan validates NumericGreaterThan behavior
 func TestNumericGreaterThan(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -693,7 +681,6 @@ func TestNumericGreaterThan(t *testing.T) {
 // Date tests
 // --------------------------------------------------------------------------------
 
-// TestNumericGreaterThanEquals validates NumericGreaterThanEquals behavior
 func TestNumericGreaterThanEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -758,7 +745,6 @@ func TestNumericGreaterThanEquals(t *testing.T) {
 	})
 }
 
-// TestDateEquals validates DateEquals behavior
 func TestDateEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -858,7 +844,6 @@ func TestDateEquals(t *testing.T) {
 	})
 }
 
-// TestDateNotEquals validates DateNotEquals behavior
 func TestDateNotEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -922,7 +907,6 @@ func TestDateNotEquals(t *testing.T) {
 	})
 }
 
-// TestDateLessThan validates DateLessThan behavior
 func TestDateLessThan(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -986,7 +970,6 @@ func TestDateLessThan(t *testing.T) {
 	})
 }
 
-// TestDateLessThanEquals validates DateLessThanEquals behavior
 func TestDateLessThanEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -1068,7 +1051,6 @@ func TestDateLessThanEquals(t *testing.T) {
 	})
 }
 
-// TestDateGreaterThan validates DateGreaterThan behavior
 func TestDateGreaterThan(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -1151,7 +1133,6 @@ func TestDateGreaterThan(t *testing.T) {
 	})
 }
 
-// TestDateGreaterThanEquals validates DateGreaterThanEquals behavior
 func TestDateGreaterThanEquals(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -1237,7 +1218,6 @@ func TestDateGreaterThanEquals(t *testing.T) {
 // Boolean tests
 // --------------------------------------------------------------------------------
 
-// TestBool validates Bool behavior
 func TestBool(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -1459,10 +1439,265 @@ func TestBinary(t *testing.T) {
 }
 
 // --------------------------------------------------------------------------------
+// IpAddress tests
+// --------------------------------------------------------------------------------
+
+func TestIpAddress(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "10.0.0.1",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"IpAddress": {
+							"aws:SourceIp": []string{"10.0.0.0/8"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_match_ipv6",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"IpAddress": {
+							"aws:SourceIp": []string{"2001:0db8:85a3::/64"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_match_multi",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "10.0.0.1",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"IpAddress": {
+							"aws:SourceIp": []string{"1.2.3.0/24", "10.0.0.0/8"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "128.252.0.1",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"IpAddress": {
+							"aws:SourceIp": []string{"10.0.0.0/8"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "simple_nomatch_ipv6",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "2001:1db8:85a3:0000:0000:8a2e:0370:7334",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"IpAddress": {
+							"aws:SourceIp": []string{"2001:0db8:85a3::/64"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "match_but_not_ips",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "foo",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"IpAddress": {
+							"aws:SourceIp": []string{"10.0.0.0/8"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "match_but_not_ips_reversed",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "10.0.0.1",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"IpAddress": {
+							"aws:SourceIp": []string{"foo"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "match_but_wrong_order",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "10.0.0.0/8",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"IpAddress": {
+							"aws:SourceIp": []string{"10.0.0.1"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+func TestNotIpAddress(t *testing.T) {
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Name: "simple_nomatch",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "10.0.0.1",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NotIpAddress": {
+							"aws:SourceIp": []string{"10.0.0.0/8"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "simple_nomatch_ipv6",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NotIpAddress": {
+							"aws:SourceIp": []string{"2001:0db8:85a3::/64"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "simple_nomatch_multi",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "10.0.0.1",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NotIpAddress": {
+							"aws:SourceIp": []string{"1.2.3.0/24", "10.0.0.0/8"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "simple_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "128.252.0.1",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NotIpAddress": {
+							"aws:SourceIp": []string{"10.0.0.0/8"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "simple_match_ipv6",
+			Input: input{
+				ac: AuthContext{
+					Properties: map[string]string{
+						"aws:SourceIp": "2001:1db8:85a3:0000:0000:8a2e:0370:7334",
+					},
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NotIpAddress": {
+							"aws:SourceIp": []string{"2001:0db8:85a3::/64"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+	})
+}
+
+// --------------------------------------------------------------------------------
 // Test weird stuff
 // --------------------------------------------------------------------------------
 
-// TestIfExists validates the ...IfExists behavior of condition operators
 func TestIfExists(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -1526,7 +1761,6 @@ func TestIfExists(t *testing.T) {
 	})
 }
 
-// TestForAllValues validates the ForAllValues: behavior of multivalue conditions
 func TestForAllValues(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
@@ -1590,7 +1824,6 @@ func TestForAllValues(t *testing.T) {
 	})
 }
 
-// TestForAnyValues validates the ForAnyValues: behavior of multivalue conditions
 func TestForAnyValues(t *testing.T) {
 	tests := []testrunner.TestCase[input, bool]{
 		{
