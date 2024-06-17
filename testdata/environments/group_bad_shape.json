@@ -1,0 +1,28 @@
+[
+  {
+    "accountId": "000000000000",
+    "resourceId": "AGPAGGGGGGGGGG",
+    "awsRegion": "",
+    "configuration": {
+      "path": "/",
+      "groupName": "family",
+      "attachedManagedPolicies": [],
+      "groupId": "AGPAGGGGGGGGGG",
+      "arn": "arn:aws:iam::000000000000:group/family",
+      "groupPolicyList": [
+        [
+        ]
+      ],
+      "createDate": "2019-03-31T01:52:20.000Z"
+    },
+    "supplementaryConfiguration": {},
+    "resourceName": "family",
+    "arn": "arn:aws:iam::000000000000:group/family",
+    "configurationItemCaptureTime": "2023-06-16T02:59:26.054Z",
+    "availabilityZone": "Not Applicable",
+    "version": "1.3",
+    "resourceCreationTime": "2019-03-31T01:52:20.000Z",
+    "resourceType": "AWS::IAM::Group",
+    "tags": []
+  }
+]

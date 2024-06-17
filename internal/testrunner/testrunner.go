@@ -1,7 +1,11 @@
 package testrunner
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -46,8 +50,9 @@ func RunTestSuite[I, O any](
 				t.Logf("test saw expected error: %v", err)
 				return
 			case err == nil && !tc.ShouldErr:
-				if !reflect.DeepEqual(got, tc.Want) {
-					t.Fatalf("failed test case; wanted:\n%+v\n\ngot:\n%+v", tc.Want, got)
+				if !reflect.DeepEqual(tc.Want, got) {
+					msg := GenerateFailureOutput(tc.Name, tc.Want, got)
+					t.Fatalf(msg)
 				}
 			case err != nil && !tc.ShouldErr:
 				t.Fatalf("unexpected error during test case: %v", err)
@@ -56,4 +61,42 @@ func RunTestSuite[I, O any](
 			}
 		})
 	}
+}
+
+// GenerateFailureOutput creates a more usable/readable "wanted vs got" diff for tests
+func GenerateFailureOutput(name string, wanted, got any) string {
+	header := "// --------------------------------------------------"
+
+	wantedJson, _ := json.MarshalIndent(wanted, "", "  ")
+	gotJson, _ := json.MarshalIndent(got, "", "  ")
+
+	wantedMessage := "unable to generate for output for `wanted`"
+	wantedFile, err := os.CreateTemp("", fmt.Sprintf("yams.%s.wanted.*.json", name))
+	if err == nil {
+		err = os.WriteFile(wantedFile.Name(), wantedJson, 0644)
+		if err == nil {
+			wantedMessage = fmt.Sprintf("expected output available @ %s", wantedFile.Name())
+		}
+	}
+
+	gotMessage := "unable to generate for output for `got`"
+	gotFile, err := os.CreateTemp("", fmt.Sprintf("yams.%s.got.*.json", name))
+	if err == nil {
+		err = os.WriteFile(gotFile.Name(), gotJson, 0644)
+		if err == nil {
+			gotMessage = fmt.Sprintf("observed output available @ %s", gotFile.Name())
+		}
+	}
+
+	return strings.Join([]string{
+		"test case failed",
+		strings.Join([]string{header, "// wanted", header}, "\n"),
+		fmt.Sprintf("%#v", wanted),
+		strings.Join([]string{header, "// got", header}, "\n"),
+		fmt.Sprintf("%#v", got),
+		strings.Join([]string{header, "// wanted (pretty)", header}, "\n"),
+		fmt.Sprintf("%s", wantedMessage),
+		strings.Join([]string{header, "// got (pretty)", header}, "\n"),
+		fmt.Sprintf("%s", gotMessage),
+	}, "\n")
 }

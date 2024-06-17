@@ -4,6 +4,7 @@ const (
 	// Define constants for AWS principal types
 
 	CONST_TYPE_AWS_IAM_POLICY = "AWS::IAM::Policy"
+	CONST_TYPE_AWS_IAM_GROUP  = "AWS::IAM::Group"
 	CONST_TYPE_AWS_IAM_ROLE   = "AWS::IAM::Role"
 	CONST_TYPE_AWS_IAM_USER   = "AWS::IAM::User"
 

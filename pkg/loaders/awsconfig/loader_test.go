@@ -42,6 +42,11 @@ func TestLoadJsonValid(t *testing.T) {
 			Input: `../../../testdata/environments/simple_1.jsonl`,
 			Want:  simple1Output,
 		},
+		{
+			Name:  "user_1_json",
+			Input: `../../../testdata/environments/user_1.json`,
+			Want:  user1Output,
+		},
 
 		// Invalid
 
@@ -76,23 +81,43 @@ func TestLoadJsonValid(t *testing.T) {
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_principal_bad_inline",
-			Input:     `../../../testdata/environments/invalid_principal_bad_inline.json`,
+			Name:      "invalid_role_bad_inline",
+			Input:     `../../../testdata/environments/invalid_role_bad_inline.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_principal_bad_inline_encoding",
-			Input:     `../../../testdata/environments/invalid_principal_bad_inline_encoding.json`,
+			Name:      "invalid_role_bad_inline_encoding",
+			Input:     `../../../testdata/environments/invalid_role_bad_inline_encoding.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_principal_bad_managed",
-			Input:     `../../../testdata/environments/invalid_principal_bad_managed.json`,
+			Name:      "invalid_role_bad_managed",
+			Input:     `../../../testdata/environments/invalid_role_bad_managed.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_principal_missing_managed",
-			Input:     `../../../testdata/environments/invalid_principal_missing_managed.json`,
+			Name:      "invalid_role_missing_managed",
+			Input:     `../../../testdata/environments/invalid_role_missing_managed.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_bad_inline",
+			Input:     `../../../testdata/environments/invalid_user_bad_inline.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_bad_inline_encoding",
+			Input:     `../../../testdata/environments/invalid_user_bad_inline_encoding.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_bad_managed",
+			Input:     `../../../testdata/environments/invalid_user_bad_managed.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_missing_managed",
+			Input:     `../../../testdata/environments/invalid_user_missing_managed.json`,
 			ShouldErr: true,
 		},
 		{
@@ -103,6 +128,26 @@ func TestLoadJsonValid(t *testing.T) {
 		{
 			Name:      "invalid_resource_bad_policy_type",
 			Input:     `../../../testdata/environments/invalid_resource_bad_policy_type.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_bad_group",
+			Input:     `../../../testdata/environments/user_1_bad_group.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_missing_group",
+			Input:     `../../../testdata/environments/user_1_missing_group.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_group_bad_shape",
+			Input:     `../../../testdata/environments/group_bad_shape.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_group_missing_policy",
+			Input:     `../../../testdata/environments/group_missing_policy.json`,
 			ShouldErr: true,
 		},
 	}
@@ -298,6 +343,95 @@ var simple1Output entities.Environment = entities.Environment{
 				},
 			},
 			Tags: []entities.Tag{},
+		},
+	},
+}
+
+var user1Output entities.Environment = entities.Environment{
+	Principals: []entities.Principal{
+		{
+			Type:    "AWS::IAM::User",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:user/myuser",
+			Tags:    []entities.Tag{},
+			InlinePolicies: []policy.Policy{
+				{
+					Version: "2012-10-17",
+					Statement: []policy.Statement{
+						{
+							Sid:      "Statement1",
+							Effect:   "Allow",
+							Action:   []string{"s3:listbucket"},
+							Resource: []string{"arn:aws:s3:::mybucket5"},
+						},
+					},
+				},
+			},
+			AttachedPolicies: []policy.Policy{
+				{
+					Version: "2012-10-17",
+					Statement: []policy.Statement{
+						{
+							Effect:   "Allow",
+							Action:   []string{"sqs:ReceiveMessage"},
+							Resource: []string{"arn:aws:sqs:us-east-1:0000000000000:queue-5"},
+						},
+					},
+				},
+			},
+			GroupPolicies: []policy.Policy{
+				{
+					Version: "2012-10-17",
+					Statement: []policy.Statement{
+						{
+							Effect:   "Allow",
+							Action:   []string{"sqs:ReceiveMessage"},
+							Resource: []string{"arn:aws:sqs:us-east-1:0000000000000:queue-2"},
+						},
+					},
+				},
+				{
+					Version: "2012-10-17",
+					Statement: []policy.Statement{
+						{
+							Sid:      "Statement1",
+							Effect:   "Allow",
+							Action:   []string{"s3:listbucket"},
+							Resource: []string{"arn:aws:s3:::mybucket"},
+						},
+					},
+				},
+			},
+		},
+	},
+	Resources: []entities.Resource{
+		{
+			Type:    "AWS::IAM::Policy",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:policy/Common",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
+		},
+		{
+			Type:    "AWS::IAM::Policy",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:policy/Shared",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
+		},
+		{
+			Type:    "AWS::IAM::Group",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:group/family",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
+		},
+		{
+			Type:    "AWS::IAM::User",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:user/myuser",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
 		},
 	},
 }
