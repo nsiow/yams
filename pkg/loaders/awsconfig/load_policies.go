@@ -99,7 +99,7 @@ func loadGroup(i ConfigItem, pm *PolicyMap) ([]policy.Policy, error) {
 
 	// Add attached group policies
 	for _, p := range gf.AttachedManagedPolicies {
-		policies, ok := pm.Get(CONST_TYPE_AWS_IAM_POLICY, p.PolicyArn)
+		policies, ok := pm.Get(CONST_TYPE_AWS_IAM_GROUP, p.PolicyArn)
 		if !ok {
 			return nil, fmt.Errorf("unable to find policy definition for group policy: %s", p.PolicyArn)
 		}

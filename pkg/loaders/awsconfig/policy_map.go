@@ -72,9 +72,14 @@ func (m *PolicyMap) NormalizePolicyArn(arn string) string {
 	return arn
 }
 
-// NormalizeGroupArn updates the arn so that it can be retrieved by account/groupname tuple
-// rather than ARN, since user <> group attachments only get the name of the group providing
-// permissions
+// NormalizeGroupArn updates the arn of an IAM group to a normalized version (ignoring path).
+//
+// While this reduces accuracy when returning ARNs back to the user, it allows us to retrieve and
+// reference group policies from parts of the code which only have access to account ID + group
+// name
+//
+// This is most relevant when parsing data from AWS APIs or Config, where group attachments on an
+// IAM user are referenced by name rather than ARN
 func (m *PolicyMap) NormalizeGroupArn(arn string) string {
 	// Break ARN into components
 	components := strings.Split(arn, "/")
@@ -85,5 +90,5 @@ func (m *PolicyMap) NormalizeGroupArn(arn string) string {
 	}
 
 	// Otherwise, we just want the first and last pieces; sans path
-	return fmt.Sprintf("%s/%s", components[0], components[1])
+	return fmt.Sprintf("%s/%s", components[0], components[len(components)-1])
 }

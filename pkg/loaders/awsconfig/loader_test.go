@@ -81,23 +81,43 @@ func TestLoadJsonValid(t *testing.T) {
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_principal_bad_inline",
-			Input:     `../../../testdata/environments/invalid_principal_bad_inline.json`,
+			Name:      "invalid_role_bad_inline",
+			Input:     `../../../testdata/environments/invalid_role_bad_inline.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_principal_bad_inline_encoding",
-			Input:     `../../../testdata/environments/invalid_principal_bad_inline_encoding.json`,
+			Name:      "invalid_role_bad_inline_encoding",
+			Input:     `../../../testdata/environments/invalid_role_bad_inline_encoding.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_principal_bad_managed",
-			Input:     `../../../testdata/environments/invalid_principal_bad_managed.json`,
+			Name:      "invalid_role_bad_managed",
+			Input:     `../../../testdata/environments/invalid_role_bad_managed.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_principal_missing_managed",
-			Input:     `../../../testdata/environments/invalid_principal_missing_managed.json`,
+			Name:      "invalid_role_missing_managed",
+			Input:     `../../../testdata/environments/invalid_role_missing_managed.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_bad_inline",
+			Input:     `../../../testdata/environments/invalid_user_bad_inline.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_bad_inline_encoding",
+			Input:     `../../../testdata/environments/invalid_user_bad_inline_encoding.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_bad_managed",
+			Input:     `../../../testdata/environments/invalid_user_bad_managed.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_missing_managed",
+			Input:     `../../../testdata/environments/invalid_user_missing_managed.json`,
 			ShouldErr: true,
 		},
 		{
@@ -108,6 +128,26 @@ func TestLoadJsonValid(t *testing.T) {
 		{
 			Name:      "invalid_resource_bad_policy_type",
 			Input:     `../../../testdata/environments/invalid_resource_bad_policy_type.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_bad_group",
+			Input:     `../../../testdata/environments/user_1_bad_group.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_missing_group",
+			Input:     `../../../testdata/environments/user_1_missing_group.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_group_bad_shape",
+			Input:     `../../../testdata/environments/group_bad_shape.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_group_missing_policy",
+			Input:     `../../../testdata/environments/group_missing_policy.json`,
 			ShouldErr: true,
 		},
 	}

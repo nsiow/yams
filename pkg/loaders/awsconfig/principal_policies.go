@@ -37,12 +37,7 @@ func extractManagedPolicies(i ConfigItem, pm *PolicyMap) ([]policy.Policy, error
 
 // extractGroupPolicies attempts to retrieve the relevant Group permissions, if supported
 func extractGroupPolicies(i ConfigItem, pm *PolicyMap) ([]policy.Policy, error) {
-	switch i.Type {
-	case CONST_TYPE_AWS_IAM_USER:
-		return extractGroupUserPolicies(i, pm)
-	default:
-		return nil, fmt.Errorf("extractGroupInlinePolicies not supported for type: %s", i.Type)
-	}
+	return extractGroupUserPolicies(i, pm)
 }
 
 // managedPolicyListFragment allows for unmarshalling of Managed Policy configuration blobs

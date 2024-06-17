@@ -170,3 +170,77 @@ func TestPolicyStorageRetrieval(t *testing.T) {
 		return got, nil
 	})
 }
+
+// TestArnNormalization confirms the ability to correctly normalize policy/group/etc ARNs
+func TestArnNormalization(t *testing.T) {
+	type input struct {
+		policyType string
+		arn        string
+	}
+
+	// Define inputs
+	tests := []testrunner.TestCase[input, string]{
+		{
+			Name: "simple_policy",
+			Input: input{
+				policyType: CONST_TYPE_AWS_IAM_POLICY,
+				arn:        "arn:aws:iam::000000000000:policy/EmptyPolicy",
+			},
+			Want: "arn:aws:iam::000000000000:policy/EmptyPolicy",
+		},
+		{
+			Name: "simple_group",
+			Input: input{
+				policyType: CONST_TYPE_AWS_IAM_GROUP,
+				arn:        "arn:aws:iam::88888:group/family",
+			},
+			Want: "arn:aws:iam::88888:group/family",
+		},
+		{
+			Name: "service_role_1",
+			Input: input{
+				policyType: CONST_TYPE_AWS_IAM_POLICY,
+				arn:        "arn:aws:iam::aws:policy/service-role/NormalizationTest",
+			},
+			Want: "arn:aws:iam::aws:policy/NormalizationTest",
+		},
+		{
+			Name: "service_role_2",
+			Input: input{
+				policyType: CONST_TYPE_AWS_IAM_POLICY,
+				arn:        "arn:aws:iam::aws:policy/aws-service-role/NormalizationTest",
+			},
+			Want: "arn:aws:iam::aws:policy/NormalizationTest",
+		},
+		{
+			Name: "group_with_path",
+			Input: input{
+				policyType: CONST_TYPE_AWS_IAM_GROUP,
+				arn:        "arn:aws:iam::88888:group/jobrole/family",
+			},
+			Want: "arn:aws:iam::88888:group/family",
+		},
+		{
+			Name: "group_too_short",
+			Input: input{
+				policyType: CONST_TYPE_AWS_IAM_GROUP,
+				arn:        "foo",
+			},
+			Want: "foo",
+		},
+		{
+			Name: "non_supported_type",
+			Input: input{
+				policyType: CONST_TYPE_AWS_S3_BUCKET,
+				arn:        "arn:aws:s3:::somebucket",
+			},
+			Want: "arn:aws:s3:::somebucket",
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (string, error) {
+		pm := PolicyMap{}
+		got := pm.NormalizeArn(i.policyType, i.arn)
+		return got, nil
+	})
+}
