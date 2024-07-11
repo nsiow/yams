@@ -6,6 +6,7 @@ import (
 	"github.com/nsiow/yams/internal/testrunner"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
+	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
 // TestOverallAccess_XAccount checks both principal-side and resource-side logic where the
@@ -630,7 +631,7 @@ func TestPrincipalAccess(t *testing.T) {
 
 	testrunner.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
 		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalPrincipalAccess(&opts, ac, &Trace{})
+		res, err := evalPrincipalAccess(&opts, ac, trace.New())
 		if err != nil {
 			return nil, err
 		}
@@ -773,7 +774,7 @@ func TestResourceAccess(t *testing.T) {
 
 	testrunner.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
 		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalResourceAccess(&opts, ac, &Trace{})
+		res, err := evalResourceAccess(&opts, ac, trace.New())
 		if err != nil {
 			return nil, err
 		}
@@ -876,7 +877,7 @@ func TestStatementMatchesAction(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesAction(&Options{}, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesAction(&Options{}, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -976,7 +977,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesPrincipal(&Options{}, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesPrincipal(&Options{}, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -1062,7 +1063,7 @@ func TestStatementMatchesResource(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesResource(&Options{}, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesResource(&Options{}, i.ac, trace.New(), &i.stmt)
 	})
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim/effectset"
 	"github.com/nsiow/yams/pkg/sim/gate"
+	"github.com/nsiow/yams/pkg/sim/trace"
 	"github.com/nsiow/yams/pkg/sim/wildcard"
 )
 
@@ -15,74 +16,79 @@ import (
 // and different-account evaluations
 func evalOverallAccess(opts *Options, ac AuthContext) (*Result, error) {
 
-	trc := Trace{}
-	res := Result{Trace: &trc}
+	trc := trace.New()
+	res := Result{Trace: trc}
 
 	// Calculate Principal access
-	pAccess, err := evalPrincipalAccess(opts, ac, &trc)
+	pAccess, err := evalPrincipalAccess(opts, ac, trc)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("error evaluating principal access"), err)
 	}
-	rAccess, err := evalResourceAccess(opts, ac, &trc)
+	rAccess, err := evalResourceAccess(opts, ac, trc)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("error evaluating resource access"), err)
 	}
 
 	// Check for explicit Deny results
 	if pAccess.Contains(policy.EFFECT_DENY) {
+		trc.Attr("explicit", true)
 		res.IsAllowed = false
-		trc.Add("[explicit deny] explicit deny found in identity policy")
+		trc.Decision("[explicit deny] found in identity policy")
 		return &res, nil
 	}
 	if rAccess.Contains(policy.EFFECT_DENY) {
+		trc.Attr("explicit", true)
 		res.IsAllowed = false
-		trc.Add("[explicit deny] explicit deny found in resource policy")
+		trc.Decision("[explicit deny] found in resource policy")
 		return &res, nil
 	}
+	trc.Attr("explicit", false)
 
 	// If same account, access is granted if the Principal has access
 	if evalIsSameAccount(ac.Principal, ac.Resource) {
+		trc.Attr("sameAccount", true)
 		if pAccess.Contains(policy.EFFECT_ALLOW) {
 			res.IsAllowed = true
-			trc.Add("[allow] access granted via same-account identity policy")
+			trc.Decision("[allow] access granted via same-account identity policy")
 			return &res, nil
 		}
 
 		// TODO(nsiow) implement correct behavior for same-account access via explicit ARN
 		res.IsAllowed = false
-		trc.Add("[implicit deny] no identity-based policy allows this action")
+		trc.Decision("[implicit deny] no identity-based policy allows this action")
 		return &res, nil
 	}
+	trc.Attr("sameAccount", false)
 
 	// If x-account, access is granted if the Principal has access and the Resource permits that
 	// access
 	if pAccess.Contains(policy.EFFECT_ALLOW) && rAccess.Contains(policy.EFFECT_ALLOW) {
 		res.IsAllowed = true
-		trc.Add("[allow] access granted via x-account identity + resource policies")
+		trc.Decision("[allow] access granted via x-account identity + resource policies")
 		return &res, nil
 	}
 	if pAccess.Contains(policy.EFFECT_ALLOW) && !rAccess.Contains(policy.EFFECT_ALLOW) {
 		res.IsAllowed = false
-		trc.Add("[implicit deny] x-account, missing resource policy access")
+		trc.Decision("[implicit deny] x-account, missing resource policy access")
 		return &res, nil
 	}
 	if !pAccess.Contains(policy.EFFECT_ALLOW) && rAccess.Contains(policy.EFFECT_ALLOW) {
 		res.IsAllowed = false
-		trc.Add("[implicit deny] x-account, missing identity policy access")
+		trc.Decision("[implicit deny] x-account, missing identity policy access")
 		return &res, nil
 	}
 
 	// We fell through and no access was granted from either side
 	res.IsAllowed = false
-	trc.Add("[implicit deny] x-account, missing both identity + resource access")
+	trc.Decision("[implicit deny] x-account, missing both identity + resource access")
 	return &res, nil
 }
 
 // statementEvalFunction is the blueprint of a function that allows us to evaluate a single statement
-type statementEvalFunction func(*Options, AuthContext, *Trace, *policy.Statement) (bool, error)
+type statementEvalFunction func(*Options, AuthContext, *trace.Trace, *policy.Statement) (bool, error)
 
 // evalPrincipalAccess calculates the Principal-side access to the specified Resource
-func evalPrincipalAccess(opts *Options, ac AuthContext, trc *Trace) (*effectset.EffectSet, error) {
+func evalPrincipalAccess(opts *Options, ac AuthContext, trc *trace.Trace) (*effectset.EffectSet, error) {
 
 	// Specify the types of policies we will consider for Principal access
 	effectivePolicies := [][]policy.Policy{
@@ -129,7 +135,7 @@ func evalPrincipalAccess(opts *Options, ac AuthContext, trc *Trace) (*effectset.
 }
 
 // evalResourceAccess calculates the Resource-side access with regard to the specified Principal
-func evalResourceAccess(opts *Options, ac AuthContext, trc *Trace) (*effectset.EffectSet, error) {
+func evalResourceAccess(opts *Options, ac AuthContext, trc *trace.Trace) (*effectset.EffectSet, error) {
 
 	// Specify the statement evaluation functions we will consider for Principal access
 	functions := []statementEvalFunction{
@@ -166,7 +172,7 @@ func evalResourceAccess(opts *Options, ac AuthContext, trc *Trace) (*effectset.E
 
 // evalStatementMatchesAction computes whether the Statement matches the AuthContext's Action
 func evalStatementMatchesAction(
-	opts *Options, ac AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, ac AuthContext, trc *trace.Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Action block to use
 	var _gate gate.Gate
@@ -190,7 +196,7 @@ func evalStatementMatchesAction(
 
 // evalStatementMatchesPrincipal computes whether the Statement matches the AuthContext's Principal
 func evalStatementMatchesPrincipal(
-	opts *Options, ac AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, ac AuthContext, trc *trace.Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Principal block to use
 	var _gate gate.Gate
@@ -215,7 +221,7 @@ func evalStatementMatchesPrincipal(
 
 // evalStatementMatchesResource computes whether the Statement matches the AuthContext's Resource
 func evalStatementMatchesResource(
-	opts *Options, ac AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, ac AuthContext, trc *trace.Trace, stmt *policy.Statement) (bool, error) {
 
 	// Determine which Resource block to use
 	var _gate gate.Gate
@@ -242,7 +248,7 @@ func evalStatementMatchesResource(
 // evalStatementMatchesCondition computes whether the Statement's Conditions hold true given the
 // provided AuthContext
 func evalStatementMatchesCondition(
-	opts *Options, ac AuthContext, trc *Trace, stmt *policy.Statement) (bool, error) {
+	opts *Options, ac AuthContext, trc *trace.Trace, stmt *policy.Statement) (bool, error) {
 
 	for op, cond := range stmt.Condition {
 

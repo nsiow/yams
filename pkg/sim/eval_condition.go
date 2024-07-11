@@ -10,6 +10,7 @@ import (
 
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/policy/condition"
+	"github.com/nsiow/yams/pkg/sim/trace"
 	"github.com/nsiow/yams/pkg/sim/wildcard"
 )
 
@@ -21,15 +22,15 @@ import (
 //
 // The function should take in two strings where `left` is the observed value and `right` is what
 // we are trying to match against
-type Compare = func(trc *Trace, left string, right string) bool
+type Compare = func(trc *trace.Trace, left string, right string) bool
 
 // CondOuter defines a function that accepts a key name and set of values and evaluates the
 // outcome of the condition
-type CondOuter = func(ac AuthContext, trc *Trace, key string, right policy.Value) bool
+type CondOuter = func(ac AuthContext, trc *trace.Trace, key string, right policy.Value) bool
 
 // CondInner defines a function that accepts a left hand value and a right hand set of values
 // and evaluates the outcome of the condition
-type CondInner = func(ac AuthContext, trc *Trace, left string, right policy.Value) bool
+type CondInner = func(ac AuthContext, trc *trace.Trace, left string, right policy.Value) bool
 
 // CondLift defines a function which "lifts" a ConditionInner operator
 //
@@ -242,7 +243,7 @@ var ConditionOperatorMap = map[string]CondInner{
 // --------------------------------------------------------------------------------
 
 func Cond_MatchAny(f Compare) CondInner {
-	return func(_ AuthContext, trc *Trace, left string, right policy.Value) bool {
+	return func(_ AuthContext, trc *trace.Trace, left string, right policy.Value) bool {
 		for _, value := range right {
 			if f(trc, left, value) {
 				return true
@@ -258,48 +259,48 @@ func Cond_MatchAny(f Compare) CondInner {
 // --------------------------------------------------------------------------------
 
 // Cond_StringEquals defines the `StringEquals` condition function
-func Cond_StringEquals(trc *Trace, left, right string) bool {
+func Cond_StringEquals(trc *trace.Trace, left, right string) bool {
 	return left == right
 }
 
 // Cond_StringLike defines the `StringLike` condition function
-func Cond_StringLike(trc *Trace, left, right string) bool {
+func Cond_StringLike(trc *trace.Trace, left, right string) bool {
 	// TODO(nsiow) maybe swap ordering of arguments in matchWildcard to better match go stdlib
 	return wildcard.MatchString(right, left)
 }
 
 // Cond_NumericEquals defines the `NumericEquals` condition function
-func Cond_NumericEquals(trc *Trace, left, right int) bool {
+func Cond_NumericEquals(trc *trace.Trace, left, right int) bool {
 	return left == right
 }
 
 // Cond_NumericLessThan defines the `NumericLessThan` condition function
-func Cond_NumericLessThan(trc *Trace, left, right int) bool {
+func Cond_NumericLessThan(trc *trace.Trace, left, right int) bool {
 	return left < right
 }
 
 // Cond_NumericLessThanEquals defines the `NumericLessThanEquals` condition function
-func Cond_NumericLessThanEquals(trc *Trace, left, right int) bool {
+func Cond_NumericLessThanEquals(trc *trace.Trace, left, right int) bool {
 	return left <= right
 }
 
 // Cond_NumericGreaterThan defines the `NumericGreaterThan` condition function
-func Cond_NumericGreaterThan(trc *Trace, left, right int) bool {
+func Cond_NumericGreaterThan(trc *trace.Trace, left, right int) bool {
 	return left > right
 }
 
 // Cond_NumericGreaterThanEquals defines the `NumericGreaterThanEquals` condition function
-func Cond_NumericGreaterThanEquals(trc *Trace, left, right int) bool {
+func Cond_NumericGreaterThanEquals(trc *trace.Trace, left, right int) bool {
 	return left >= right
 }
 
 // Cond_IpAddress defines the `IpAddress` condition function
-func Cond_IpAddress(trc *Trace, left netip.Addr, right netip.Prefix) bool {
+func Cond_IpAddress(trc *trace.Trace, left netip.Addr, right netip.Prefix) bool {
 	return right.Contains(left)
 }
 
 // Cond_ArnLike defines the `ArnLike` condition function
-func Cond_ArnLike(trc *Trace, left, right string) bool {
+func Cond_ArnLike(trc *trace.Trace, left, right string) bool {
 	return wildcard.MatchArn(right, left)
 }
 
@@ -309,14 +310,14 @@ func Cond_ArnLike(trc *Trace, left, right string) bool {
 
 // Mod_Not inverts the provided ConditionOperator
 func Mod_Not(f CondInner) CondInner {
-	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
+	return func(ac AuthContext, trc *trace.Trace, left string, right policy.Value) bool {
 		return !f(ac, trc, left, right)
 	}
 }
 
 // Mod_ResolveVariables resolves and replaces all IAM variables within the provided values
 func Mod_ResolveVariables(f CondInner) CondInner {
-	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
+	return func(ac AuthContext, trc *trace.Trace, left string, right policy.Value) bool {
 		for i := range right {
 			right[i] = ac.Resolve(right[i])
 		}
@@ -326,7 +327,7 @@ func Mod_ResolveVariables(f CondInner) CondInner {
 
 // Mod_MustExist defines a Condition modifier which returns false if the key is not found
 func Mod_MustExist(f CondInner) CondInner {
-	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
+	return func(ac AuthContext, trc *trace.Trace, left string, right policy.Value) bool {
 		if left == "" {
 			return false
 		}
@@ -337,7 +338,7 @@ func Mod_MustExist(f CondInner) CondInner {
 
 // Mod_IfExists defines a Condition modifier which returns true if the key is not found
 func Mod_IfExists(f CondInner) CondInner {
-	return func(ac AuthContext, trc *Trace, left string, right policy.Value) bool {
+	return func(ac AuthContext, trc *trace.Trace, left string, right policy.Value) bool {
 		if left == "" {
 			return true
 		}
@@ -349,7 +350,7 @@ func Mod_IfExists(f CondInner) CondInner {
 // Mod_ForAllValues defines a Condition modifier targeting match-all logic for multivalued
 // conditions
 func Mod_ForAllValues(f CondInner) CondOuter {
-	return func(ac AuthContext, trc *Trace, key string, right policy.Value) bool {
+	return func(ac AuthContext, trc *trace.Trace, key string, right policy.Value) bool {
 		lefts := ac.MultiKey(key)
 		for _, left := range lefts {
 			if !f(ac, trc, left, right) {
@@ -364,7 +365,7 @@ func Mod_ForAllValues(f CondInner) CondOuter {
 // Mod_ForAnyValues defines a Condition modifier targeting match-any logic for multivalued
 // conditions
 func Mod_ForAnyValues(f CondInner) CondOuter {
-	return func(ac AuthContext, trc *Trace, key string, right policy.Value) bool {
+	return func(ac AuthContext, trc *trace.Trace, key string, right policy.Value) bool {
 		lefts := ac.MultiKey(key)
 		for _, left := range lefts {
 			if f(ac, trc, left, right) {
@@ -379,7 +380,7 @@ func Mod_ForAnyValues(f CondInner) CondOuter {
 // Mod_ForSIngleValue defines a Condition modifier targeting match-any logic for single-valued
 // conditions (the default)
 func Mod_ForSingleValue(f CondInner) CondOuter {
-	return func(ac AuthContext, trc *Trace, key string, right policy.Value) bool {
+	return func(ac AuthContext, trc *trace.Trace, key string, right policy.Value) bool {
 		left := ac.Key(key)
 		return f(ac, trc, left, right)
 	}
@@ -387,14 +388,14 @@ func Mod_ForSingleValue(f CondInner) CondOuter {
 
 // Mod_IgnoreCase defines a Condition modifier which ignores character casing
 func Mod_IgnoreCase(f Compare) Compare {
-	return func(trc *Trace, left, right string) bool {
+	return func(trc *trace.Trace, left, right string) bool {
 		return f(trc, strings.ToLower(left), strings.ToLower(right))
 	}
 }
 
 // Mod_Number converts the string inputs to numbers, allowing numerical comparisons
-func Mod_Number(f func(*Trace, int, int) bool) Compare {
-	return func(trc *Trace, left, right string) bool {
+func Mod_Number(f func(*trace.Trace, int, int) bool) Compare {
+	return func(trc *trace.Trace, left, right string) bool {
 		nLeft, err := strconv.Atoi(left)
 		if err != nil {
 			// TODO(nsiow) find a good place to log errors
@@ -428,8 +429,8 @@ func parseEpochFromString(s string) (int, error) {
 }
 
 // Mod_Date converts the string inputs to dates, allowing datewise comparisons
-func Mod_Date(f func(*Trace, int, int) bool) Compare {
-	return func(trc *Trace, left, right string) bool {
+func Mod_Date(f func(*trace.Trace, int, int) bool) Compare {
+	return func(trc *trace.Trace, left, right string) bool {
 		nLeft, err := parseEpochFromString(left)
 		if err != nil {
 			// TODO(nsiow) find a good place to log errors
@@ -447,8 +448,8 @@ func Mod_Date(f func(*Trace, int, int) bool) Compare {
 }
 
 // Mod_Bool converts the string inputs to bools, allowing boolean operations
-func Mod_Bool(f func(*Trace, string, string) bool) Compare {
-	return func(trc *Trace, left, right string) bool {
+func Mod_Bool(f func(*trace.Trace, string, string) bool) Compare {
+	return func(trc *trace.Trace, left, right string) bool {
 		bLeft := strings.ToLower(left)
 		if bLeft != TRUE && bLeft != FALSE {
 			return false
@@ -468,8 +469,8 @@ func Mod_Bool(f func(*Trace, string, string) bool) Compare {
 // We reuse the string operators for this rather than a byte-by-byte comparison for ease, but for
 // slightly faster comparison we should perform the byte-by-byte comparison to avoid the base64
 // encoding overhead
-func Mod_Binary(f func(*Trace, string, string) bool) Compare {
-	return func(trc *Trace, left, right string) bool {
+func Mod_Binary(f func(*trace.Trace, string, string) bool) Compare {
+	return func(trc *trace.Trace, left, right string) bool {
 		_, err := base64.StdEncoding.DecodeString(left)
 		if err != nil {
 			// TODO(nsiow) add to Trace
@@ -487,8 +488,8 @@ func Mod_Binary(f func(*Trace, string, string) bool) Compare {
 }
 
 // Mod_Network converts the incoming strings into IP addresses/nets, allowing network expressions
-func Mod_Network(f func(*Trace, netip.Addr, netip.Prefix) bool) Compare {
-	return func(trc *Trace, left, right string) bool {
+func Mod_Network(f func(*trace.Trace, netip.Addr, netip.Prefix) bool) Compare {
+	return func(trc *trace.Trace, left, right string) bool {
 		addr, err := netip.ParseAddr(left)
 		if err != nil {
 			// TODO(nsiow) add to Trace
