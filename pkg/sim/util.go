@@ -7,7 +7,7 @@ import "strconv"
 //
 // It's most commonly used to resolve a valid identifier for a statement or policy, where a Policy
 // ID or Sid is preferable but a relative index is a valid fallback
-func Id(idx int, id string) string {
+func Id(id string, idx int) string {
 	if len(id) > 0 {
 		return id
 	}

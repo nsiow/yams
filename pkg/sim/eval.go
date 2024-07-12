@@ -112,9 +112,9 @@ func evalPrincipalAccess(opts *Options, ac AuthContext, trc *trace.Trace) (*es.E
 	for policytype, policies := range effectivePolicies {
 		trc.Push(fmt.Sprintf("policytype=%s", policytype))
 		for i, pol := range policies {
-			trc.Push(fmt.Sprintf("policy=%s", Id(i, pol.Id)))
+			trc.Push(fmt.Sprintf("policy=%s", Id(pol.Id, i)))
 			for j, stmt := range pol.Statement {
-				trc.Push(fmt.Sprintf("stmt=%s", Id(j, stmt.Sid)))
+				trc.Push(fmt.Sprintf("stmt=%s", Id(stmt.Sid, j)))
 
 				matchedAll := true
 				for _, f := range functions {
@@ -164,7 +164,7 @@ func evalResourceAccess(opts *Options, ac AuthContext, trc *trace.Trace) (*es.Ef
 	// Iterate over resource policy statements to evaluate access
 	effects := es.EffectSet{}
 	for i, stmt := range ac.Resource.Policy.Statement {
-		trc.Push(fmt.Sprintf("stmt=%s", Id(i, stmt.Sid)))
+		trc.Push(fmt.Sprintf("stmt=%s", Id(stmt.Sid, i)))
 		matchedAll := true
 		for _, f := range functions {
 			match, err := f(opts, ac, trc, &stmt)
