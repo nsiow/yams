@@ -22,6 +22,14 @@ func TestId(t *testing.T) {
 			},
 			Want: "123",
 		},
+		{
+			Name: "valid_id",
+			Input: input{
+				id:  "foo",
+				idx: 123,
+			},
+			Want: "foo",
+		},
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (string, error) {
