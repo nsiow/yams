@@ -16,7 +16,12 @@ type EffectSet struct {
 // Add takes the provided Effect and saves it to the EffectSet if it is a new value
 func (e *EffectSet) Add(effect policy.Effect) {
 	if !slices.Contains(e.effects, effect) {
-		e.effects = append(e.effects, effect)
+		// Change insertion point based on effect, so that ordering is always consistent
+		if effect == policy.EFFECT_ALLOW {
+			e.effects = slices.Insert(e.effects, 0, effect)
+		} else {
+			e.effects = append(e.effects, effect)
+		}
 	}
 }
 

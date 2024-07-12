@@ -6,6 +6,7 @@ import (
 	"github.com/nsiow/yams/internal/testrunner"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
+	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
 type input struct {
@@ -87,7 +88,7 @@ func TestStatementBase(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -146,7 +147,7 @@ func TestStringEquals(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -191,7 +192,7 @@ func TestStringEqualsIgnoreCase(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -232,7 +233,7 @@ func TestStringNotEquals(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -273,7 +274,7 @@ func TestStringNotEqualsIgnoreCase(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -316,7 +317,7 @@ func TestStringLike(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -357,7 +358,7 @@ func TestStringNotLike(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -406,7 +407,7 @@ func TestNumericConversion(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 
 }
@@ -453,7 +454,7 @@ func TestNumericEquals(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -499,7 +500,7 @@ func TestNumericNotEquals(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -545,7 +546,7 @@ func TestNumericLessThan(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -609,7 +610,7 @@ func TestNumericLessThanEquals(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -673,7 +674,7 @@ func TestNumericGreaterThan(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -741,7 +742,7 @@ func TestNumericGreaterThanEquals(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -840,7 +841,7 @@ func TestDateEquals(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -903,7 +904,7 @@ func TestDateNotEquals(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -966,7 +967,7 @@ func TestDateLessThan(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -1047,7 +1048,7 @@ func TestDateLessThanEquals(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -1129,7 +1130,7 @@ func TestDateGreaterThan(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -1210,7 +1211,7 @@ func TestDateGreaterThanEquals(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -1349,7 +1350,7 @@ func TestBool(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -1434,7 +1435,7 @@ func TestBinary(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -1591,7 +1592,7 @@ func TestIpAddress(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -1690,7 +1691,7 @@ func TestNotIpAddress(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -1775,7 +1776,7 @@ func TestArnEquals(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -1856,7 +1857,7 @@ func TestArnNotEquals(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -1937,7 +1938,7 @@ func TestArnLike(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -2018,7 +2019,7 @@ func TestArnNotLike(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -2085,7 +2086,7 @@ func TestIfExists(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -2148,7 +2149,7 @@ func TestForAllValues(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
 
@@ -2211,6 +2212,6 @@ func TestForAnyValues(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(&i.options, i.ac, &Trace{}, &i.stmt)
+		return evalStatementMatchesCondition(&i.options, i.ac, trace.New(), &i.stmt)
 	})
 }
