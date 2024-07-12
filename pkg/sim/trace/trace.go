@@ -51,9 +51,9 @@ func (t *Trace) SetLevel(l Level) {
 	t.minLevel = l
 }
 
-// Comparison records a single record about comparison (e.g. "I compared these two things")
-func (t *Trace) Comparison(msg string) {
-	if t.minLevel <= LEVEL_COMPARISON {
+// Observation records a single record about comparison (e.g. "I compared these two things")
+func (t *Trace) Observation(msg string) {
+	if t.minLevel <= LEVEL_OBSERVATION {
 		t.save(msg)
 	}
 }

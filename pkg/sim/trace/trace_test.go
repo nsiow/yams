@@ -9,10 +9,10 @@ import (
 func TestTraceLevel(t *testing.T) {
 	// Create a new trace
 	trc := New()
-	trc.SetLevel(LEVEL_COMPARISON)
+	trc.SetLevel(LEVEL_OBSERVATION)
 
-	// Add COMPARISON, should be entered
-	trc.Comparison("test")
+	// Add OBSERVATION, should be entered
+	trc.Observation("test")
 	want := 1
 	got := trc.History()
 	if want != len(trc.History()) {
@@ -30,8 +30,8 @@ func TestTraceLevel(t *testing.T) {
 	// Update level
 	trc.SetLevel(LEVEL_DECISION)
 
-	// Add COMPARISON, should NOT be entered
-	trc.Comparison("test")
+	// Add OBSERVATION, should NOT be entered
+	trc.Observation("test")
 	want = 2
 	got = trc.History()
 	if want != len(trc.History()) {
@@ -54,7 +54,7 @@ func TestTraceSingle(t *testing.T) {
 
 	// Add single item, confirm depth + content
 	trc.Attr("foo", "bar")
-	trc.Comparison("hello world")
+	trc.Observation("hello world")
 
 	// Compare history to expected
 	want := []Record{
@@ -80,35 +80,35 @@ func TestTraceMany(t *testing.T) {
 
 	// Add single attr, item
 	trc.Attr("foo", "bar")
-	trc.Comparison("hello world")
+	trc.Observation("hello world")
 
 	// Create new frame; add two attrs, one item
 	trc.Push("first")
 	trc.Attr("water", "melon")
 	trc.Attr("sweet", "potato")
-	trc.Comparison("hello world 2")
+	trc.Observation("hello world 2")
 
 	// Create final frame; add single attr, item
 	trc.Push("second")
 	trc.Attr("egg", "yolk")
-	trc.Comparison("hello world 3")
+	trc.Observation("hello world 3")
 
 	// Pop frame; add single attr, item
 	trc.Pop()
 	trc.Attr("olive", "oil")
-	trc.Comparison("hello world 4")
+	trc.Observation("hello world 4")
 
 	// Pop frame; add single item
 	trc.Pop()
 	trc.Attr("chicken", "soup")
-	trc.Comparison("hello world 5")
+	trc.Observation("hello world 5")
 
 	// Pop several times, confirm we still have root frame
 	trc.Pop()
 	trc.Pop()
 	trc.Pop()
 	trc.Attr("artichoke", "heart")
-	trc.Comparison("hello world 6")
+	trc.Observation("hello world 6")
 
 	// Compare history to expected
 	want := []Record{

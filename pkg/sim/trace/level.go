@@ -1,8 +1,12 @@
 package trace
 
+// Level defines logging-esque levels of different trace statements to record
 type Level = int
 
 const (
-	LEVEL_COMPARISON = 0
-	LEVEL_DECISION   = 1
+	// Record all observations
+	LEVEL_OBSERVATION = 0
+
+	// Record all decisions
+	LEVEL_DECISION = 1
 )
