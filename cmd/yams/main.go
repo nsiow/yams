@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/nsiow/yams/pkg/entities"
@@ -20,7 +19,7 @@ func main() {
 	debug("running %v with flags: %+v", os.Args[0], rc)
 
 	// Read the provided cache file
-	data, err := ioutil.ReadFile(rc.Cache)
+	data, err := os.ReadFile(rc.Cache)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to read cache file: %v", err)
 		os.Exit(1)

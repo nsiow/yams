@@ -104,9 +104,7 @@ func loadGroup(i ConfigItem, pm *PolicyMap) ([]policy.Policy, error) {
 			return nil, fmt.Errorf("unable to find policy definition for group policy: %s", p.PolicyArn)
 		}
 
-		for _, p2 := range policies {
-			groupPolicies = append(groupPolicies, p2)
-		}
+		groupPolicies = append(groupPolicies, policies...)
 	}
 
 	// Add inline group policies

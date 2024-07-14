@@ -9,11 +9,6 @@ import (
 
 // TestNewValue creates a Value with different variables and determines correct functionality
 func TestNewValue(t *testing.T) {
-	type test struct {
-		input []string
-		want  []string
-	}
-
 	tests := []testrunner.TestCase[[]string, []string]{
 		{
 			Input: []string{},
@@ -33,18 +28,14 @@ func TestUnmarshalValid(t *testing.T) {
 		S Value
 	}
 
-	type test struct {
-		input string
-		want  Value
-		err   bool
-	}
-
 	tests := []testrunner.TestCase[string, Value]{
 		{Input: `{"S": "foo"}`, Want: []string{"foo"}},
 		{Input: `{"S": ["foo", "bar"]}`, Want: []string{"foo", "bar"}},
 		{Input: `{"S": null}`, Want: []string{}},
 		{Input: `{"S": "null"}`, Want: []string{"null"}},
 		{Input: `{"S": []}`, Want: []string{}},
+		{Input: `{"S": true}`, Want: []string{"true"}},
+		{Input: `{"S": false}`, Want: []string{"false"}},
 		{Input: `{"S": ""}`, ShouldErr: true},
 		{Input: `{"S": [0]}`, ShouldErr: true},
 		{Input: `{"S": 0}`, ShouldErr: true},
@@ -65,10 +56,6 @@ func TestUnmarshalValid(t *testing.T) {
 
 // TestInvalid validates the handling of invalid JSON fragments
 func TestInvalid(t *testing.T) {
-	type test struct {
-		input string
-	}
-
 	tests := []testrunner.TestCase[string, any]{
 		{Input: `a`, ShouldErr: true},
 	}
@@ -81,11 +68,6 @@ func TestInvalid(t *testing.T) {
 
 // TestEmpty validates the correct emptiness behavior of a Value
 func TestEmpty(t *testing.T) {
-	type test struct {
-		input Value
-		want  bool
-	}
-
 	tests := []testrunner.TestCase[Value, bool]{
 		{Input: nil, Want: true},
 		{Input: []string{}, Want: true},

@@ -105,9 +105,7 @@ func extractAttachedRolePolicies(i ConfigItem, pm *PolicyMap) ([]policy.Policy, 
 			return nil, fmt.Errorf("managed policy '%s' not found in provided map", f.PolicyArn)
 		}
 
-		for _, p := range ps {
-			policies = append(policies, p)
-		}
+		policies = append(policies, ps...)
 	}
 
 	return policies, nil
@@ -161,9 +159,7 @@ func extractAttachedUserPolicies(i ConfigItem, pm *PolicyMap) ([]policy.Policy, 
 			return nil, fmt.Errorf("managed policy '%s' not found in provided map", f.PolicyArn)
 		}
 
-		for _, p := range ps {
-			policies = append(policies, p)
-		}
+		policies = append(policies, ps...)
 	}
 
 	return policies, nil

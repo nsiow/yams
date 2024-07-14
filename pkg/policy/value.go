@@ -26,6 +26,16 @@ func (v *Value) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	// Check for true/false
+	if len(data) == 4 && string(data) == "true" {
+		*v = []string{"true"}
+		return nil
+	}
+	if len(data) == 5 && string(data) == "false" {
+		*v = []string{"false"}
+		return nil
+	}
+
 	switch {
 	// Handle single-value case
 	case data[0] == '"':

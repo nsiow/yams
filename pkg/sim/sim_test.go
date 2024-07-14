@@ -37,7 +37,7 @@ func TestNewSimulator(t *testing.T) {
 	errorOpt := func(opt *Options) error {
 		return fmt.Errorf("expected error for testing")
 	}
-	sim, err = NewSimulator(errorOpt)
+	_, err = NewSimulator(errorOpt)
 	if err == nil {
 		t.Fatalf("expected error with a custom option, but saw success")
 	}
