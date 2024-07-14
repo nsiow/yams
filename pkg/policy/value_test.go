@@ -34,6 +34,8 @@ func TestUnmarshalValid(t *testing.T) {
 		{Input: `{"S": null}`, Want: []string{}},
 		{Input: `{"S": "null"}`, Want: []string{"null"}},
 		{Input: `{"S": []}`, Want: []string{}},
+		{Input: `{"S": true}`, Want: []string{"true"}},
+		{Input: `{"S": false}`, Want: []string{"false"}},
 		{Input: `{"S": ""}`, ShouldErr: true},
 		{Input: `{"S": [0]}`, ShouldErr: true},
 		{Input: `{"S": 0}`, ShouldErr: true},
