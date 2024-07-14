@@ -95,8 +95,8 @@ func GenerateFailureOutput(name string, wanted, got any) string {
 		strings.Join([]string{header, "// got", header}, "\n"),
 		fmt.Sprintf("%#v", got),
 		strings.Join([]string{header, "// wanted (pretty)", header}, "\n"),
-		fmt.Sprintf("%s", wantedMessage),
+		fmt.Sprintln(wantedMessage),
 		strings.Join([]string{header, "// got (pretty)", header}, "\n"),
-		fmt.Sprintf("%s", gotMessage),
+		fmt.Sprintln(gotMessage),
 	}, "\n")
 }

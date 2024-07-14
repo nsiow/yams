@@ -39,12 +39,12 @@ GO_FORMATTER ?= go fmt
 format:
 	$(GO_FORMATTER) $(GO_TOOL_TARGET)
 
-# TODO(nsiow) switch to golanglint-ci
-GO_LINTER ?= go vet
+GO_LINTER      ?= golangci-lint
+GO_LINTER_ARGS ?= run
 
 .PHONY: lint
 lint:
-	$(GO_LINTER) $(GO_TOOL_TARGET)
+	$(GO_LINTER) $(GO_LINTER_ARGS)
 
 GO_TEST_RUNNER ?= go test
 

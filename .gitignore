@@ -3,10 +3,10 @@
 # --------------------------------------------------------------------------------
 
 # Output binary
-yams
+/yams
 
 # Data that should only be present on build machines
-builddata
+/builddata
 
 # --------------------------------------------------------------------------------
 # Editor files

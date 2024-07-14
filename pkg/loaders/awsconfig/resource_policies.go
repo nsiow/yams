@@ -13,8 +13,8 @@ import (
 // extractResourcePolicy uses resource-specific techniques to pull the policy from a Config item
 func extractResourcePolicy(item ConfigItem) (policy.Policy, error) {
 	switch item.Type {
-	case CONST_TYPE_AWS_DYNAMODB_TABLE:
-		return extractTablePolicy(item)
+	// case CONST_TYPE_AWS_DYNAMODB_TABLE:
+	// 	return extractTablePolicy(item)
 	case CONST_TYPE_AWS_S3_BUCKET:
 		return extractBucketPolicy(item)
 	case CONST_TYPE_AWS_SNS_TOPIC:
@@ -53,13 +53,13 @@ func extractBucketPolicy(item ConfigItem) (policy.Policy, error) {
 // AWS DynamoDB Tables
 // --------------------------------------------------------------------------------
 
-// awsDynamodbTable defines the relevant structure of an AWS::DynamoDB::Table in Config
-type awsDynamodbTable struct{}
-
-// extractTablePolicy defines how to retrieve the resource policy from an AWS::S3::Bucket
-func extractTablePolicy(item ConfigItem) (policy.Policy, error) {
-	return policy.Policy{}, nil // TODO(nsiow) update this when DynamoDB resource policies are in Config
-}
+// // awsDynamodbTable defines the relevant structure of an AWS::DynamoDB::Table in Config
+// type awsDynamodbTable struct{}
+//
+// // extractTablePolicy defines how to retrieve the resource policy from an AWS::S3::Bucket
+// func extractTablePolicy(item ConfigItem) (policy.Policy, error) {
+// 	return policy.Policy{}, nil // TODO(nsiow) update this when DynamoDB resource policies are in Config
+// }
 
 // --------------------------------------------------------------------------------
 // AWS SNS Topics

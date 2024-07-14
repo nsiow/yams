@@ -44,8 +44,7 @@ func (ac *AuthContext) Key(key string) string {
 		return ac.extractTag(key, ac.Principal.Tags)
 	case strings.HasPrefix(key, condkey.ResourceTagPrefix):
 		return ac.extractTag(key, ac.Resource.Tags)
-	case strings.HasPrefix(key, condkey.RequestTagPrefix):
-		break // it's not a prefix, so process it as a key
+		// For RequestTags/, we will process like a standard key
 	}
 
 	// ... otherwise handle as a static key
