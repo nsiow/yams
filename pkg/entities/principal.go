@@ -32,7 +32,4 @@ type Principal struct {
 
 	// GroupPolicies refers to the group inline/unattached policies associated with the Principal
 	GroupPolicies []policy.Policy
-
-	// PermissionsBoundary refers to the policy set as the Principal's permissions boundary
-	PermissionsBoundary policy.Policy
 }
