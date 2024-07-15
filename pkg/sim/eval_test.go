@@ -631,7 +631,7 @@ func TestPrincipalAccess(t *testing.T) {
 
 	testrunner.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
 		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalPrincipalAccess(&opts, ac, trace.New())
+		res, err := evalPrincipalAccess(trace.New(), &opts, ac)
 		if err != nil {
 			return nil, err
 		}
@@ -774,7 +774,7 @@ func TestResourceAccess(t *testing.T) {
 
 	testrunner.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
 		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalResourceAccess(&opts, ac, trace.New())
+		res, err := evalResourceAccess(trace.New(), &opts, ac)
 		if err != nil {
 			return nil, err
 		}
@@ -877,7 +877,7 @@ func TestStatementMatchesAction(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesAction(&Options{}, i.ac, trace.New(), &i.stmt)
+		return evalStatementMatchesAction(trace.New(), &Options{}, i.ac, &i.stmt)
 	})
 }
 
@@ -977,7 +977,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesPrincipal(&Options{}, i.ac, trace.New(), &i.stmt)
+		return evalStatementMatchesPrincipal(trace.New(), &Options{}, i.ac, &i.stmt)
 	})
 }
 
@@ -1063,7 +1063,7 @@ func TestStatementMatchesResource(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesResource(&Options{}, i.ac, trace.New(), &i.stmt)
+		return evalStatementMatchesResource(trace.New(), &Options{}, i.ac, &i.stmt)
 	})
 }
 

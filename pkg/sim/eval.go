@@ -6,7 +6,6 @@ import (
 
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
-	es "github.com/nsiow/yams/pkg/sim/effectset"
 	"github.com/nsiow/yams/pkg/sim/gate"
 	"github.com/nsiow/yams/pkg/sim/trace"
 	"github.com/nsiow/yams/pkg/sim/wildcard"
@@ -14,82 +13,85 @@ import (
 
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
 // and different-account evaluations
-func evalOverallAccess(opts *Options, ac AuthContext) (*Result, error) {
+func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
 
 	trc := trace.New()
-	res := Result{Trace: trc}
 
 	trc.Attr("authContext", ac)
 
+	// Calculate permissions boundary access, if present
+	pbAccess, err := evalPermissionsBoundary(trc, opt, ac)
+	if err != nil {
+		return nil, fmt.Errorf("error evaluating permission boundary: %w", err)
+	}
+	if pbAccess.Contains(policy.EFFECT_DENY) {
+		trc.Decision("[explicit deny] found in permissions boundary")
+		return &Result{Trace: trc, IsAllowed: false}, nil
+	}
+
 	// Calculate Principal access
-	pAccess, err := evalPrincipalAccess(opts, ac, trc)
+	pAccess, err := evalPrincipalAccess(trc, opt, ac)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("error evaluating principal access"), err)
 	}
 	// ... check for explicit Deny results
 	if pAccess.Contains(policy.EFFECT_DENY) {
-		res.IsAllowed = false
 		trc.Decision("[explicit deny] found in identity policy")
-		return &res, nil
+		return &Result{Trace: trc, IsAllowed: false}, nil
 	}
 
 	// Calculate Resource access
-	rAccess, err := evalResourceAccess(opts, ac, trc)
+	rAccess, err := evalResourceAccess(trc, opt, ac)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("error evaluating resource access"), err)
 	}
 	// ... check for explicit Deny results
 	if rAccess.Contains(policy.EFFECT_DENY) {
-		res.IsAllowed = false
 		trc.Decision("[explicit deny] found in resource policy")
-		return &res, nil
+		return &Result{Trace: trc, IsAllowed: false}, nil
 	}
 
 	// If same account, access is granted if the Principal has access
 	if evalIsSameAccount(ac.Principal, ac.Resource) {
 		if pAccess.Contains(policy.EFFECT_ALLOW) {
-			res.IsAllowed = true
 			trc.Decision("[allow] access granted via same-account identity policy")
-			return &res, nil
+			return &Result{Trace: trc, IsAllowed: false}, nil
 		}
 
 		// TODO(nsiow) implement correct behavior for same-account access via explicit ARN
-		res.IsAllowed = false
 		trc.Decision("[implicit deny] no identity-based policy allows this action")
-		return &res, nil
+		return &Result{Trace: trc, IsAllowed: false}, nil
 	}
 
 	// If x-account, access is granted if the Principal has access and the Resource permits that
 	// access
 	if pAccess.Contains(policy.EFFECT_ALLOW) && rAccess.Contains(policy.EFFECT_ALLOW) {
-		res.IsAllowed = true
 		trc.Decision("[allow] access granted via x-account identity + resource policies")
-		return &res, nil
+		return &Result{Trace: trc, IsAllowed: true}, nil
 	}
 	if pAccess.Contains(policy.EFFECT_ALLOW) && !rAccess.Contains(policy.EFFECT_ALLOW) {
-		res.IsAllowed = false
 		trc.Decision("[implicit deny] x-account, missing resource policy access")
-		return &res, nil
+		return &Result{Trace: trc, IsAllowed: false}, nil
 	}
 	if !pAccess.Contains(policy.EFFECT_ALLOW) && rAccess.Contains(policy.EFFECT_ALLOW) {
-		res.IsAllowed = false
 		trc.Decision("[implicit deny] x-account, missing identity policy access")
-		return &res, nil
+		return &Result{Trace: trc, IsAllowed: false}, nil
 	}
 
 	// We fell through and no access was granted from either side
-	res.IsAllowed = false
 	trc.Decision("[implicit deny] x-account, missing both identity + resource access")
-	return &res, nil
+	return &Result{Trace: trc, IsAllowed: false}, nil
 }
 
 // evalFunction is the blueprint of a function that allows us to evaluate a single statement
-type evalFunction func(*Options, AuthContext, *trace.Trace, *policy.Statement) (bool, error)
+type evalFunction func(*trace.Trace, *Options, AuthContext, *policy.Statement) (bool, error)
 
 // evalPrincipalAccess calculates the Principal-side access to the specified Resource
-func evalPrincipalAccess(opts *Options, ac AuthContext, trc *trace.Trace) (*es.EffectSet, error) {
+func evalPrincipalAccess(
+	trc *trace.Trace,
+	opt *Options,
+	ac AuthContext) (EffectSet, error) {
 
-	// Create new trace frame
 	trc.Push("evaluating principal policies")
 	defer trc.Pop()
 
@@ -100,98 +102,128 @@ func evalPrincipalAccess(opts *Options, ac AuthContext, trc *trace.Trace) (*es.E
 		"group":   ac.Principal.GroupPolicies,
 	}
 
-	// Specify the statement evaluation functions we will consider for Principal access
-	functions := []evalFunction{
+	// Specify the statement evaluation funcs we will consider for Principal access
+	funcs := []evalFunction{
 		evalStatementMatchesAction,
 		evalStatementMatchesResource,
 		evalStatementMatchesCondition,
 	}
 
 	// Iterate over policy types / policies / statements to evaluate access
-	effects := es.EffectSet{}
+	effects := EffectSet{}
 	for policytype, policies := range effectivePolicies {
 		trc.Push(fmt.Sprintf("policytype=%s", policytype))
-		for i, pol := range policies {
-			trc.Push(fmt.Sprintf("policy=%s", Id(pol.Id, i)))
-			for j, stmt := range pol.Statement {
-				trc.Push(fmt.Sprintf("stmt=%s", Id(stmt.Sid, j)))
-
-				matchedAll := true
-				for _, f := range functions {
-					match, err := f(opts, ac, trc, &stmt)
-					if err != nil {
-						return nil, errors.Join(
-							fmt.Errorf("error evaluating principal policy statement[sid=%s]", stmt.Sid),
-							err)
-					}
-					if !match {
-						matchedAll = false
-						break
-					}
-				}
-
-				if matchedAll {
-					effects.Add(stmt.Effect)
-					trc.Attr("effect", stmt.Effect)
-					trc.Decision("statement matches, adding Effect")
-				} else {
-					trc.Decision("statement does not match")
-				}
-				trc.Pop()
-			}
+		eff, err := evalPolicies(trc, opt, ac, policies, funcs)
+		if err != nil {
 			trc.Pop()
+			return effects, err
 		}
+
+		effects.Merge(eff)
 		trc.Pop()
 	}
 
-	return &effects, nil
+	return effects, nil
 }
 
 // evalResourceAccess calculates the Resource-side access with regard to the specified Principal
-func evalResourceAccess(opts *Options, ac AuthContext, trc *trace.Trace) (*es.EffectSet, error) {
+func evalResourceAccess(
+	trc *trace.Trace,
+	opt *Options,
+	ac AuthContext) (EffectSet, error) {
 
-	// Create new trace frame
 	trc.Push("evaluating resource policies")
 	defer trc.Pop()
 
-	// Specify the statement evaluation functions we will consider for Principal access
-	functions := []evalFunction{
+	// Specify the statement evaluation funcs we will consider for Principal access
+	funcs := []evalFunction{
 		evalStatementMatchesAction,
 		evalStatementMatchesPrincipal,
 		evalStatementMatchesCondition,
 	}
 
 	// Iterate over resource policy statements to evaluate access
-	effects := es.EffectSet{}
-	for i, stmt := range ac.Resource.Policy.Statement {
-		trc.Push(fmt.Sprintf("stmt=%s", Id(stmt.Sid, i)))
-		matchedAll := true
-		for _, f := range functions {
-			match, err := f(opts, ac, trc, &stmt)
-			if err != nil {
-				return nil, errors.Join(
-					fmt.Errorf("error evaluating principal policy statement[sid=%s]", stmt.Sid),
-					err)
-			}
-			if !match {
-				matchedAll = false
-				break
-			}
+	return evalPolicy(trc, opt, ac, ac.Resource.Policy, funcs)
+}
+
+// evalPolicies computes whether the provided policies match the AuthContext
+func evalPolicies(
+	trc *trace.Trace,
+	opt *Options,
+	ac AuthContext,
+	policies []policy.Policy,
+	funcs []evalFunction) (EffectSet, error) {
+
+	effects := EffectSet{}
+
+	for _, pol := range policies {
+		eff, err := evalPolicy(trc, opt, ac, pol, funcs)
+		if err != nil {
+			return eff, err
 		}
 
-		if matchedAll {
-			effects.Add(stmt.Effect)
-		}
-		trc.Pop()
+		// TODO(nsiow) short circuit on Deny, or keep going for completeness?
+
+		effects.Merge(eff)
 	}
 
-	return &effects, nil
+	return effects, nil
+}
 
+// evalPolicy computes whether the provided policy matches the AuthContext
+// FIXME(nsiow) re-add trace statements to all of the below functions
+// (evalPolicy/evalPolicies/evalStatement)
+func evalPolicy(
+	trc *trace.Trace,
+	opt *Options,
+	ac AuthContext,
+	policy policy.Policy,
+	funcs []evalFunction) (EffectSet, error) {
+
+	effects := EffectSet{}
+
+	for _, stmt := range policy.Statement {
+		eff, err := evalStatement(trc, opt, ac, stmt, funcs)
+		if err != nil {
+			return eff, err
+		}
+
+		effects.Merge(eff)
+	}
+
+	return effects, nil
+}
+
+// evalStatement computes whether the provided statements match the AuthContext
+func evalStatement(
+	trc *trace.Trace,
+	opt *Options,
+	ac AuthContext,
+	stmt policy.Statement,
+	funcs []evalFunction) (EffectSet, error) {
+
+	for _, f := range funcs {
+		match, err := f(trc, opt, ac, &stmt)
+		if err != nil {
+			return EffectSet{}, err
+		}
+
+		if !match {
+			return EffectSet{}, nil
+		}
+	}
+
+	effects := EffectSet{}
+	effects.Add(stmt.Effect)
+	return effects, nil
 }
 
 // evalStatementMatchesAction computes whether the Statement matches the AuthContext's Action
 func evalStatementMatchesAction(
-	opts *Options, ac AuthContext, trc *trace.Trace, stmt *policy.Statement) (bool, error) {
+	trc *trace.Trace,
+	opt *Options,
+	ac AuthContext,
+	stmt *policy.Statement) (bool, error) {
 
 	trc.Push("evaluating Action")
 	defer trc.Pop()
@@ -223,7 +255,10 @@ func evalStatementMatchesAction(
 
 // evalStatementMatchesPrincipal computes whether the Statement matches the AuthContext's Principal
 func evalStatementMatchesPrincipal(
-	opts *Options, ac AuthContext, trc *trace.Trace, stmt *policy.Statement) (bool, error) {
+	trc *trace.Trace,
+	opt *Options,
+	ac AuthContext,
+	stmt *policy.Statement) (bool, error) {
 
 	trc.Push("evaluating Principal")
 	defer trc.Pop()
@@ -253,7 +288,10 @@ func evalStatementMatchesPrincipal(
 
 // evalStatementMatchesResource computes whether the Statement matches the AuthContext's Resource
 func evalStatementMatchesResource(
-	opts *Options, ac AuthContext, trc *trace.Trace, stmt *policy.Statement) (bool, error) {
+	trc *trace.Trace,
+	opt *Options,
+	ac AuthContext,
+	stmt *policy.Statement) (bool, error) {
 
 	trc.Push("evaluating Resource")
 	defer trc.Pop()
@@ -285,13 +323,16 @@ func evalStatementMatchesResource(
 // evalStatementMatchesCondition computes whether the Statement's Conditions hold true given the
 // provided AuthContext
 func evalStatementMatchesCondition(
-	opts *Options, ac AuthContext, trc *trace.Trace, stmt *policy.Statement) (bool, error) {
+	trc *trace.Trace,
+	opt *Options,
+	ac AuthContext,
+	stmt *policy.Statement) (bool, error) {
 
 	trc.Push("evaluating Condition")
 	defer trc.Pop()
 
 	for op, cond := range stmt.Condition {
-		result, err := evalCheckCondition(opts, ac, trc, op, cond)
+		result, err := evalCheckCondition(trc, opt, ac, op, cond)
 		if err != nil {
 			return false, err
 		}
@@ -309,8 +350,11 @@ func evalStatementMatchesCondition(
 // evalCheckCondition assesses a single condition operator to determine whether or not it matches
 // the provided AuthContext
 func evalCheckCondition(
-	opts *Options, ac AuthContext, trc *trace.Trace,
-	op string, cond map[string]policy.Value) (bool, error) {
+	trc *trace.Trace,
+	opt *Options,
+	ac AuthContext,
+	op string,
+	cond map[string]policy.Value) (bool, error) {
 
 	// TODO(nsiow) implement PushWithAttr so that `op` is in a more appropriate context?
 	trc.Push("evaluating Operation")
@@ -326,7 +370,7 @@ func evalCheckCondition(
 	// Check to see if the condition operator is supported
 	f, exists := ResolveConditionEvaluator(op)
 	if !exists {
-		if opts.FailOnUnknownCondition {
+		if opt.FailOnUnknownCondition {
 			trc.Observation("no match; unknown condition")
 			return false, fmt.Errorf("unknown condition operator '%s'", op)
 		}
@@ -344,6 +388,33 @@ func evalCheckCondition(
 
 	trc.Observation("match!")
 	return true, nil
+}
+
+// evalPermissionsBoundary assesses the permissions boundary of the Principal to determine whether
+// or not it allows the provided AuthContext
+func evalPermissionsBoundary(
+	trc *trace.Trace,
+	opt *Options,
+	ac AuthContext) (EffectSet, error) {
+
+	trc.Push("evaluating permission boundaries")
+	defer trc.Pop()
+
+	// Empty permissions boundary = allowed; otherwise we have to evaluate
+	if ac.Principal.PermissionsBoundary.Empty() {
+		effectset := EffectSet{}
+		effectset.Add(policy.EFFECT_ALLOW)
+		return effectset, nil
+	}
+
+	// Specify the statement evaluation funcs we will consider for permission boundary access
+	funcs := []evalFunction{
+		evalStatementMatchesAction,
+		evalStatementMatchesResource,
+		evalStatementMatchesCondition,
+	}
+
+	return evalPolicy(trc, opt, ac, ac.Principal.PermissionsBoundary, funcs)
 }
 
 // evalIsSameAccount determines whether or not the provided Principal + Resource exist within the
