@@ -9,6 +9,35 @@ import (
 	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
+// TestEvalIsSameAccount checks same vs x-account checking behavior
+func TestEvalIsSameAccount(t *testing.T) {
+	type input struct {
+		principal entities.Principal
+		resource  entities.Resource
+	}
+
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Input: input{
+				principal: entities.Principal{Account: "88888"},
+				resource:  entities.Resource{Account: "88888"},
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				principal: entities.Principal{Account: "88888"},
+				resource:  entities.Resource{Account: "12345"},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalIsSameAccount(&i.principal, &i.resource), nil
+	})
+}
+
 // TestOverallAccess_XAccount checks both principal-side and resource-side logic where the
 // resource + principal reside within the same account
 func TestOverallAccess_XAccount(t *testing.T) {
@@ -1067,31 +1096,37 @@ func TestStatementMatchesResource(t *testing.T) {
 	})
 }
 
-// TestEvalIsSameAccount checks same vs x-account checking behavior
-func TestEvalIsSameAccount(t *testing.T) {
-	type input struct {
-		principal entities.Principal
-		resource  entities.Resource
+// TestPermissionsBoundary tests functionality of permissions boundary evaluations
+func TestPermissionsBoundary(t *testing.T) {
+	tests := []testrunner.TestCase[AuthContext, []policy.Effect]{
+		{
+			Name: "allow_all",
+			Input: AuthContext{
+				Principal: &entities.Principal{
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"*"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
+			},
+			Want: []policy.Effect{
+				policy.EFFECT_ALLOW,
+			},
+		},
 	}
 
-	tests := []testrunner.TestCase[input, bool]{
-		{
-			Input: input{
-				principal: entities.Principal{Account: "88888"},
-				resource:  entities.Resource{Account: "88888"},
-			},
-			Want: true,
-		},
-		{
-			Input: input{
-				principal: entities.Principal{Account: "88888"},
-				resource:  entities.Resource{Account: "12345"},
-			},
-			Want: false,
-		},
-	}
+	testrunner.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
+		res, err := evalPermissionsBoundary(trace.New(), &Options{}, ac)
+		if err != nil {
+			return nil, err
+		}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalIsSameAccount(&i.principal, &i.resource), nil
+		return res.Effects(), nil
 	})
 }

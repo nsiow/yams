@@ -11,6 +11,12 @@ import (
 	"github.com/nsiow/yams/pkg/sim/wildcard"
 )
 
+// evalIsSameAccount determines whether or not the provided Principal + Resource exist within the
+// same AWS account
+func evalIsSameAccount(p *entities.Principal, r *entities.Resource) bool {
+	return p.Account == r.Account
+}
+
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
 // and different-account evaluations
 func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
@@ -415,10 +421,4 @@ func evalPermissionsBoundary(
 	}
 
 	return evalPolicy(trc, opt, ac, ac.Principal.PermissionsBoundary, funcs)
-}
-
-// evalIsSameAccount determines whether or not the provided Principal + Resource exist within the
-// same AWS account
-func evalIsSameAccount(p *entities.Principal, r *entities.Resource) bool {
-	return p.Account == r.Account
 }
