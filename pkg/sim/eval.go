@@ -55,7 +55,7 @@ func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
 	if evalIsSameAccount(ac.Principal, ac.Resource) {
 		if pAccess.Contains(policy.EFFECT_ALLOW) {
 			trc.Decision("[allow] access granted via same-account identity policy")
-			return &Result{Trace: trc, IsAllowed: false}, nil
+			return &Result{Trace: trc, IsAllowed: true}, nil
 		}
 
 		// TODO(nsiow) implement correct behavior for same-account access via explicit ARN

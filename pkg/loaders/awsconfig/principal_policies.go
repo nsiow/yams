@@ -142,6 +142,13 @@ func extractRolePermissionsBoundary(i ConfigItem, pm *PolicyMap) (policy.Policy,
 
 	// Look up policy by ARN
 	arn := f.PermissionsBoundary.Arn
+
+	// Handle empty case
+	if len(arn) == 0 {
+		return policy.Policy{}, nil
+	}
+
+	// ... otherwise resolve policy
 	policyList, exists := pm.Get(CONST_TYPE_AWS_IAM_POLICY, arn)
 	if !exists || len(policyList) == 0 {
 		return policy.Policy{}, fmt.Errorf("boundary policy '%s' not found in provided map", arn)
@@ -229,6 +236,13 @@ func extractUserPermissionsBoundary(i ConfigItem, pm *PolicyMap) (policy.Policy,
 
 	// Look up policy by ARN
 	arn := f.PermissionsBoundary.Arn
+
+	// Handle empty case
+	if len(arn) == 0 {
+		return policy.Policy{}, nil
+	}
+
+	// ... otherwise resolve policy
 	policyList, exists := pm.Get(CONST_TYPE_AWS_IAM_POLICY, arn)
 	if !exists || len(policyList) == 0 {
 		return policy.Policy{}, fmt.Errorf("boundary policy '%s' not found in provided map", arn)
