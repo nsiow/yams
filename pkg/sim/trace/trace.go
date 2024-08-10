@@ -1,5 +1,10 @@
 package trace
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Trace is a stack-based, leveled, rich logger which allows us to follow a simulation execution
 type Trace struct {
 	minLevel int
@@ -41,6 +46,19 @@ func (t *Trace) Attr(k string, v any) {
 // History returns all records saved by the trace, in sequential order
 func (t *Trace) History() []Record {
 	return t.buf
+}
+
+// Log returns the history of the trace in a string-based, human-readable format
+func (t *Trace) Log() string {
+	log := []string{}
+
+	for _, record := range t.History() {
+		s := fmt.Sprintf("depth=(%d) frame=(%s) message=(%s) attrs=(%+v)",
+			record.Depth, record.Frame, record.Message, record.Attrs)
+		log = append(log, s)
+	}
+
+	return strings.Join(log, "\n")
 }
 
 // SetLevel assigns the minimum "logging" level of the trace object

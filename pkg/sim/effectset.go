@@ -1,4 +1,4 @@
-package effectset
+package sim
 
 import (
 	"slices"
@@ -39,4 +39,11 @@ func (e *EffectSet) Contains(effect policy.Effect) bool {
 // based on the values contained within the set
 func (e *EffectSet) Allowed() bool {
 	return e.Contains(policy.EFFECT_ALLOW) && !e.Contains(policy.EFFECT_DENY)
+}
+
+// Merge combines the provided EffectSet with our target
+func (e *EffectSet) Merge(other EffectSet) {
+	for _, effect := range other.Effects() {
+		e.Add(effect)
+	}
 }

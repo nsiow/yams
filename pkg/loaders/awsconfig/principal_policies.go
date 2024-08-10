@@ -35,6 +35,19 @@ func extractManagedPolicies(i ConfigItem, pm *PolicyMap) ([]policy.Policy, error
 	}
 }
 
+// extractPermissionsBoundary attempts to retrieve the Principal's perm boundary, if supported
+func extractPermissionsBoundary(i ConfigItem, pm *PolicyMap) (policy.Policy, error) {
+	switch i.Type {
+	case CONST_TYPE_AWS_IAM_ROLE:
+		return extractRolePermissionsBoundary(i, pm)
+	case CONST_TYPE_AWS_IAM_USER:
+		return extractUserPermissionsBoundary(i, pm)
+	default:
+		return policy.Policy{},
+			fmt.Errorf("extractPermissionsBoundary not supported for type: %s", i.Type)
+	}
+}
+
 // extractGroupPolicies attempts to retrieve the relevant Group permissions, if supported
 func extractGroupPolicies(i ConfigItem, pm *PolicyMap) ([]policy.Policy, error) {
 	return extractGroupUserPolicies(i, pm)
@@ -57,13 +70,21 @@ type managedPolicyFragment struct {
 
 // rolePolicyListFragment allows for unmarshalling of Inline Policy configuration blobs
 type rolePolicyListFragment struct {
-	RolePolicyList []inlinePolicyFragment `json:"rolePolicyList"`
+	RolePolicyList []rolePolicyInlineFragment `json:"rolePolicyList"`
 }
 
-// inlinePolicyFragment allows for unmarshalling of Inline Policy configuration blobs
-type inlinePolicyFragment struct {
+// rolePolicyInlineFragment allows for unmarshalling of Inline Policy configuration blobs
+type rolePolicyInlineFragment struct {
 	PolicyDocument string `json:"policyDocument"`
 	PolicyName     string `json:"policyName"`
+}
+
+// rolePolicyPermissionsBoundaryFragment allows for unmarshalling of perm boundary blobs
+type rolePolicyPermissionsBoundaryFragment struct {
+	PermissionsBoundary struct {
+		Arn  string `json:"permissionsBoundaryArn"`
+		Type string `json:"permissionsBoundaryType"`
+	} `json:"permissionsBoundary"`
 }
 
 // extractInlineRolePolicies defines how to retrieve policies from an IAM role
@@ -111,13 +132,47 @@ func extractAttachedRolePolicies(i ConfigItem, pm *PolicyMap) ([]policy.Policy, 
 	return policies, nil
 }
 
+// extractRolePermissionsBoundary defines how to retrieve a perm boundary for an IAM role
+func extractRolePermissionsBoundary(i ConfigItem, pm *PolicyMap) (policy.Policy, error) {
+	// Parse the relevant bits of the configuration
+	var f rolePolicyPermissionsBoundaryFragment
+	err := json.Unmarshal(i.Configuration, &f)
+	if err != nil {
+		return policy.Policy{}, err
+	}
+
+	// Look up policy by ARN
+	arn := f.PermissionsBoundary.Arn
+
+	// Handle empty case
+	if len(arn) == 0 {
+		return policy.Policy{}, nil
+	}
+
+	// ... otherwise resolve policy
+	policyList, exists := pm.Get(CONST_TYPE_AWS_IAM_POLICY, arn)
+	if !exists || len(policyList) == 0 {
+		return policy.Policy{}, fmt.Errorf("boundary policy '%s' not found in provided map", arn)
+	}
+
+	return policyList[0], nil
+}
+
 // --------------------------------------------------------------------------------
 // AWS IAM Users
 // --------------------------------------------------------------------------------
 
 // userPolicyListFragment allows for unmarshalling of Inline Policy configuration blobs
 type userPolicyListFragment struct {
-	UserPolicyList []inlinePolicyFragment `json:"userPolicyList"`
+	UserPolicyList []rolePolicyInlineFragment `json:"userPolicyList"`
+}
+
+// userPolicyPermissionsBoundaryFragment allows for unmarshalling of perm boundary blobs
+type userPolicyPermissionsBoundaryFragment struct {
+	PermissionsBoundary struct {
+		Arn  string `json:"permissionsBoundaryArn"`
+		Type string `json:"permissionsBoundaryType"`
+	} `json:"permissionsBoundary"`
 }
 
 // extractInlineUserPolicies defines how to retrieve inline policies from an IAM user
@@ -165,6 +220,32 @@ func extractAttachedUserPolicies(i ConfigItem, pm *PolicyMap) ([]policy.Policy, 
 	return policies, nil
 }
 
+// extractUserPermissionsBoundary defines how to retrieve a perm boundary for an IAM user
+func extractUserPermissionsBoundary(i ConfigItem, pm *PolicyMap) (policy.Policy, error) {
+	// Parse the relevant bits of the configuration
+	var f userPolicyPermissionsBoundaryFragment
+	err := json.Unmarshal(i.Configuration, &f)
+	if err != nil {
+		return policy.Policy{}, err
+	}
+
+	// Look up policy by ARN
+	arn := f.PermissionsBoundary.Arn
+
+	// Handle empty case
+	if len(arn) == 0 {
+		return policy.Policy{}, nil
+	}
+
+	// ... otherwise resolve policy
+	policyList, exists := pm.Get(CONST_TYPE_AWS_IAM_POLICY, arn)
+	if !exists || len(policyList) == 0 {
+		return policy.Policy{}, fmt.Errorf("boundary policy '%s' not found in provided map", arn)
+	}
+
+	return policyList[0], nil
+}
+
 // --------------------------------------------------------------------------------
 // AWS IAM Groups
 // --------------------------------------------------------------------------------
@@ -184,7 +265,7 @@ func extractGroupUserPolicies(i ConfigItem, pm *PolicyMap) ([]policy.Policy, err
 	}
 
 	// Perform group lookups and keep a running
-	policies := []policy.Policy{}
+	var policies []policy.Policy
 	for _, groupName := range f.GroupList {
 		groupArn := fmt.Sprintf("arn:aws:iam::%s:group/%s", i.Account, groupName)
 		ps, exists := pm.Get(CONST_TYPE_AWS_IAM_GROUP, groupArn)

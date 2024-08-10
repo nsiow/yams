@@ -62,5 +62,12 @@ func loadPrincipal(i ConfigItem, pm *PolicyMap) (entities.Principal, error) {
 		p.GroupPolicies = gp
 	}
 
+	// Load permissions boundary
+	pb, err := extractPermissionsBoundary(i, pm)
+	if err != nil {
+		return p, fmt.Errorf("error extracting permissions boundary for '%s': %w", i.Arn, err)
+	}
+	p.PermissionsBoundary = pb
+
 	return p, nil
 }

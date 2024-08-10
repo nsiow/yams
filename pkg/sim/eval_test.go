@@ -9,6 +9,35 @@ import (
 	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
+// TestEvalIsSameAccount checks same vs x-account checking behavior
+func TestEvalIsSameAccount(t *testing.T) {
+	type input struct {
+		principal entities.Principal
+		resource  entities.Resource
+	}
+
+	tests := []testrunner.TestCase[input, bool]{
+		{
+			Input: input{
+				principal: entities.Principal{Account: "88888"},
+				resource:  entities.Resource{Account: "88888"},
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				principal: entities.Principal{Account: "88888"},
+				resource:  entities.Resource{Account: "12345"},
+			},
+			Want: false,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return evalIsSameAccount(&i.principal, &i.resource), nil
+	})
+}
+
 // TestOverallAccess_XAccount checks both principal-side and resource-side logic where the
 // resource + principal reside within the same account
 func TestOverallAccess_XAccount(t *testing.T) {
@@ -174,7 +203,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Want: true,
 		},
 		{
-			Name: "x_account_error_nonexistent_principal_condition",
+			Name: "error_nonexistent_principal_condition",
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
@@ -208,7 +237,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			ShouldErr: true,
 		},
 		{
-			Name: "x_account_error_nonexistent_resource_condition",
+			Name: "error_nonexistent_resource_condition",
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
@@ -429,6 +458,143 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		// 	},
 		// 	Want: []policy.Effect{policy.EFFECT_ALLOW},
 		// },
+		{
+			Name: "error_bad_permissions_boundary",
+			Input: AuthContext{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:listbucket"},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+								Principal: policy.Principal{
+									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+								},
+								Condition: map[string]map[string]policy.Value{
+									"StringEqualsThisDoesNotExist": {
+										"foo": []string{"bar"},
+									},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+				},
+			},
+			ShouldErr: true,
+		},
+		{
+			Name: "permissions_boundary_allow",
+			Input: AuthContext{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:    policy.EFFECT_ALLOW,
+								NotAction: []string{"iam:*"},
+								Resource:  []string{"*"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "permissions_boundary_explicit_deny",
+			Input: AuthContext{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_DENY,
+								Action:   []string{"*"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "permissions_boundary_implicit_deny",
+			Input: AuthContext{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"ec2:*"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+				},
+			},
+			Want: false,
+		},
 	}
 
 	testrunner.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
@@ -631,7 +797,7 @@ func TestPrincipalAccess(t *testing.T) {
 
 	testrunner.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
 		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalPrincipalAccess(&opts, ac, trace.New())
+		res, err := evalPrincipalAccess(trace.New(), &opts, ac)
 		if err != nil {
 			return nil, err
 		}
@@ -774,7 +940,7 @@ func TestResourceAccess(t *testing.T) {
 
 	testrunner.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
 		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalResourceAccess(&opts, ac, trace.New())
+		res, err := evalResourceAccess(trace.New(), &opts, ac)
 		if err != nil {
 			return nil, err
 		}
@@ -791,6 +957,15 @@ func TestStatementMatchesAction(t *testing.T) {
 	}
 
 	tests := []testrunner.TestCase[input, bool]{
+		// Missing
+		{
+			Name: "missing_action",
+			Input: input{
+				ac:   AuthContext{},
+				stmt: policy.Statement{Action: []string{"*"}},
+			},
+			Want: false,
+		},
 		// Action
 		{
 			Name: "simple_wildcard",
@@ -877,7 +1052,7 @@ func TestStatementMatchesAction(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesAction(&Options{}, i.ac, trace.New(), &i.stmt)
+		return evalStatementMatchesAction(trace.New(), &Options{}, i.ac, &i.stmt)
 	})
 }
 
@@ -889,6 +1064,15 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 	}
 
 	tests := []testrunner.TestCase[input, bool]{
+		// Missing
+		{
+			Name: "missing_principal",
+			Input: input{
+				ac:   AuthContext{},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"*"}}},
+			},
+			Want: false,
+		},
 		// Principal
 		{
 			Name: "simple_wildcard",
@@ -977,7 +1161,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesPrincipal(&Options{}, i.ac, trace.New(), &i.stmt)
+		return evalStatementMatchesPrincipal(trace.New(), &Options{}, i.ac, &i.stmt)
 	})
 }
 
@@ -989,6 +1173,15 @@ func TestStatementMatchesResource(t *testing.T) {
 	}
 
 	tests := []testrunner.TestCase[input, bool]{
+		// Missing
+		{
+			Name: "missing_resource",
+			Input: input{
+				ac:   AuthContext{},
+				stmt: policy.Statement{Resource: []string{"*"}},
+			},
+			Want: false,
+		},
 		// Resource
 		{
 			Name: "simple_wildcard",
@@ -1063,35 +1256,167 @@ func TestStatementMatchesResource(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesResource(&Options{}, i.ac, trace.New(), &i.stmt)
+		return evalStatementMatchesResource(trace.New(), &Options{}, i.ac, &i.stmt)
 	})
 }
 
-// TestEvalIsSameAccount checks same vs x-account checking behavior
-func TestEvalIsSameAccount(t *testing.T) {
-	type input struct {
-		principal entities.Principal
-		resource  entities.Resource
-	}
-
-	tests := []testrunner.TestCase[input, bool]{
+// TestPermissionsBoundary tests functionality of permissions boundary evaluations
+func TestPermissionsBoundary(t *testing.T) {
+	tests := []testrunner.TestCase[AuthContext, []policy.Effect]{
 		{
-			Input: input{
-				principal: entities.Principal{Account: "88888"},
-				resource:  entities.Resource{Account: "88888"},
+			Name: "allow_all",
+			Input: AuthContext{
+				Principal: &entities.Principal{
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"*"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
+				Action:   "s3:ListBucket",
 			},
-			Want: true,
+			Want: []policy.Effect{
+				policy.EFFECT_ALLOW,
+			},
 		},
 		{
-			Input: input{
-				principal: entities.Principal{Account: "88888"},
-				resource:  entities.Resource{Account: "12345"},
+			Name: "deny_all",
+			Input: AuthContext{
+				Principal: &entities.Principal{
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_DENY,
+								Action:   []string{"*"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
+				Action:   "s3:ListBucket",
 			},
-			Want: false,
+			Want: []policy.Effect{
+				policy.EFFECT_DENY,
+			},
+		},
+		{
+			Name: "allow_others_simple",
+			Input: AuthContext{
+				Principal: &entities.Principal{
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"ec2:DescribeInstances"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
+				Action:   "s3:ListBucket",
+			},
+			Want: []policy.Effect(nil),
+		},
+		{
+			Name: "allow_this_specific",
+			Input: AuthContext{
+				Principal: &entities.Principal{
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:ListBucket"},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
+				Action:   "s3:ListBucket",
+			},
+			Want: []policy.Effect{
+				policy.EFFECT_ALLOW,
+			},
+		},
+		{
+			Name: "allow_others_specific",
+			Input: AuthContext{
+				Principal: &entities.Principal{
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:ListBucket"},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+								Condition: map[string]map[string]policy.Value{
+									"StringEquals": {
+										"aws:UserAgent": []string{"some-random-ua"},
+									},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
+				Action:   "s3:ListBucket",
+			},
+			Want: []policy.Effect(nil),
+		},
+		{
+			Name: "allow_only_iam",
+			Input: AuthContext{
+				Principal: &entities.Principal{
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"iam:*"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{Arn: "*"},
+				Action:   "iam:ListRoles",
+			},
+			Want: []policy.Effect{
+				policy.EFFECT_ALLOW,
+			},
+		},
+		{
+			Name: "deny_iam_by_omission",
+			Input: AuthContext{
+				Principal: &entities.Principal{
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:    policy.EFFECT_ALLOW,
+								NotAction: []string{"iam:*"},
+								Resource:  []string{"*"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{Arn: "*"},
+				Action:   "iam:ListRoles",
+			},
+			Want: []policy.Effect(nil),
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalIsSameAccount(&i.principal, &i.resource), nil
+	testrunner.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
+		res, err := evalPermissionsBoundary(trace.New(), &Options{}, ac)
+		if err != nil {
+			return nil, err
+		}
+
+		return res.Effects(), nil
 	})
 }

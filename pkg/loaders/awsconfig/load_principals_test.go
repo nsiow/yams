@@ -38,3 +38,19 @@ func TestExtractManagedPoliciesInvalid(t *testing.T) {
 		return extractManagedPolicies(c, nil)
 	})
 }
+
+// TestExtractPermissionsBoundaryInvalid confirms correct error handling behavior for unexpected types
+func TestExtractPermissionsBoundaryInvalid(t *testing.T) {
+	tests := []testrunner.TestCase[ConfigItem, policy.Policy]{
+		{
+			Input: ConfigItem{
+				Type: "AWS::IAM::Policy",
+			},
+			ShouldErr: true,
+		},
+	}
+
+	testrunner.RunTestSuite(t, tests, func(c ConfigItem) (policy.Policy, error) {
+		return extractPermissionsBoundary(c, nil)
+	})
+}

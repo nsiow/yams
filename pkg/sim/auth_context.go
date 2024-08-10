@@ -15,12 +15,12 @@ import (
 
 // AuthContext defines the tertiary context of a request that can be used for authz decisions
 type AuthContext struct {
-	Time         time.Time
-	Action       string
-	Principal    *entities.Principal
-	Resource     *entities.Resource
-	Properties   map[string]string
-	MVProperties map[string][]string
+	Time                 time.Time
+	Action               string
+	Principal            *entities.Principal
+	Resource             *entities.Resource
+	Properties           map[string]string
+	MultiValueProperties map[string][]string
 }
 
 // Static values
@@ -125,7 +125,7 @@ func (ac *AuthContext) MultiKey(key string) []string {
 		// 	break
 	}
 
-	return ac.MVProperties[key]
+	return ac.MultiValueProperties[key]
 }
 
 // Resolve resolves and replaces all IAM variables within the provided values

@@ -1,4 +1,4 @@
-package effectset
+package sim
 
 import (
 	"testing"

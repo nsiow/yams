@@ -12,6 +12,11 @@ type Policy struct {
 	Statement StatementBlock
 }
 
+// Empty returns true if the policy is empty of any effective statements
+func (p *Policy) Empty() bool {
+	return len(p.Statement) == 0
+}
+
 // StatementBlock represents one or more statements, provided in array or map form
 type StatementBlock []Statement
 
