@@ -265,7 +265,7 @@ func extractGroupUserPolicies(i ConfigItem, pm *PolicyMap) ([]policy.Policy, err
 	}
 
 	// Perform group lookups and keep a running
-	policies := []policy.Policy{}
+	var policies []policy.Policy
 	for _, groupName := range f.GroupList {
 		groupArn := fmt.Sprintf("arn:aws:iam::%s:group/%s", i.Account, groupName)
 		ps, exists := pm.Get(CONST_TYPE_AWS_IAM_GROUP, groupArn)

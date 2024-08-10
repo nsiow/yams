@@ -10,8 +10,8 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestLoadJsonValid confirms that we can correctly load data from JSON arrays of AWS Config data
-func TestLoadJsonValid(t *testing.T) {
+// TestLoadJson confirms that we can correctly load data from JSON arrays of AWS Config data
+func TestLoadJson(t *testing.T) {
 	tests := []testrunner.TestCase[string, entities.Environment]{
 
 		// Valid
@@ -46,6 +46,11 @@ func TestLoadJsonValid(t *testing.T) {
 			Name:  "valid_user_1_json",
 			Input: `../../../testdata/environments/valid_user_1.json`,
 			Want:  user1Output,
+		},
+		{
+			Name:  "valid_permissions_boundaries",
+			Input: `../../../testdata/environments/valid_permissions_boundaries.json`,
+			Want:  permissionsBoundaryOutput,
 		},
 
 		// Invalid
@@ -123,6 +128,11 @@ func TestLoadJsonValid(t *testing.T) {
 		{
 			Name:      "invalid_user_bad_managed",
 			Input:     `../../../testdata/environments/invalid_user_bad_managed.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_user_bad_permissions_boundary",
+			Input:     `../../../testdata/environments/invalid_user_bad_permissions_boundary.json`,
 			ShouldErr: true,
 		},
 		{
@@ -445,6 +455,68 @@ var user1Output entities.Environment = entities.Environment{
 			Type:    "AWS::IAM::User",
 			Account: "000000000000",
 			Arn:     "arn:aws:iam::000000000000:user/myuser",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
+		},
+	},
+}
+
+var permissionsBoundaryOutput entities.Environment = entities.Environment{
+	Principals: []entities.Principal{
+		{
+			Type:    "AWS::IAM::User",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:user/myuser",
+			Tags:    []entities.Tag{},
+			PermissionsBoundary: policy.Policy{
+				Version: "2012-10-17",
+				Statement: []policy.Statement{
+					{
+						Sid:       "Statement1",
+						Effect:    "Allow",
+						NotAction: []string{"iam:*"},
+						Resource:  []string{"*"},
+					},
+				},
+			},
+		},
+		{
+			Type:    "AWS::IAM::Role",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:role/myrole",
+			Tags:    []entities.Tag{},
+			PermissionsBoundary: policy.Policy{
+				Version: "2012-10-17",
+				Statement: []policy.Statement{
+					{
+						Sid:       "Statement1",
+						Effect:    "Allow",
+						NotAction: []string{"iam:*"},
+						Resource:  []string{"*"},
+					},
+				},
+			},
+		},
+	},
+	Resources: []entities.Resource{
+		{
+			Type:    "AWS::IAM::Policy",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:policy/Common",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
+		},
+		{
+			Type:    "AWS::IAM::User",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:user/myuser",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
+		},
+		{
+			Type:    "AWS::IAM::Role",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:role/myrole",
 			Policy:  policy.Policy{},
 			Tags:    []entities.Tag{},
 		},
