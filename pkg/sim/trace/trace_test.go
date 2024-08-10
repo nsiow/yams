@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// TestTraceLevel validates the behavior Trace levels
+// TestTraceLevel validates the behavior of Trace levels
 func TestTraceLevel(t *testing.T) {
 	// Create a new trace
 	trc := New()
@@ -43,6 +43,28 @@ func TestTraceLevel(t *testing.T) {
 	want = 3
 	got = trc.History()
 	if want != len(trc.History()) {
+		t.Fatalf("wanted (%+v), got (%+v)", want, got)
+	}
+}
+
+// TestTraceLog validates the output of the Trace logger
+func TestTraceLog(t *testing.T) {
+	// Create a new trace
+	trc := New()
+	trc.SetLevel(LEVEL_OBSERVATION)
+
+	// Do some stuff
+	trc.Observation("test1")
+	trc.Push("down")
+	trc.Observation("test2")
+	trc.Decision("test3")
+
+	// Validate the logging output
+	want := "depth=(0) frame=(root) message=(test1) attrs=(map[])\n" +
+		"depth=(1) frame=(down) message=(test2) attrs=(map[])\n" +
+		"depth=(1) frame=(down) message=(test3) attrs=(map[])"
+	got := trc.Log()
+	if want != got {
 		t.Fatalf("wanted (%+v), got (%+v)", want, got)
 	}
 }
