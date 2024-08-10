@@ -43,7 +43,8 @@ func extractPermissionsBoundary(i ConfigItem, pm *PolicyMap) (policy.Policy, err
 	case CONST_TYPE_AWS_IAM_USER:
 		return extractUserPermissionsBoundary(i, pm)
 	default:
-		return policy.Policy{}, fmt.Errorf("extractManagedPolicies not supported for type: %s", i.Type)
+		return policy.Policy{},
+			fmt.Errorf("extractPermissionsBoundary not supported for type: %s", i.Type)
 	}
 }
 

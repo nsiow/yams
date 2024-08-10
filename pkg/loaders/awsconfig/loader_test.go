@@ -86,6 +86,11 @@ func TestLoadJsonValid(t *testing.T) {
 			ShouldErr: true,
 		},
 		{
+			Name:      "invalid_role_bad_permissions_boundary",
+			Input:     `../../../testdata/environments/invalid_role_bad_permissions_boundary.json`,
+			ShouldErr: true,
+		},
+		{
 			Name:      "invalid_role_bad_inline_encoding",
 			Input:     `../../../testdata/environments/invalid_role_bad_inline_encoding.json`,
 			ShouldErr: true,
