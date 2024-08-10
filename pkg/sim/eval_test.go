@@ -957,6 +957,15 @@ func TestStatementMatchesAction(t *testing.T) {
 	}
 
 	tests := []testrunner.TestCase[input, bool]{
+		// Missing
+		{
+			Name: "missing_action",
+			Input: input{
+				ac:   AuthContext{},
+				stmt: policy.Statement{Action: []string{"*"}},
+			},
+			Want: false,
+		},
 		// Action
 		{
 			Name: "simple_wildcard",
@@ -1055,6 +1064,15 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 	}
 
 	tests := []testrunner.TestCase[input, bool]{
+		// Missing
+		{
+			Name: "missing_principal",
+			Input: input{
+				ac:   AuthContext{},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"*"}}},
+			},
+			Want: false,
+		},
 		// Principal
 		{
 			Name: "simple_wildcard",
@@ -1155,6 +1173,15 @@ func TestStatementMatchesResource(t *testing.T) {
 	}
 
 	tests := []testrunner.TestCase[input, bool]{
+		// Missing
+		{
+			Name: "missing_resource",
+			Input: input{
+				ac:   AuthContext{},
+				stmt: policy.Statement{Resource: []string{"*"}},
+			},
+			Want: false,
+		},
 		// Resource
 		{
 			Name: "simple_wildcard",
