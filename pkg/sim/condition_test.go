@@ -2096,7 +2096,7 @@ func TestForAllValues(t *testing.T) {
 			Name: "simple_equals",
 			Input: input{
 				ac: AuthContext{
-					MVProperties: map[string][]string{
+					MultiValueProperties: map[string][]string{
 						"aws:TagKeys": {
 							"foo", "bar", "baz",
 						},
@@ -2116,7 +2116,7 @@ func TestForAllValues(t *testing.T) {
 			Name: "simple_not_equals",
 			Input: input{
 				ac: AuthContext{
-					MVProperties: map[string][]string{
+					MultiValueProperties: map[string][]string{
 						"aws:TagKeys": {
 							"foo", "bar", "baz", "other",
 						},
@@ -2159,7 +2159,7 @@ func TestForAnyValues(t *testing.T) {
 			Name: "simple_equals",
 			Input: input{
 				ac: AuthContext{
-					MVProperties: map[string][]string{
+					MultiValueProperties: map[string][]string{
 						"aws:TagKeys": {
 							"baz",
 						},
@@ -2179,7 +2179,7 @@ func TestForAnyValues(t *testing.T) {
 			Name: "simple_not_equals",
 			Input: input{
 				ac: AuthContext{
-					MVProperties: map[string][]string{
+					MultiValueProperties: map[string][]string{
 						"aws:TagKeys": {
 							"lots", "of", "other", "strings",
 						},

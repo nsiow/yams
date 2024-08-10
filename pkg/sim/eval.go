@@ -234,6 +234,12 @@ func evalStatementMatchesAction(
 	trc.Push("evaluating Action")
 	defer trc.Pop()
 
+	// Handle empty Action
+	if len(ac.Action) == 0 {
+		trc.Observation("AuthContext missing Action")
+		return false, nil
+	}
+
 	// Determine which Action block to use
 	var _gate gate.Gate
 	var action policy.Action
@@ -269,6 +275,12 @@ func evalStatementMatchesPrincipal(
 	trc.Push("evaluating Principal")
 	defer trc.Pop()
 
+	// Handle empty Principal
+	if ac.Principal == nil {
+		trc.Observation("AuthContext missing Principal")
+		return false, nil
+	}
+
 	// Determine which Principal block to use
 	var _gate gate.Gate
 	var principals policy.Principal
@@ -301,6 +313,12 @@ func evalStatementMatchesResource(
 
 	trc.Push("evaluating Resource")
 	defer trc.Pop()
+
+	// Handle empty Resource
+	if ac.Resource == nil {
+		trc.Observation("AuthContext missing Resource")
+		return false, nil
+	}
 
 	// Determine which Resource block to use
 	var _gate gate.Gate

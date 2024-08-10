@@ -254,7 +254,7 @@ func TestAuthContextMultiKeys(t *testing.T) {
 			Name: "principal_tag",
 			Input: input{
 				ac: AuthContext{
-					MVProperties: map[string][]string{
+					MultiValueProperties: map[string][]string{
 						"aws:TagKeys": {
 							"foo",
 							"bar",
