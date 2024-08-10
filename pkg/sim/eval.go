@@ -34,6 +34,10 @@ func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
 		trc.Decision("[explicit deny] found in permissions boundary")
 		return &Result{Trace: trc, IsAllowed: false}, nil
 	}
+	if !pbAccess.Allowed() {
+		trc.Decision("[implicit deny] based on permissions boundary")
+		return &Result{Trace: trc, IsAllowed: false}, nil
+	}
 
 	// Calculate Principal access
 	pAccess, err := evalPrincipalAccess(trc, opt, ac)

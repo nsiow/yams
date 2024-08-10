@@ -203,7 +203,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Want: true,
 		},
 		{
-			Name: "x_account_error_nonexistent_principal_condition",
+			Name: "error_nonexistent_principal_condition",
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
@@ -237,7 +237,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			ShouldErr: true,
 		},
 		{
-			Name: "x_account_error_nonexistent_resource_condition",
+			Name: "error_nonexistent_resource_condition",
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
@@ -458,6 +458,143 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		// 	},
 		// 	Want: []policy.Effect{policy.EFFECT_ALLOW},
 		// },
+		{
+			Name: "error_bad_permissions_boundary",
+			Input: AuthContext{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:listbucket"},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+								Principal: policy.Principal{
+									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+								},
+								Condition: map[string]map[string]policy.Value{
+									"StringEqualsThisDoesNotExist": {
+										"foo": []string{"bar"},
+									},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+				},
+			},
+			ShouldErr: true,
+		},
+		{
+			Name: "permissions_boundary_allow",
+			Input: AuthContext{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:    policy.EFFECT_ALLOW,
+								NotAction: []string{"iam:*"},
+								Resource:  []string{"*"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "permissions_boundary_explicit_deny",
+			Input: AuthContext{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_DENY,
+								Action:   []string{"*"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "permissions_boundary_implicit_deny",
+			Input: AuthContext{
+				Action: "s3:listbucket",
+				Principal: &entities.Principal{
+					Arn:     "arn:aws:iam::88888:role/myrole",
+					Account: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+					PermissionsBoundary: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"ec2:*"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:     "arn:aws:s3:::mybucket",
+					Account: "88888",
+				},
+			},
+			Want: false,
+		},
 	}
 
 	testrunner.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
