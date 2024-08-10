@@ -17,34 +17,34 @@ func TestLoadJsonValid(t *testing.T) {
 		// Valid
 
 		{
-			Name:  "empty_json",
-			Input: `../../../testdata/environments/empty.json`,
+			Name:  "valid_empty_json",
+			Input: `../../../testdata/environments/valid_empty.json`,
 			Want: entities.Environment{
 				Principals: []entities.Principal(nil),
 				Resources:  []entities.Resource(nil),
 			},
 		},
 		{
-			Name:  "empty_jsonl",
-			Input: `../../../testdata/environments/empty.jsonl`,
+			Name:  "valid_empty_jsonl",
+			Input: `../../../testdata/environments/valid_empty.jsonl`,
 			Want: entities.Environment{
 				Principals: []entities.Principal(nil),
 				Resources:  []entities.Resource(nil),
 			},
 		},
 		{
-			Name:  "simple_1_json",
-			Input: `../../../testdata/environments/simple_1.json`,
+			Name:  "valid_simple_1_json",
+			Input: `../../../testdata/environments/valid_simple_1.json`,
 			Want:  simple1Output,
 		},
 		{
-			Name:  "simple_1_jsonl",
-			Input: `../../../testdata/environments/simple_1.jsonl`,
+			Name:  "valid_simple_1_jsonl",
+			Input: `../../../testdata/environments/valid_simple_1.jsonl`,
 			Want:  simple1Output,
 		},
 		{
-			Name:  "user_1_json",
-			Input: `../../../testdata/environments/user_1.json`,
+			Name:  "valid_user_1_json",
+			Input: `../../../testdata/environments/valid_user_1.json`,
 			Want:  user1Output,
 		},
 
@@ -62,7 +62,7 @@ func TestLoadJsonValid(t *testing.T) {
 		},
 		{
 			Name:      "invalid_lots_o_junk",
-			Input:     `../../../testdata/environments/lots_o_junk.jsonl`,
+			Input:     `../../../testdata/environments/invalid_lots_o_junk.jsonl`,
 			ShouldErr: true,
 		},
 		{
@@ -106,6 +106,11 @@ func TestLoadJsonValid(t *testing.T) {
 			ShouldErr: true,
 		},
 		{
+			Name:      "invalid_role_missing_permissions_boundary",
+			Input:     `../../../testdata/environments/invalid_role_missing_permissions_boundary.json`,
+			ShouldErr: true,
+		},
+		{
 			Name:      "invalid_user_bad_inline",
 			Input:     `../../../testdata/environments/invalid_user_bad_inline.json`,
 			ShouldErr: true,
@@ -126,6 +131,11 @@ func TestLoadJsonValid(t *testing.T) {
 			ShouldErr: true,
 		},
 		{
+			Name:      "invalid_user_missing_permissions_boundary",
+			Input:     `../../../testdata/environments/invalid_user_missing_permissions_boundary.json`,
+			ShouldErr: true,
+		},
+		{
 			Name:      "invalid_resource_bad_policy",
 			Input:     `../../../testdata/environments/invalid_resource_bad_policy.json`,
 			ShouldErr: true,
@@ -137,22 +147,22 @@ func TestLoadJsonValid(t *testing.T) {
 		},
 		{
 			Name:      "invalid_user_bad_group",
-			Input:     `../../../testdata/environments/user_1_bad_group.json`,
+			Input:     `../../../testdata/environments/invalid_user_bad_group.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_user_missing_group",
-			Input:     `../../../testdata/environments/user_1_missing_group.json`,
+			Input:     `../../../testdata/environments/invalid_user_missing_group.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_group_bad_shape",
-			Input:     `../../../testdata/environments/group_bad_shape.json`,
+			Input:     `../../../testdata/environments/invalid_group_bad_shape.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_group_missing_policy",
-			Input:     `../../../testdata/environments/group_missing_policy.json`,
+			Input:     `../../../testdata/environments/invalid_group_missing_policy.json`,
 			ShouldErr: true,
 		},
 	}
