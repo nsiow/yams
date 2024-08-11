@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
-import json
-from typing import Dict, List
+from typing import Dict
 
 import boto3
-import botocore
 from botocore.client import BaseClient
 
 def get_org_root(client: BaseClient) -> str:
@@ -66,14 +64,39 @@ def get_org_structure(client: BaseClient, org_root_id: str) -> Dict:
 
     return structure
 
-def get_policy_structure(client: BaseClient, structure: Dict) -> Dict:
+def get_policy_structure(client: BaseClient, org_structure: Dict) -> Dict:
     """Traverse the org structure and for each node, look up the attached policies."""
+    structure = {}
+
+    for target_list in org_structure.values():
+        for target_id in target_list:
+            if target_id not in structure:
+                resp = client.list_policies_for_target(TargetId=target_id,
+                                                       Filter='SERVICE_CONTROL_POLICY')
+                structure[target_id] = [p['Id'] for p in resp['Policies']]
+
+    return structure
+
+def get_policies(client: BaseClient, policy_structure: Dict) -> Dict:
+    """Traverse the attached policies and describe each of them."""
+    policies = {}
+
+    for policy_list in policy_structure.values():
+        for policy_id in policy_list:
+            if policy_id not in policies:
+                resp = client.describe_policy(PolicyId=policy_id)
+                policies[policy_id] = resp['Policy']
+
+    return policies
 
 def main():
     client = boto3.client('organizations')
     org_root_id = get_org_root(client)
+    print(f'[✓] Discovered root: {org_root_id}')
     org_structure = get_org_structure(client, org_root_id)
+    print(f'[✓] Discovered org structure for {len(org_structure)} entities')
     policy_structure = get_policy_structure(client, org_structure)
+    print(f'[✓] Discovered policy structure for {len(policy_structure)} entities')
 
 if __name__ == '__main__':
     main()
