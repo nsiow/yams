@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from typing import Dict
+import json
+from typing import Dict, List
 
 import boto3
 from botocore.client import BaseClient
@@ -65,7 +66,25 @@ def get_org_structure(client: BaseClient, org_root_id: str) -> Dict:
     return structure
 
 def get_policy_structure(client: BaseClient, org_structure: Dict) -> Dict:
-    """Traverse the org structure and for each node, look up the attached policies."""
+    """Traverse the org structure and for each node, look up the attached policies.
+
+    At the end of evaluation, `structure` contains a map of org entities to the policies attached
+    to that entity, e.g.
+
+    {
+      "r-123": [
+        "p-12345",
+      ],
+      "111111111111": [
+        "p-11111",
+      ],
+      "ou-123": [
+        "p-22222",
+        "p-33333",
+      ],
+      ...
+    }
+    """
     structure = {}
 
     for target_list in org_structure.values():
@@ -78,7 +97,25 @@ def get_policy_structure(client: BaseClient, org_structure: Dict) -> Dict:
     return structure
 
 def get_policies(client: BaseClient, policy_structure: Dict) -> Dict:
-    """Traverse the attached policies and describe each of them."""
+    """Traverse the attached policies and describe each of them.
+
+    At the end of evaluation, `policies` contains a map of policy IDs to definitions
+    to that entity, e.g.
+
+    {
+      "p-12345": {
+        "PolicySummary": {
+            "Id": "p-12345",
+            "Arn": "arn:aws:organizations::111111111111:policy/o-aaaaaaaaaa/service_control_policy/p-aaaaaaaa",
+            "Name": "Example",
+            "Description": "An example",
+            "Type": "SERVICE_CONTROL_POLICY",
+            "AwsManaged": false
+        },
+        "Content": "<json string of policy contents>"
+      }
+    }
+    """
     policies = {}
 
     for policy_list in policy_structure.values():
@@ -89,6 +126,31 @@ def get_policies(client: BaseClient, policy_structure: Dict) -> Dict:
 
     return policies
 
+def as_config_blobs(org_structure: Dict, policy_structure: Dict, policy_data: Dict) -> List[Dict]:
+    """Combine the org + policy structure into a parsable format."""
+    data = []
+
+    for account, ou_path in org_structure.values():
+        policies = []
+        for node in ou_path:
+            node_policies = []
+            for policy_id in policy_structure[node]:
+                policy = policy_data[policy_id]
+                node_policies.append(policy)
+            policies.append(node_policies)
+
+        account_config_blob = {
+            "arn": f"yams/{account}",
+            "resourceType": "Yams::Organizations::Account",
+            "accountId": account,
+            "configuration": {
+              "ServiceControlPolicies": policies,
+            },
+        }
+        data.append(account_config_blob)
+
+    return data
+
 def main():
     client = boto3.client('organizations')
     org_root_id = get_org_root(client)
@@ -97,6 +159,12 @@ def main():
     print(f'[✓] Discovered org structure for {len(org_structure)} entities')
     policy_structure = get_policy_structure(client, org_structure)
     print(f'[✓] Discovered policy structure for {len(policy_structure)} entities')
+    policy_data = get_policies(client, policy_structure)
+    print(f'[✓] Discovered details for {len(policy_data)} policies')
+    data = as_config_blobs(org_structure, policy_structure, policy_data)
+    with open('orgdump.json', 'w+') as f:
+        json.dump(data, f)
+    print(f'[✓] Wrote org crawl results to: orgdump.json')
 
 if __name__ == '__main__':
     main()
