@@ -35,4 +35,7 @@ type Principal struct {
 
 	// PermissionsBoundary refers to the policy set as the Principal's permissions boundary
 	PermissionsBoundary policy.Policy
+
+	// SCPs refers to the Service Control Policies applied to the Principal
+	SCPs []policy.Policy
 }
