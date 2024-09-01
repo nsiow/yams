@@ -111,14 +111,14 @@ func (a *Loader) loadItems(items []ConfigItem) error {
 	if err != nil {
 		return fmt.Errorf("error loading principals: %v", err)
 	}
-	a.principals = principals
+	a.principals = append(a.principals, principals...)
 
 	// Load resources
 	resources, err := loadResources(items)
 	if err != nil {
 		return fmt.Errorf("error loading resources: %v", err)
 	}
-	a.resources = resources
+	a.resources = append(a.resources, resources...)
 
 	return nil
 }
