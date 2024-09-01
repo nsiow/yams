@@ -199,7 +199,7 @@ def main():
     print(f'[✓] Discovered details for {len(policy_data)} policies')
     data = as_config_blobs(org_structure, policy_structure, policy_data)
     with open('orgdump.json', 'w+') as f:
-        json.dump(data, f)
+        json.dump(data, f, indent=2, sort_keys=True)
     print(f'[✓] Wrote org crawl results to: orgdump.json')
 
 if __name__ == '__main__':
