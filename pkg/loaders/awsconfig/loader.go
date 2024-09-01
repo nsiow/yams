@@ -55,6 +55,7 @@ func (a *Loader) LoadJson(data []byte) error {
 }
 
 // LoadJson loads data from the provided newline-separate JSONL input
+// TODO(nsiow) consider having this load from io.Reader instead
 func (a *Loader) LoadJsonl(data []byte) error {
 	r := bytes.NewReader(data)
 	s := bufio.NewScanner(r)
@@ -92,7 +93,6 @@ func (a *Loader) LoadJsonl(data []byte) error {
 }
 
 // loadItems loads data from the provided AWS Config items
-// TODO(nsiow) arguably this should append, rather than replace, principals/resources
 func (a *Loader) loadItems(items []ConfigItem) error {
 	// Load policies first (required to load principals)
 	policies, err := loadPolicies(items)
