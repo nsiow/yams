@@ -3,6 +3,7 @@ package awsconfig
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/nsiow/yams/pkg/entities"
 )
@@ -13,6 +14,11 @@ func loadResources(items []ConfigItem) ([]entities.Resource, error) {
 
 	// Iterate through our AWS Config items
 	for _, i := range items {
+
+		// Skip non-AWS resources
+		if !strings.HasPrefix(i.Type, "AWS") {
+			continue
+		}
 
 		// TODO(nsiow) give similar treatment to errors for other entities
 		// Load the single r
