@@ -22,6 +22,9 @@ func (m *ControlPolicyMap) Add(account string, pstruct [][]policy.Policy) {
 }
 
 // Get retrieves the requested SCPs by Account, if it exists
+// TODO(nsiow) figure out if SCPs should fail open or fail closed if the account is not found...
+// simulator configuration? based on whether or not any SCPs have been given? what's the least
+// surprising behavior
 func (m *ControlPolicyMap) Get(account string) ([][]policy.Policy, bool) {
 	val, ok := m.mapping[account]
 	return val, ok
