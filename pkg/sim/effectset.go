@@ -41,6 +41,19 @@ func (e *EffectSet) Allowed() bool {
 	return e.Contains(policy.EFFECT_ALLOW) && !e.Contains(policy.EFFECT_DENY)
 }
 
+// Denied determines whether or not the EffectSet corresponds to an IAM operation being denied
+// based on the values contained within the set
+func (e *EffectSet) Denied() bool {
+	return e.Contains(policy.EFFECT_DENY) || !e.Contains(policy.EFFECT_ALLOW)
+}
+
+// ExplicitlyDenied determines whether or not the EffectSet corresponds to an IAM operation being
+// denied based on an explicit DENY decision contained within the set
+// TODO(nsiow) check for other instances in the code base where this should be used
+func (e *EffectSet) ExplicitlyDenied() bool {
+	return e.Contains(policy.EFFECT_DENY)
+}
+
 // Merge combines the provided EffectSet with our target
 func (e *EffectSet) Merge(other EffectSet) {
 	for _, effect := range other.Effects() {
