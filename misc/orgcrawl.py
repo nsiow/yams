@@ -165,7 +165,7 @@ def as_config_blobs(org_structure: Dict, policy_structure: Dict, policy_data: Di
                 policy_summary = policy_obj['PolicySummary']
                 policy_content = policy_obj['Content']
                 policy = json.loads(policy_content)
-                policy['PolicyId'] = get_policy_id(policy_summary)
+                policy['Id'] = get_policy_id(policy_summary)
                 parsed_policy_level.append(policy)
             parsed_policies.append(parsed_policy_level)
 

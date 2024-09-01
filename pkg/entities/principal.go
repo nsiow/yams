@@ -10,6 +10,7 @@ type Principal struct {
 	Type string
 
 	// OrgId refers to the ID of the AWS Organizations org where the Principal resides
+	// TODO(nsiow) these need to be filled out based on Organizations data
 	OrgId string
 
 	// OrgPath refers to the path of the AWS Organizations OU where the Principal resides

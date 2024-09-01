@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"reflect"
 	"strings"
 	"testing"
@@ -66,26 +67,23 @@ func RunTestSuite[I, O any](
 // GenerateFailureOutput creates a more usable/readable "wanted vs got" diff for tests
 func GenerateFailureOutput(name string, wanted, got any) string {
 	header := "// --------------------------------------------------"
+	tmpdir := os.TempDir()
 
 	wantedJson, _ := json.MarshalIndent(wanted, "", "  ")
 	gotJson, _ := json.MarshalIndent(got, "", "  ")
 
 	wantedMessage := "unable to generate for output for `wanted`"
-	wantedFile, err := os.CreateTemp("", fmt.Sprintf("yams.%s.wanted.*.json", name))
+	wantedFile := path.Join(tmpdir, fmt.Sprintf("yams.%s.wanted.json", name))
+	err := os.WriteFile(wantedFile, wantedJson, 0644)
 	if err == nil {
-		err = os.WriteFile(wantedFile.Name(), wantedJson, 0644)
-		if err == nil {
-			wantedMessage = fmt.Sprintf("expected output available @ %s", wantedFile.Name())
-		}
+		wantedMessage = fmt.Sprintf("expected output available @ %s", wantedFile)
 	}
 
 	gotMessage := "unable to generate for output for `got`"
-	gotFile, err := os.CreateTemp("", fmt.Sprintf("yams.%s.got.*.json", name))
+	gotFile := path.Join(tmpdir, fmt.Sprintf("yams.%s.got.json", name))
+	err = os.WriteFile(gotFile, gotJson, 0644)
 	if err == nil {
-		err = os.WriteFile(gotFile.Name(), gotJson, 0644)
-		if err == nil {
-			gotMessage = fmt.Sprintf("observed output available @ %s", gotFile.Name())
-		}
+		gotMessage = fmt.Sprintf("observed output available @ %s", gotFile)
 	}
 
 	return strings.Join([]string{
