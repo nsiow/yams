@@ -52,6 +52,11 @@ func TestLoadJson(t *testing.T) {
 			Input: `../../../testdata/environments/valid_permissions_boundaries.json`,
 			Want:  permissionsBoundaryOutput,
 		},
+		{
+			Name:  "valid_scp",
+			Input: `../../../testdata/environments/valid_scp.json`,
+			Want:  scpOutput,
+		},
 
 		// Invalid
 
@@ -173,6 +178,11 @@ func TestLoadJson(t *testing.T) {
 		{
 			Name:      "invalid_group_missing_policy",
 			Input:     `../../../testdata/environments/invalid_group_missing_policy.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "invalid_scp",
+			Input:     `../../../testdata/environments/invalid_scp.json`,
 			ShouldErr: true,
 		},
 	}
@@ -513,6 +523,54 @@ var permissionsBoundaryOutput entities.Environment = entities.Environment{
 			Policy:  policy.Policy{},
 			Tags:    []entities.Tag{},
 		},
+		{
+			Type:    "AWS::IAM::Role",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:role/myrole",
+			Policy:  policy.Policy{},
+			Tags:    []entities.Tag{},
+		},
+	},
+}
+
+var scpOutput entities.Environment = entities.Environment{
+	Principals: []entities.Principal{
+		{
+			Type:    "AWS::IAM::Role",
+			Account: "000000000000",
+			Arn:     "arn:aws:iam::000000000000:role/myrole",
+			Tags:    []entities.Tag{},
+			SCPs: [][]policy.Policy{
+				{
+					policy.Policy{
+						Id:      "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+						Version: "2012-10-17",
+						Statement: []policy.Statement{
+							{
+								Effect:   "Allow",
+								Action:   []string{"*"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+				{
+					policy.Policy{
+						Id:      "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+						Version: "2012-10-17",
+						Statement: []policy.Statement{
+							{
+								Effect:   "Allow",
+								Action:   []string{"s3:*"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	Resources: []entities.Resource{
 		{
 			Type:    "AWS::IAM::Role",
 			Account: "000000000000",

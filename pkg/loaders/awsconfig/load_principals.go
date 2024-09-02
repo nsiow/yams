@@ -7,7 +7,11 @@ import (
 )
 
 // loadPrincipals takes a list of AWS Config items and extracts resources
-func loadPrincipals(items []ConfigItem, pm *PolicyMap) ([]entities.Principal, error) {
+func loadPrincipals(
+	items []ConfigItem,
+	scps *ControlPolicyMap,
+	pm *PolicyMap,
+) ([]entities.Principal, error) {
 	var ps []entities.Principal
 
 	// Iterate through our AWS Config items
@@ -19,7 +23,7 @@ func loadPrincipals(items []ConfigItem, pm *PolicyMap) ([]entities.Principal, er
 		}
 
 		// Load the principal
-		p, err := loadPrincipal(i, pm)
+		p, err := loadPrincipal(i, scps, pm)
 		if err != nil {
 			return nil, err
 		}
@@ -31,7 +35,11 @@ func loadPrincipals(items []ConfigItem, pm *PolicyMap) ([]entities.Principal, er
 }
 
 // loadPrincipal takes a single AWS Config item and returns a parsed principal object
-func loadPrincipal(i ConfigItem, pm *PolicyMap) (entities.Principal, error) {
+func loadPrincipal(
+	i ConfigItem,
+	scps *ControlPolicyMap,
+	pm *PolicyMap,
+) (entities.Principal, error) {
 	// Construct basic fields
 	p := entities.Principal{
 		Type:    i.Type,
@@ -68,6 +76,11 @@ func loadPrincipal(i ConfigItem, pm *PolicyMap) (entities.Principal, error) {
 		return p, fmt.Errorf("error extracting permissions boundary for '%s': %w", i.Arn, err)
 	}
 	p.PermissionsBoundary = pb
+
+	// Load SCPs
+	if scp, exists := scps.Get(p.Account); exists {
+		p.SCPs = scp
+	}
 
 	return p, nil
 }

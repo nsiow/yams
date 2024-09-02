@@ -12,29 +12,29 @@ const (
 	awsPolicyPrefix = "arn:aws:iam::aws:policy/"
 )
 
-// PolicyMap contains a mapping from arn (Arn/GroupName) to policy for AWS-managed policies,
+// PolicyMap contains a mapping from ID (Arn/GroupName) to policy for AWS-managed policies,
 // customer-managed policies, and customer-managed group policies
 type PolicyMap struct {
-	pmap map[string][]policy.Policy
+	mapping map[string][]policy.Policy
 }
 
 // NewPolicyMap creates and returns an initialized instance of PolicyMap
 func NewPolicyMap() *PolicyMap {
 	m := PolicyMap{}
-	m.pmap = make(map[string][]policy.Policy)
+	m.mapping = make(map[string][]policy.Policy)
 	return &m
 }
 
 // Add creates a new mapping between the provided Arn and policy
 func (m *PolicyMap) Add(pType, arn string, pstruct []policy.Policy) {
 	arn = m.NormalizeArn(pType, arn)
-	m.pmap[arn] = pstruct
+	m.mapping[arn] = pstruct
 }
 
 // Get retrieves the requested policy by Arn, if it exists
 func (m *PolicyMap) Get(pType, arn string) ([]policy.Policy, bool) {
 	arn = m.NormalizeArn(pType, arn)
-	val, ok := m.pmap[arn]
+	val, ok := m.mapping[arn]
 	return val, ok
 }
 

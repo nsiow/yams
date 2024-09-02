@@ -18,10 +18,6 @@ type Loader struct {
 
 	// resources contains all cloud resources
 	resources []entities.Resource
-
-	// TODO(nsiow) should this be pointer or value?
-	// managedPolicies contains a map of policy ARN to policy
-	managedPolicies *PolicyMap
 }
 
 // NewLoader provisions and returns a new `Loader` struct, ready to use
@@ -59,6 +55,7 @@ func (a *Loader) LoadJson(data []byte) error {
 }
 
 // LoadJson loads data from the provided newline-separate JSONL input
+// TODO(nsiow) consider having this load from io.Reader instead
 func (a *Loader) LoadJsonl(data []byte) error {
 	r := bytes.NewReader(data)
 	s := bufio.NewScanner(r)
@@ -97,32 +94,37 @@ func (a *Loader) LoadJsonl(data []byte) error {
 
 // loadItems loads data from the provided AWS Config items
 func (a *Loader) loadItems(items []ConfigItem) error {
-	// Load policies first (required to load principals)
-	mp, err := loadPolicies(items)
+	// Load control policies first
+	cps, err := loadControlPolicies(items)
+	if err != nil {
+		return fmt.Errorf("error loading control policies: %v", err)
+	}
+
+	// Load policies (required to load principals)
+	policies, err := loadPolicies(items)
 	if err != nil {
 		return fmt.Errorf("error loading managed policies: %v", err)
 	}
-	a.managedPolicies = mp
 
 	// Load AWS-managed policies into the managed policy map
 	// (required because AWS Config does not report on them)
 	for arn, pol := range managedpolicies.All() {
-		mp.Add(CONST_TYPE_AWS_IAM_POLICY, arn, []policy.Policy{pol})
+		policies.Add(CONST_TYPE_AWS_IAM_POLICY, arn, []policy.Policy{pol})
 	}
 
 	// Load principals
-	principals, err := loadPrincipals(items, mp)
+	principals, err := loadPrincipals(items, cps.SCPs, policies)
 	if err != nil {
 		return fmt.Errorf("error loading principals: %v", err)
 	}
-	a.principals = principals
+	a.principals = append(a.principals, principals...)
 
 	// Load resources
 	resources, err := loadResources(items)
 	if err != nil {
 		return fmt.Errorf("error loading resources: %v", err)
 	}
-	a.resources = resources
+	a.resources = append(a.resources, resources...)
 
 	return nil
 }

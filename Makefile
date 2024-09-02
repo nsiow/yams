@@ -116,6 +116,7 @@ data: $(REPO_LOCAL_PATH) $(DATA_IAM_DEFINITION) $(DATA_MANAGED_POLICIES)
 $(REPO_LOCAL_PATH):
 	git clone --single-branch --depth 1 $(REPO_CLONE_URL) $@
 
+# TODO(nsiow) if we are only using this for MP, just do a describe call instead
 $(DATA_IAM_DEFINITION):
 	@echo 'Generating IAM permission dataset'
 	@cp $(REPO_LOCAL_PATH)/aws/iam_definition.json $@
