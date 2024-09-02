@@ -7,16 +7,16 @@ import (
 
 // evalPermissionsBoundary assesses the permissions boundary of the Principal to determine whether
 // or not it allows the provided AuthContext
-func evalPermissionsBoundary(trc *trace.Trace, opt *Options, ac AuthContext) (EffectSet, error) {
+func evalPermissionsBoundary(trc *trace.Trace, opt *Options, ac AuthContext) (Decision, error) {
 
 	trc.Push("evaluating permission boundaries")
 	defer trc.Pop()
 
 	// Empty permissions boundary = allowed; otherwise we have to evaluate
 	if ac.Principal.PermissionsBoundary.Empty() {
-		effectset := EffectSet{}
-		effectset.Add(policy.EFFECT_ALLOW)
-		return effectset, nil
+		decision := Decision{}
+		decision.Add(policy.EFFECT_ALLOW)
+		return decision, nil
 	}
 
 	// Specify the statement evaluation funcs we will consider for permission boundary access

@@ -11,7 +11,7 @@ import (
 func evalPrincipalAccess(
 	trc *trace.Trace,
 	opt *Options,
-	ac AuthContext) (EffectSet, error) {
+	ac AuthContext) (Decision, error) {
 
 	trc.Push("evaluating principal policies")
 	defer trc.Pop()
@@ -31,18 +31,18 @@ func evalPrincipalAccess(
 	}
 
 	// Iterate over policy types / policies / statements to evaluate access
-	effects := EffectSet{}
+	decision := Decision{}
 	for policytype, policies := range effectivePolicies {
 		trc.Push(fmt.Sprintf("policytype=%s", policytype))
 		eff, err := evalPolicies(trc, opt, ac, policies, funcs)
 		if err != nil {
 			trc.Pop()
-			return effects, err
+			return decision, err
 		}
 
-		effects.Merge(eff)
+		decision.Merge(eff)
 		trc.Pop()
 	}
 
-	return effects, nil
+	return decision, nil
 }

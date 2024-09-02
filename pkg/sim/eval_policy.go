@@ -11,9 +11,9 @@ func evalPolicies(
 	opt *Options,
 	ac AuthContext,
 	policies []policy.Policy,
-	funcs []evalFunction) (EffectSet, error) {
+	funcs []evalFunction) (Decision, error) {
 
-	effects := EffectSet{}
+	decision := Decision{}
 
 	for _, pol := range policies {
 		eff, err := evalPolicy(trc, opt, ac, pol, funcs)
@@ -23,10 +23,10 @@ func evalPolicies(
 
 		// TODO(nsiow) short circuit on Deny, or keep going for completeness?
 
-		effects.Merge(eff)
+		decision.Merge(eff)
 	}
 
-	return effects, nil
+	return decision, nil
 }
 
 // evalPolicy computes whether the provided policy matches the AuthContext
@@ -37,9 +37,9 @@ func evalPolicy(
 	opt *Options,
 	ac AuthContext,
 	policy policy.Policy,
-	funcs []evalFunction) (EffectSet, error) {
+	funcs []evalFunction) (Decision, error) {
 
-	effects := EffectSet{}
+	decision := Decision{}
 
 	for _, stmt := range policy.Statement {
 		eff, err := evalStatement(trc, opt, ac, stmt, funcs)
@@ -47,8 +47,8 @@ func evalPolicy(
 			return eff, err
 		}
 
-		effects.Merge(eff)
+		decision.Merge(eff)
 	}
 
-	return effects, nil
+	return decision, nil
 }

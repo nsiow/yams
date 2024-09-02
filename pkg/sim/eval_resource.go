@@ -8,7 +8,7 @@ import (
 func evalResourceAccess(
 	trc *trace.Trace,
 	opt *Options,
-	ac AuthContext) (EffectSet, error) {
+	ac AuthContext) (Decision, error) {
 
 	trc.Push("evaluating resource policies")
 	defer trc.Pop()

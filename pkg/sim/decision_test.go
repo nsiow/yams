@@ -66,19 +66,19 @@ func TestEffectSet(t *testing.T) {
 	}
 
 	testrunner.RunTestSuite(t, tests, func(e []policy.Effect) (bool, error) {
-		// Create empty effectset
-		es := EffectSet{}
+		// Create empty decision
+		decision := Decision{}
 
 		// Add our effect rules in
 		for _, i := range e {
-			es.Add(i)
+			decision.Add(i)
 		}
 
 		// Ensure size of data never surpasses 2
-		if len(es.Effects()) > 2 {
-			t.Fatalf("EffectSet size should never be >2, but saw %d", len(es.effects))
+		if len(decision.Effects()) > 2 {
+			t.Fatalf("EffectSet size should never be >2, but saw %d", len(decision.effects))
 		}
 
-		return es.Allowed(), nil
+		return decision.Allowed(), nil
 	})
 }

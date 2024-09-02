@@ -13,22 +13,22 @@ func evalStatement(
 	opt *Options,
 	ac AuthContext,
 	stmt policy.Statement,
-	funcs []evalFunction) (EffectSet, error) {
+	funcs []evalFunction) (Decision, error) {
 
 	for _, f := range funcs {
 		match, err := f(trc, opt, ac, &stmt)
 		if err != nil {
-			return EffectSet{}, err
+			return Decision{}, err
 		}
 
 		if !match {
-			return EffectSet{}, nil
+			return Decision{}, nil
 		}
 	}
 
-	effects := EffectSet{}
-	effects.Add(stmt.Effect)
-	return effects, nil
+	decision := Decision{}
+	decision.Add(stmt.Effect)
+	return decision, nil
 }
 
 // evalStatementMatchesAction computes whether the Statement matches the AuthContext's Action
