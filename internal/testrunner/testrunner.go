@@ -53,7 +53,7 @@ func RunTestSuite[I, O any](
 			case err == nil && !tc.ShouldErr:
 				if !reflect.DeepEqual(tc.Want, got) {
 					msg := GenerateFailureOutput(tc.Name, tc.Want, got)
-					t.Fatalf(msg)
+					t.Fatal(msg)
 				}
 			case err != nil && !tc.ShouldErr:
 				t.Fatalf("unexpected error during test case: %v", err)
