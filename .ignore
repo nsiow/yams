@@ -1,2 +1,2 @@
 .git
-pkg/aws/managedpolicies
+pkg/aws/managedpolicies/zzz*
