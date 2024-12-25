@@ -1,5 +1,6 @@
 beautifulsoup4==4.12.3
 boto3==1.35.10
 joblib==1.4.2
-requests==2.32.3
+lxml_html_clean==0.2.2
 requests-html==0.10.0
+requests==2.32.3

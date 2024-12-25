@@ -104,29 +104,24 @@ clean-codegen:
 # Codegen: fetching data
 # --------------------------------------------------------------------------------
 
-BUILD_DATA_DIR        ?= ./builddata
-REPO_CLONE_URL        ?= https://github.com/iann0036/iam-dataset.git
-REPO_LOCAL_PATH       ?= $(BUILD_DATA_DIR)/clone/iam-dataset
-DATA_IAM_DEFINITION   ?= $(BUILD_DATA_DIR)/iam_definition.json
-DATA_MANAGED_POLICIES ?= $(BUILD_DATA_DIR)/managed_policies.json
+BUILD_DATA_DIR ?= ./builddata
 
 .PHONY: data
-data: $(REPO_LOCAL_PATH) $(DATA_IAM_DEFINITION) $(DATA_MANAGED_POLICIES)
+data: sar
 
-$(REPO_LOCAL_PATH):
-	git clone --single-branch --depth 1 $(REPO_CLONE_URL) $@
+.PHONY: sar
+sar: $(BUILD_DATA_DIR)/sar.json
 
-# TODO(nsiow) if we are only using this for MP, just do a describe call instead
-$(DATA_IAM_DEFINITION):
-	@echo 'Generating IAM permission dataset'
-	@cp $(REPO_LOCAL_PATH)/aws/iam_definition.json $@
+$(BUILD_DATA_DIR)/sar.json: ./misc/sar.py
+	mkdir -p $(BUILD_DATA_DIR)
+	./$< $@
 
-$(DATA_MANAGED_POLICIES):
-	@echo 'Generating managed policy dataset'
-	@cat $(REPO_LOCAL_PATH)/aws/managedpolicies/*.json \
-		| jq '. | {arn, name, document}' \
-		| jq -s '.' \
-		> $@
+.PHONY: mp
+mp: $(BUILD_DATA_DIR)/mp.json
+
+$(BUILD_DATA_DIR)/mp.json: ./misc/mp.py
+	mkdir -p $(BUILD_DATA_DIR)
+	./$< $@
 
 .PHONY: clean-data
 clean-data:
