@@ -41,8 +41,8 @@ func (v *Value) UnmarshalJSON(data []byte) error {
 	case data[0] == '"':
 		var s string
 		err := json.Unmarshal(data, &s)
-		// TODO(nsiow) removed `|| len(s) == 0`, maybe not?
-		if err != nil {
+		// TODO(nsiow) this accounts for some malformed policies, but perhaps is addressable elsewhere?
+		if err != nil || s == `"` {
 			return fmt.Errorf("error in single-value clause of Value:\nerror=%s\ndata=%v", err, data)
 		}
 		a := []string{s}
