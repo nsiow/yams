@@ -36,8 +36,7 @@ func TestUnmarshal(t *testing.T) {
 		{Input: `{"S": []}`, Want: []string{}},
 		{Input: `{"S": true}`, Want: []string{"true"}},
 		{Input: `{"S": false}`, Want: []string{"false"}},
-		// TODO(nsiow) figure out how this should actually behave
-		// {Input: `{"S": ""}`, ShouldErr: true},
+		{Input: `{"S": "}`, ShouldErr: true},
 		{Input: `{"S": [0]}`, ShouldErr: true},
 		{Input: `{"S": 0}`, ShouldErr: true},
 		{Input: `{"S": 1000}`, ShouldErr: true},
