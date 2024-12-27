@@ -61,6 +61,7 @@ func (a *Loader) LoadJsonl(data []byte) error {
 	s := bufio.NewScanner(r)
 
 	// Some buffer customization, since these JSON blobs can get big
+	// TODO(nsiow) move these to constants
 	buf := make([]byte, 0, 64*1024)
 	s.Buffer(buf, 1024*1024)
 

@@ -115,9 +115,9 @@ func main() {
 }
 
 type ManagedPolicyEntry struct {
-	Arn      string        `json:"arn"`
-	Name     string        `json:"name"`
-	Document policy.Policy `json:"document"`
+	Arn      string
+	Name     string
+	Document policy.Policy
 }
 
 func (m *ManagedPolicyEntry) NormalizedArn() string {

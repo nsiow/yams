@@ -41,9 +41,9 @@ func (v *Value) UnmarshalJSON(data []byte) error {
 	case data[0] == '"':
 		var s string
 		err := json.Unmarshal(data, &s)
-		// TODO(nsiow) figure out correct behavior of empty string; IAM treates it... weirdly
-		if err != nil || len(s) == 0 {
-			return fmt.Errorf("error in single-value clause of Value:\ndata=%s\nerror=%v", data, err)
+		// TODO(nsiow) this accounts for some malformed policies, but perhaps is addressable elsewhere?
+		if err != nil || s == `"` {
+			return fmt.Errorf("error in single-value clause of Value:\nerror=%s\ndata=%v", err, data)
 		}
 		a := []string{s}
 		*v = a
@@ -53,7 +53,7 @@ func (v *Value) UnmarshalJSON(data []byte) error {
 		var a []string
 		err := json.Unmarshal(data, &a)
 		if err != nil {
-			return fmt.Errorf("error in multi-value clause of Value:\ndata=%s\nerror=%v", data, err)
+			return fmt.Errorf("error in multi-value clause of Value:\nerror=%s\ndata=%v", err, data)
 		}
 		*v = a
 		return nil
