@@ -107,7 +107,7 @@ clean-codegen:
 BUILD_DATA_DIR ?= ./builddata
 
 .PHONY: data
-data: sar
+data: sar mp
 
 .PHONY: sar
 sar: $(BUILD_DATA_DIR)/sar.json
