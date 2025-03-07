@@ -181,36 +181,12 @@ func TestArnNormalization(t *testing.T) {
 	// Define inputs
 	tests := []testrunner.TestCase[input, string]{
 		{
-			Name: "simple_policy",
-			Input: input{
-				policyType: CONST_TYPE_AWS_IAM_POLICY,
-				arn:        "arn:aws:iam::000000000000:policy/EmptyPolicy",
-			},
-			Want: "arn:aws:iam::000000000000:policy/EmptyPolicy",
-		},
-		{
 			Name: "simple_group",
 			Input: input{
 				policyType: CONST_TYPE_AWS_IAM_GROUP,
 				arn:        "arn:aws:iam::88888:group/family",
 			},
 			Want: "arn:aws:iam::88888:group/family",
-		},
-		{
-			Name: "service_role_1",
-			Input: input{
-				policyType: CONST_TYPE_AWS_IAM_POLICY,
-				arn:        "arn:aws:iam::aws:policy/service-role/NormalizationTest",
-			},
-			Want: "arn:aws:iam::aws:policy/NormalizationTest",
-		},
-		{
-			Name: "service_role_2",
-			Input: input{
-				policyType: CONST_TYPE_AWS_IAM_POLICY,
-				arn:        "arn:aws:iam::aws:policy/aws-service-role/NormalizationTest",
-			},
-			Want: "arn:aws:iam::aws:policy/NormalizationTest",
 		},
 		{
 			Name: "group_with_path",

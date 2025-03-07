@@ -55,21 +55,22 @@ func (m *PolicyMap) NormalizeArn(pType, arn string) string {
 // NormalizePolicyArn updates the arn to avoid cases where /[aws-]service-role/ paths are
 // inconsistent
 func (m *PolicyMap) NormalizePolicyArn(arn string) string {
-	// Only applies to AWS managed roles
-	if !strings.HasPrefix(arn, awsPolicyPrefix) {
-		return arn
-	}
-
-	// Perform a series of replacements to ensure normalization
-	possibilities := []string{
-		"aws:policy/aws-service-role/",
-		"aws:policy/service-role/",
-	}
-	for _, p := range possibilities {
-		arn = strings.ReplaceAll(arn, p, "aws:policy/")
-	}
-
 	return arn
+	// // Only applies to AWS managed roles
+	// if !strings.HasPrefix(arn, awsPolicyPrefix) {
+	// 	return arn
+	// }
+
+	// // Perform a series of replacements to ensure normalization
+	// possibilities := []string{
+	// 	"aws:policy/aws-service-role/",
+	// 	"aws:policy/service-role/",
+	// }
+	// for _, p := range possibilities {
+	// 	arn = strings.ReplaceAll(arn, p, "aws:policy/")
+	// }
+
+	// return arn
 }
 
 // NormalizeGroupArn updates the arn of an IAM group to a normalized version (ignoring path).

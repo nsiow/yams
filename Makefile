@@ -85,26 +85,10 @@ $(COVERAGE_REPORT): $(COVERAGE_FILE)
 html: $(COVERAGE_REPORT)
 
 # --------------------------------------------------------------------------------
-# Codegen: generating code
+# IAM data
 # --------------------------------------------------------------------------------
 
-GO_GENERATOR ?= go generate
-
-.PHONY: codegen
-codegen: clean-codegen
-	$(GO_GENERATOR) $(GO_TOOL_TARGET)
-	$(MAKE) format
-	@echo 'code generation complete'
-
-.PHONY: clean-codegen
-clean-codegen:
-	rm -f ./pkg/aws/managedpolicies/zzz_*.go
-
-# --------------------------------------------------------------------------------
-# Codegen: fetching data
-# --------------------------------------------------------------------------------
-
-BUILD_DATA_DIR ?= ./builddata
+BUILD_DATA_DIR ?= ./internal/assets
 
 .PHONY: data
 data: sar mp
@@ -117,9 +101,9 @@ $(BUILD_DATA_DIR)/sar.json: ./misc/sar.py
 	./$< $@
 
 .PHONY: mp
-mp: $(BUILD_DATA_DIR)/mp.json
+mp: $(BUILD_DATA_DIR)/mp.json.gz
 
-$(BUILD_DATA_DIR)/mp.json: ./misc/mp.py
+$(BUILD_DATA_DIR)/mp.json.gz: ./misc/mp.py
 	mkdir -p $(BUILD_DATA_DIR)
 	./$< $@
 

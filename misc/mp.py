@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
+import gzip
 import json
 import logging
 import os
-import re
 import sys
-from typing import Union
 
 import boto3
 import joblib
@@ -47,14 +46,15 @@ def list_policy_arns() -> list[str]:
 
 def main():
     policy_arns = list_policy_arns()
-    policies = [get_policy(arn) for arn in policy_arns]
+    policies = {arn: get_policy(arn) for arn in policy_arns}
 
     if len(sys.argv) >= 2:
-        out = open(sys.argv[1], 'w+')
+        out = gzip.open(sys.argv[1], 'wt')
     else:
         out = sys.stdout
 
     json.dump(policies, out)
+    out.close()
 
 if __name__ == '__main__':
     main()
