@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import copy
+import gzip
 import json
 import logging
 import os
@@ -18,7 +18,8 @@ logging.basicConfig(level=os.environ.get('YAMS_LOG_LEVEL', 'INFO').upper(),
                     stream=sys.stdout)
 
 # Set up cache
-memory = joblib.Memory('/tmp/sar.cache')
+os.makedirs('.cache', exist_ok=True)
+memory = joblib.Memory('.cache/sar.cache')
 
 # Set up a browser session
 sess = requests.HTMLSession()
@@ -91,7 +92,6 @@ def normalize_list(field: Union[list, str]) -> list:
     elif isinstance(field, list):
         return field
 
-    # type: ignore
     raise TypeError('Not sure how to normalize value: {}'.format(repr(field)))  # type: ignore
 
 def subparse_actions(sar_page: BeautifulSoup) -> list[dict]:
@@ -182,11 +182,12 @@ def main():
     sar_data = normalize_sar_data([parse_sar_data(page) for page in sar_pages])
 
     if len(sys.argv) >= 2:
-        out = open(sys.argv[1], 'w+')
+        out = gzip.open(sys.argv[1], 'wt')
     else:
         out = sys.stdout
 
     json.dump(sar_data, out)
+    out.close()
 
 if __name__ == '__main__':
     main()

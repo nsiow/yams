@@ -15,7 +15,8 @@ logging.basicConfig(level=os.environ.get('YAMS_LOG_LEVEL', 'INFO').upper(),
                     stream=sys.stdout)
 
 # Set up cache
-memory = joblib.Memory('/tmp/mp.cache')
+os.makedirs('.cache', exist_ok=True)
+memory = joblib.Memory('.cache/mp.cache')
 
 # Set up client once (cannot cache/pickle)
 iam_client = boto3.client('iam')

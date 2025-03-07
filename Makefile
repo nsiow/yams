@@ -94,19 +94,17 @@ BUILD_DATA_DIR ?= ./internal/assets
 data: sar mp
 
 .PHONY: sar
-sar: $(BUILD_DATA_DIR)/sar.json
+sar: $(BUILD_DATA_DIR)/sar.json.gz
 
-$(BUILD_DATA_DIR)/sar.json: ./misc/sar.py
-	mkdir -p $(BUILD_DATA_DIR)
+$(BUILD_DATA_DIR)/sar.json.gz: ./misc/sar.py
 	./$< $@
 
 .PHONY: mp
 mp: $(BUILD_DATA_DIR)/mp.json.gz
 
 $(BUILD_DATA_DIR)/mp.json.gz: ./misc/mp.py
-	mkdir -p $(BUILD_DATA_DIR)
 	./$< $@
 
 .PHONY: clean-data
 clean-data:
-	rm -rf $(BUILD_DATA_DIR)
+	rm -rf $(BUILD_DATA_DIR)/*.json.gz
