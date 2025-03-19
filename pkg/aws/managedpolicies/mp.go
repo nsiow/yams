@@ -5,14 +5,18 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
+func data() map[string]policy.Policy {
+	return assets.ManagedPolicyData()
+}
+
 // Map returns a map with format key=arn, value=policy for all managed policies
 func Map() map[string]policy.Policy {
-	return assets.ManagedPolicyData()
+	return data()
 }
 
 // All returns a slice containing all the known managed policies
 func All() []policy.Policy {
-	data := assets.ManagedPolicyData()
+	data := data()
 	policies := make([]policy.Policy, len(data))
 
 	for _, policy := range data {

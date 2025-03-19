@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	// The ARN prefix which precedes all AWS-managed policies (is missing account ID)
-	awsPolicyPrefix = "arn:aws:iam::aws:policy/"
+// The ARN prefix which precedes all AWS-managed policies (is missing account ID)
+// FIXME(nsiow) figure out if this is still needed
+// awsPolicyPrefix = "arn:aws:iam::aws:policy/"
 )
 
 // PolicyMap contains a mapping from ID (Arn/GroupName) to policy for AWS-managed policies,

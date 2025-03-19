@@ -63,9 +63,10 @@ def extract_sar_links(sar_index: BeautifulSoup) -> list[str]:
 
 def parse_sar_data(sar_page: BeautifulSoup) -> dict:
     """Iterate SAR pages and parse table contents."""
+    service=subparse_service(sar_page)
     return dict(
-        service=subparse_service(sar_page),
-        actions=subparse_actions(sar_page),
+        service=service,
+        actions=subparse_actions(service, sar_page),
         condition_keys=subparse_condition_keys(sar_page),
     )
 
@@ -94,7 +95,7 @@ def normalize_list(field: Union[list, str]) -> list:
 
     raise TypeError('Not sure how to normalize value: {}'.format(repr(field)))  # type: ignore
 
-def subparse_actions(sar_page: BeautifulSoup) -> list[dict]:
+def subparse_actions(service: str, sar_page: BeautifulSoup) -> list[dict]:
     """Extract the action details from the provided sar page."""
     table = sar_page.find_all(class_='table-container')[0]
     if not table:
@@ -122,8 +123,9 @@ def subparse_actions(sar_page: BeautifulSoup) -> list[dict]:
 
         for a in ['action', 'actions']:
             if a in row_data:
-                row_data[a] = normalize_scalar(row_data.pop(a))
+                row_data['action'] = normalize_scalar(row_data.pop(a))
 
+        row_data['service'] = service
         row_data['description'] = normalize_scalar(row_data['description'])
         row_data['access_level'] = normalize_scalar(row_data['access_level'])
         row_data['resource_types'] = normalize_list(row_data['resource_types'])
