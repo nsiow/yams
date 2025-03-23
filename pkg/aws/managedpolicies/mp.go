@@ -5,9 +5,8 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-func data() map[string]policy.Policy {
-	return assets.ManagedPolicyData()
-}
+// data is a local alias hiding the asset implementation of MP data
+var data = assets.ManagedPolicyData
 
 // Map returns a map with format key=arn, value=policy for all managed policies
 func Map() map[string]policy.Policy {

@@ -3,7 +3,7 @@ package sim
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -14,7 +14,7 @@ func TestEffectSet(t *testing.T) {
 		ExplicitlyDenied bool
 	}
 
-	tests := []testrunner.TestCase[[]policy.Effect, output]{
+	tests := []testlib.TestCase[[]policy.Effect, output]{
 		{
 			Name:  "implicit_deny",
 			Input: []policy.Effect{},
@@ -95,7 +95,7 @@ func TestEffectSet(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(e []policy.Effect) (output, error) {
+	testlib.RunTestSuite(t, tests, func(e []policy.Effect) (output, error) {
 		// Create empty decision
 		decision := Decision{}
 
@@ -118,7 +118,7 @@ func TestEffectSet(t *testing.T) {
 }
 
 func TestMerge(t *testing.T) {
-	tests := []testrunner.TestCase[[]Decision, []policy.Effect]{
+	tests := []testlib.TestCase[[]Decision, []policy.Effect]{
 		{
 			Name:  "empty",
 			Input: []Decision{},
@@ -163,7 +163,7 @@ func TestMerge(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(d []Decision) ([]policy.Effect, error) {
+	testlib.RunTestSuite(t, tests, func(d []Decision) ([]policy.Effect, error) {
 		// Create empty decision
 		decision := Decision{}
 

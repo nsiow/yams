@@ -5,14 +5,14 @@ import (
 	"path"
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
 // TestLoadJson confirms that we can correctly load data from JSON arrays of AWS Config data
 func TestLoadJson(t *testing.T) {
-	tests := []testrunner.TestCase[string, entities.Environment]{
+	tests := []testlib.TestCase[string, entities.Environment]{
 
 		// Valid
 
@@ -187,7 +187,7 @@ func TestLoadJson(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(fp string) (entities.Environment, error) {
+	testlib.RunTestSuite(t, tests, func(fp string) (entities.Environment, error) {
 		// Load test data
 		data, err := os.ReadFile(fp)
 		if err != nil {

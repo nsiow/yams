@@ -3,7 +3,7 @@ package gate
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 )
 
 func TestGate(t *testing.T) {
@@ -12,7 +12,7 @@ func TestGate(t *testing.T) {
 		value      bool
 	}
 
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "no_inverts_true",
 			Input: input{
@@ -95,7 +95,7 @@ func TestGate(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		// Invert as many times as requested
 		g := Gate{}
 		for j := 0; j < i.numInverts; j++ {

@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
 // TestDecodePolicyString confirms correct decoding of both valid and invalid policy strings
 func TestDecodePolicyString(t *testing.T) {
-	tests := []testrunner.TestCase[string, policy.Policy]{
+	tests := []testlib.TestCase[string, policy.Policy]{
 		{
 			Name:  "null",
 			Input: `null`,
@@ -152,7 +152,7 @@ func TestDecodePolicyString(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(s string) (policy.Policy, error) {
+	testlib.RunTestSuite(t, tests, func(s string) (policy.Policy, error) {
 		var e encodedPolicy
 		err := json.Unmarshal([]byte(s), &e)
 		if err != nil {

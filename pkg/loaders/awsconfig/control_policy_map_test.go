@@ -3,7 +3,7 @@ package awsconfig
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -22,7 +22,7 @@ func TestControlPolicyStorageRetrieval(t *testing.T) {
 	}
 
 	// Define inputs
-	tests := []testrunner.TestCase[input, output]{
+	tests := []testlib.TestCase[input, output]{
 		{
 			Name: "empty_policy",
 			Input: input{
@@ -180,7 +180,7 @@ func TestControlPolicyStorageRetrieval(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (output, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (output, error) {
 		// Create a new policy map
 		m := NewControlPolicyMap()
 

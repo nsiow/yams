@@ -3,7 +3,7 @@ package sim
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim/trace"
@@ -16,7 +16,7 @@ func TestStatementMatchesAction(t *testing.T) {
 		stmt policy.Statement
 	}
 
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		// Missing
 		{
 			Name: "missing_action",
@@ -111,7 +111,7 @@ func TestStatementMatchesAction(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesAction(trace.New(), &Options{}, i.ac, &i.stmt)
 	})
 }
@@ -123,7 +123,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		stmt policy.Statement
 	}
 
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		// Missing
 		{
 			Name: "missing_principal",
@@ -220,7 +220,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesPrincipal(trace.New(), &Options{}, i.ac, &i.stmt)
 	})
 }
@@ -232,7 +232,7 @@ func TestStatementMatchesResource(t *testing.T) {
 		stmt policy.Statement
 	}
 
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		// Missing
 		{
 			Name: "missing_resource",
@@ -315,7 +315,7 @@ func TestStatementMatchesResource(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesResource(trace.New(), &Options{}, i.ac, &i.stmt)
 	})
 }

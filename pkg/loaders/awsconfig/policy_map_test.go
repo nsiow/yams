@@ -3,7 +3,7 @@ package awsconfig
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -21,7 +21,7 @@ func TestPolicyStorageRetrieval(t *testing.T) {
 	}
 
 	// Define inputs
-	tests := []testrunner.TestCase[input, output]{
+	tests := []testlib.TestCase[input, output]{
 		{
 			Name: "empty_policy",
 			Input: input{
@@ -155,7 +155,7 @@ func TestPolicyStorageRetrieval(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (output, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (output, error) {
 		// Create a new policy map
 		m := NewPolicyMap()
 
@@ -179,7 +179,7 @@ func TestArnNormalization(t *testing.T) {
 	}
 
 	// Define inputs
-	tests := []testrunner.TestCase[input, string]{
+	tests := []testlib.TestCase[input, string]{
 		{
 			Name: "simple_group",
 			Input: input{
@@ -214,7 +214,7 @@ func TestArnNormalization(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (string, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
 		pm := PolicyMap{}
 		got := pm.NormalizeArn(i.policyType, i.arn)
 		return got, nil

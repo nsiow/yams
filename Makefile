@@ -10,6 +10,7 @@ GO_TOOL_TARGET ?= ./...
 
 CLI ?= yams
 
+GO_FILES = $(shell find . -type f -name '*.go')
 GO_BUILDER ?= go build
 
 .PHONY: build
@@ -19,7 +20,7 @@ build:
 .PHONY: build-cli
 build-cli: $(CLI)
 
-$(CLI): $(shell find . -type f -name '*.go')
+$(CLI): $(GO_FILES)
 	$(GO_BUILDER) ./cmd/...
 
 .PHONY: clean
@@ -64,7 +65,7 @@ GO_COVER_TOOL   ?= go tool cover
 GO_COVER_FLAGS  ?= -html $(COVERAGE_FILE)
 
 # Track coverage of library; not helpers or codegen files
-COVERAGE_OMIT   ?= '(yams/cmd|yams/internal/testrunner|zzz)'
+COVERAGE_OMIT   ?= '(yams/cmd|yams/internal/testrunner)'
 
 .PHONY: cov
 cov: $(COVERAGE_FILE)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from collections import defaultdict
 import gzip
 import json
 import logging
@@ -79,7 +80,6 @@ def subparse_service(sar_page: BeautifulSoup) -> str:
     service = match.group(1)
     return service
 
-
 def normalize_scalar(field: str) -> str:
     """Helper function to normalize scalar values found in SAR data tables."""
     field = field.replace('[permission only]', '')
@@ -158,23 +158,19 @@ def subparse_condition_keys(sar_page: BeautifulSoup) -> list[str]:
 
     return condition_keys
 
-def normalize_sar_data(sar_data: list[dict]) -> list[dict]:
+def normalize_sar_data(sar_data: list[dict]) -> dict:
     """Helper function to normalize and remove some inconsistencies in the SAR data."""
     # Combine pages for services under the same umbrella
-    sar_dict = {}
+    sar = defaultdict(list)
     for service_data in sar_data:
         try:
             service = service_data['service']
-            if service in sar_dict:
-                sar_dict[service]['actions'].extend(service_data['actions'])
-                sar_dict[service]['condition_keys'].extend(service_data['condition_keys'])
-            else:
-                sar_dict[service] = service_data
+            sar[service] += service_data['actions']
         except Exception:
             print(f'error merging pages for service: {service_data["service"]}', file=sys.stderr)
             raise
 
-    return list(sar_dict.values())
+    return sar
 
 def main():
 

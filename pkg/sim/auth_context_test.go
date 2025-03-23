@@ -3,7 +3,7 @@ package sim
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/entities"
 )
 
@@ -14,7 +14,7 @@ func TestAuthContextKeys(t *testing.T) {
 		key string
 	}
 
-	tests := []testrunner.TestCase[input, string]{
+	tests := []testlib.TestCase[input, string]{
 		{
 			Name: "principal_tag",
 			Input: input{
@@ -210,7 +210,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "current_time",
 			Input: input{
 				ac: AuthContext{
-					Time: testrunner.TestTime(),
+					Time: testlib.TestTime(),
 				},
 				key: "aws:CurrentTime",
 			},
@@ -220,7 +220,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "current_time_epoch",
 			Input: input{
 				ac: AuthContext{
-					Time: testrunner.TestTime(),
+					Time: testlib.TestTime(),
 				},
 				key: "aws:EpochTime",
 			},
@@ -236,7 +236,7 @@ func TestAuthContextKeys(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (string, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
 		got := i.ac.Key(i.key)
 		return got, nil
 	})
@@ -249,7 +249,7 @@ func TestAuthContextMultiKeys(t *testing.T) {
 		key string
 	}
 
-	tests := []testrunner.TestCase[input, []string]{
+	tests := []testlib.TestCase[input, []string]{
 		{
 			Name: "principal_tag",
 			Input: input{
@@ -268,7 +268,7 @@ func TestAuthContextMultiKeys(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) ([]string, error) {
+	testlib.RunTestSuite(t, tests, func(i input) ([]string, error) {
 		got := i.ac.MultiKey(i.key)
 		return got, nil
 	})
@@ -281,7 +281,7 @@ func TestResolve(t *testing.T) {
 		ac  AuthContext
 	}
 
-	tests := []testrunner.TestCase[input, string]{
+	tests := []testlib.TestCase[input, string]{
 		{
 			Name: "simple_string",
 			Input: input{
@@ -350,7 +350,7 @@ func TestResolve(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (string, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
 		got := i.ac.Resolve(i.str)
 		return got, nil
 	})
@@ -362,7 +362,7 @@ func TestAuthContextReferenceTime(t *testing.T) {
 	ac := AuthContext{}
 	authContextTime := ac.now()
 
-	if !authContextTime.After(testrunner.TestTime()) {
+	if !authContextTime.After(testlib.TestTime()) {
 		t.Fatalf("expected default time to be after our test reference time")
 	}
 }

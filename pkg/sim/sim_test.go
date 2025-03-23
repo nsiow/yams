@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
@@ -71,7 +71,7 @@ func TestSimulatorEnvironment(t *testing.T) {
 // We are keeping these tests simple in terms of evaluation logic, as we really just want to test
 // the simulator interface vs the logic which is tested deeply elsewhere
 func TestSimulate(t *testing.T) {
-	tests := []testrunner.TestCase[AuthContext, bool]{
+	tests := []testlib.TestCase[AuthContext, bool]{
 		{
 			Name: "same_account_implicit_deny",
 			Input: AuthContext{
@@ -118,7 +118,7 @@ func TestSimulate(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
 		sim, _ := NewSimulator()
 		res, err := sim.Simulate(ac)
 		if err != nil {
@@ -140,7 +140,7 @@ func TestSimulateByArn(t *testing.T) {
 		resourceArn  string
 	}
 
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "test_allow",
 			Input: input{
@@ -203,7 +203,7 @@ func TestSimulateByArn(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		sim, _ := NewSimulator()
 		sim.SetEnvironment(i.env)
 		res, err := sim.SimulateByArn(i.action, i.principalArn, i.resourceArn, nil)
@@ -224,7 +224,7 @@ func TestComputeAccessSummary(t *testing.T) {
 		actions []string
 	}
 
-	tests := []testrunner.TestCase[input, map[string]int]{
+	tests := []testlib.TestCase[input, map[string]int]{
 		{
 			Name: "simple_environment_1",
 			Input: input{
@@ -303,7 +303,7 @@ func TestComputeAccessSummary(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (map[string]int, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (map[string]int, error) {
 		sim, _ := NewSimulator(WithFailOnUnknownCondition())
 		sim.SetEnvironment(i.env)
 		summary, err := sim.ComputeAccessSummary(i.actions)

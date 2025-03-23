@@ -3,7 +3,7 @@ package sim
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 )
 
 // TestId validates correct resolution behavior of Id(...)
@@ -13,7 +13,7 @@ func TestId(t *testing.T) {
 		idx int
 	}
 
-	tests := []testrunner.TestCase[input, string]{
+	tests := []testlib.TestCase[input, string]{
 		{
 			Name: "empty_id",
 			Input: input{
@@ -32,7 +32,7 @@ func TestId(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (string, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
 		return Id(i.id, i.idx), nil
 	})
 }
