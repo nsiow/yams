@@ -2,7 +2,6 @@ package assets
 
 import (
 	"encoding/base64"
-	"fmt"
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
@@ -16,10 +15,10 @@ import (
 func TestValidSarDataLoad(t *testing.T) {
 	sar := SarData()
 	if len(sar) < MINIMUM_SAR_SIZE {
-		t.Fatalf(fmt.Sprintf("expected >= %d SAR entries but saw %d",
+		t.Fatalf("expected >= %d SAR entries but saw %d",
 			MINIMUM_SAR_SIZE,
 			len(sar),
-		))
+		)
 	}
 }
 

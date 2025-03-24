@@ -2,7 +2,6 @@ package assets
 
 import (
 	"encoding/base64"
-	"fmt"
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
@@ -16,10 +15,10 @@ import (
 func TestValidPolicyDataLoad(t *testing.T) {
 	policies := ManagedPolicyData()
 	if len(policies) < MINIMUM_POLICYSET_SIZE {
-		t.Fatalf(fmt.Sprintf("expected >= %d policies but saw %d",
+		t.Fatalf("expected >= %d policies but saw %d",
 			MINIMUM_POLICYSET_SIZE,
 			len(policies),
-		))
+		)
 	}
 }
 
