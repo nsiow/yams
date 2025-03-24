@@ -1,8 +1,4 @@
-# --------------------------------------------------------------------------------
-# General
-# --------------------------------------------------------------------------------
-
-GO_TOOL_TARGET ?= ./...
+.DEFAULT_GOAL = build
 
 # --------------------------------------------------------------------------------
 # Building
@@ -15,75 +11,61 @@ GO_BUILDER ?= go build
 
 .PHONY: build
 build:
-	$(GO_BUILDER) $(GO_TOOL_TARGET)
+	go build ./...
 
 .PHONY: build-cli
 build-cli: $(CLI)
 
 $(CLI): $(GO_FILES)
-	$(GO_BUILDER) ./cmd/...
+	go build ./cmd/...
 
 .PHONY: clean
 clean:
 	rm -f $(CLI)
-	rm -f $(COVERAGE_FILE)
-	rm -f $(COVERAGE_REPORT)
-	rm -f $(TMPDIR)/yams.*.json
+	rm -f coverage.*
 
 # --------------------------------------------------------------------------------
 # Testing
 # --------------------------------------------------------------------------------
 
-GO_FORMATTER ?= go fmt
+GO_TEST_FLAGS ?=
+
+# Track coverage of library; not helpers or codegen files
+COVERAGE_OMIT ?= '(yams/cmd|yams/internal/testlib)'
 
 .PHONY: format
 format:
-	$(GO_FORMATTER) $(GO_TOOL_TARGET)
-
-GO_LINTER      ?= golangci-lint
-GO_LINTER_ARGS ?= run
+	go fmt ./...
 
 .PHONY: lint
 lint:
-	$(GO_LINTER) $(GO_LINTER_ARGS)
-
-GO_TEST_RUNNER ?= go test
-
-GO_TEST_FLAGS ?=
+	golangci-lint run
 
 .PHONY: test
 test:
-	$(GO_TEST_RUNNER) $(GO_TEST_FLAGS) $(GO_TOOL_TARGET)
+	go test $(GO_TEST_FLAGS) ./...
 
 .PHONY: testv
 testv: GO_TEST_FLAGS+=-v
 testv: test
 
-COVERAGE_FILE   ?= coverage.out
-COVERAGE_REPORT ?= coverage.html
-GO_COVER_TOOL   ?= go tool cover
-GO_COVER_FLAGS  ?= -html $(COVERAGE_FILE)
-
-# Track coverage of library; not helpers or codegen files
-COVERAGE_OMIT   ?= '(yams/cmd|yams/internal/testlib)'
-
 .PHONY: cov
-cov: $(COVERAGE_FILE)
-
-$(COVERAGE_FILE): GO_TEST_FLAGS+=-coverprofile $(COVERAGE_FILE)
-$(COVERAGE_FILE): test
-	grep -Ev $(COVERAGE_OMIT) $(COVERAGE_FILE) > $(COVERAGE_FILE).tmp
-	mv $(COVERAGE_FILE).tmp $(COVERAGE_FILE)
+cov: coverage.out
 
 .PHONY: report
-report: $(COVERAGE_FILE)
-	$(GO_COVER_TOOL) $(GO_COVER_FLAGS)
-
-$(COVERAGE_REPORT): $(COVERAGE_FILE)
-	$(GO_COVER_TOOL) $(GO_COVER_FLAGS) -o $(COVERAGE_REPORT)
+report: coverage.out
+	go tool cover -func=$<
 
 .PHONY: html
-html: $(COVERAGE_REPORT)
+html: coverage.html
+
+coverage.out: $(GO_FILES)
+	GO_TEST_FLAGS='-coverprofile=$@' make test
+	grep -Ev $(COVERAGE_OMIT) $@ > $@.tmp
+	mv $@.tmp $@.out
+
+coverage.html: coverage.out
+	go tool cover -html=$< -o $@
 
 # --------------------------------------------------------------------------------
 # IAM data
