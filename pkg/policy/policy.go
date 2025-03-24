@@ -129,9 +129,14 @@ func (e *Effect) UnmarshalJSON(data []byte) error {
 	}
 }
 
-// Principal represents a set of Principals, provided in string or map form
-// TODO(nsiow) handle remarshaling into Principal=*
-type Principal PrincipalMap
+// Principal represents the grammar and structure of an AWS IAM Principal represented in map form
+type Principal struct {
+	All           bool  `json:"-"` // case for Principal=*
+	AWS           Value `json:",omitempty"`
+	Federated     Value `json:",omitempty"`
+	Service       Value `json:",omitempty"`
+	CanonicalUser Value `json:",omitempty"`
+}
 
 // Empty determines whether or not the specified Principal field is empty
 func (p *Principal) Empty() bool {
@@ -139,15 +144,6 @@ func (p *Principal) Empty() bool {
 		p.Service.Empty() &&
 		p.Federated.Empty() &&
 		p.CanonicalUser.Empty()
-}
-
-// PrincipalMap represents the grammar and structure of an AWS IAM Principal represented in map form
-type PrincipalMap struct {
-	All           bool  `json:"-"` // case for Principal=*
-	AWS           Value `json:",omitempty"`
-	Federated     Value `json:",omitempty"`
-	Service       Value `json:",omitempty"`
-	CanonicalUser Value `json:",omitempty"`
 }
 
 // MarshalJSON instructs how to convert Principal fields to raw bytes
@@ -169,16 +165,17 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	var principal PrincipalMap
-	err := json.Unmarshal(data, &principal)
+	type alias *Principal
+	a := alias(p)
+	err := json.Unmarshal(data, &a)
 	if err != nil {
 		return fmt.Errorf("unable to parse:\nprincipal = %s\nerror = %v", data, err)
 	}
 
-	p.AWS = principal.AWS
-	p.Federated = principal.Federated
-	p.Service = principal.Service
-	p.CanonicalUser = principal.CanonicalUser
+	p.AWS = a.AWS
+	p.Federated = a.Federated
+	p.Service = a.Service
+	p.CanonicalUser = a.CanonicalUser
 	return nil
 }
 
