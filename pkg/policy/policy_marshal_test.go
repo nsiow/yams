@@ -33,6 +33,27 @@ func TestPolicyMarshal(t *testing.T) {
 			},
 			Want: `{"Version":"2012-10-17","Id":"s3read","Statement":[{"Sid":"","Effect":"Allow","Principal":{"AWS":["arn:aws:iam::12345:role/SomeRole"]},"Action":["s3:GetObject","s3:ListBucket"],"Resource":["arn:aws:s3:::foo-bucket","arn:aws:s3:::foo-bucket/*"]}]}`,
 		},
+		{
+			Input: Policy{
+				Version: "2012-10-17",
+				Id:      "s3read",
+				Statement: []Statement{
+					{
+						Effect:    "Allow",
+						Principal: Principal{All: true},
+						Action: []string{
+							"s3:GetObject",
+							"s3:ListBucket",
+						},
+						Resource: []string{
+							"arn:aws:s3:::foo-bucket",
+							"arn:aws:s3:::foo-bucket/*",
+						},
+					},
+				},
+			},
+			Want: `{"Version":"2012-10-17","Id":"s3read","Statement":[{"Sid":"","Effect":"Allow","Principal":"*","Action":["s3:GetObject","s3:ListBucket"],"Resource":["arn:aws:s3:::foo-bucket","arn:aws:s3:::foo-bucket/*"]}]}`,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i Policy) (string, error) {

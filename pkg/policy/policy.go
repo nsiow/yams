@@ -74,8 +74,8 @@ func (s *StatementBlock) UnmarshalJSON(data []byte) error {
 type Statement struct {
 	Sid          string
 	Effect       Effect
-	Principal    Principal      `json:",omitempty"`
-	NotPrincipal Principal      `json:",omitempty"`
+	Principal    Principal      `json:",omitzero"`
+	NotPrincipal Principal      `json:",omitzero"`
 	Action       Action         `json:",omitempty"`
 	NotAction    Action         `json:",omitempty"`
 	Resource     Resource       `json:",omitempty"`
@@ -140,10 +140,16 @@ type Principal struct {
 
 // Empty determines whether or not the specified Principal field is empty
 func (p *Principal) Empty() bool {
-	return p.AWS.Empty() &&
+	return !p.All &&
+		p.AWS.Empty() &&
 		p.Service.Empty() &&
 		p.Federated.Empty() &&
 		p.CanonicalUser.Empty()
+}
+
+// IsZero is used for marshaling to indicate when the field should be omitted
+func (p *Principal) IsZero() bool {
+	return p.Empty()
 }
 
 // MarshalJSON instructs how to convert Principal fields to raw bytes
