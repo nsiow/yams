@@ -6,6 +6,7 @@ import (
 )
 
 // Value is a JSON-centric helper struct to facilitate one-or-more value representations
+// TODO(nsiow) handle custom marshal to scalar or list versions
 type Value []string
 
 // NewValue creates a new PolicyString struct using the supplied values
@@ -14,6 +15,7 @@ func NewValue(values ...string) Value {
 }
 
 // UnmarshalJSON instructs how to create Value fields from raw bytes
+// TODO(nsiow) break up this function
 func (v *Value) UnmarshalJSON(data []byte) error {
 	// We should have either a string (""), an array ([]), or null (null); anything shorter is invalid
 	if len(data) < 2 {
