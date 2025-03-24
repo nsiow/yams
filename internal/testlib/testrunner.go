@@ -95,8 +95,8 @@ func GenerateFailureOutput[I, O any](tc TestCase[I, O], got any) string {
 		strings.Join([]string{header, "// got", header}, "\n"),
 		fmt.Sprintf("%#v", got),
 		strings.Join([]string{header, "// wanted (pretty)", header}, "\n"),
-		fmt.Sprintf(wantedMessage),
+		fmt.Sprint(wantedMessage),
 		strings.Join([]string{header, "// got (pretty)", header}, "\n"),
-		fmt.Sprintf(gotMessage),
+		fmt.Sprint(gotMessage),
 	}, "\n")
 }
