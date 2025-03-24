@@ -175,6 +175,14 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			},
 			Want: false,
 		},
+		{
+			Name: "special_principal_star",
+			Input: input{
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{Principal: policy.Principal{All: true}},
+			},
+			Want: true,
+		},
 
 		// NotPrincipal
 		{
@@ -217,6 +225,14 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 				stmt: policy.Statement{NotPrincipal: policy.Principal{Federated: []string{"*"}}},
 			},
 			Want: true,
+		},
+		{
+			Name: "special_notprincipal_star",
+			Input: input{
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{NotPrincipal: policy.Principal{All: true}},
+			},
+			Want: false,
 		},
 	}
 

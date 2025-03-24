@@ -17,6 +17,17 @@ func (p *Policy) Empty() bool {
 	return len(p.Statement) == 0
 }
 
+// Validate determines whether or not the Policy is valid; returning an error otherwise
+func (p *Policy) Validate() error {
+	for _, stmt := range p.Statement {
+		if err := stmt.Validate(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // StatementBlock represents one or more statements, provided in array or map form
 type StatementBlock []Statement
 
@@ -76,7 +87,7 @@ type Statement struct {
 //
 // Validity here is strictly in terms of the IAM grammar, and makes no guarantees around policy values
 func (s *Statement) Validate() error {
-	if !s.Principal.Empty() && !s.NotPrincipal.Empty() {
+	if (s.Principal.All || !s.Principal.Empty()) && (s.NotPrincipal.All || !s.NotPrincipal.Empty()) {
 		return fmt.Errorf("must supply exactly zero or one of (Principal | NotPrincipal)")
 	}
 	if s.Action.Empty() == s.NotAction.Empty() {
@@ -132,20 +143,29 @@ func (p *Principal) Empty() bool {
 
 // PrincipalMap represents the grammar and structure of an AWS IAM Principal represented in map form
 type PrincipalMap struct {
+	All           bool  `json:"-"` // case for Principal=*
 	AWS           Value `json:",omitempty"`
 	Federated     Value `json:",omitempty"`
 	Service       Value `json:",omitempty"`
 	CanonicalUser Value `json:",omitempty"`
 }
 
+// MarshalJSON instructs how to convert Principal fields to raw bytes
+func (p *Principal) MarshalJSON() ([]byte, error) {
+	if p.All {
+		return []byte(`"*"`), nil
+	}
+
+	type alias *Principal
+	a := alias(p)
+	return json.Marshal(a)
+}
+
 // UnmarshalJSON instructs how to create Principal fields from raw bytes
 func (p *Principal) UnmarshalJSON(data []byte) error {
 	// Handle string case; only valid in this 3-byte sequence
 	if len(data) == 3 && string(data) == `"*"` {
-		p.AWS = []string{"*"}
-		p.Federated = []string{"*"}
-		p.Service = []string{"*"}
-		p.CanonicalUser = []string{"*"}
+		p.All = true
 		return nil
 	}
 
@@ -169,10 +189,10 @@ type Action = Value
 type Resource = Value
 
 // ConditionBlock represents the grammar and structure of an AWS IAM Condition block
-type ConditionBlock = map[ConditionOperation]Condition
+type ConditionBlock = map[ConditionOperator]ConditionValues
 
-// ConditionOperation represents the operation portion of a condition block
-type ConditionOperation = string
+// ConditionOperator represents the operation portion of a condition block
+type ConditionOperator = string
 
-// Condition represents the grammar and structure of an AWS IAM Condition
-type Condition = map[string]Value
+// ConditionValues represents the key/value portion of a condition block
+type ConditionValues = map[string]Value

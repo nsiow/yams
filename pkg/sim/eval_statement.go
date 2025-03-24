@@ -91,10 +91,17 @@ func evalStatementMatchesPrincipal(
 	// Determine which Principal block to use
 	var _gate gate.Gate
 	var principals policy.Principal
-	if !stmt.Principal.Empty() {
+	switch {
+	case stmt.Principal.All:
+		trc.Observation("saw special Principal=* block")
+		return true, nil
+	case stmt.NotPrincipal.All:
+		trc.Observation("saw special NotPrincipal=* block")
+		return false, nil
+	case !stmt.Principal.Empty():
 		trc.Observation("using Principal block")
 		principals = stmt.Principal
-	} else {
+	default:
 		trc.Observation("using NotPrincipal block")
 		principals = stmt.NotPrincipal
 		_gate.Invert()
