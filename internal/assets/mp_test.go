@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"testing"
+
+	"github.com/nsiow/yams/internal/testlib"
 )
 
 // -----------------------------------------------------------------------------------------------
@@ -23,47 +25,23 @@ func TestValidPolicyDataLoad(t *testing.T) {
 
 // TestInvalidPolicyGzip confirms the failed loading of corrupted gzip data
 func TestInvalidPolicyGzip(t *testing.T) {
-	// Assert panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatalf("expected panic but observed success")
-		} else {
-			t.Logf("saw expected panic: %s", r.(string))
-		}
-	}()
-
-	// Load invalid data
+	defer testlib.AssertPanicWithText(t,
+		`error unwrapping managed policy data: EOF`)
 	loadManagedPolicyData([]byte{})
 }
 
 // TestInvalidPolicyDecode confirms the failed loading of corrupted JSON data
 func TestInvalidPolicyDecode(t *testing.T) {
-	// Assert panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatalf("expected panic but observed success")
-		} else {
-			t.Logf("saw expected panic: %s", r.(string))
-		}
-	}()
-
-	// Load invalid data
+	defer testlib.AssertPanicWithText(t,
+		`error decoding managed policy data: unexpected end of JSON input`)
 	loadManagedPolicyData(fixtureInvalidEncodedPolicy())
 
 }
 
 // TestInvalidPolicyEmpty confirms the failed loading of a too-short policy list
 func TestInvalidPolicyEmpty(t *testing.T) {
-	// Assert panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatalf("expected panic but observed success")
-		} else {
-			t.Logf("saw expected panic: %s", r.(string))
-		}
-	}()
-
-	// Load invalid data
+	defer testlib.AssertPanicWithText(t,
+		`error validating managed policy data, len too small: 0`)
 	loadManagedPolicyData(fixtureInvalidEmptyPolicy())
 }
 

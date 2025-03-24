@@ -29,6 +29,6 @@ func All() []policy.Policy {
 //
 // The second value is true if the policy was successfully found and false otherwise
 func Get(arn string) (policy.Policy, bool) {
-	p, ok := assets.ManagedPolicyData()[arn]
+	p, ok := data()[arn]
 	return p, ok
 }

@@ -45,7 +45,7 @@ func loadManagedPolicyData(compressedData []byte) {
 	// basic validation check for successful load
 	if len(newData) < MINIMUM_POLICYSET_SIZE {
 		panic(fmt.Sprintf("error validating managed policy data, len too small: %d",
-			len(managedPolicyData)))
+			len(newData)))
 	}
 
 	managedPolicyData = newData

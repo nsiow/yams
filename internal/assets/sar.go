@@ -12,14 +12,14 @@ import (
 	"github.com/nsiow/yams/pkg/entities"
 )
 
-// The minimum number of API calls expected; used to detect regressions
-// Last updated 03-23-2025
-var MINIMUM_SAR_SIZE = 415
-
 //go:embed sar.json.gz
 var compressedSarData []byte
 var sarData map[string][]entities.ApiCall
 var sarDataLoad sync.Once
+
+// The minimum number of API calls expected; used to detect regressions
+// Last updated 03-23-2025
+var MINIMUM_SAR_SIZE = 415
 
 // SarData loads the data if it has not been loaded, and returns the result
 func SarData() map[string][]entities.ApiCall {
@@ -45,7 +45,7 @@ func loadSarData(compressedData []byte) {
 	// basic validation check for successful load
 	if len(newData) < MINIMUM_SAR_SIZE {
 		panic(fmt.Sprintf("error validating SAR data, len too small: %d",
-			len(managedPolicyData)))
+			len(newData)))
 	}
 
 	sarData = newData

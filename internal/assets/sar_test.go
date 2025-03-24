@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"testing"
+
+	"github.com/nsiow/yams/internal/testlib"
 )
 
 // -----------------------------------------------------------------------------------------------
@@ -23,47 +25,23 @@ func TestValidSarDataLoad(t *testing.T) {
 
 // TestInvalidSarGzip confirms the failed loading of corrupted gzip data
 func TestInvalidSarGzip(t *testing.T) {
-	// Assert panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatalf("expected panic but observed success")
-		} else {
-			t.Logf("saw expected panic: %s", r.(string))
-		}
-	}()
-
-	// Load invalid data
+	defer testlib.AssertPanicWithText(t,
+		`error unwrapping SAR data: EOF`)
 	loadSarData([]byte{})
 }
 
 // TestInvalidSarDecode confirms the failed loading of corrupted JSON data
 func TestInvalidSarDecode(t *testing.T) {
-	// Assert panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatalf("expected panic but observed success")
-		} else {
-			t.Logf("saw expected panic: %s", r.(string))
-		}
-	}()
-
-	// Load invalid data
+	defer testlib.AssertPanicWithText(t,
+		`error decoding SAR data: unexpected end of JSON input`)
 	loadSarData(fixtureInvalidEncodedSar())
 
 }
 
 // TestInvalidSarEmpty confirms the failed loading of a too-short SAR list
 func TestInvalidSarEmpty(t *testing.T) {
-	// Assert panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatalf("expected panic but observed success")
-		} else {
-			t.Logf("saw expected panic: %s", r.(string))
-		}
-	}()
-
-	// Load invalid data
+	defer testlib.AssertPanicWithText(t,
+		`error validating SAR data, len too small: 0`)
 	loadSarData(fixtureInvalidEmptySar())
 }
 

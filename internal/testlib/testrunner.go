@@ -52,7 +52,7 @@ func RunTestSuite[I, O any](
 				return
 			case err == nil && !tc.ShouldErr:
 				if !reflect.DeepEqual(tc.Want, got) {
-					msg := GenerateFailureOutput(tc.Name, tc.Want, got)
+					msg := GenerateFailureOutput(tc, got)
 					t.Fatal(msg)
 				}
 			case err != nil && !tc.ShouldErr:
@@ -65,22 +65,22 @@ func RunTestSuite[I, O any](
 }
 
 // GenerateFailureOutput creates a more usable/readable "wanted vs got" diff for tests
-func GenerateFailureOutput(name string, wanted, got any) string {
+func GenerateFailureOutput[I, O any](tc TestCase[I, O], got any) string {
 	header := "// --------------------------------------------------"
 	tmpdir := os.TempDir()
 
-	wantedJson, _ := json.MarshalIndent(wanted, "", "  ")
+	wantedJson, _ := json.MarshalIndent(tc.Want, "", "  ")
 	gotJson, _ := json.MarshalIndent(got, "", "  ")
 
 	wantedMessage := "unable to generate for output for `wanted`"
-	wantedFile := path.Join(tmpdir, fmt.Sprintf("yams.%s.wanted.json", name))
+	wantedFile := path.Join(tmpdir, fmt.Sprintf("yams.%s.wanted.json", tc.Name))
 	err := os.WriteFile(wantedFile, wantedJson, 0644)
 	if err == nil {
 		wantedMessage = fmt.Sprintf("expected output available @ %s", wantedFile)
 	}
 
 	gotMessage := "unable to generate for output for `got`"
-	gotFile := path.Join(tmpdir, fmt.Sprintf("yams.%s.got.json", name))
+	gotFile := path.Join(tmpdir, fmt.Sprintf("yams.%s.got.json", tc.Name))
 	err = os.WriteFile(gotFile, gotJson, 0644)
 	if err == nil {
 		gotMessage = fmt.Sprintf("observed output available @ %s", gotFile)
@@ -88,8 +88,10 @@ func GenerateFailureOutput(name string, wanted, got any) string {
 
 	return strings.Join([]string{
 		"test case failed",
+		strings.Join([]string{header, "// input", header}, "\n"),
+		fmt.Sprintf("%#v", tc.Input),
 		strings.Join([]string{header, "// wanted", header}, "\n"),
-		fmt.Sprintf("%#v", wanted),
+		fmt.Sprintf("%#v", tc.Want),
 		strings.Join([]string{header, "// got", header}, "\n"),
 		fmt.Sprintf("%#v", got),
 		strings.Join([]string{header, "// wanted (pretty)", header}, "\n"),

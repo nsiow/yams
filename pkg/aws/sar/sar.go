@@ -10,6 +10,15 @@ import (
 	"github.com/nsiow/yams/pkg/entities"
 )
 
+// Constants for access levels
+const (
+	ACCESS_LEVEL_WRITE       = "Write"
+	ACCESS_LEVEL_READ        = "Read"
+	ACCESS_LEVEL_LIST        = "List"
+	ACCESS_LEVEL_TAGGING     = "Tagging"
+	ACCESS_LEVEL_PERMISSIONS = "Permissions management"
+)
+
 // Type aliases for service authorization semantics
 type predicateType = string
 type predicateKey = string
@@ -57,18 +66,24 @@ func (q *Query) String() string {
 	return fmt.Sprintf("Query[%s]", strings.Join(pkeys, " "))
 }
 
-func (q *Query) add(service, key string, pred predicate) {
+func (q *Query) add(service, key string, pred predicate) *Query {
 	_, ok := q.predicates[service]
 	if !ok {
 		q.predicates[service] = make(map[predicateKey]predicate)
 	}
 
 	q.predicates[service][key] = pred
+
+	return q
 }
 
 // check filters the provided API call definition through the provided predicates and returns
 // whether or not ALL of the predicates are matched
 func (q *Query) check(apicall entities.ApiCall) bool {
+	if len(q.predicates) == 0 {
+		return false
+	}
+
 	for predicateType, filters := range q.predicates {
 		matchedAny := false
 		for predicateKey, predicate := range filters {
@@ -100,20 +115,23 @@ type predicate = func(entities.ApiCall) bool
 
 // WithService adds a new filter to the query filtering on the "service" field
 func (q *Query) WithService(service string) *Query {
-	q.add("service", service, func(a entities.ApiCall) bool { return a.Service == service })
-	return q
+	return q.add("service", service, func(a entities.ApiCall) bool {
+		return strings.EqualFold(a.Service, service)
+	})
 }
 
 // WithName adds a new filter to the query filtering on the "name" field
 func (q *Query) WithName(name string) *Query {
-	q.add("name", name, func(a entities.ApiCall) bool { return a.Action == name })
-	return q
+	return q.add("name", name, func(a entities.ApiCall) bool {
+		return strings.EqualFold(a.Action, name)
+	})
 }
 
 // WithAccessLevel adds a new filter to the query filtering on the "access_level" field
 func (q *Query) WithAccessLevel(level string) *Query {
-	q.add("access_level", level, func(a entities.ApiCall) bool { return a.AccessLevel == level })
-	return q
+	return q.add("access_level", level, func(a entities.ApiCall) bool {
+		return strings.EqualFold(a.AccessLevel, level)
+	})
 }
 
 // Results executes the query and returns all matching API calls

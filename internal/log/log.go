@@ -7,6 +7,9 @@ import (
 	"sync"
 )
 
+// YAMS_LOG_LEVEL_ENV_VAR defines the environment variable used to control logging level
+var YAMS_LOG_LEVEL_ENV_VAR string = "YAMS_LOG_LEVEL"
+
 // NOTHING represents a custom logging level for absolutely no logs
 var nothing slog.Level = 99
 
@@ -20,16 +23,16 @@ var loggerOnce sync.Once
 func Logger(name string) *slog.Logger {
 	loggerOnce.Do(func() {
 		logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-			Level: getLevel(),
+			Level: convertLevel(os.Getenv(YAMS_LOG_LEVEL_ENV_VAR)),
 		}))
 	})
 
 	return logger.With("logger", name)
 }
 
-// getLevel returns the correct logging level based on environment variables
-func getLevel() slog.Level {
-	switch strings.ToUpper(os.Getenv("YAMS_LOG_LEVEL")) {
+// convertLevel returns the correct logging level based on provided string
+func convertLevel(level string) slog.Level {
+	switch strings.ToUpper(level) {
 	case "ERROR":
 		return slog.LevelError
 	case "WARN":

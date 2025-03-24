@@ -47,7 +47,7 @@ def list_policy_arns() -> list[str]:
 
 def main():
     policy_arns = list_policy_arns()
-    policies = {arn: get_policy(arn) for arn in policy_arns}
+    policies = {arn: get_policy(arn)['Document'] for arn in policy_arns}
 
     if len(sys.argv) >= 2:
         out = gzip.open(sys.argv[1], 'wt')
