@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 )
 
 // TestPolicyEmpty validates our test of empty policy behavior
 func TestPolicyEmpty(t *testing.T) {
-	tests := []testrunner.TestCase[string, bool]{
+	tests := []testlib.TestCase[string, bool]{
 		{
 			Name: "empty_policy",
 			Input: `
@@ -46,7 +46,7 @@ func TestPolicyEmpty(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(s string) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(s string) (bool, error) {
 		p := Policy{}
 		err := json.Unmarshal([]byte(s), &p)
 		if err != nil {
@@ -59,7 +59,7 @@ func TestPolicyEmpty(t *testing.T) {
 
 // TestPolicyGrammar confirms we got the right shape for our policy grammar
 func TestPolicyGrammar(t *testing.T) {
-	tests := []testrunner.TestCase[string, Policy]{
+	tests := []testlib.TestCase[string, Policy]{
 		{
 			Name: "empty_policy",
 			Input: `
@@ -290,7 +290,7 @@ func TestPolicyGrammar(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(s string) (Policy, error) {
+	testlib.RunTestSuite(t, tests, func(s string) (Policy, error) {
 		p := Policy{}
 		err := json.Unmarshal([]byte(s), &p)
 		return p, err
@@ -299,7 +299,7 @@ func TestPolicyGrammar(t *testing.T) {
 
 // TestValidate confirms correct validation behavior for parsed policy statements
 func TestValidate(t *testing.T) {
-	tests := []testrunner.TestCase[string, any]{
+	tests := []testlib.TestCase[string, any]{
 		{
 			Name: "valid",
 			Input: `
@@ -360,7 +360,7 @@ func TestValidate(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(s string) (any, error) {
+	testlib.RunTestSuite(t, tests, func(s string) (any, error) {
 		stmt := Statement{}
 		err := json.Unmarshal([]byte(s), &stmt)
 		if err != nil {

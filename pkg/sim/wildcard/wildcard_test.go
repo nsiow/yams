@@ -3,7 +3,7 @@ package wildcard
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 )
 
 func TestWildcard(t *testing.T) {
@@ -13,7 +13,7 @@ func TestWildcard(t *testing.T) {
 		ignoreCase bool
 	}
 
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Input: input{
 				pattern: "foo",
@@ -137,7 +137,7 @@ func TestWildcard(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		// Determine the correct function to call
 		var got bool
 		if i.ignoreCase {
@@ -157,7 +157,7 @@ func TestMatchAllOrNothing(t *testing.T) {
 		value   string
 	}
 
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Input: input{
 				pattern: "*",
@@ -181,7 +181,7 @@ func TestMatchAllOrNothing(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return MatchAllOrNothing(i.pattern, i.value), nil
 	})
 }
@@ -193,7 +193,7 @@ func TestMatchArn(t *testing.T) {
 		value   string
 	}
 
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Input: input{
 				pattern: "arn:aws:s3:::somebucket",
@@ -287,7 +287,7 @@ func TestMatchArn(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return MatchArn(i.pattern, i.value), nil
 	})
 }

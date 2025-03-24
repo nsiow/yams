@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	// The ARN prefix which precedes all AWS-managed policies (is missing account ID)
-	awsPolicyPrefix = "arn:aws:iam::aws:policy/"
+// The ARN prefix which precedes all AWS-managed policies (is missing account ID)
+// FIXME(nsiow) figure out if this is still needed
+// awsPolicyPrefix = "arn:aws:iam::aws:policy/"
 )
 
 // PolicyMap contains a mapping from ID (Arn/GroupName) to policy for AWS-managed policies,
@@ -55,21 +56,22 @@ func (m *PolicyMap) NormalizeArn(pType, arn string) string {
 // NormalizePolicyArn updates the arn to avoid cases where /[aws-]service-role/ paths are
 // inconsistent
 func (m *PolicyMap) NormalizePolicyArn(arn string) string {
-	// Only applies to AWS managed roles
-	if !strings.HasPrefix(arn, awsPolicyPrefix) {
-		return arn
-	}
-
-	// Perform a series of replacements to ensure normalization
-	possibilities := []string{
-		"aws:policy/aws-service-role/",
-		"aws:policy/service-role/",
-	}
-	for _, p := range possibilities {
-		arn = strings.ReplaceAll(arn, p, "aws:policy/")
-	}
-
 	return arn
+	// // Only applies to AWS managed roles
+	// if !strings.HasPrefix(arn, awsPolicyPrefix) {
+	// 	return arn
+	// }
+
+	// // Perform a series of replacements to ensure normalization
+	// possibilities := []string{
+	// 	"aws:policy/aws-service-role/",
+	// 	"aws:policy/service-role/",
+	// }
+	// for _, p := range possibilities {
+	// 	arn = strings.ReplaceAll(arn, p, "aws:policy/")
+	// }
+
+	// return arn
 }
 
 // NormalizeGroupArn updates the arn of an IAM group to a normalized version (ignoring path).

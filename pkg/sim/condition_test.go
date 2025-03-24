@@ -3,7 +3,7 @@ package sim
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim/trace"
@@ -17,7 +17,7 @@ type input struct {
 
 // TestStatementBase checks some basic condition shape/matching logic
 func TestStatementBase(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "empty_condition",
 			Input: input{
@@ -87,13 +87,13 @@ func TestStatementBase(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestStringEquals(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -146,7 +146,7 @@ func TestStringEquals(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
@@ -156,7 +156,7 @@ func TestStringEquals(t *testing.T) {
 // --------------------------------------------------------------------------------
 
 func TestStringEqualsIgnoreCase(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "ignorecase_match",
 			Input: input{
@@ -191,13 +191,13 @@ func TestStringEqualsIgnoreCase(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestStringNotEquals(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_inverted_match",
 			Input: input{
@@ -232,13 +232,13 @@ func TestStringNotEquals(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestStringNotEqualsIgnoreCase(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "ignorecase_match",
 			Input: input{
@@ -273,13 +273,13 @@ func TestStringNotEqualsIgnoreCase(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestStringLike(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -316,13 +316,13 @@ func TestStringLike(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestStringNotLike(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_inverted_match",
 			Input: input{
@@ -357,7 +357,7 @@ func TestStringNotLike(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
@@ -367,7 +367,7 @@ func TestStringNotLike(t *testing.T) {
 // --------------------------------------------------------------------------------
 
 func TestNumericConversion(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "non_numeric_lhs",
 			Input: input{
@@ -406,14 +406,14 @@ func TestNumericConversion(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 
 }
 
 func TestNumericEquals(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -453,13 +453,13 @@ func TestNumericEquals(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestNumericNotEquals(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -499,13 +499,13 @@ func TestNumericNotEquals(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestNumericLessThan(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -545,13 +545,13 @@ func TestNumericLessThan(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestNumericLessThanEquals(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -609,13 +609,13 @@ func TestNumericLessThanEquals(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestNumericGreaterThan(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_nomatch",
 			Input: input{
@@ -673,7 +673,7 @@ func TestNumericGreaterThan(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
@@ -683,7 +683,7 @@ func TestNumericGreaterThan(t *testing.T) {
 // --------------------------------------------------------------------------------
 
 func TestNumericGreaterThanEquals(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -741,13 +741,13 @@ func TestNumericGreaterThanEquals(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestDateEquals(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -840,13 +840,13 @@ func TestDateEquals(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestDateNotEquals(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -903,13 +903,13 @@ func TestDateNotEquals(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestDateLessThan(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -966,13 +966,13 @@ func TestDateLessThan(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestDateLessThanEquals(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -1047,13 +1047,13 @@ func TestDateLessThanEquals(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestDateGreaterThan(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -1129,13 +1129,13 @@ func TestDateGreaterThan(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestDateGreaterThanEquals(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -1210,7 +1210,7 @@ func TestDateGreaterThanEquals(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
@@ -1220,7 +1220,7 @@ func TestDateGreaterThanEquals(t *testing.T) {
 // --------------------------------------------------------------------------------
 
 func TestBool(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_true",
 			Input: input{
@@ -1349,7 +1349,7 @@ func TestBool(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
@@ -1359,7 +1359,7 @@ func TestBool(t *testing.T) {
 // --------------------------------------------------------------------------------
 
 func TestBinary(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_true",
 			Input: input{
@@ -1434,7 +1434,7 @@ func TestBinary(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
@@ -1444,7 +1444,7 @@ func TestBinary(t *testing.T) {
 // --------------------------------------------------------------------------------
 
 func TestIpAddress(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -1591,13 +1591,13 @@ func TestIpAddress(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestNotIpAddress(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_nomatch",
 			Input: input{
@@ -1690,7 +1690,7 @@ func TestNotIpAddress(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
@@ -1700,7 +1700,7 @@ func TestNotIpAddress(t *testing.T) {
 // --------------------------------------------------------------------------------
 
 func TestArnEquals(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -1775,13 +1775,13 @@ func TestArnEquals(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestArnNotEquals(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_nomatch",
 			Input: input{
@@ -1856,13 +1856,13 @@ func TestArnNotEquals(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestArnLike(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_match",
 			Input: input{
@@ -1937,13 +1937,13 @@ func TestArnLike(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestArnNotLike(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_nomatch",
 			Input: input{
@@ -2018,7 +2018,7 @@ func TestArnNotLike(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
@@ -2028,7 +2028,7 @@ func TestArnNotLike(t *testing.T) {
 // --------------------------------------------------------------------------------
 
 func TestIfExists(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "string_equals_if_exists",
 			Input: input{
@@ -2085,13 +2085,13 @@ func TestIfExists(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestForAllValues(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_equals",
 			Input: input{
@@ -2148,13 +2148,13 @@ func TestForAllValues(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }
 
 func TestForAnyValues(t *testing.T) {
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_equals",
 			Input: input{
@@ -2211,7 +2211,7 @@ func TestForAnyValues(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
 	})
 }

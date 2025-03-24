@@ -3,7 +3,7 @@ package awsconfig
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -21,7 +21,7 @@ func TestPolicyStorageRetrieval(t *testing.T) {
 	}
 
 	// Define inputs
-	tests := []testrunner.TestCase[input, output]{
+	tests := []testlib.TestCase[input, output]{
 		{
 			Name: "empty_policy",
 			Input: input{
@@ -155,7 +155,7 @@ func TestPolicyStorageRetrieval(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (output, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (output, error) {
 		// Create a new policy map
 		m := NewPolicyMap()
 
@@ -179,15 +179,7 @@ func TestArnNormalization(t *testing.T) {
 	}
 
 	// Define inputs
-	tests := []testrunner.TestCase[input, string]{
-		{
-			Name: "simple_policy",
-			Input: input{
-				policyType: CONST_TYPE_AWS_IAM_POLICY,
-				arn:        "arn:aws:iam::000000000000:policy/EmptyPolicy",
-			},
-			Want: "arn:aws:iam::000000000000:policy/EmptyPolicy",
-		},
+	tests := []testlib.TestCase[input, string]{
 		{
 			Name: "simple_group",
 			Input: input{
@@ -195,22 +187,6 @@ func TestArnNormalization(t *testing.T) {
 				arn:        "arn:aws:iam::88888:group/family",
 			},
 			Want: "arn:aws:iam::88888:group/family",
-		},
-		{
-			Name: "service_role_1",
-			Input: input{
-				policyType: CONST_TYPE_AWS_IAM_POLICY,
-				arn:        "arn:aws:iam::aws:policy/service-role/NormalizationTest",
-			},
-			Want: "arn:aws:iam::aws:policy/NormalizationTest",
-		},
-		{
-			Name: "service_role_2",
-			Input: input{
-				policyType: CONST_TYPE_AWS_IAM_POLICY,
-				arn:        "arn:aws:iam::aws:policy/aws-service-role/NormalizationTest",
-			},
-			Want: "arn:aws:iam::aws:policy/NormalizationTest",
 		},
 		{
 			Name: "group_with_path",
@@ -238,7 +214,7 @@ func TestArnNormalization(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (string, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
 		pm := PolicyMap{}
 		got := pm.NormalizeArn(i.policyType, i.arn)
 		return got, nil

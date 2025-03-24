@@ -3,7 +3,7 @@ package awsconfig
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -11,7 +11,7 @@ import (
 
 // TestExtractInlinePoliciesInvalid confirms correct error handling behavior for unexpected types
 func TestExtractInlinePoliciesInvalid(t *testing.T) {
-	tests := []testrunner.TestCase[ConfigItem, []policy.Policy]{
+	tests := []testlib.TestCase[ConfigItem, []policy.Policy]{
 		{
 			Input: ConfigItem{
 				Type: "AWS::IAM::Policy",
@@ -20,12 +20,12 @@ func TestExtractInlinePoliciesInvalid(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, extractInlinePolicies)
+	testlib.RunTestSuite(t, tests, extractInlinePolicies)
 }
 
 // TestExtractManagedPoliciesInvalid confirms correct error handling behavior for unexpected types
 func TestExtractManagedPoliciesInvalid(t *testing.T) {
-	tests := []testrunner.TestCase[ConfigItem, []policy.Policy]{
+	tests := []testlib.TestCase[ConfigItem, []policy.Policy]{
 		{
 			Input: ConfigItem{
 				Type: "AWS::IAM::Policy",
@@ -34,14 +34,14 @@ func TestExtractManagedPoliciesInvalid(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(c ConfigItem) ([]policy.Policy, error) {
+	testlib.RunTestSuite(t, tests, func(c ConfigItem) ([]policy.Policy, error) {
 		return extractManagedPolicies(c, nil)
 	})
 }
 
 // TestExtractPermissionsBoundaryInvalid confirms correct error handling behavior for unexpected types
 func TestExtractPermissionsBoundaryInvalid(t *testing.T) {
-	tests := []testrunner.TestCase[ConfigItem, policy.Policy]{
+	tests := []testlib.TestCase[ConfigItem, policy.Policy]{
 		{
 			Input: ConfigItem{
 				Type: "AWS::IAM::Policy",
@@ -50,7 +50,7 @@ func TestExtractPermissionsBoundaryInvalid(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(c ConfigItem) (policy.Policy, error) {
+	testlib.RunTestSuite(t, tests, func(c ConfigItem) (policy.Policy, error) {
 		return extractPermissionsBoundary(c, nil)
 	})
 }

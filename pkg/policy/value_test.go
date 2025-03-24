@@ -4,19 +4,19 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 )
 
 // TestNewValue creates a Value with different variables and determines correct functionality
 func TestNewValue(t *testing.T) {
-	tests := []testrunner.TestCase[[]string, []string]{
+	tests := []testlib.TestCase[[]string, []string]{
 		{
 			Input: []string{},
 			Want:  []string{},
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(v []string) ([]string, error) {
+	testlib.RunTestSuite(t, tests, func(v []string) ([]string, error) {
 		got := NewValue(v...)
 		return got, nil
 	})
@@ -28,7 +28,7 @@ func TestUnmarshal(t *testing.T) {
 		S Value
 	}
 
-	tests := []testrunner.TestCase[string, Value]{
+	tests := []testlib.TestCase[string, Value]{
 		{Input: `{"S": "foo"}`, Want: []string{"foo"}},
 		{Input: `{"S": ["foo", "bar"]}`, Want: []string{"foo", "bar"}},
 		{Input: `{"S": null}`, Want: []string{}},
@@ -43,7 +43,7 @@ func TestUnmarshal(t *testing.T) {
 		{Input: `{"S": true`, ShouldErr: true},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(s string) (Value, error) {
+	testlib.RunTestSuite(t, tests, func(s string) (Value, error) {
 		ex := exampleStruct{}
 		err := json.Unmarshal([]byte(s), &ex)
 		if err != nil {
@@ -56,11 +56,11 @@ func TestUnmarshal(t *testing.T) {
 
 // TestInvalid validates the handling of invalid JSON fragments
 func TestInvalid(t *testing.T) {
-	tests := []testrunner.TestCase[string, any]{
+	tests := []testlib.TestCase[string, any]{
 		{Input: `a`, ShouldErr: true},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(s string) (any, error) {
+	testlib.RunTestSuite(t, tests, func(s string) (any, error) {
 		var v Value
 		return nil, json.Unmarshal([]byte(s), &v)
 	})
@@ -68,7 +68,7 @@ func TestInvalid(t *testing.T) {
 
 // TestEmpty validates the correct emptiness behavior of a Value
 func TestEmpty(t *testing.T) {
-	tests := []testrunner.TestCase[Value, bool]{
+	tests := []testlib.TestCase[Value, bool]{
 		{Input: nil, Want: true},
 		{Input: []string{}, Want: true},
 		{Input: []string{"foo"}, Want: false},
@@ -76,7 +76,7 @@ func TestEmpty(t *testing.T) {
 		{Input: []string{"foo", "bar", "baz"}, Want: false},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(v Value) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(v Value) (bool, error) {
 		return v.Empty(), nil
 	})
 }

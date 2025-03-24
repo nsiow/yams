@@ -3,7 +3,7 @@ package sim
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
@@ -15,7 +15,7 @@ func TestEvalIsSameAccount(t *testing.T) {
 		resource  entities.Resource
 	}
 
-	tests := []testrunner.TestCase[input, bool]{
+	tests := []testlib.TestCase[input, bool]{
 		{
 			Input: input{
 				principal: entities.Principal{Account: "88888"},
@@ -32,7 +32,7 @@ func TestEvalIsSameAccount(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		return evalIsSameAccount(&i.principal, &i.resource), nil
 	})
 }
@@ -40,7 +40,7 @@ func TestEvalIsSameAccount(t *testing.T) {
 // TestOverallAccess_XAccount checks both principal-side and resource-side logic where the
 // resource + principal reside within the same account
 func TestOverallAccess_XAccount(t *testing.T) {
-	tests := []testrunner.TestCase[AuthContext, bool]{
+	tests := []testlib.TestCase[AuthContext, bool]{
 		{
 			Name: "x_account_implicit_deny",
 			Input: AuthContext{
@@ -269,7 +269,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
 		if ac.Principal.Account == ac.Resource.Account {
 			t.Fatalf("supposed to be testing x-account, but saw same account for: %+v", ac)
 		}
@@ -287,7 +287,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 // TestOverallAccess_SameAccount checks both principal-side and resource-side logic where the
 // resource + principal reside within the same account
 func TestOverallAccess_SameAccount(t *testing.T) {
-	tests := []testrunner.TestCase[AuthContext, bool]{
+	tests := []testlib.TestCase[AuthContext, bool]{
 		{
 			Name: "same_account_implicit_deny",
 			Input: AuthContext{
@@ -805,7 +805,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
+	testlib.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
 		if ac.Principal.Account != ac.Resource.Account {
 			t.Fatalf("supposed to be testing same account, but saw x-account for: %+v", ac)
 		}

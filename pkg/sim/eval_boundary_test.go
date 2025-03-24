@@ -3,7 +3,7 @@ package sim
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim/trace"
@@ -11,7 +11,7 @@ import (
 
 // TestPermissionsBoundary tests functionality of permissions boundary evaluations
 func TestPermissionsBoundary(t *testing.T) {
-	tests := []testrunner.TestCase[AuthContext, []policy.Effect]{
+	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
 		{
 			Name: "allow_all",
 			Input: AuthContext{
@@ -160,7 +160,7 @@ func TestPermissionsBoundary(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
+	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
 		res, err := evalPermissionsBoundary(trace.New(), &Options{}, ac)
 		if err != nil {
 			return nil, err

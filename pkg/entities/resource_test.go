@@ -3,12 +3,12 @@ package entities
 import (
 	"testing"
 
-	"github.com/nsiow/yams/internal/testrunner"
+	"github.com/nsiow/yams/internal/testlib"
 )
 
 // TestService validates our ability to extract service names from canonical type names
 func TestService(t *testing.T) {
-	tests := []testrunner.TestCase[Resource, string]{
+	tests := []testlib.TestCase[Resource, string]{
 		{
 			Name:  "valid_bucket",
 			Input: Resource{Type: "AWS::S3::Bucket"},
@@ -31,7 +31,7 @@ func TestService(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(r Resource) (string, error) {
+	testlib.RunTestSuite(t, tests, func(r Resource) (string, error) {
 		return r.Service()
 	})
 }
@@ -43,7 +43,7 @@ func TestSubresourceArn(t *testing.T) {
 		subpath  string
 	}
 
-	tests := []testrunner.TestCase[input, string]{
+	tests := []testlib.TestCase[input, string]{
 		{
 			Name: "valid_object_no_leading_no_trailing",
 			Input: input{
@@ -78,7 +78,7 @@ func TestSubresourceArn(t *testing.T) {
 		},
 	}
 
-	testrunner.RunTestSuite(t, tests, func(i input) (string, error) {
+	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
 		return i.resource.SubresourceArn(i.subpath), nil
 	})
 }

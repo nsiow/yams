@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-import copy
+from collections import defaultdict
+import gzip
 import json
 import logging
 import os
@@ -18,7 +19,8 @@ logging.basicConfig(level=os.environ.get('YAMS_LOG_LEVEL', 'INFO').upper(),
                     stream=sys.stdout)
 
 # Set up cache
-memory = joblib.Memory('/tmp/sar.cache')
+os.makedirs('.cache', exist_ok=True)
+memory = joblib.Memory('.cache/sar.cache')
 
 # Set up a browser session
 sess = requests.HTMLSession()
@@ -62,9 +64,10 @@ def extract_sar_links(sar_index: BeautifulSoup) -> list[str]:
 
 def parse_sar_data(sar_page: BeautifulSoup) -> dict:
     """Iterate SAR pages and parse table contents."""
+    service=subparse_service(sar_page)
     return dict(
-        service=subparse_service(sar_page),
-        actions=subparse_actions(sar_page),
+        service=service,
+        actions=subparse_actions(service, sar_page),
         condition_keys=subparse_condition_keys(sar_page),
     )
 
@@ -76,7 +79,6 @@ def subparse_service(sar_page: BeautifulSoup) -> str:
 
     service = match.group(1)
     return service
-
 
 def normalize_scalar(field: str) -> str:
     """Helper function to normalize scalar values found in SAR data tables."""
@@ -91,10 +93,9 @@ def normalize_list(field: Union[list, str]) -> list:
     elif isinstance(field, list):
         return field
 
-    # type: ignore
     raise TypeError('Not sure how to normalize value: {}'.format(repr(field)))  # type: ignore
 
-def subparse_actions(sar_page: BeautifulSoup) -> list[dict]:
+def subparse_actions(service: str, sar_page: BeautifulSoup) -> list[dict]:
     """Extract the action details from the provided sar page."""
     table = sar_page.find_all(class_='table-container')[0]
     if not table:
@@ -122,8 +123,9 @@ def subparse_actions(sar_page: BeautifulSoup) -> list[dict]:
 
         for a in ['action', 'actions']:
             if a in row_data:
-                row_data[a] = normalize_scalar(row_data.pop(a))
+                row_data['action'] = normalize_scalar(row_data.pop(a))
 
+        row_data['service'] = service
         row_data['description'] = normalize_scalar(row_data['description'])
         row_data['access_level'] = normalize_scalar(row_data['access_level'])
         row_data['resource_types'] = normalize_list(row_data['resource_types'])
@@ -156,23 +158,19 @@ def subparse_condition_keys(sar_page: BeautifulSoup) -> list[str]:
 
     return condition_keys
 
-def normalize_sar_data(sar_data: list[dict]) -> list[dict]:
+def normalize_sar_data(sar_data: list[dict]) -> dict:
     """Helper function to normalize and remove some inconsistencies in the SAR data."""
     # Combine pages for services under the same umbrella
-    sar_dict = {}
+    sar = defaultdict(list)
     for service_data in sar_data:
         try:
             service = service_data['service']
-            if service in sar_dict:
-                sar_dict[service]['actions'].extend(service_data['actions'])
-                sar_dict[service]['condition_keys'].extend(service_data['condition_keys'])
-            else:
-                sar_dict[service] = service_data
+            sar[service] += service_data['actions']
         except Exception:
             print(f'error merging pages for service: {service_data["service"]}', file=sys.stderr)
             raise
 
-    return list(sar_dict.values())
+    return sar
 
 def main():
 
@@ -182,11 +180,12 @@ def main():
     sar_data = normalize_sar_data([parse_sar_data(page) for page in sar_pages])
 
     if len(sys.argv) >= 2:
-        out = open(sys.argv[1], 'w+')
+        out = gzip.open(sys.argv[1], 'wt')
     else:
         out = sys.stdout
 
     json.dump(sar_data, out)
+    out.close()
 
 if __name__ == '__main__':
     main()

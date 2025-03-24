@@ -109,7 +109,7 @@ func (a *Loader) loadItems(items []ConfigItem) error {
 
 	// Load AWS-managed policies into the managed policy map
 	// (required because AWS Config does not report on them)
-	for arn, pol := range managedpolicies.All() {
+	for arn, pol := range managedpolicies.Map() {
 		policies.Add(CONST_TYPE_AWS_IAM_POLICY, arn, []policy.Policy{pol})
 	}
 
