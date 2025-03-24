@@ -62,7 +62,7 @@ html: coverage.html
 coverage.out: $(GO_FILES)
 	GO_TEST_FLAGS='-coverprofile=$@' make test
 	grep -Ev $(COVERAGE_OMIT) $@ > $@.tmp
-	mv $@.tmp $@.out
+	mv $@.tmp $@
 
 coverage.html: coverage.out
 	go tool cover -html=$< -o $@
