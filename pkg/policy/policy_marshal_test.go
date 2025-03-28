@@ -31,7 +31,7 @@ func TestPolicyMarshal(t *testing.T) {
 					},
 				},
 			},
-			Want: `{"Version":"2012-10-17","Id":"s3read","Statement":[{"Sid":"","Effect":"Allow","Principal":{"AWS":["arn:aws:iam::12345:role/SomeRole"]},"Action":["s3:GetObject","s3:ListBucket"],"Resource":["arn:aws:s3:::foo-bucket","arn:aws:s3:::foo-bucket/*"]}]}`,
+			Want: `{"Version":"2012-10-17","Id":"s3read","Statement":[{"Sid":"","Effect":"Allow","Principal":{"AWS":"arn:aws:iam::12345:role/SomeRole"},"Action":["s3:GetObject","s3:ListBucket"],"Resource":["arn:aws:s3:::foo-bucket","arn:aws:s3:::foo-bucket/*"]}]}`,
 		},
 		{
 			Input: Policy{

@@ -6,7 +6,6 @@ import (
 )
 
 // Value is a JSON-centric helper struct to facilitate one-or-more value representations
-// TODO(nsiow) handle custom marshal to scalar or list versions
 type Value []string
 
 // NewValue creates a new PolicyString struct using the supplied values
@@ -15,12 +14,12 @@ func NewValue(values ...string) Value {
 }
 
 // MarshalJSON instructs how to convert Value fields to raw bytes
-func (v *Value) MarshalJSON() ([]byte, error) {
-	switch len(*v) {
+func (v Value) MarshalJSON() ([]byte, error) {
+	switch v.Count() {
 	case 1:
-		return json.Marshal((*v)[0])
+		return json.Marshal(v[0])
 	default:
-		return json.Marshal(v)
+		return json.Marshal([]string(v))
 	}
 }
 

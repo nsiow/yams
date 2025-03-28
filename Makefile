@@ -58,7 +58,7 @@ cov-report: coverage.out
 
 .PHONY: cov-missing
 cov-missing: coverage.out
-	go tool cover -func=$< | grep -v '100.0%' || echo '[✔] code coverage = 100.0'
+	@go tool cover -func=$< | grep -v '100.0%' || echo '[✔] code coverage = 100.0'
 
 .PHONY: cov-html
 cov-html: coverage.html
