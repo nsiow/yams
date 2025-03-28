@@ -1,7 +1,6 @@
 package sim
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/nsiow/yams/pkg/entities"
@@ -16,6 +15,13 @@ type evalFunction func(*trace.Trace, *Options, AuthContext, *policy.Statement) (
 // same AWS account
 func evalIsSameAccount(p *entities.Principal, r *entities.Resource) bool {
 	return p.Account == r.Account
+}
+
+// evalSameAccountExplicitPrincipalCase handles the special case where the Resource policy
+// granting explicit access to the Principal circumvents the need for Principal-policy access
+func evalSameAccountExplicitPrincipalCase(_ *entities.Principal, _ *entities.Resource) bool {
+	// TODO(nsiow) implement correct behavior for same-account access via explicit ARN
+	return false
 }
 
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
@@ -58,7 +64,7 @@ func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
 	// Calculate Principal access
 	pAccess, err := evalPrincipalAccess(trc, opt, ac)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("error evaluating principal access"), err)
+		return nil, fmt.Errorf("error evaluating principal access: %w", err)
 	}
 	// ... check for explicit Deny results
 	if pAccess.Contains(policy.EFFECT_DENY) {
@@ -69,7 +75,7 @@ func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
 	// Calculate Resource access
 	rAccess, err := evalResourceAccess(trc, opt, ac)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("error evaluating resource access"), err)
+		return nil, fmt.Errorf("error evaluating resource access: %w", err)
 	}
 	// ... check for explicit Deny results
 	if rAccess.Contains(policy.EFFECT_DENY) {
@@ -84,7 +90,11 @@ func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
 			return &Result{Trace: trc, IsAllowed: true}, nil
 		}
 
-		// TODO(nsiow) implement correct behavior for same-account access via explicit ARN
+		if evalSameAccountExplicitPrincipalCase(ac.Principal, ac.Resource) {
+			trc.Decision("[allow] access granted via same-account explicit-resource-policy case")
+			return &Result{Trace: trc, IsAllowed: true}, nil
+		}
+
 		trc.Decision("[implicit deny] no identity-based policy allows this action")
 		return &Result{Trace: trc, IsAllowed: false}, nil
 	}

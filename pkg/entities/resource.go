@@ -15,6 +15,9 @@ type Resource struct {
 	// Account refers to the 12-digit AWS account ID where the Resource resides
 	Account string
 
+	// OrgId refers to the ID of the AWS Organizations org where the Resource resides
+	OrgId string
+
 	// Region refers to the AWS region ID where the Resource resides
 	Region string
 

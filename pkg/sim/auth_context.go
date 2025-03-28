@@ -21,6 +21,7 @@ type AuthContext struct {
 	Resource             *entities.Resource
 	Properties           map[string]string
 	MultiValueProperties map[string][]string
+	OrgId                string
 }
 
 // Static values
@@ -68,11 +69,10 @@ func (ac *AuthContext) Key(key string) string {
 		epoch := int(ac.now().Unix())
 		return strconv.Itoa(epoch)
 
-	// TODO(nsiow) revisit when we have org support
-	// case condkey.PrincipalOrgId:
-	// 	break
-	// case condkey.ResourceOrgId:
-	// 	break
+	case condkey.PrincipalOrgId:
+		return ac.Principal.OrgId
+	case condkey.ResourceOrgId:
+		return ac.Resource.Orgid
 
 	// We'll enumerate these for potential special handling in the future, but otherwise just use
 	// default behavior
