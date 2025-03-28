@@ -38,7 +38,7 @@ func loadResource(i ConfigItem) (entities.Resource, error) {
 	// Construct basic fields
 	r := entities.Resource{
 		Type:    i.Type,
-		Account: i.Account,
+		Account: i.AccountId,
 		Region:  i.Region,
 		Arn:     i.Arn,
 		Tags:    i.Tags,

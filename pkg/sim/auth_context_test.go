@@ -175,7 +175,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.Principal{
-						Account: "55555",
+						AccountId: "55555",
 					},
 				},
 				key: "aws:PrincipalAccount",

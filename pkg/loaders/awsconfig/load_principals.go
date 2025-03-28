@@ -42,10 +42,10 @@ func loadPrincipal(
 ) (entities.Principal, error) {
 	// Construct basic fields
 	p := entities.Principal{
-		Type:    i.Type,
-		Account: i.Account,
-		Arn:     i.Arn,
-		Tags:    i.Tags,
+		Type:      i.Type,
+		AccountId: i.AccountId,
+		Arn:       i.Arn,
+		Tags:      i.Tags,
 	}
 
 	// Extract both inline and managed policies
@@ -78,7 +78,7 @@ func loadPrincipal(
 	p.PermissionsBoundary = pb
 
 	// Load SCPs
-	if scp, exists := scps.Get(p.Account); exists {
+	if scp, exists := scps.Get(p.AccountId); exists {
 		p.SCPs = scp
 	}
 

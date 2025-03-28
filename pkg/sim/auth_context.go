@@ -21,7 +21,6 @@ type AuthContext struct {
 	Resource             *entities.Resource
 	Properties           map[string]string
 	MultiValueProperties map[string][]string
-	OrgId                string
 }
 
 // Static values
@@ -53,7 +52,7 @@ func (ac *AuthContext) Key(key string) string {
 	case condkey.PrincipalArn:
 		return ac.Principal.Arn
 	case condkey.PrincipalAccount:
-		return ac.Principal.Account
+		return ac.Principal.AccountId
 	case condkey.PrincipalIsAwsService:
 		break
 	case condkey.PrincipalServiceName:

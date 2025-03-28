@@ -18,14 +18,14 @@ func TestEvalIsSameAccount(t *testing.T) {
 	tests := []testlib.TestCase[input, bool]{
 		{
 			Input: input{
-				principal: entities.Principal{Account: "88888"},
+				principal: entities.Principal{AccountId: "88888"},
 				resource:  entities.Resource{Account: "88888"},
 			},
 			Want: true,
 		},
 		{
 			Input: input{
-				principal: entities.Principal{Account: "88888"},
+				principal: entities.Principal{AccountId: "88888"},
 				resource:  entities.Resource{Account: "12345"},
 			},
 			Want: false,
@@ -47,7 +47,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
-					Account:          "88888",
+					AccountId:        "88888",
 					InlinePolicies:   nil,
 					AttachedPolicies: nil,
 				},
@@ -64,8 +64,8 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -90,8 +90,8 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 				},
 				Resource: &entities.Resource{
 					Arn:     "arn:aws:s3:::mybucket",
@@ -118,8 +118,8 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -144,8 +144,8 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 				},
 				Resource: &entities.Resource{
 					Arn:     "arn:aws:s3:::mybucket",
@@ -168,8 +168,8 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -206,8 +206,8 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -240,8 +240,8 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 				},
 				Resource: &entities.Resource{
 					Arn:     "arn:aws:s3:::mybucket",
@@ -270,7 +270,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
-		if ac.Principal.Account == ac.Resource.Account {
+		if ac.Principal.AccountId == ac.Resource.Account {
 			t.Fatalf("supposed to be testing x-account, but saw same account for: %+v", ac)
 		}
 
@@ -294,7 +294,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
-					Account:          "88888",
+					AccountId:        "88888",
 					InlinePolicies:   nil,
 					AttachedPolicies: nil,
 				},
@@ -311,8 +311,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -337,8 +337,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -363,8 +363,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -400,8 +400,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -462,8 +462,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					PermissionsBoundary: policy.Policy{
 						Statement: []policy.Statement{
 							{
@@ -491,8 +491,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -526,8 +526,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -561,8 +561,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -596,8 +596,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					SCPs: [][]policy.Policy{
 						{
 							{
@@ -629,8 +629,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -668,8 +668,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -718,8 +718,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -757,8 +757,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -806,7 +806,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
-		if ac.Principal.Account != ac.Resource.Account {
+		if ac.Principal.AccountId != ac.Resource.Account {
 			t.Fatalf("supposed to be testing same account, but saw x-account for: %+v", ac)
 		}
 

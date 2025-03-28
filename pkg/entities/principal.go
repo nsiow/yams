@@ -9,15 +9,8 @@ type Principal struct {
 	// Type refers to the AWS resource type of the Principal
 	Type string
 
-	// OrgId refers to the ID of the AWS Organizations org where the Principal resides
-	// TODO(nsiow) these need to be filled out based on Organizations data
-	OrgId string
-
-	// OrgPath refers to the path of the AWS Organizations OU where the Principal resides
-	OrgPath string
-
-	// Account refers to the 12-digit AWS account ID where the Principal resides
-	Account string
+	// AccountId refers to the 12-digit AWS account ID where the Principal resides
+	AccountId string
 
 	// Arn refers to the Amazon Resource Name of the Principal
 	Arn string
@@ -37,8 +30,13 @@ type Principal struct {
 	// PermissionsBoundary refers to the policy set as the Principal's permissions boundary
 	PermissionsBoundary policy.Policy
 
-	// SCPs refers to the Service Control Policies applied to the Principal
-	// TODO(nsiow) add more support for the niche cases described in:
-	// https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps_syntax.html
-	SCPs [][]policy.Policy
+	// account is the full account structure used to contain org attributes
+	// It is private so that we can expose a safe(r) getter function since it's optional
+	account *Account
+}
+
+// Account returns the account data, along with a secondary value corresponding to whether or not
+// the Principal has account data loaded
+func (p *Principal) Account() (*Account, bool) {
+	return p.account, p.account != nil
 }

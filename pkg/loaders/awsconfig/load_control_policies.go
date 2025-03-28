@@ -17,7 +17,7 @@ func loadControlPolicies(items []ConfigItem) (*ControlPolicyStruct, error) {
 		SCPs: NewControlPolicyMap(),
 	}
 
-	// Iterate through our AWS Config items, we only look at AWS::Yams::Account
+	// Iterate through our AWS Config items, we only look at Yams::Organization::Account
 	for _, i := range items {
 		if i.Type != CONST_TYPE_YAMS_ORGANIZATIONS_ACCOUNT {
 			continue
@@ -28,7 +28,7 @@ func loadControlPolicies(items []ConfigItem) (*ControlPolicyStruct, error) {
 		if err != nil {
 			return nil, err
 		}
-		cp.SCPs.Add(i.Account, fragment.ServiceControlPolicies)
+		cp.SCPs.Add(i.AccountId, fragment.ServiceControlPolicies)
 	}
 
 	return &cp, nil

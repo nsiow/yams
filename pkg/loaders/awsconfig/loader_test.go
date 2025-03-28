@@ -218,9 +218,9 @@ func TestLoadJson(t *testing.T) {
 var simple1Output entities.Environment = entities.Environment{
 	Principals: []entities.Principal{
 		{
-			Type:    "AWS::IAM::Role",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:role/SimpleRole1",
+			Type:      "AWS::IAM::Role",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:role/SimpleRole1",
 			Tags: []entities.Tag{
 				{
 					Key:   "some-business-tag",
@@ -385,10 +385,10 @@ var simple1Output entities.Environment = entities.Environment{
 var user1Output entities.Environment = entities.Environment{
 	Principals: []entities.Principal{
 		{
-			Type:    "AWS::IAM::User",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:user/myuser",
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::User",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:user/myuser",
+			Tags:      []entities.Tag{},
 			InlinePolicies: []policy.Policy{
 				{
 					Version: "2012-10-17",
@@ -474,10 +474,10 @@ var user1Output entities.Environment = entities.Environment{
 var permissionsBoundaryOutput entities.Environment = entities.Environment{
 	Principals: []entities.Principal{
 		{
-			Type:    "AWS::IAM::User",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:user/myuser",
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::User",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:user/myuser",
+			Tags:      []entities.Tag{},
 			PermissionsBoundary: policy.Policy{
 				Version: "2012-10-17",
 				Statement: []policy.Statement{
@@ -491,10 +491,10 @@ var permissionsBoundaryOutput entities.Environment = entities.Environment{
 			},
 		},
 		{
-			Type:    "AWS::IAM::Role",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:role/myrole",
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::Role",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:role/myrole",
+			Tags:      []entities.Tag{},
 			PermissionsBoundary: policy.Policy{
 				Version: "2012-10-17",
 				Statement: []policy.Statement{
@@ -536,10 +536,10 @@ var permissionsBoundaryOutput entities.Environment = entities.Environment{
 var scpOutput entities.Environment = entities.Environment{
 	Principals: []entities.Principal{
 		{
-			Type:    "AWS::IAM::Role",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:role/myrole",
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::Role",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:role/myrole",
+			Tags:      []entities.Tag{},
 			SCPs: [][]policy.Policy{
 				{
 					policy.Policy{

@@ -130,7 +130,7 @@ func TestStringEquals(t *testing.T) {
 			Name: "partial_match",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{Account: "12345"},
+					Principal: &entities.Principal{AccountId: "12345"},
 					Resource:  &entities.Resource{Account: "55555"},
 				},
 				stmt: policy.Statement{
@@ -300,7 +300,7 @@ func TestStringLike(t *testing.T) {
 			Name: "partial_match",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{Account: "12345"},
+					Principal: &entities.Principal{AccountId: "12345"},
 					Resource:  &entities.Resource{Account: "55555"},
 				},
 				stmt: policy.Statement{
