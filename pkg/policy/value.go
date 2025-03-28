@@ -14,6 +14,16 @@ func NewValue(values ...string) Value {
 	return values
 }
 
+// MarshalJSON instructs how to convert Value fields to raw bytes
+func (v *Value) MarshalJSON() ([]byte, error) {
+	switch len(*v) {
+	case 1:
+		return json.Marshal((*v)[0])
+	default:
+		return json.Marshal(v)
+	}
+}
+
 // UnmarshalJSON instructs how to create Value fields from raw bytes
 // TODO(nsiow) break up this function
 func (v *Value) UnmarshalJSON(data []byte) error {
