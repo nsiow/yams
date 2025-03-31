@@ -11,7 +11,8 @@ import (
 	condkey "github.com/nsiow/yams/pkg/policy/condition/keys"
 )
 
-// TODO(nsiow) decide if principal/resource should be pointers or values; if pointers, implement null checks
+// TODO(nsiow) decide if principal/resource should be pointers or values; if pointers, implement
+//             sufficient null checks
 
 // AuthContext defines the tertiary context of a request that can be used for authz decisions
 type AuthContext struct {
@@ -64,13 +65,9 @@ func (ac *AuthContext) Key(key string) string {
 	case condkey.CurrentTime:
 		return ac.now().UTC().Format(TIME_FORMAT)
 	case condkey.EpochTime:
-		// TODO(nsiow) make sure we are not losing accuracy
-		epoch := int(ac.now().Unix())
-		return strconv.Itoa(epoch)
-
+		return strconv.FormatInt(ac.now().Unix(), 10)
 	case condkey.PrincipalOrgId:
 		return ac.Principal.Account.OrgId
-
 	case condkey.ResourceOrgId:
 		// FIXME(nsiow)
 		panic("not yet implemented")
