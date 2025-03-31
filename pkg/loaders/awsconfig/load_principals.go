@@ -9,8 +9,8 @@ import (
 // loadPrincipals takes a list of AWS Config items and extracts resources
 func loadPrincipals(
 	items []ConfigItem,
-	scps *ControlPolicyMap,
-	pm *PolicyMap,
+	accounts *AccountMap,
+	policies *PolicyMap,
 ) ([]entities.Principal, error) {
 	var ps []entities.Principal
 
@@ -23,7 +23,7 @@ func loadPrincipals(
 		}
 
 		// Load the principal
-		p, err := loadPrincipal(i, scps, pm)
+		p, err := loadPrincipal(i, accounts, policies)
 		if err != nil {
 			return nil, err
 		}
@@ -37,8 +37,8 @@ func loadPrincipals(
 // loadPrincipal takes a single AWS Config item and returns a parsed principal object
 func loadPrincipal(
 	i ConfigItem,
-	scps *ControlPolicyMap,
-	pm *PolicyMap,
+	accounts *AccountMap,
+	policies *PolicyMap,
 ) (entities.Principal, error) {
 	// Construct basic fields
 	p := entities.Principal{
@@ -55,7 +55,7 @@ func loadPrincipal(
 	}
 	p.InlinePolicies = ip
 
-	mp, err := extractManagedPolicies(i, pm)
+	mp, err := extractManagedPolicies(i, policies)
 	if err != nil {
 		return p, fmt.Errorf("error extracting attached policies for '%s': %w", i.Arn, err)
 	}
@@ -63,7 +63,7 @@ func loadPrincipal(
 
 	// If we are dealing with an IAM user, load its group policies as well
 	if i.Type == CONST_TYPE_AWS_IAM_USER {
-		gp, err := extractGroupPolicies(i, pm)
+		gp, err := extractGroupPolicies(i, policies)
 		if err != nil {
 			return p, fmt.Errorf("error extracting group policies for '%s': %w", i.Arn, err)
 		}
@@ -71,15 +71,15 @@ func loadPrincipal(
 	}
 
 	// Load permissions boundary
-	pb, err := extractPermissionsBoundary(i, pm)
+	pb, err := extractPermissionsBoundary(i, policies)
 	if err != nil {
 		return p, fmt.Errorf("error extracting permissions boundary for '%s': %w", i.Arn, err)
 	}
 	p.PermissionsBoundary = pb
 
-	// Load SCPs
-	if scp, exists := scps.Get(p.AccountId); exists {
-		p.SCPs = scp
+	// Update account info if provided
+	if a, exists := accounts.Get(p.AccountId); exists {
+		p.Account = a
 	}
 
 	return p, nil

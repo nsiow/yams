@@ -69,9 +69,11 @@ func (ac *AuthContext) Key(key string) string {
 		return strconv.Itoa(epoch)
 
 	case condkey.PrincipalOrgId:
-		return ac.Principal.OrgId
+		return ac.Principal.Account.OrgId
+
 	case condkey.ResourceOrgId:
-		return ac.Resource.Orgid
+		// FIXME(nsiow)
+		panic("not yet implemented")
 
 	// We'll enumerate these for potential special handling in the future, but otherwise just use
 	// default behavior

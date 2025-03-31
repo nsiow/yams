@@ -32,11 +32,5 @@ type Principal struct {
 
 	// account is the full account structure used to contain org attributes
 	// It is private so that we can expose a safe(r) getter function since it's optional
-	account *Account
-}
-
-// Account returns the account data, along with a secondary value corresponding to whether or not
-// the Principal has account data loaded
-func (p *Principal) Account() (*Account, bool) {
-	return p.account, p.account != nil
+	Account Account
 }

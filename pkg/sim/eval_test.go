@@ -598,17 +598,19 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					SCPs: [][]policy.Policy{
-						{
+					Account: entities.Account{
+						SCPs: [][]policy.Policy{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"*"},
-										Resource: []string{"*"},
-										Condition: map[string]map[string]policy.Value{
-											"StringEqualsThisDoesNotExist": {
-												"foo": []string{"bar"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_ALLOW,
+											Action:   []string{"*"},
+											Resource: []string{"*"},
+											Condition: map[string]map[string]policy.Value{
+												"StringEqualsThisDoesNotExist": {
+													"foo": []string{"bar"},
+												},
 											},
 										},
 									},
@@ -642,14 +644,16 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 							},
 						},
 					},
-					SCPs: [][]policy.Policy{
-						{
+					Account: entities.Account{
+						SCPs: [][]policy.Policy{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"*"},
-										Resource: []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_ALLOW,
+											Action:   []string{"*"},
+											Resource: []string{"*"},
+										},
 									},
 								},
 							},
@@ -681,25 +685,27 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 							},
 						},
 					},
-					SCPs: [][]policy.Policy{
-						{
+					Account: entities.Account{
+						SCPs: [][]policy.Policy{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"*"},
-										Resource: []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_ALLOW,
+											Action:   []string{"*"},
+											Resource: []string{"*"},
+										},
 									},
 								},
 							},
-						},
-						{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_DENY,
-										Action:   []string{"*"},
-										Resource: []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_DENY,
+											Action:   []string{"*"},
+											Resource: []string{"*"},
+										},
 									},
 								},
 							},
@@ -731,14 +737,16 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 							},
 						},
 					},
-					SCPs: [][]policy.Policy{
-						{
+					Account: entities.Account{
+						SCPs: [][]policy.Policy{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:    policy.EFFECT_ALLOW,
-										NotAction: []string{"s3:*"},
-										Resource:  []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:    policy.EFFECT_ALLOW,
+											NotAction: []string{"s3:*"},
+											Resource:  []string{"*"},
+										},
 									},
 								},
 							},
@@ -770,26 +778,28 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 							},
 						},
 					},
-					SCPs: [][]policy.Policy{
-						{
+					Account: entities.Account{
+						SCPs: [][]policy.Policy{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:    policy.EFFECT_ALLOW,
-										NotAction: []string{"*"},
-										Resource:  []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:    policy.EFFECT_ALLOW,
+											NotAction: []string{"*"},
+											Resource:  []string{"*"},
+										},
 									},
 								},
 							},
-						},
-						{}, // <= missing
-						{
+							{}, // <= missing
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:    policy.EFFECT_ALLOW,
-										NotAction: []string{"*"},
-										Resource:  []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:    policy.EFFECT_ALLOW,
+											NotAction: []string{"*"},
+											Resource:  []string{"*"},
+										},
 									},
 								},
 							},

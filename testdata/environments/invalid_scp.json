@@ -26,6 +26,9 @@
     "accountId": "000000000000",
     "arn": "arn:yams:::account/000000000000",
     "configuration": {
+      "accountId": "000000000000",
+      "orgId": "o-123",
+			"orgPaths": ["o-123/", "o-123/ou-level-1/", "o-123/ou-level-1/ou-level-2/"],
       "serviceControlPolicies": [
         {
           "PolicyId": "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",

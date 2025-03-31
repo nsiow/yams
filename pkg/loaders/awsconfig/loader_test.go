@@ -540,29 +540,34 @@ var scpOutput entities.Environment = entities.Environment{
 			AccountId: "000000000000",
 			Arn:       "arn:aws:iam::000000000000:role/myrole",
 			Tags:      []entities.Tag{},
-			SCPs: [][]policy.Policy{
-				{
-					policy.Policy{
-						Id:      "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-						Version: "2012-10-17",
-						Statement: []policy.Statement{
-							{
-								Effect:   "Allow",
-								Action:   []string{"*"},
-								Resource: []string{"*"},
+			Account: entities.Account{
+				Id:       "000000000000",
+				OrgId:    "o-123",
+				OrgPaths: []string{"o-123/", "o-123/ou-level-1/", "o-123/ou-level-1/ou-level-2/"},
+				SCPs: [][]policy.Policy{
+					{
+						policy.Policy{
+							Id:      "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+							Version: "2012-10-17",
+							Statement: []policy.Statement{
+								{
+									Effect:   "Allow",
+									Action:   []string{"*"},
+									Resource: []string{"*"},
+								},
 							},
 						},
 					},
-				},
-				{
-					policy.Policy{
-						Id:      "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
-						Version: "2012-10-17",
-						Statement: []policy.Statement{
-							{
-								Effect:   "Allow",
-								Action:   []string{"s3:*"},
-								Resource: []string{"*"},
+					{
+						policy.Policy{
+							Id:      "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+							Version: "2012-10-17",
+							Statement: []policy.Statement{
+								{
+									Effect:   "Allow",
+									Action:   []string{"s3:*"},
+									Resource: []string{"*"},
+								},
 							},
 						},
 					},

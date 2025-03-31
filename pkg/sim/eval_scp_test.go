@@ -27,14 +27,16 @@ func TestSCP(t *testing.T) {
 			Name: "allow_all",
 			Input: AuthContext{
 				Principal: &entities.Principal{
-					SCPs: [][]policy.Policy{
-						{
+					Account: entities.Account{
+						SCPs: [][]policy.Policy{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"*"},
-										Resource: []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_ALLOW,
+											Action:   []string{"*"},
+											Resource: []string{"*"},
+										},
 									},
 								},
 							},
@@ -52,14 +54,16 @@ func TestSCP(t *testing.T) {
 			Name: "deny_all",
 			Input: AuthContext{
 				Principal: &entities.Principal{
-					SCPs: [][]policy.Policy{
-						{
+					Account: entities.Account{
+						SCPs: [][]policy.Policy{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_DENY,
-										Action:   []string{"*"},
-										Resource: []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_DENY,
+											Action:   []string{"*"},
+											Resource: []string{"*"},
+										},
 									},
 								},
 							},
@@ -77,14 +81,16 @@ func TestSCP(t *testing.T) {
 			Name: "allowed_service",
 			Input: AuthContext{
 				Principal: &entities.Principal{
-					SCPs: [][]policy.Policy{
-						{
+					Account: entities.Account{
+						SCPs: [][]policy.Policy{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"s3:*"},
-										Resource: []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_ALLOW,
+											Action:   []string{"s3:*"},
+											Resource: []string{"*"},
+										},
 									},
 								},
 							},
@@ -102,14 +108,16 @@ func TestSCP(t *testing.T) {
 			Name: "not_allowed_service",
 			Input: AuthContext{
 				Principal: &entities.Principal{
-					SCPs: [][]policy.Policy{
-						{
+					Account: entities.Account{
+						SCPs: [][]policy.Policy{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"ec2:*"},
-										Resource: []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_ALLOW,
+											Action:   []string{"ec2:*"},
+											Resource: []string{"*"},
+										},
 									},
 								},
 							},
@@ -125,26 +133,28 @@ func TestSCP(t *testing.T) {
 			Name: "mid_layer_implicit_deny",
 			Input: AuthContext{
 				Principal: &entities.Principal{
-					SCPs: [][]policy.Policy{
-						{
+					Account: entities.Account{
+						SCPs: [][]policy.Policy{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"*"},
-										Resource: []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_ALLOW,
+											Action:   []string{"*"},
+											Resource: []string{"*"},
+										},
 									},
 								},
 							},
-						},
-						{}, // <= should cause a deny
-						{
+							{}, // <= should cause a deny
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"*"},
-										Resource: []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_ALLOW,
+											Action:   []string{"*"},
+											Resource: []string{"*"},
+										},
 									},
 								},
 							},
@@ -160,36 +170,38 @@ func TestSCP(t *testing.T) {
 			Name: "mid_layer_explicit_deny",
 			Input: AuthContext{
 				Principal: &entities.Principal{
-					SCPs: [][]policy.Policy{
-						{
+					Account: entities.Account{
+						SCPs: [][]policy.Policy{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"*"},
-										Resource: []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_ALLOW,
+											Action:   []string{"*"},
+											Resource: []string{"*"},
+										},
 									},
 								},
 							},
-						},
-						{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_DENY,
-										Action:   []string{"*"},
-										Resource: []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_DENY,
+											Action:   []string{"*"},
+											Resource: []string{"*"},
+										},
 									},
 								},
 							},
-						},
-						{
 							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"*"},
-										Resource: []string{"*"},
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_ALLOW,
+											Action:   []string{"*"},
+											Resource: []string{"*"},
+										},
 									},
 								},
 							},

@@ -3,6 +3,7 @@ package sim
 import (
 	"fmt"
 
+	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim/trace"
 )
@@ -14,8 +15,9 @@ func evalSCP(trc *trace.Trace, opt *Options, ac AuthContext) (Decision, error) {
 	trc.Push("evaluating service control policies")
 	defer trc.Pop()
 
-	// Empty SCP = allowed; otherwise we have to evaluate
-	if len(ac.Principal.SCPs) == 0 {
+	// Missing account or empty SCP = allowed; otherwise we have to evaluate
+	account := ac.Principal.Account
+	if len(account.SCPs) == 0 {
 		decision := Decision{}
 		decision.Add(policy.EFFECT_ALLOW)
 		return decision, nil
@@ -31,11 +33,11 @@ func evalSCP(trc *trace.Trace, opt *Options, ac AuthContext) (Decision, error) {
 	layerDecision := Decision{}
 
 	// Iterate through layers of SCP, only continuing if we get an allow result through each layer
-	for i, layer := range ac.Principal.SCPs {
+	for i, layer := range account.SCPs {
 
 		// Calculate access for this layer
 		var err error
-		layerDecision, err = evalControlPolicyLayer(trc, opt, ac, funcs, layer, i+1)
+		layerDecision, err = evalControlPolicyLayer(trc, opt, ac, account, funcs, layer, i+1)
 		if err != nil {
 			return layerDecision, err
 		}
@@ -43,7 +45,7 @@ func evalSCP(trc *trace.Trace, opt *Options, ac AuthContext) (Decision, error) {
 		// If not allowed at this layer, propagate result up; should be denied
 		if !layerDecision.Allowed() {
 			trc.Observation(
-				fmt.Sprintf("SCP access denied at layer %d of %d", i+1, len(ac.Principal.SCPs)))
+				fmt.Sprintf("SCP access denied at layer %d of %d", i+1, len(account.SCPs)))
 			return layerDecision, nil
 		}
 	}
@@ -59,11 +61,12 @@ func evalControlPolicyLayer(
 	trc *trace.Trace,
 	opt *Options,
 	ac AuthContext,
+	account entities.Account,
 	funcs []evalFunction,
 	layer []policy.Policy,
 	layerId int) (Decision, error) {
 
-	trc.Push(fmt.Sprintf("evaluating SCP layer %d of %d", layerId, len(ac.Principal.SCPs)))
+	trc.Push(fmt.Sprintf("evaluating SCP layer %d of %d", layerId, len(account.SCPs)))
 	defer trc.Pop()
 
 	decision := Decision{}
