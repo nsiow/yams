@@ -13,7 +13,7 @@ type Account struct {
 	OrgId string
 
 	// OrgPaths refers to the collection of org-paths containing the account
-	// FIXME(nsiow) implement this in the org crawler
+	// TODO(nsiow) implement this in the org crawler
 	OrgPaths []string
 
 	// SCPs refers to the Service Control Policies applied to the account

@@ -22,7 +22,7 @@ func loadPolicies(items []ConfigItem) (*PolicyMap, error) {
 		// Save the decoded policy into our map
 		policies, err := loadPolicy(i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error loading policy '%s': %w", i.Arn, err)
 		}
 		pm.Add(CONST_TYPE_AWS_IAM_POLICY, i.Arn, policies)
 	}
@@ -37,7 +37,7 @@ func loadPolicies(items []ConfigItem) (*PolicyMap, error) {
 		// Save the decoded policy into our map
 		policies, err := loadGroup(i, pm)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error loading group policy '%s': %w", i.Arn, err)
 		}
 		pm.Add(CONST_TYPE_AWS_IAM_GROUP, i.Arn, policies)
 	}

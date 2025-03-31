@@ -83,9 +83,9 @@ func TestSimulate(t *testing.T) {
 					AttachedPolicies: nil,
 				},
 				Resource: &entities.Resource{
-					Arn:     "arn:aws:s3:::mybucket",
-					Account: "88888",
-					Policy:  policy.Policy{},
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+					Policy:    policy.Policy{},
 				},
 			},
 			Want: false,
@@ -110,8 +110,8 @@ func TestSimulate(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{
-					Arn:     "arn:aws:s3:::mybucket",
-					Account: "88888",
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
 				},
 			},
 			Want: true,
@@ -277,8 +277,8 @@ func TestComputeAccessSummary(t *testing.T) {
 					},
 					Resources: []entities.Resource{
 						{
-							Arn:     "arn:aws:s3:::mybucket",
-							Account: "11111",
+							Arn:       "arn:aws:s3:::mybucket",
+							AccountId: "11111",
 							Policy: policy.Policy{
 								Statement: []policy.Statement{
 									{
@@ -356,12 +356,12 @@ var SimpleTestEnvironment_1 entities.Environment = entities.Environment{
 	},
 	Resources: []entities.Resource{
 		{
-			Arn:     "arn:aws:s3:::bucket1",
-			Account: "88888",
+			Arn:       "arn:aws:s3:::bucket1",
+			AccountId: "88888",
 		},
 		{
-			Arn:     "arn:aws:s3:::bucket2",
-			Account: "11111",
+			Arn:       "arn:aws:s3:::bucket2",
+			AccountId: "11111",
 			Policy: policy.Policy{
 				Statement: []policy.Statement{
 					{
@@ -376,8 +376,8 @@ var SimpleTestEnvironment_1 entities.Environment = entities.Environment{
 			},
 		},
 		{
-			Arn:     "arn:aws:s3:::bucket3",
-			Account: "11111",
+			Arn:       "arn:aws:s3:::bucket3",
+			AccountId: "11111",
 		},
 	},
 }

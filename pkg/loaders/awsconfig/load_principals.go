@@ -22,10 +22,9 @@ func loadPrincipals(
 			continue
 		}
 
-		// Load the principal
 		p, err := loadPrincipal(i, accounts, policies)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error loading principal '%s': %w", i.Arn, err)
 		}
 
 		ps = append(ps, p)

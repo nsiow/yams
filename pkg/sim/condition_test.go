@@ -98,7 +98,7 @@ func TestStringEquals(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{Account: "55555"},
+					Resource: &entities.Resource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -114,7 +114,7 @@ func TestStringEquals(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{Account: "55555"},
+					Resource: &entities.Resource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -131,7 +131,7 @@ func TestStringEquals(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.Principal{AccountId: "12345"},
-					Resource:  &entities.Resource{Account: "55555"},
+					Resource:  &entities.Resource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -202,7 +202,7 @@ func TestStringNotEquals(t *testing.T) {
 			Name: "simple_inverted_match",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{Account: "55555"},
+					Resource: &entities.Resource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -218,7 +218,7 @@ func TestStringNotEquals(t *testing.T) {
 			Name: "simple_inverted_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{Account: "55555"},
+					Resource: &entities.Resource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -284,7 +284,7 @@ func TestStringLike(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{Account: "55555"},
+					Resource: &entities.Resource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -301,7 +301,7 @@ func TestStringLike(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.Principal{AccountId: "12345"},
-					Resource:  &entities.Resource{Account: "55555"},
+					Resource:  &entities.Resource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -327,7 +327,7 @@ func TestStringNotLike(t *testing.T) {
 			Name: "simple_inverted_match",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{Account: "55555"},
+					Resource: &entities.Resource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -343,7 +343,7 @@ func TestStringNotLike(t *testing.T) {
 			Name: "simple_inverted_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{Account: "55555"},
+					Resource: &entities.Resource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{

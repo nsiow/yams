@@ -30,7 +30,7 @@ type Principal struct {
 	// PermissionsBoundary refers to the policy set as the Principal's permissions boundary
 	PermissionsBoundary policy.Policy
 
-	// account is the full account structure used to contain org attributes
-	// It is private so that we can expose a safe(r) getter function since it's optional
+	// Account is the (optional) account reference for this Principal, providing additional policies
+	// and condition keys for evaluation
 	Account Account
 }

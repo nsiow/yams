@@ -20,7 +20,7 @@ func loadAccounts(items []ConfigItem) (*AccountMap, error) {
 
 		account, err := loadAccount(i)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error loading account '%s': %w", i.AccountId, err)
 		}
 		a.Add(i.AccountId, account)
 	}

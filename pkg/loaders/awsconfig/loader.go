@@ -121,7 +121,7 @@ func (a *Loader) loadItems(items []ConfigItem) error {
 	a.principals = append(a.principals, principals...)
 
 	// Load resources
-	resources, err := loadResources(items)
+	resources, err := loadResources(items, accounts)
 	if err != nil {
 		return fmt.Errorf("error loading resources: %v", err)
 	}

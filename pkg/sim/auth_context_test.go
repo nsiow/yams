@@ -187,7 +187,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Resource: &entities.Resource{
-						Account: "77777",
+						AccountId: "77777",
 					},
 				},
 				key: "aws:ResourceAccount",

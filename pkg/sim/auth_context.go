@@ -61,7 +61,7 @@ func (ac *AuthContext) Key(key string) string {
 	case condkey.PrincipalType:
 		return ac.principalType()
 	case condkey.ResourceAccount:
-		return ac.Resource.Account
+		return ac.Resource.AccountId
 	case condkey.CurrentTime:
 		return ac.now().UTC().Format(TIME_FORMAT)
 	case condkey.EpochTime:
@@ -69,8 +69,7 @@ func (ac *AuthContext) Key(key string) string {
 	case condkey.PrincipalOrgId:
 		return ac.Principal.Account.OrgId
 	case condkey.ResourceOrgId:
-		// FIXME(nsiow)
-		panic("not yet implemented")
+		return ac.Resource.Account.OrgId
 
 	// We'll enumerate these for potential special handling in the future, but otherwise just use
 	// default behavior
