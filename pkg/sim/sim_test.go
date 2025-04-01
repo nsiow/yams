@@ -78,14 +78,14 @@ func TestSimulate(t *testing.T) {
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
-					Account:          "88888",
+					AccountId:        "88888",
 					InlinePolicies:   nil,
 					AttachedPolicies: nil,
 				},
 				Resource: &entities.Resource{
-					Arn:     "arn:aws:s3:::mybucket",
-					Account: "88888",
-					Policy:  policy.Policy{},
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+					Policy:    policy.Policy{},
 				},
 			},
 			Want: false,
@@ -95,8 +95,8 @@ func TestSimulate(t *testing.T) {
 			Input: AuthContext{
 				Action: "s3:listbucket",
 				Principal: &entities.Principal{
-					Arn:     "arn:aws:iam::88888:role/myrole",
-					Account: "88888",
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
@@ -110,8 +110,8 @@ func TestSimulate(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{
-					Arn:     "arn:aws:s3:::mybucket",
-					Account: "88888",
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
 				},
 			},
 			Want: true,
@@ -271,14 +271,14 @@ func TestComputeAccessSummary(t *testing.T) {
 				env: &entities.Environment{
 					Principals: []entities.Principal{
 						{
-							Arn:     "arn:aws:iam::88888:role/role1",
-							Account: "88888",
+							Arn:       "arn:aws:iam::88888:role/role1",
+							AccountId: "88888",
 						},
 					},
 					Resources: []entities.Resource{
 						{
-							Arn:     "arn:aws:s3:::mybucket",
-							Account: "11111",
+							Arn:       "arn:aws:s3:::mybucket",
+							AccountId: "11111",
 							Policy: policy.Policy{
 								Statement: []policy.Statement{
 									{
@@ -320,8 +320,8 @@ func TestComputeAccessSummary(t *testing.T) {
 var SimpleTestEnvironment_1 entities.Environment = entities.Environment{
 	Principals: []entities.Principal{
 		{
-			Arn:     "arn:aws:iam::88888:role/role1",
-			Account: "88888",
+			Arn:       "arn:aws:iam::88888:role/role1",
+			AccountId: "88888",
 			InlinePolicies: []policy.Policy{
 				{
 					Statement: []policy.Statement{
@@ -335,8 +335,8 @@ var SimpleTestEnvironment_1 entities.Environment = entities.Environment{
 			},
 		},
 		{
-			Arn:     "arn:aws:iam::88888:role/role2",
-			Account: "88888",
+			Arn:       "arn:aws:iam::88888:role/role2",
+			AccountId: "88888",
 			InlinePolicies: []policy.Policy{
 				{
 					Statement: []policy.Statement{
@@ -350,18 +350,18 @@ var SimpleTestEnvironment_1 entities.Environment = entities.Environment{
 			},
 		},
 		{
-			Arn:     "arn:aws:iam::88888:role/role3",
-			Account: "11111",
+			Arn:       "arn:aws:iam::88888:role/role3",
+			AccountId: "11111",
 		},
 	},
 	Resources: []entities.Resource{
 		{
-			Arn:     "arn:aws:s3:::bucket1",
-			Account: "88888",
+			Arn:       "arn:aws:s3:::bucket1",
+			AccountId: "88888",
 		},
 		{
-			Arn:     "arn:aws:s3:::bucket2",
-			Account: "11111",
+			Arn:       "arn:aws:s3:::bucket2",
+			AccountId: "11111",
 			Policy: policy.Policy{
 				Statement: []policy.Statement{
 					{
@@ -376,8 +376,8 @@ var SimpleTestEnvironment_1 entities.Environment = entities.Environment{
 			},
 		},
 		{
-			Arn:     "arn:aws:s3:::bucket3",
-			Account: "11111",
+			Arn:       "arn:aws:s3:::bucket3",
+			AccountId: "11111",
 		},
 	},
 }

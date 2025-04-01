@@ -9,16 +9,43 @@ import (
 
 // TestNewValue creates a Value with different variables and determines correct functionality
 func TestNewValue(t *testing.T) {
-	tests := []testlib.TestCase[[]string, []string]{
+	tests := []testlib.TestCase[Value, []string]{
 		{
-			Input: []string{},
-			Want:  []string{},
+			Input: Value{},
+			Want:  Value{},
 		},
 	}
 
-	testlib.RunTestSuite(t, tests, func(v []string) ([]string, error) {
+	testlib.RunTestSuite(t, tests, func(v Value) ([]string, error) {
 		got := NewValue(v...)
 		return got, nil
+	})
+}
+
+// TestMarshal validates the JSON marshalling behavior of various cases
+func TestMarshal(t *testing.T) {
+	type exampleStruct struct {
+		S Value
+	}
+
+	tests := []testlib.TestCase[Value, string]{
+		{Input: Value{"foo"}, Want: `{"S":"foo"}`},
+		// {Input: Value{"foo", "bar"}, Want: `{"S":["foo","bar"]}`},
+		// {Input: Value{}, Want: `{"S":[]}`},
+		// {Input: Value{"null"}, Want: `{"S":["null"]}`},
+		// {Input: Value{}, Want: `{"S":[]}`},
+		// {Input: Value{"true"}, Want: `{"S":"true"}`},
+		// {Input: Value{"false"}, Want: `{"S":"false"}`},
+	}
+
+	testlib.RunTestSuite(t, tests, func(s Value) (string, error) {
+		ex := exampleStruct{S: s}
+		b, err := json.Marshal(ex)
+		if err != nil {
+			return "", err
+		}
+
+		return string(b), nil
 	})
 }
 
@@ -29,13 +56,13 @@ func TestUnmarshal(t *testing.T) {
 	}
 
 	tests := []testlib.TestCase[string, Value]{
-		{Input: `{"S": "foo"}`, Want: []string{"foo"}},
-		{Input: `{"S": ["foo", "bar"]}`, Want: []string{"foo", "bar"}},
-		{Input: `{"S": null}`, Want: []string{}},
-		{Input: `{"S": "null"}`, Want: []string{"null"}},
-		{Input: `{"S": []}`, Want: []string{}},
-		{Input: `{"S": true}`, Want: []string{"true"}},
-		{Input: `{"S": false}`, Want: []string{"false"}},
+		{Input: `{"S": "foo"}`, Want: Value{"foo"}},
+		{Input: `{"S": ["foo", "bar"]}`, Want: Value{"foo", "bar"}},
+		{Input: `{"S": null}`, Want: Value{}},
+		{Input: `{"S": "null"}`, Want: Value{"null"}},
+		{Input: `{"S": []}`, Want: Value{}},
+		{Input: `{"S": true}`, Want: Value{"true"}},
+		{Input: `{"S": false}`, Want: Value{"false"}},
 		{Input: `{"S": "\""}`, ShouldErr: true},
 		{Input: `{"S": [0]}`, ShouldErr: true},
 		{Input: `{"S": 0}`, ShouldErr: true},
@@ -70,10 +97,10 @@ func TestInvalid(t *testing.T) {
 func TestEmpty(t *testing.T) {
 	tests := []testlib.TestCase[Value, bool]{
 		{Input: nil, Want: true},
-		{Input: []string{}, Want: true},
-		{Input: []string{"foo"}, Want: false},
-		{Input: []string{"foo", "bar"}, Want: false},
-		{Input: []string{"foo", "bar", "baz"}, Want: false},
+		{Input: Value{}, Want: true},
+		{Input: Value{"foo"}, Want: false},
+		{Input: Value{"foo", "bar"}, Want: false},
+		{Input: Value{"foo", "bar", "baz"}, Want: false},
 	}
 
 	testlib.RunTestSuite(t, tests, func(v Value) (bool, error) {

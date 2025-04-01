@@ -52,12 +52,16 @@ testv: test
 .PHONY: cov
 cov: coverage.out
 
-.PHONY: report
-report: coverage.out
+.PHONY: cov-report
+cov-report: coverage.out
 	go tool cover -func=$<
 
-.PHONY: html
-html: coverage.html
+.PHONY: cov-missing
+cov-missing: coverage.out
+	@go tool cover -func=$< | grep -v '100.0%' || echo '[✔] code coverage = 100.0'
+
+.PHONY: cov-html
+cov-html: coverage.html
 
 coverage.out: $(GO_FILES)
 	GO_TEST_FLAGS='-coverprofile=$@' make test

@@ -11,7 +11,8 @@ import (
 	condkey "github.com/nsiow/yams/pkg/policy/condition/keys"
 )
 
-// TODO(nsiow) decide if principal/resource should be pointers or values; if pointers, implement null checks
+// TODO(nsiow) decide if principal/resource should be pointers or values; if pointers, implement
+//             sufficient null checks
 
 // AuthContext defines the tertiary context of a request that can be used for authz decisions
 type AuthContext struct {
@@ -52,7 +53,7 @@ func (ac *AuthContext) Key(key string) string {
 	case condkey.PrincipalArn:
 		return ac.Principal.Arn
 	case condkey.PrincipalAccount:
-		return ac.Principal.Account
+		return ac.Principal.AccountId
 	case condkey.PrincipalIsAwsService:
 		break
 	case condkey.PrincipalServiceName:
@@ -60,19 +61,15 @@ func (ac *AuthContext) Key(key string) string {
 	case condkey.PrincipalType:
 		return ac.principalType()
 	case condkey.ResourceAccount:
-		return ac.Resource.Account
+		return ac.Resource.AccountId
 	case condkey.CurrentTime:
 		return ac.now().UTC().Format(TIME_FORMAT)
 	case condkey.EpochTime:
-		// TODO(nsiow) make sure we are not losing accuracy
-		epoch := int(ac.now().Unix())
-		return strconv.Itoa(epoch)
-
-	// TODO(nsiow) revisit when we have org support
-	// case condkey.PrincipalOrgId:
-	// 	break
-	// case condkey.ResourceOrgId:
-	// 	break
+		return strconv.FormatInt(ac.now().Unix(), 10)
+	case condkey.PrincipalOrgId:
+		return ac.Principal.Account.OrgId
+	case condkey.ResourceOrgId:
+		return ac.Resource.Account.OrgId
 
 	// We'll enumerate these for potential special handling in the future, but otherwise just use
 	// default behavior

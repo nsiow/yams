@@ -95,10 +95,10 @@ func (a *Loader) LoadJsonl(data []byte) error {
 
 // loadItems loads data from the provided AWS Config items
 func (a *Loader) loadItems(items []ConfigItem) error {
-	// Load control policies first
-	cps, err := loadControlPolicies(items)
+	// Load accounts first
+	accounts, err := loadAccounts(items)
 	if err != nil {
-		return fmt.Errorf("error loading control policies: %v", err)
+		return fmt.Errorf("error loading accounts: %v", err)
 	}
 
 	// Load policies (required to load principals)
@@ -114,14 +114,14 @@ func (a *Loader) loadItems(items []ConfigItem) error {
 	}
 
 	// Load principals
-	principals, err := loadPrincipals(items, cps.SCPs, policies)
+	principals, err := loadPrincipals(items, accounts, policies)
 	if err != nil {
 		return fmt.Errorf("error loading principals: %v", err)
 	}
 	a.principals = append(a.principals, principals...)
 
 	// Load resources
-	resources, err := loadResources(items)
+	resources, err := loadResources(items, accounts)
 	if err != nil {
 		return fmt.Errorf("error loading resources: %v", err)
 	}

@@ -218,9 +218,9 @@ func TestLoadJson(t *testing.T) {
 var simple1Output entities.Environment = entities.Environment{
 	Principals: []entities.Principal{
 		{
-			Type:    "AWS::IAM::Role",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:role/SimpleRole1",
+			Type:      "AWS::IAM::Role",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:role/SimpleRole1",
 			Tags: []entities.Tag{
 				{
 					Key:   "some-business-tag",
@@ -259,10 +259,10 @@ var simple1Output entities.Environment = entities.Environment{
 	},
 	Resources: []entities.Resource{
 		{
-			Type:    "AWS::IAM::Role",
-			Account: "000000000000",
-			Region:  "",
-			Arn:     "arn:aws:iam::000000000000:role/SimpleRole1",
+			Type:      "AWS::IAM::Role",
+			AccountId: "000000000000",
+			Region:    "",
+			Arn:       "arn:aws:iam::000000000000:role/SimpleRole1",
 			Policy: policy.Policy{
 				Version: "2012-10-17",
 				Statement: []policy.Statement{
@@ -287,26 +287,26 @@ var simple1Output entities.Environment = entities.Environment{
 			},
 		},
 		{
-			Type:    "AWS::IAM::Policy",
-			Account: "000000000000",
-			Region:  "",
-			Arn:     "arn:aws:iam::000000000000:policy/Common",
-			Policy:  policy.Policy{},
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::Policy",
+			AccountId: "000000000000",
+			Region:    "",
+			Arn:       "arn:aws:iam::000000000000:policy/Common",
+			Policy:    policy.Policy{},
+			Tags:      []entities.Tag{},
 		},
 		{
-			Type:    "AWS::DynamoDB::Table",
-			Account: "000000000000",
-			Region:  "",
-			Arn:     "arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable",
-			Policy:  policy.Policy{},
-			Tags:    []entities.Tag{},
+			Type:      "AWS::DynamoDB::Table",
+			AccountId: "000000000000",
+			Region:    "",
+			Arn:       "arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable",
+			Policy:    policy.Policy{},
+			Tags:      []entities.Tag{},
 		},
 		{
-			Type:    "AWS::S3::Bucket",
-			Account: "000000000000",
-			Region:  "",
-			Arn:     "arn:aws:s3:::somebucket",
+			Type:      "AWS::S3::Bucket",
+			AccountId: "000000000000",
+			Region:    "",
+			Arn:       "arn:aws:s3:::somebucket",
 			Policy: policy.Policy{
 				Version: "2012-10-17",
 				Statement: []policy.Statement{
@@ -329,10 +329,10 @@ var simple1Output entities.Environment = entities.Environment{
 			},
 		},
 		{
-			Type:    "AWS::SQS::Queue",
-			Account: "000000000000",
-			Region:  "",
-			Arn:     "arn:aws:sqs:us-west-2:000000000000:ExampleQueue",
+			Type:      "AWS::SQS::Queue",
+			AccountId: "000000000000",
+			Region:    "",
+			Arn:       "arn:aws:sqs:us-west-2:000000000000:ExampleQueue",
 			Policy: policy.Policy{
 				Version: "2012-10-17",
 				Statement: []policy.Statement{
@@ -350,18 +350,18 @@ var simple1Output entities.Environment = entities.Environment{
 			Tags: []entities.Tag{},
 		},
 		{
-			Type:    "AWS::SQS::Queue",
-			Account: "000000000000",
-			Region:  "",
-			Arn:     "arn:aws:sqs:us-west-2:000000000000:SimpleQueue",
-			Policy:  policy.Policy{},
-			Tags:    []entities.Tag{},
+			Type:      "AWS::SQS::Queue",
+			AccountId: "000000000000",
+			Region:    "",
+			Arn:       "arn:aws:sqs:us-west-2:000000000000:SimpleQueue",
+			Policy:    policy.Policy{},
+			Tags:      []entities.Tag{},
 		},
 		{
-			Type:    "AWS::SNS::Topic",
-			Account: "999999999999",
-			Region:  "us-west-2",
-			Arn:     "arn:aws:sns:us-west-2:999999999999:SimpleTopic",
+			Type:      "AWS::SNS::Topic",
+			AccountId: "999999999999",
+			Region:    "us-west-2",
+			Arn:       "arn:aws:sns:us-west-2:999999999999:SimpleTopic",
 			Policy: policy.Policy{
 				Version: "2012-10-17",
 				Id:      "__default_policy_ID",
@@ -385,10 +385,10 @@ var simple1Output entities.Environment = entities.Environment{
 var user1Output entities.Environment = entities.Environment{
 	Principals: []entities.Principal{
 		{
-			Type:    "AWS::IAM::User",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:user/myuser",
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::User",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:user/myuser",
+			Tags:      []entities.Tag{},
 			InlinePolicies: []policy.Policy{
 				{
 					Version: "2012-10-17",
@@ -441,32 +441,32 @@ var user1Output entities.Environment = entities.Environment{
 	},
 	Resources: []entities.Resource{
 		{
-			Type:    "AWS::IAM::Policy",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:policy/Common",
-			Policy:  policy.Policy{},
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::Policy",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:policy/Common",
+			Policy:    policy.Policy{},
+			Tags:      []entities.Tag{},
 		},
 		{
-			Type:    "AWS::IAM::Policy",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:policy/Shared",
-			Policy:  policy.Policy{},
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::Policy",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:policy/Shared",
+			Policy:    policy.Policy{},
+			Tags:      []entities.Tag{},
 		},
 		{
-			Type:    "AWS::IAM::Group",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:group/family",
-			Policy:  policy.Policy{},
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::Group",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:group/family",
+			Policy:    policy.Policy{},
+			Tags:      []entities.Tag{},
 		},
 		{
-			Type:    "AWS::IAM::User",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:user/myuser",
-			Policy:  policy.Policy{},
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::User",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:user/myuser",
+			Policy:    policy.Policy{},
+			Tags:      []entities.Tag{},
 		},
 	},
 }
@@ -474,10 +474,10 @@ var user1Output entities.Environment = entities.Environment{
 var permissionsBoundaryOutput entities.Environment = entities.Environment{
 	Principals: []entities.Principal{
 		{
-			Type:    "AWS::IAM::User",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:user/myuser",
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::User",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:user/myuser",
+			Tags:      []entities.Tag{},
 			PermissionsBoundary: policy.Policy{
 				Version: "2012-10-17",
 				Statement: []policy.Statement{
@@ -491,10 +491,10 @@ var permissionsBoundaryOutput entities.Environment = entities.Environment{
 			},
 		},
 		{
-			Type:    "AWS::IAM::Role",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:role/myrole",
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::Role",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:role/myrole",
+			Tags:      []entities.Tag{},
 			PermissionsBoundary: policy.Policy{
 				Version: "2012-10-17",
 				Statement: []policy.Statement{
@@ -510,25 +510,25 @@ var permissionsBoundaryOutput entities.Environment = entities.Environment{
 	},
 	Resources: []entities.Resource{
 		{
-			Type:    "AWS::IAM::Policy",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:policy/Common",
-			Policy:  policy.Policy{},
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::Policy",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:policy/Common",
+			Policy:    policy.Policy{},
+			Tags:      []entities.Tag{},
 		},
 		{
-			Type:    "AWS::IAM::User",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:user/myuser",
-			Policy:  policy.Policy{},
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::User",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:user/myuser",
+			Policy:    policy.Policy{},
+			Tags:      []entities.Tag{},
 		},
 		{
-			Type:    "AWS::IAM::Role",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:role/myrole",
-			Policy:  policy.Policy{},
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::Role",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:role/myrole",
+			Policy:    policy.Policy{},
+			Tags:      []entities.Tag{},
 		},
 	},
 }
@@ -536,33 +536,38 @@ var permissionsBoundaryOutput entities.Environment = entities.Environment{
 var scpOutput entities.Environment = entities.Environment{
 	Principals: []entities.Principal{
 		{
-			Type:    "AWS::IAM::Role",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:role/myrole",
-			Tags:    []entities.Tag{},
-			SCPs: [][]policy.Policy{
-				{
-					policy.Policy{
-						Id:      "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-						Version: "2012-10-17",
-						Statement: []policy.Statement{
-							{
-								Effect:   "Allow",
-								Action:   []string{"*"},
-								Resource: []string{"*"},
+			Type:      "AWS::IAM::Role",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:role/myrole",
+			Tags:      []entities.Tag{},
+			Account: entities.Account{
+				Id:       "000000000000",
+				OrgId:    "o-123",
+				OrgPaths: []string{"o-123/", "o-123/ou-level-1/", "o-123/ou-level-1/ou-level-2/"},
+				SCPs: [][]policy.Policy{
+					{
+						policy.Policy{
+							Id:      "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+							Version: "2012-10-17",
+							Statement: []policy.Statement{
+								{
+									Effect:   "Allow",
+									Action:   []string{"*"},
+									Resource: []string{"*"},
+								},
 							},
 						},
 					},
-				},
-				{
-					policy.Policy{
-						Id:      "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
-						Version: "2012-10-17",
-						Statement: []policy.Statement{
-							{
-								Effect:   "Allow",
-								Action:   []string{"s3:*"},
-								Resource: []string{"*"},
+					{
+						policy.Policy{
+							Id:      "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+							Version: "2012-10-17",
+							Statement: []policy.Statement{
+								{
+									Effect:   "Allow",
+									Action:   []string{"s3:*"},
+									Resource: []string{"*"},
+								},
 							},
 						},
 					},
@@ -572,11 +577,11 @@ var scpOutput entities.Environment = entities.Environment{
 	},
 	Resources: []entities.Resource{
 		{
-			Type:    "AWS::IAM::Role",
-			Account: "000000000000",
-			Arn:     "arn:aws:iam::000000000000:role/myrole",
-			Policy:  policy.Policy{},
-			Tags:    []entities.Tag{},
+			Type:      "AWS::IAM::Role",
+			AccountId: "000000000000",
+			Arn:       "arn:aws:iam::000000000000:role/myrole",
+			Policy:    policy.Policy{},
+			Tags:      []entities.Tag{},
 		},
 	},
 }

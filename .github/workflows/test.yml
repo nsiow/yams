@@ -13,7 +13,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.23'
+        go-version: '1.24'
     - name: Build
       run: make build
     - name: Lint
@@ -21,7 +21,7 @@ jobs:
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v6
       with:
-        version: v1.60
+        version: v1.64.8
     - name: Test
       run: make cov
     - name: Upload coverage reports to Codecov

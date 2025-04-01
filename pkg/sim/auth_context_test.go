@@ -175,7 +175,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.Principal{
-						Account: "55555",
+						AccountId: "55555",
 					},
 				},
 				key: "aws:PrincipalAccount",
@@ -183,16 +183,44 @@ func TestAuthContextKeys(t *testing.T) {
 			Want: "55555",
 		},
 		{
+			Name: "principal_org_id",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.Principal{
+						Account: entities.Account{
+							OrgId: "o-123",
+						},
+					},
+				},
+				key: "aws:PrincipalOrgID",
+			},
+			Want: "o-123",
+		},
+		{
 			Name: "resource_account",
 			Input: input{
 				ac: AuthContext{
 					Resource: &entities.Resource{
-						Account: "77777",
+						AccountId: "77777",
 					},
 				},
 				key: "aws:ResourceAccount",
 			},
 			Want: "77777",
+		},
+		{
+			Name: "resource_org_id",
+			Input: input{
+				ac: AuthContext{
+					Resource: &entities.Resource{
+						Account: entities.Account{
+							OrgId: "o-123",
+						},
+					},
+				},
+				key: "aws:ResourceOrgID",
+			},
+			Want: "o-123",
 		},
 		{
 			Name: "source_arn",

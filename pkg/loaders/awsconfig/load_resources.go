@@ -1,7 +1,6 @@
 package awsconfig
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -9,8 +8,8 @@ import (
 )
 
 // loadResources takes a list of AWS Config items and extracts resources
-func loadResources(items []ConfigItem) ([]entities.Resource, error) {
-	var rs []entities.Resource
+func loadResources(items []ConfigItem, accounts *AccountMap) ([]entities.Resource, error) {
+	var resources []entities.Resource
 
 	// Iterate through our AWS Config items
 	for _, i := range items {
@@ -20,28 +19,26 @@ func loadResources(items []ConfigItem) ([]entities.Resource, error) {
 			continue
 		}
 
-		// TODO(nsiow) give similar treatment to errors for other entities
-		// Load the single r
 		r, err := loadResource(i)
 		if err != nil {
-			return nil, errors.Join(fmt.Errorf("error loading resource '%s'", i.Arn), err)
+			return nil, fmt.Errorf("error loading resource '%s': %w", i.Arn, err)
 		}
 
-		rs = append(rs, r)
+		resources = append(resources, r)
 	}
 
-	return rs, nil
+	return resources, nil
 }
 
 // loadResource takes a single AWS Config item and returns a parsed resource object
 func loadResource(i ConfigItem) (entities.Resource, error) {
 	// Construct basic fields
 	r := entities.Resource{
-		Type:    i.Type,
-		Account: i.Account,
-		Region:  i.Region,
-		Arn:     i.Arn,
-		Tags:    i.Tags,
+		Type:      i.Type,
+		AccountId: i.AccountId,
+		Region:    i.Region,
+		Arn:       i.Arn,
+		Tags:      i.Tags,
 	}
 
 	// Add policy where supported

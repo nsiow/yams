@@ -10,6 +10,7 @@ misc/orgdump.json
 
 # Local build data cache
 .cache
+local/
 
 # --------------------------------------------------------------------------------
 # Editor files

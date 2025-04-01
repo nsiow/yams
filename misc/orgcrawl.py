@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import sys
-from typing import Dict, List
 
 import boto3
 import joblib
@@ -22,19 +21,25 @@ mem = joblib.Memory('/tmp/orgcrawl.cache')
 orgclient = boto3.client('organizations')
 
 @mem.cache
+def get_org_id() -> str:
+    """Returns the ID of the organization."""
+    resp = orgclient.describe_organization()
+    return resp['Organization']['Id']
+
+@mem.cache
 def get_org_root() -> str:
     """Returns the ID of the organization root."""
     resp = orgclient.list_roots()
     roots = resp['Roots']
 
     if len(roots) != 1:
-        raise ValueError(f'unexpected organizations.ListRoots return: {resp}')
+        raise ValueError(f'unexpected organizations.listRoots return: {resp}')
 
     return roots[0]['Id']
 
 @mem.cache
-def get_org_structure(org_root_id: str) -> Dict:
-    """Recurse through the org structure and return a representation of the root/ou/acct hierarchy.
+def get_org_structure(org_root_id: str) -> dict:
+    """Walk through the org structure and return a representation of the root/ou/acct hierarchy.
 
     At the end of evaluation, `structure` contains a map of accounts to their position within the
     organization, e.g.
@@ -83,7 +88,7 @@ def get_org_structure(org_root_id: str) -> Dict:
     return structure
 
 @mem.cache
-def get_policy_structure(org_structure: Dict) -> Dict:
+def get_policy_structure(org_structure: dict) -> dict:
     """Traverse the org structure and for each node, look up the attached policies.
 
     At the end of evaluation, `structure` contains a map of org entities to the policies attached
@@ -109,13 +114,13 @@ def get_policy_structure(org_structure: Dict) -> Dict:
         for target_id in target_list:
             if target_id not in structure:
                 resp = orgclient.list_policies_for_target(TargetId=target_id,
-                                                       Filter='SERVICE_CONTROL_POLICY')
+                                                          Filter='SERVICE_CONTROL_POLICY')
                 structure[target_id] = [p['Id'] for p in resp['Policies']]
 
     return structure
 
 @mem.cache
-def get_policies(policy_structure: Dict) -> Dict:
+def get_policies(policy_structure: dict) -> dict:
     """Traverse the attached policies and describe each of them.
 
     At the end of evaluation, `policies` contains a map of policy IDs to definitions
@@ -145,7 +150,23 @@ def get_policies(policy_structure: Dict) -> Dict:
 
     return policies
 
-def as_config_blobs(org_structure: Dict, policy_structure: Dict, policy_data: Dict) -> List[Dict]:
+def generate_org_paths(org_id: str, ou_path: list[str]) -> list[str]:
+    """Convert the list of OU nodes into an IAM-compatible list of org paths."""
+    nodes = list(ou_path)
+
+    current_path = org_id + '/'
+    paths = []
+    while nodes:
+        node = nodes.pop(0)
+        if node.startswith(('r-', 'ou-')):
+            current_path += node + '/'
+            paths.append(current_path)
+
+    return paths
+
+def as_config_blobs(org_id: str,
+                    org_structure: dict,
+                    policy_structure: dict, policy_data: dict) -> list[dict]:
     """Combine the org + policy structure into a parsable format."""
     data = []
 
@@ -174,6 +195,8 @@ def as_config_blobs(org_structure: Dict, policy_structure: Dict, policy_data: Di
             'resourceType': 'Yams::Organizations::Account',
             'accountId': account,
             'configuration': {
+              'orgId': org_id,
+              'orgPaths': generate_org_paths(org_id, ou_path),
               'serviceControlPolicies': parsed_policies,
             },
         }
@@ -181,11 +204,13 @@ def as_config_blobs(org_structure: Dict, policy_structure: Dict, policy_data: Di
 
     return data
 
-def get_policy_id(policy_summary: Dict) -> str:
+def get_policy_id(policy_summary: dict) -> str:
     """Return a useful, human-readable identifier for the provided policy."""
     return f'{policy_summary["Arn"]}/{policy_summary["Name"]}'
 
 def main():
+    org_id = get_org_id()
+    print(f'[✓] Discovered org: {org_id}')
     org_root_id = get_org_root()
     print(f'[✓] Discovered root: {org_root_id}')
     org_structure = get_org_structure(org_root_id)
@@ -197,7 +222,7 @@ def main():
     policy_data = get_policies(policy_structure)
     logging.debug('policy data: %s', policy_data)
     print(f'[✓] Discovered details for {len(policy_data)} policies')
-    data = as_config_blobs(org_structure, policy_structure, policy_data)
+    data = as_config_blobs(org_id, org_structure, policy_structure, policy_data)
     with open('orgdump.json', 'w+') as f:
         json.dump(data, f, indent=2, sort_keys=True)
     print(f'[✓] Wrote org crawl results to: orgdump.json')

@@ -131,6 +131,7 @@ def subparse_actions(service: str, sar_page: BeautifulSoup) -> list[dict]:
         row_data['resource_types'] = normalize_list(row_data['resource_types'])
         row_data['condition_keys'] = normalize_list(row_data['condition_keys'])
         row_data['dependent_actions'] = normalize_list(row_data['dependent_actions'])
+        row_data = { k: v for k, v in row_data.items() if v }
         actions.append(row_data)
 
     return actions

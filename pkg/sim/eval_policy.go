@@ -42,12 +42,12 @@ func evalPolicy(
 	decision := Decision{}
 
 	for _, stmt := range policy.Statement {
-		eff, err := evalStatement(trc, opt, ac, stmt, funcs)
+		effect, err := evalStatement(trc, opt, ac, stmt, funcs)
 		if err != nil {
-			return eff, err
+			return effect, err
 		}
 
-		decision.Merge(eff)
+		decision.Merge(effect)
 	}
 
 	return decision, nil

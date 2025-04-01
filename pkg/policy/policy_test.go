@@ -14,9 +14,9 @@ func TestPolicyEmpty(t *testing.T) {
 			Name: "empty_policy",
 			Input: `
 				{
-				  "Version": "",
-				  "Id": "",
-				  "Statement": []
+					"Version": "",
+					"Id": "",
+					"Statement": []
 				}
 			`,
 			Want: true,
@@ -25,23 +25,23 @@ func TestPolicyEmpty(t *testing.T) {
 			Name: "non_empty_policy",
 			Input: `
 				{
-				  "Version": "2012-10-17",
-				  "Id": "s3read",
-				  "Statement": [
-				    {
-				      "Effect": "Allow",
-				      "Action": [
-				        "s3:GetObject",
-				        "s3:ListBucket"
-				      ],
-				      "Resource": [
-				        "arn:aws:s3:::foo-bucket",
-				        "arn:aws:s3:::foo-bucket/*"
-				      ]
-				    }
-				  ]
+					"Version": "2012-10-17",
+					"Id": "s3read",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Action": [
+								"s3:GetObject",
+								"s3:ListBucket"
+							],
+							"Resource": [
+								"arn:aws:s3:::foo-bucket",
+								"arn:aws:s3:::foo-bucket/*"
+							]
+						}
+					]
 				}
-      `,
+			`,
 			Want: false,
 		},
 	}
@@ -57,6 +57,65 @@ func TestPolicyEmpty(t *testing.T) {
 	})
 }
 
+// TestPolicyValid ensures correct handling of valid/invalid policies
+func TestPolicyValid(t *testing.T) {
+	tests := []testlib.TestCase[string, bool]{
+		{
+			Name: "valid_policies",
+			Input: `
+				{
+					"Version": "2012-10-17",
+					"Id": "s3read",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Action": [
+								"s3:GetObject",
+								"s3:ListBucket"
+							],
+							"Resource": [
+								"arn:aws:s3:::foo-bucket",
+								"arn:aws:s3:::foo-bucket/*"
+							]
+						}
+					]
+				}
+			`,
+			Want: true,
+		},
+		{
+			Name: "invalid_policy",
+			Input: `
+				{
+					"Version": "",
+					"Id": "",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Principal": "*",
+							"Action": "*",
+							"Resource": "*",
+							"NotResource": "*"
+						}
+					]
+				}
+			`,
+			ShouldErr: true,
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(s string) (bool, error) {
+		p := Policy{}
+		err := json.Unmarshal([]byte(s), &p)
+		if err != nil {
+			return false, err
+		}
+
+		err = p.Validate()
+		return err == nil, err
+	})
+}
+
 // TestPolicyGrammar confirms we got the right shape for our policy grammar
 func TestPolicyGrammar(t *testing.T) {
 	tests := []testlib.TestCase[string, Policy]{
@@ -64,9 +123,9 @@ func TestPolicyGrammar(t *testing.T) {
 			Name: "empty_policy",
 			Input: `
 				{
-				  "Version": "",
-				  "Id": "",
-				  "Statement": []
+					"Version": "",
+					"Id": "",
+					"Statement": []
 				}
 			`,
 			Want: Policy{
@@ -79,7 +138,7 @@ func TestPolicyGrammar(t *testing.T) {
 			Name: "empty_statement_map",
 			Input: `
 				{
-				  "Statement": {}
+					"Statement": {}
 				}
 			`,
 			Want: Policy{
@@ -92,7 +151,7 @@ func TestPolicyGrammar(t *testing.T) {
 			Name: "null_statement",
 			Input: `
 				{
-				  "Statement": null
+					"Statement": null
 				}
 			`,
 			Want: Policy{
@@ -105,7 +164,7 @@ func TestPolicyGrammar(t *testing.T) {
 			Name: "effect_deny",
 			Input: `
 				{
-				  "Statement": {
+					"Statement": {
 						"Effect": "Deny"
 					}
 				}
@@ -124,7 +183,7 @@ func TestPolicyGrammar(t *testing.T) {
 			Name: "invalid_effect_other",
 			Input: `
 				{
-				  "Statement": {
+					"Statement": {
 						"Effect": "Other"
 					}
 				}
@@ -135,8 +194,8 @@ func TestPolicyGrammar(t *testing.T) {
 			Name: "invalid_small_statement",
 			Input: `
 				{
-				  "Statement": 0
-				}
+				"Statement": 0
+			}
 			`,
 			ShouldErr: true,
 		},
@@ -144,7 +203,7 @@ func TestPolicyGrammar(t *testing.T) {
 			Name: "invalid_statement_array",
 			Input: `
 				{
-				  "Statement": [0]
+					"Statement": [0]
 				}
 			`,
 			ShouldErr: true,
@@ -153,9 +212,9 @@ func TestPolicyGrammar(t *testing.T) {
 			Name: "invalid_statement_map",
 			Input: `
 				{
-				  "Statement": {
-				    "Effect": 0
-				  }
+					"Statement": {
+						"Effect": 0
+					}
 				}
 			`,
 			ShouldErr: true,
@@ -169,7 +228,7 @@ func TestPolicyGrammar(t *testing.T) {
 			Name: "weird_statement_block",
 			Input: `
 				{
-				  "Statement": ""
+					"Statement": ""
 				}
 			`,
 			ShouldErr: true,
@@ -178,21 +237,21 @@ func TestPolicyGrammar(t *testing.T) {
 			Name: "s3read_policy",
 			Input: `
 				{
-				  "Version": "2012-10-17",
-				  "Id": "s3read",
-				  "Statement": [
-				    {
-				      "Effect": "Allow",
-				      "Action": [
-				        "s3:GetObject",
-				        "s3:ListBucket"
-				      ],
-				      "Resource": [
-				        "arn:aws:s3:::foo-bucket",
-				        "arn:aws:s3:::foo-bucket/*"
-				      ]
-				    }
-				  ]
+					"Version": "2012-10-17",
+					"Id": "s3read",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Action": [
+								"s3:GetObject",
+								"s3:ListBucket"
+							],
+							"Resource": [
+								"arn:aws:s3:::foo-bucket",
+								"arn:aws:s3:::foo-bucket/*"
+							]
+						}
+					]
 				}
 			`,
 			Want: Policy{
@@ -217,26 +276,26 @@ func TestPolicyGrammar(t *testing.T) {
 			Name: "valid_structured_principal",
 			Input: `
 				{
-				  "Version": "2012-10-17",
-				  "Id": "s3read",
-				  "Statement": [
-				    {
-				      "Effect": "Allow",
-				      "Principal": {
-				        "AWS": [
-				          "SomeValueHere"
-				        ]
-				      },
-				      "Action": [
-				        "s3:GetObject",
-				        "s3:ListBucket"
-				      ],
-				      "Resource": [
-				        "arn:aws:s3:::foo-bucket",
-				        "arn:aws:s3:::foo-bucket/*"
-				      ]
-				    }
-				  ]
+					"Version": "2012-10-17",
+					"Id": "s3read",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Principal": {
+								"AWS": [
+									"SomeValueHere"
+								]
+							},
+							"Action": [
+								"s3:GetObject",
+								"s3:ListBucket"
+							],
+							"Resource": [
+								"arn:aws:s3:::foo-bucket",
+								"arn:aws:s3:::foo-bucket/*"
+							]
+						}
+					]
 				}
 			`,
 			Want: Policy{
@@ -264,26 +323,26 @@ func TestPolicyGrammar(t *testing.T) {
 			Name: "invalid_structured_principal",
 			Input: `
 				{
-				  "Version": "2012-10-17",
-				  "Id": "s3read",
-				  "Statement": [
-				    {
-				      "Effect": "Allow",
-				      "Principal": {
-				        "AWS": [
-				          0
-				        ]
-				      },
-				      "Action": [
-				        "s3:GetObject",
-				        "s3:ListBucket"
-				      ],
-				      "Resource": [
-				        "arn:aws:s3:::foo-bucket",
-				        "arn:aws:s3:::foo-bucket/*"
-				      ]
-				    }
-				  ]
+					"Version": "2012-10-17",
+					"Id": "s3read",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Principal": {
+								"AWS": [
+									0
+								]
+							},
+							"Action": [
+								"s3:GetObject",
+								"s3:ListBucket"
+							],
+							"Resource": [
+								"arn:aws:s3:::foo-bucket",
+								"arn:aws:s3:::foo-bucket/*"
+							]
+						}
+					]
 				}
 			`,
 			ShouldErr: true,
@@ -303,26 +362,26 @@ func TestValidate(t *testing.T) {
 		{
 			Name: "valid",
 			Input: `
-        {
-			  	"Effect": "Allow",
-			  	"Principal": "*",
-			  	"Action": "*",
-			  	"Resource": "*"
-			  }
+				{
+					"Effect": "Allow",
+					"Principal": "*",
+					"Action": "*",
+					"Resource": "*"
+				}
 			`,
 			ShouldErr: false,
 		},
 		{
 			Name: "empty_statement",
 			Input: `
-			  {}
+				{}
 			`,
 			ShouldErr: true,
 		},
 		{
 			Name: "double_principal",
 			Input: `
-        {
+				{
 					"Effect": "Allow",
 					"Principal": "*",
 					"NotPrincipal": "*",
@@ -335,7 +394,7 @@ func TestValidate(t *testing.T) {
 		{
 			Name: "double_action",
 			Input: `
-			  {
+				{
 					"Effect": "Allow",
 					"Principal": "*",
 					"Action": "*",
@@ -348,7 +407,7 @@ func TestValidate(t *testing.T) {
 		{
 			Name: "double_resource",
 			Input: `
-        {
+				{
 					"Effect": "Allow",
 					"Principal": "*",
 					"Action": "*",
