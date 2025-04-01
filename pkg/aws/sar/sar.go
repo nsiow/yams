@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/nsiow/yams/internal/assets"
-	"github.com/nsiow/yams/internal/log"
 	"github.com/nsiow/yams/pkg/entities"
 )
 
@@ -22,8 +21,6 @@ const (
 // Type aliases for service authorization semantics
 type predicateType = string
 type predicateKey = string
-
-var LOG = log.Logger("sar")
 
 // data is a local alias hiding the asset implementation of SAR data
 var data = assets.SarData
@@ -84,23 +81,15 @@ func (q *Query) check(apicall entities.ApiCall) bool {
 		return false
 	}
 
-	for predicateType, filters := range q.predicates {
+	for _, filters := range q.predicates {
 		matchedAny := false
-		for predicateKey, predicate := range filters {
+		for _, predicate := range filters {
 			match := predicate(apicall)
-			LOG.Debug("predicate check",
-				"predicate_type", predicateType,
-				"predicate_key", predicateKey,
-				"predicate_result", match)
 			if match {
 				matchedAny = true
 				break
 			}
 		}
-
-		LOG.Debug("predicate type check",
-			"predicate_type", predicateType,
-			"predicate_type_result", matchedAny)
 
 		if !matchedAny {
 			return false
@@ -114,6 +103,7 @@ func (q *Query) check(apicall entities.ApiCall) bool {
 type predicate = func(entities.ApiCall) bool
 
 // WithService adds a new filter to the query filtering on the "service" field
+// TODO(nsiow) add wildcard matching to querying
 func (q *Query) WithService(service string) *Query {
 	return q.add("service", service, func(a entities.ApiCall) bool {
 		return strings.EqualFold(a.Service, service)
