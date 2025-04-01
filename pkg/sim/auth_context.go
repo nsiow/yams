@@ -48,6 +48,8 @@ func (ac *AuthContext) Key(key string) string {
 		// For RequestTags/, we will process like a standard key
 	}
 
+	// TODO(nsiow) handle case where ${aws:PrincipalTag/foo} is in Resource= field, etc
+
 	// ... otherwise handle as a static key
 	switch key {
 	case condkey.PrincipalArn:
@@ -73,33 +75,32 @@ func (ac *AuthContext) Key(key string) string {
 
 	// We'll enumerate these for potential special handling in the future, but otherwise just use
 	// default behavior
-	// TODO(nsiow) consider switching this to condkey.SourceIp etc, in a separate package
 	case
-		condkey.SourceIp,
-		condkey.SourceVpc,
-		condkey.SourceVpce,
-		condkey.VpcSourceIp,
-		condkey.PrincipalServiceNamesList,
-		condkey.UserId,
-		condkey.Username,
 		condkey.CalledViaFirst,
 		condkey.CalledViaLast,
-		condkey.Referer,
-		condkey.RequestedRegion,
-		condkey.SecureTransport,
-		condkey.SourceAccount,
-		condkey.SourceArn,
-		condkey.SourceOrgId,
-		condkey.UserAgent,
-		condkey.ViaAwsService,
+		condkey.Ec2InstanceSourcePrivateIPv4,
 		condkey.FederatedProvider,
 		condkey.MultiFactorAuthAge,
 		condkey.MultiFactorAuthPresent,
+		condkey.PrincipalServiceNamesList,
+		condkey.Referer,
+		condkey.RequestedRegion,
 		condkey.RoleDelivery,
+		condkey.SecureTransport,
+		condkey.SourceAccount,
+		condkey.SourceArn,
 		condkey.SourceIdentity,
 		condkey.SourceInstanceArn,
-		condkey.Ec2InstanceSourcePrivateIPv4,
-		condkey.TokenIssueTime:
+		condkey.SourceIp,
+		condkey.SourceOrgId,
+		condkey.SourceVpc,
+		condkey.SourceVpce,
+		condkey.TokenIssueTime,
+		condkey.UserAgent,
+		condkey.UserId,
+		condkey.Username,
+		condkey.ViaAwsService,
+		condkey.VpcSourceIp:
 		break
 	}
 
@@ -143,7 +144,7 @@ func (ac *AuthContext) Resolve(value string) string {
 // TODO(nsiow) figure out if slashes are allowed in tag keys
 func (ac *AuthContext) extractTag(key string, tags []entities.Tag) string {
 	// Determine tag key
-	components := strings.Split(key, "/")
+	components := strings.SplitN(key, "/", 1)
 	if len(components) != 2 {
 		return ""
 	}

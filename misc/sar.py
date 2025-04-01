@@ -93,8 +93,6 @@ def normalize_list(field: Union[list, str]) -> list:
     elif isinstance(field, list):
         return field
 
-    raise TypeError('Not sure how to normalize value: {}'.format(repr(field)))  # type: ignore
-
 def subparse_actions(service: str, sar_page: BeautifulSoup) -> list[dict]:
     """Extract the action details from the provided sar page."""
     table = sar_page.find_all(class_='table-container')[0]
@@ -162,14 +160,12 @@ def subparse_condition_keys(sar_page: BeautifulSoup) -> list[str]:
 def normalize_sar_data(sar_data: list[dict]) -> dict:
     """Helper function to normalize and remove some inconsistencies in the SAR data."""
     # Combine pages for services under the same umbrella
-    sar = defaultdict(list)
+    sar = defaultdict(dict)
     for service_data in sar_data:
-        try:
-            service = service_data['service']
-            sar[service] += service_data['actions']
-        except Exception:
-            print(f'error merging pages for service: {service_data["service"]}', file=sys.stderr)
-            raise
+        service = service_data['service'].lower()
+        for action_data in service_data['actions']:
+            action = action_data['action'].lower()
+            sar[service][action] = action_data
 
     return sar
 

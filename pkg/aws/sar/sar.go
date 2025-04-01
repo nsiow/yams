@@ -26,7 +26,7 @@ type predicateKey = string
 var data = assets.SarData
 
 // Map returns a map with format key=service, value=action list for all AWS APIs
-func Map() map[string][]entities.ApiCall {
+func Map() map[string]map[string]entities.ApiCall {
 	return data()
 }
 
@@ -41,6 +41,28 @@ func All() iter.Seq[entities.ApiCall] {
 			}
 		}
 	}
+}
+
+// Lookup allows for querying a specific api call based on service + action name
+func Lookup(service, action string) (entities.ApiCall, bool) {
+	data := data()
+	if actionMap, exists := data[service]; exists {
+		if apicall, exists := actionMap[action]; exists {
+			return apicall, true
+		}
+	}
+
+	return entities.ApiCall{}, false
+}
+
+// LookupString allows for querying a specific api call based on the "service:action" shorthand
+func LookupString(serviceAction string) (entities.ApiCall, bool) {
+	components := strings.SplitN(serviceAction, ":", 1)
+	if len(components) != 2 {
+		return entities.ApiCall{}, false
+	}
+
+	return Lookup(components[0], components[1])
 }
 
 // query is a struct used to represent the internal state of a SAR query

@@ -14,7 +14,7 @@ import (
 
 //go:embed sar.json.gz
 var compressedSarData []byte
-var sarData map[string][]entities.ApiCall
+var sarData map[string]map[string]entities.ApiCall // map[service]map[action]apicall
 var sarDataLoad sync.Once
 
 // The minimum number of API calls expected; used to detect regressions
@@ -22,7 +22,7 @@ var sarDataLoad sync.Once
 var MINIMUM_SAR_SIZE = 415
 
 // SarData loads the data if it has not been loaded, and returns the result
-func SarData() map[string][]entities.ApiCall {
+func SarData() map[string]map[string]entities.ApiCall {
 	sarDataLoad.Do(func() { loadSarData(compressedSarData) })
 	return sarData
 }
@@ -36,7 +36,7 @@ func loadSarData(compressedData []byte) {
 
 	rawSarData, _ := io.ReadAll(reader)
 
-	var newData map[string][]entities.ApiCall
+	var newData map[string]map[string]entities.ApiCall
 	err = json.Unmarshal(rawSarData, &newData)
 	if err != nil {
 		panic(fmt.Sprintf("error decoding SAR data: %s", err.Error()))
