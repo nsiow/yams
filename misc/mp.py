@@ -16,12 +16,12 @@ logging.basicConfig(level=os.environ.get('YAMS_LOG_LEVEL', 'INFO').upper(),
 
 # Set up cache
 os.makedirs('.cache', exist_ok=True)
-memory = joblib.Memory('.cache/mp.cache')
+mem = joblib.Memory('.cache/mp.cache')
 
 # Set up client once (cannot cache/pickle)
 iam_client = boto3.client('iam')
 
-@memory.cache
+@mem.cache
 def get_policy(arn: str) -> dict:
     """Retrieve details for the specified policy ARN."""
     resp = iam_client.get_policy(PolicyArn=arn)
@@ -35,7 +35,7 @@ def get_policy(arn: str) -> dict:
         'Document': policy['Document'],
     }
 
-@memory.cache
+@mem.cache
 def list_policy_arns() -> list[str]:
     """Using the AWS API, fetch a list of all AWS-owned managed policies."""
     arns = []
