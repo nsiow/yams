@@ -19,10 +19,10 @@ func evalIsSameAccount(p *entities.Principal, r *entities.Resource) bool {
 
 // evalSameAccountExplicitPrincipalCase handles the special case where the Resource policy
 // granting explicit access to the Principal circumvents the need for Principal-policy access
-func evalSameAccountExplicitPrincipalCase(_ *entities.Principal, _ *entities.Resource) bool {
-	// TODO(nsiow) implement correct behavior for same-account access via explicit ARN
-	return false
-}
+// func evalSameAccountExplicitPrincipalCase(_ *entities.Principal, _ *entities.Resource) bool {
+// 	// TODO(nsiow) implement correct behavior for same-account access via explicit ARN
+// 	return false
+// }
 
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
 // and different-account evaluations
