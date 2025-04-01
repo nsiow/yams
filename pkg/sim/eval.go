@@ -91,8 +91,9 @@ func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
 		}
 
 		if evalSameAccountExplicitPrincipalCase(ac.Principal, ac.Resource) {
-			trc.Decision("[allow] access granted via same-account explicit-resource-policy case")
-			return &Result{Trace: trc, IsAllowed: true}, nil
+			// TODO(nsiow) implement this behavior
+			// trc.Decision("[allow] access granted via same-account explicit-resource-policy case")
+			// return &Result{Trace: trc, IsAllowed: true}, nil
 		}
 
 		trc.Decision("[implicit deny] no identity-based policy allows this action")

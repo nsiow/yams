@@ -205,6 +205,22 @@ func TestArnNormalization(t *testing.T) {
 			Want: "foo",
 		},
 		{
+			Name: "lambda_fullaccess",
+			Input: input{
+				policyType: CONST_TYPE_AWS_IAM_POLICY,
+				arn:        "arn:aws:iam::aws:policy/AWSLambdaFullAccess",
+			},
+			Want: "arn:aws:iam::aws:policy/AWSLambda_FullAccess",
+		},
+		{
+			Name: "lambda_readonly",
+			Input: input{
+				policyType: CONST_TYPE_AWS_IAM_POLICY,
+				arn:        "arn:aws:iam::aws:policy/AWSLambdaReadOnlyAccess",
+			},
+			Want: "arn:aws:iam::aws:policy/AWSLambda_ReadOnlyAccess",
+		},
+		{
 			Name: "non_supported_type",
 			Input: input{
 				policyType: CONST_TYPE_AWS_S3_BUCKET,
