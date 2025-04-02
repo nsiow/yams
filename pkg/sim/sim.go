@@ -52,13 +52,13 @@ func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[st
 
 	ac := AuthContext{}
 	ac.Action = action
-	ac.Properties = ctx
+	ac.Properties = NewBagFromMap(ctx)
 
 	// Locate Principal
 	found := false
 	for _, p := range s.universe.Principals {
 		if p.Arn == principal {
-			ac.Principal = p
+			ac.Principal = &p
 			found = true
 			break
 		}
@@ -71,7 +71,7 @@ func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[st
 	found = false
 	for _, r := range s.universe.Resources {
 		if r.Arn == resource {
-			ac.Resource = r
+			ac.Resource = &r
 			found = true
 			break
 		}
@@ -99,9 +99,9 @@ func (s *Simulator) ComputeAccessSummary(actions []string) (map[string]int, erro
 			for _, a := range actions {
 				ac := AuthContext{
 					Action:     a,
-					Principal:  p,
-					Resource:   r,
-					Properties: map[string]string{}}
+					Principal:  &p,
+					Resource:   &r,
+					Properties: NewBag[string]()}
 				result, err := s.Simulate(ac)
 				if err != nil {
 					return nil, errors.Join(fmt.Errorf("error during simulation"), err)

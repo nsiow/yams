@@ -18,10 +18,10 @@ import (
 type AuthContext struct {
 	Time                 time.Time
 	Action               string
-	Principal            entities.Principal
-	Resource             entities.Resource
-	Properties           map[string]string
-	MultiValueProperties map[string][]string
+	Principal            *entities.Principal
+	Resource             *entities.Resource
+	Properties           *PropertyBag[string]
+	MultiValueProperties *PropertyBag[[]string]
 }
 
 // Static values
@@ -38,7 +38,15 @@ var VariableExpansionRegex = regexp.MustCompile(`\${([a-zA-Z0-9]+:\S+?)}`)
 
 // Key retrieves the value for the requested key from the AuthContext
 // TODO(nsiow) key retrieval should be case insensitive... I think
+// TODO(nsiow) support Trace object here for even lower level debugging
 func (ac *AuthContext) Key(key string) string {
+	key = normalizeKey(key)
+
+	// // TODO(nsiow) implement some sort of option around this for faster, less-strict sims
+	// if !ac.SupportsKey(key) {
+	// 	return EMPTY
+	// }
+
 	// Try handling prefixes first...
 	switch {
 	case strings.HasPrefix(key, condkey.PrincipalTagPrefix):
@@ -104,11 +112,28 @@ func (ac *AuthContext) Key(key string) string {
 		break
 	}
 
-	return ac.Properties[key]
+	if ac.Properties == nil {
+		return EMPTY
+	}
+	return ac.Properties.Get(key)
+}
+
+// normalizeKey performs any required key normalization to process the provided key
+func normalizeKey(key string) string {
+	// TODO(nsiow) this is a rough approximation
+	substr := strings.SplitN(key, "/", 2)
+	switch len(substr) {
+	case 1:
+		return strings.ToLower(key)
+	default:
+		return strings.ToLower(substr[0]) + "/" + substr[1]
+	}
 }
 
 // MultiKey retrieves the values for the requested key from the AuthContext
 func (ac *AuthContext) MultiKey(key string) []string {
+	key = normalizeKey(key)
+
 	switch key {
 	case condkey.PrincipalServiceNamesList,
 		condkey.CalledVia,
@@ -123,7 +148,16 @@ func (ac *AuthContext) MultiKey(key string) []string {
 		// 	break
 	}
 
-	return ac.MultiValueProperties[key]
+	if ac.MultiValueProperties == nil {
+		return nil
+	}
+	return ac.MultiValueProperties.Get(key)
+}
+
+// SupportsKey consults the SAR package to determine whether or not the requested key is even
+// supported for the simulated API call
+func (ac *AuthContext) SupportsKey(key string) bool {
+	return true
 }
 
 // Resolve resolves and replaces all IAM variables within the provided values

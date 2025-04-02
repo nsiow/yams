@@ -131,13 +131,13 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 				ac:   AuthContext{},
 				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"*"}}},
 			},
-			Want: true,
+			Want: false,
 		},
 		// Principal
 		{
 			Name: "simple_wildcard",
 			Input: input{
-				ac:   AuthContext{Principal: entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
 				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"*"}}},
 			},
 			Want: true,
@@ -145,7 +145,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		{
 			Name: "simple_direct_match",
 			Input: input{
-				ac:   AuthContext{Principal: entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
 				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerole"}}},
 			},
 			Want: true,
@@ -153,7 +153,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		{
 			Name: "other_principal",
 			Input: input{
-				ac:   AuthContext{Principal: entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
 				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerandomrole"}}},
 			},
 			Want: false,
@@ -161,7 +161,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		{
 			Name: "two_principals",
 			Input: input{
-				ac: AuthContext{Principal: entities.Principal{Arn: "arn:aws:iam::88888:role/secondrole"}},
+				ac: AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/secondrole"}},
 				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{
 					"arn:aws:iam::88888:role/firstrole",
 					"arn:aws:iam::88888:role/secondrole"}}}},
@@ -170,7 +170,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		{
 			Name: "other_service",
 			Input: input{
-				ac:   AuthContext{Principal: entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
 				stmt: policy.Statement{Principal: policy.Principal{Federated: []string{"*"}}},
 			},
 			Want: false,
@@ -178,7 +178,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		{
 			Name: "special_principal_star",
 			Input: input{
-				ac:   AuthContext{Principal: entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
 				stmt: policy.Statement{Principal: policy.Principal{All: true}},
 			},
 			Want: true,
@@ -188,7 +188,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		{
 			Name: "notprincipal_simple_wildcard",
 			Input: input{
-				ac:   AuthContext{Principal: entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
 				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"*"}}},
 			},
 			Want: false,
@@ -196,7 +196,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		{
 			Name: "notprincipal_simple_direct_match",
 			Input: input{
-				ac:   AuthContext{Principal: entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
 				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerole"}}},
 			},
 			Want: false,
@@ -204,7 +204,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		{
 			Name: "notprincipal_other_principal",
 			Input: input{
-				ac:   AuthContext{Principal: entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
 				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerandomrole"}}},
 			},
 			Want: true,
@@ -212,7 +212,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		{
 			Name: "notprincipal_two_principals",
 			Input: input{
-				ac: AuthContext{Principal: entities.Principal{Arn: "arn:aws:iam::88888:role/secondrole"}},
+				ac: AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/secondrole"}},
 				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{
 					"arn:aws:iam::88888:role/firstrole",
 					"arn:aws:iam::88888:role/secondrole"}}}},
@@ -221,7 +221,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		{
 			Name: "notprincipal_other_service",
 			Input: input{
-				ac:   AuthContext{Principal: entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
 				stmt: policy.Statement{NotPrincipal: policy.Principal{Federated: []string{"*"}}},
 			},
 			Want: true,
@@ -229,7 +229,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 		{
 			Name: "special_notprincipal_star",
 			Input: input{
-				ac:   AuthContext{Principal: entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
 				stmt: policy.Statement{NotPrincipal: policy.Principal{All: true}},
 			},
 			Want: false,
@@ -256,13 +256,13 @@ func TestStatementMatchesResource(t *testing.T) {
 				ac:   AuthContext{},
 				stmt: policy.Statement{Resource: []string{"*"}},
 			},
-			Want: true,
+			Want: false,
 		},
 		// Resource
 		{
 			Name: "simple_wildcard",
 			Input: input{
-				ac:   AuthContext{Resource: entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
+				ac:   AuthContext{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
 				stmt: policy.Statement{Resource: []string{"*"}},
 			},
 			Want: true,
@@ -270,7 +270,7 @@ func TestStatementMatchesResource(t *testing.T) {
 		{
 			Name: "simple_direct_match",
 			Input: input{
-				ac:   AuthContext{Resource: entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
+				ac:   AuthContext{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
 				stmt: policy.Statement{Resource: []string{"arn:aws:s3:::somebucket"}},
 			},
 			Want: true,
@@ -278,7 +278,7 @@ func TestStatementMatchesResource(t *testing.T) {
 		{
 			Name: "other_resource",
 			Input: input{
-				ac:   AuthContext{Resource: entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
+				ac:   AuthContext{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
 				stmt: policy.Statement{Resource: []string{"arn:aws:s3:::adifferentbucket"}},
 			},
 			Want: false,
@@ -286,7 +286,7 @@ func TestStatementMatchesResource(t *testing.T) {
 		{
 			Name: "two_resources",
 			Input: input{
-				ac: AuthContext{Resource: entities.Resource{Arn: "arn:aws:s3:::secondbucket"}},
+				ac: AuthContext{Resource: &entities.Resource{Arn: "arn:aws:s3:::secondbucket"}},
 				stmt: policy.Statement{Resource: []string{
 					"arn:aws:s3:::firstbucket",
 					"arn:aws:s3:::secondbucket"}},
@@ -298,7 +298,7 @@ func TestStatementMatchesResource(t *testing.T) {
 		{
 			Name: "notresource_simple_wildcard",
 			Input: input{
-				ac:   AuthContext{Resource: entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
+				ac:   AuthContext{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
 				stmt: policy.Statement{NotResource: []string{"*"}},
 			},
 			Want: false,
@@ -306,7 +306,7 @@ func TestStatementMatchesResource(t *testing.T) {
 		{
 			Name: "notresource_simple_direct_match",
 			Input: input{
-				ac:   AuthContext{Resource: entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
+				ac:   AuthContext{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
 				stmt: policy.Statement{NotResource: []string{"arn:aws:s3:::somebucket"}},
 			},
 			Want: false,
@@ -314,7 +314,7 @@ func TestStatementMatchesResource(t *testing.T) {
 		{
 			Name: "notresource_other_resource",
 			Input: input{
-				ac:   AuthContext{Resource: entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
+				ac:   AuthContext{Resource: &entities.Resource{Arn: "arn:aws:s3:::somebucket"}},
 				stmt: policy.Statement{NotResource: []string{"arn:aws:s3:::adifferentbucket"}},
 			},
 			Want: true,
@@ -322,7 +322,7 @@ func TestStatementMatchesResource(t *testing.T) {
 		{
 			Name: "notresource_two_resources",
 			Input: input{
-				ac: AuthContext{Resource: entities.Resource{Arn: "arn:aws:s3:::secondbucket"}},
+				ac: AuthContext{Resource: &entities.Resource{Arn: "arn:aws:s3:::secondbucket"}},
 				stmt: policy.Statement{NotResource: []string{
 					"arn:aws:s3:::firstbucket",
 					"arn:aws:s3:::secondbucket"}},

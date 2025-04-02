@@ -16,10 +16,10 @@ func TestResourceAccess(t *testing.T) {
 			Name: "implicit_deny",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn:    "arn:aws:s3:::mybucket",
 					Policy: policy.Policy{},
 				},
@@ -30,10 +30,10 @@ func TestResourceAccess(t *testing.T) {
 			Name: "simple_match",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn: "arn:aws:s3:::mybucket",
 					Policy: policy.Policy{
 						Statement: []policy.Statement{
@@ -55,10 +55,10 @@ func TestResourceAccess(t *testing.T) {
 			Name: "explicit_deny",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn: "arn:aws:s3:::mybucket",
 					Policy: policy.Policy{
 						Statement: []policy.Statement{
@@ -80,10 +80,10 @@ func TestResourceAccess(t *testing.T) {
 			Name: "allow_and_deny",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn: "arn:aws:s3:::mybucket",
 					Policy: policy.Policy{
 						Statement: []policy.Statement{
@@ -113,10 +113,10 @@ func TestResourceAccess(t *testing.T) {
 			Name: "error_nonexistent_condition",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn: "arn:aws:s3:::mybucket",
 					Policy: policy.Policy{
 						Statement: []policy.Statement{

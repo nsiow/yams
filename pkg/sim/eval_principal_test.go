@@ -16,12 +16,12 @@ func TestPrincipalAccess(t *testing.T) {
 			Name: "implicit_deny",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
 					InlinePolicies:   nil,
 					AttachedPolicies: nil,
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
@@ -31,7 +31,7 @@ func TestPrincipalAccess(t *testing.T) {
 			Name: "simple_inline_policy",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 					InlinePolicies: []policy.Policy{
 						{
@@ -45,7 +45,7 @@ func TestPrincipalAccess(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
@@ -55,7 +55,7 @@ func TestPrincipalAccess(t *testing.T) {
 			Name: "simple_attached_policy",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 					AttachedPolicies: []policy.Policy{
 						{
@@ -69,7 +69,7 @@ func TestPrincipalAccess(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
@@ -79,7 +79,7 @@ func TestPrincipalAccess(t *testing.T) {
 			Name: "simple_inline_deny",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 					InlinePolicies: []policy.Policy{
 						{
@@ -93,7 +93,7 @@ func TestPrincipalAccess(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
@@ -103,7 +103,7 @@ func TestPrincipalAccess(t *testing.T) {
 			Name: "simple_attached_deny",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 					AttachedPolicies: []policy.Policy{
 						{
@@ -117,7 +117,7 @@ func TestPrincipalAccess(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
@@ -127,7 +127,7 @@ func TestPrincipalAccess(t *testing.T) {
 			Name: "allow_and_deny",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 					InlinePolicies: []policy.Policy{
 						{
@@ -152,7 +152,7 @@ func TestPrincipalAccess(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
@@ -162,7 +162,7 @@ func TestPrincipalAccess(t *testing.T) {
 			Name: "error_nonexistent_condition",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 					InlinePolicies: []policy.Policy{
 						{
@@ -184,7 +184,7 @@ func TestPrincipalAccess(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},

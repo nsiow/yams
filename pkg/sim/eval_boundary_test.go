@@ -15,7 +15,7 @@ func TestPermissionsBoundary(t *testing.T) {
 		{
 			Name: "allow_all",
 			Input: AuthContext{
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					PermissionsBoundary: policy.Policy{
 						Statement: []policy.Statement{
 							{
@@ -26,7 +26,7 @@ func TestPermissionsBoundary(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{Arn: "arn:aws:s3:::mybucket"},
+				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
 				Action:   "s3:ListBucket",
 			},
 			Want: []policy.Effect{
@@ -36,7 +36,7 @@ func TestPermissionsBoundary(t *testing.T) {
 		{
 			Name: "deny_all",
 			Input: AuthContext{
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					PermissionsBoundary: policy.Policy{
 						Statement: []policy.Statement{
 							{
@@ -47,7 +47,7 @@ func TestPermissionsBoundary(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{Arn: "arn:aws:s3:::mybucket"},
+				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
 				Action:   "s3:ListBucket",
 			},
 			Want: []policy.Effect{
@@ -57,7 +57,7 @@ func TestPermissionsBoundary(t *testing.T) {
 		{
 			Name: "allow_others_simple",
 			Input: AuthContext{
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					PermissionsBoundary: policy.Policy{
 						Statement: []policy.Statement{
 							{
@@ -68,7 +68,7 @@ func TestPermissionsBoundary(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{Arn: "arn:aws:s3:::mybucket"},
+				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
 				Action:   "s3:ListBucket",
 			},
 			Want: []policy.Effect(nil),
@@ -76,7 +76,7 @@ func TestPermissionsBoundary(t *testing.T) {
 		{
 			Name: "allow_this_specific",
 			Input: AuthContext{
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					PermissionsBoundary: policy.Policy{
 						Statement: []policy.Statement{
 							{
@@ -87,7 +87,7 @@ func TestPermissionsBoundary(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{Arn: "arn:aws:s3:::mybucket"},
+				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
 				Action:   "s3:ListBucket",
 			},
 			Want: []policy.Effect{
@@ -97,7 +97,7 @@ func TestPermissionsBoundary(t *testing.T) {
 		{
 			Name: "allow_others_specific",
 			Input: AuthContext{
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					PermissionsBoundary: policy.Policy{
 						Statement: []policy.Statement{
 							{
@@ -113,7 +113,7 @@ func TestPermissionsBoundary(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{Arn: "arn:aws:s3:::mybucket"},
+				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
 				Action:   "s3:ListBucket",
 			},
 			Want: []policy.Effect(nil),
@@ -121,7 +121,7 @@ func TestPermissionsBoundary(t *testing.T) {
 		{
 			Name: "allow_only_iam",
 			Input: AuthContext{
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					PermissionsBoundary: policy.Policy{
 						Statement: []policy.Statement{
 							{
@@ -132,7 +132,7 @@ func TestPermissionsBoundary(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{Arn: "*"},
+				Resource: &entities.Resource{Arn: "*"},
 				Action:   "iam:ListRoles",
 			},
 			Want: []policy.Effect{
@@ -142,7 +142,7 @@ func TestPermissionsBoundary(t *testing.T) {
 		{
 			Name: "deny_iam_by_omission",
 			Input: AuthContext{
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					PermissionsBoundary: policy.Policy{
 						Statement: []policy.Statement{
 							{
@@ -153,7 +153,7 @@ func TestPermissionsBoundary(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{Arn: "*"},
+				Resource: &entities.Resource{Arn: "*"},
 				Action:   "iam:ListRoles",
 			},
 			Want: []policy.Effect(nil),

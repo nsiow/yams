@@ -37,6 +37,10 @@ COVERAGE_OMIT ?= '(yams/cmd|yams/internal/testlib)'
 format:
 	go fmt ./...
 
+.PHONY: vet
+vet:
+	go vet ./...
+
 .PHONY: lint
 lint:
 	golangci-lint run

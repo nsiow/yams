@@ -76,13 +76,13 @@ func TestSimulate(t *testing.T) {
 			Name: "same_account_implicit_deny",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
 					AccountId:        "88888",
 					InlinePolicies:   nil,
 					AttachedPolicies: nil,
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "88888",
 					Policy:    policy.Policy{},
@@ -94,7 +94,7 @@ func TestSimulate(t *testing.T) {
 			Name: "same_account_simple_allow",
 			Input: AuthContext{
 				Action: "s3:listbucket",
-				Principal: entities.Principal{
+				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
@@ -109,7 +109,7 @@ func TestSimulate(t *testing.T) {
 						},
 					},
 				},
-				Resource: entities.Resource{
+				Resource: &entities.Resource{
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "88888",
 				},
