@@ -13,7 +13,7 @@ type evalFunction func(*trace.Trace, *Options, AuthContext, *policy.Statement) (
 
 // evalIsSameAccount determines whether or not the provided Principal + Resource exist within the
 // same AWS account
-func evalIsSameAccount(p *entities.Principal, r *entities.Resource) bool {
+func evalIsSameAccount(p entities.Principal, r entities.Resource) bool {
 	return p.AccountId == r.AccountId
 }
 

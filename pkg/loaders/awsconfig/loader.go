@@ -36,8 +36,8 @@ func (l *Loader) Resources() []entities.Resource {
 }
 
 // Environment returns an Environment containing the loaded Principals + Resources
-func (l *Loader) Environment() entities.Environment {
-	return entities.Environment{
+func (l *Loader) Environment() entities.Universe {
+	return entities.Universe{
 		Principals: l.Principals(),
 		Resources:  l.Resources(),
 	}

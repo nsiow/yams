@@ -18,8 +18,8 @@ import (
 type AuthContext struct {
 	Time                 time.Time
 	Action               string
-	Principal            *entities.Principal
-	Resource             *entities.Resource
+	Principal            entities.Principal
+	Resource             entities.Resource
 	Properties           map[string]string
 	MultiValueProperties map[string][]string
 }

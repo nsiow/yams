@@ -19,7 +19,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_tag",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
+					Principal: entities.Principal{
 						Tags: []entities.Tag{
 							{
 								Key:   "baz",
@@ -40,7 +40,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_tag_bad_format",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
+					Principal: entities.Principal{
 						Tags: []entities.Tag{
 							{
 								Key:   "foo",
@@ -57,7 +57,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_tag_does_not_exist",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
+					Principal: entities.Principal{
 						Tags: []entities.Tag{
 							{
 								Key:   "baz",
@@ -78,7 +78,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "resource_tag",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{
+					Resource: entities.Resource{
 						Tags: []entities.Tag{
 							{
 								Key:   "baz",
@@ -135,7 +135,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_type_role",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
+					Principal: entities.Principal{
 						Type: "AWS::IAM::Role",
 						Arn:  "arn:aws:iam::88888:role/somerole",
 					},
@@ -148,7 +148,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_type_user",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
+					Principal: entities.Principal{
 						Type: "AWS::IAM::User",
 						Arn:  "arn:aws:iam::88888:user/someuser",
 					},
@@ -161,7 +161,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_type_user",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
+					Principal: entities.Principal{
 						Type: "AWS::IAM::SomeNewEntityType",
 						Arn:  "arn:aws:iam::88888:thing/foo",
 					},
@@ -174,7 +174,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_account",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
+					Principal: entities.Principal{
 						AccountId: "55555",
 					},
 				},
@@ -186,7 +186,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_org_id",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
+					Principal: entities.Principal{
 						Account: entities.Account{
 							OrgId: "o-123",
 						},
@@ -200,7 +200,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "resource_account",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{
+					Resource: entities.Resource{
 						AccountId: "77777",
 					},
 				},
@@ -212,7 +212,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "resource_org_id",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{
+					Resource: entities.Resource{
 						Account: entities.Account{
 							OrgId: "o-123",
 						},
@@ -327,7 +327,7 @@ func TestResolve(t *testing.T) {
 			Input: input{
 				str: "arn:aws:s3:::somebucket/${aws:PrincipalTag/foo}",
 				ac: AuthContext{
-					Principal: &entities.Principal{
+					Principal: entities.Principal{
 						Tags: []entities.Tag{
 							{
 								Key:   "foo",
@@ -344,7 +344,7 @@ func TestResolve(t *testing.T) {
 			Input: input{
 				str: "arn:aws:s3:::somebucket/${aws:PrincipalTag/foo}/${aws:PrincipalTag/hello}",
 				ac: AuthContext{
-					Principal: &entities.Principal{
+					Principal: entities.Principal{
 						Tags: []entities.Tag{
 							{
 								Key:   "foo",
