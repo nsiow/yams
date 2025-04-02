@@ -13,7 +13,7 @@ import (
 
 // TestValidSarDataLoad confirms the successful loading of valid data
 func TestValidSarDataLoad(t *testing.T) {
-	sar := SarData()
+	sar := SAR()
 	if len(sar) < MINIMUM_SAR_SIZE {
 		t.Fatalf("expected >= %d SAR entries but saw %d",
 			MINIMUM_SAR_SIZE,
@@ -24,24 +24,21 @@ func TestValidSarDataLoad(t *testing.T) {
 
 // TestInvalidSarGzip confirms the failed loading of corrupted gzip data
 func TestInvalidSarGzip(t *testing.T) {
-	defer testlib.AssertPanicWithText(t,
-		`error unwrapping SAR data: EOF`)
-	loadSarData([]byte{})
+	defer testlib.AssertPanicWithText(t, `error unwrapping SAR data: EOF`)
+	loadSAR([]byte{})
 }
 
 // TestInvalidSarDecode confirms the failed loading of corrupted JSON data
 func TestInvalidSarDecode(t *testing.T) {
-	defer testlib.AssertPanicWithText(t,
-		`error decoding SAR data: unexpected end of JSON input`)
-	loadSarData(fixtureInvalidEncodedSar())
+	defer testlib.AssertPanicWithText(t, `error decoding SAR data: unexpected end of JSON input`)
+	loadSAR(fixtureInvalidEncodedSar())
 
 }
 
 // TestInvalidSarEmpty confirms the failed loading of a too-short SAR list
 func TestInvalidSarEmpty(t *testing.T) {
-	defer testlib.AssertPanicWithText(t,
-		`error validating SAR data, len too small: 0`)
-	loadSarData(fixtureInvalidEmptySar())
+	defer testlib.AssertPanicWithText(t, `error validating SAR data, len too small: 0`)
+	loadSAR(fixtureInvalidEmptySar())
 }
 
 // -----------------------------------------------------------------------------------------------
@@ -50,7 +47,7 @@ func TestInvalidSarEmpty(t *testing.T) {
 
 // A gzip-compressed representation of '{'
 func fixtureInvalidEncodedSar() []byte {
-	invalidEncoded := `H4sICLVr4GcAA2V4YW1wbGUuanNvbgCr5gIA3FvHbQIAAAA=`
+	invalidEncoded := `H4sIAAAAAAAAA6sGADlH1RUBAAAA`
 	invalidDecoded, err := base64.StdEncoding.DecodeString(invalidEncoded)
 	if err != nil {
 		panic(err)
@@ -59,9 +56,9 @@ func fixtureInvalidEncodedSar() []byte {
 	return invalidDecoded
 }
 
-// A gzip-compressed representation of '{}'
+// A gzip-compressed representation of '[]'
 func fixtureInvalidEmptySar() []byte {
-	invalidEncoded := `H4sICPlu4GcAA2V4YW1wbGUuanNvbgCrruUCAAawod0DAAAA`
+	invalidEncoded := `H4sIAAAAAAAAA4uOBQApu0wNAgAAAA==`
 	invalidDecoded, err := base64.StdEncoding.DecodeString(invalidEncoded)
 	if err != nil {
 		panic(err)

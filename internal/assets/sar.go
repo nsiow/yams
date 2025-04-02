@@ -9,26 +9,33 @@ import (
 	"io"
 	"sync"
 
-	"github.com/nsiow/yams/pkg/entities"
+	"github.com/nsiow/yams/pkg/aws/types"
 )
 
-//go:embed sar.json.gz
+//go:embed sar_v2.json.gz
 var compressedSarData []byte
-var sarData map[string]map[string]entities.ApiCall // map[service]map[action]apicall
+var sarData []types.Service
+var sarIndex map[string]map[string]types.Action // map[service]map[action]action
 var sarDataLoad sync.Once
 
 // The minimum number of API calls expected; used to detect regressions
 // Last updated 03-23-2025
 var MINIMUM_SAR_SIZE = 415
 
-// SarData loads the data if it has not been loaded, and returns the result
-func SarData() map[string]map[string]entities.ApiCall {
-	sarDataLoad.Do(func() { loadSarData(compressedSarData) })
+// SAR loads the data if it has not been loaded, and returns the result
+func SAR() []types.Service {
+	sarDataLoad.Do(func() { loadSAR(compressedSarData) })
 	return sarData
 }
 
-// loadSarData processes the provided raw compressed data into the structured policy set
-func loadSarData(compressedData []byte) {
+// SARIndex loads the data if it has not been loaded, and returns an indexed version
+func SARIndex() map[string]map[string]types.Action {
+	sarDataLoad.Do(func() { loadSAR(compressedSarData) })
+	return sarIndex
+}
+
+// loadSAR processes the provided raw compressed data into the structured policy set
+func loadSAR(compressedData []byte) {
 	reader, err := gzip.NewReader(bytes.NewReader(compressedData))
 	if err != nil {
 		panic(fmt.Sprintf("error unwrapping SAR data: %s", err.Error()))
@@ -36,7 +43,7 @@ func loadSarData(compressedData []byte) {
 
 	rawSarData, _ := io.ReadAll(reader)
 
-	var newData map[string]map[string]entities.ApiCall
+	var newData []types.Service
 	err = json.Unmarshal(rawSarData, &newData)
 	if err != nil {
 		panic(fmt.Sprintf("error decoding SAR data: %s", err.Error()))
@@ -48,5 +55,18 @@ func loadSarData(compressedData []byte) {
 			len(newData)))
 	}
 
+	// build the index, once
+	newIndex := make(map[string]map[string]types.Action)
+	for _, service := range newData {
+		if _, exists := newIndex[service.Name]; !exists {
+			newIndex[service.Name] = make(map[string]types.Action)
+		}
+
+		for _, action := range service.Actions {
+			newIndex[service.Name][action.Name] = action
+		}
+	}
+
 	sarData = newData
+	sarIndex = newIndex
 }

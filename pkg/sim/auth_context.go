@@ -144,7 +144,7 @@ func (ac *AuthContext) Resolve(value string) string {
 // TODO(nsiow) figure out if slashes are allowed in tag keys
 func (ac *AuthContext) extractTag(key string, tags []entities.Tag) string {
 	// Determine tag key
-	components := strings.SplitN(key, "/", 1)
+	components := strings.SplitN(key, "/", 2)
 	if len(components) != 2 {
 		return ""
 	}

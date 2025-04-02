@@ -30,6 +30,7 @@ class ResourcePointer(pydantic.BaseModel):
 
 class Action(pydantic.BaseModel):
     Name: str
+    Service: str | None = None
     ActionConditionKeys: list[str] = []
     Resources: list[ResourcePointer] = []
 
@@ -79,13 +80,21 @@ def fetch_service(service_listing: ServiceListing) -> Service:
 
 def normalize(service: Service) -> Service:
     service = normalize_condition_variables(service)
+    service = normalize_propagate_service(service)
     return service
 
+# aws:RequestTag/${TagKey} => aws:RequestTag
 def normalize_condition_variables(service: Service) -> Service:
     for action in service.Actions:
         for i in range(len(action.ActionConditionKeys)):
             condition_key = re.sub(r'[/:]\${[a-zA-Z0-9]+}$', '', action.ActionConditionKeys[i])
             action.ActionConditionKeys[i] = condition_key
+    return service
+
+# add Service.Name to all Service.Actions.Service
+def normalize_propagate_service(service: Service) -> Service:
+    for action in service.Actions:
+        action.Service = service.Name
     return service
 
 # ------------------------------------------------------------------------------------------------
