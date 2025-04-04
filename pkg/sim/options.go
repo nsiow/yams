@@ -1,20 +1,29 @@
 package sim
 
-// Sim contains all possible customizatons for simulator logic + runtime
+// Options contains all possible customizatons for simulator logic + behavior
 type Options struct {
-	// FailOnUnknownCondition determines whether or not to fail on unknown Condition evaluation
-	// TODO(nsiow) make opts.FailOnUnknownCondition default
-	FailOnUnknownCondition bool
+	// SkipUnknownConditionOperators causes simulation to skip over unknown condition operators
+	SkipUnknownConditionOperators bool
+
+	// SkipUnknownConditionKeys causes simulation to skip over unknown condition keys
+	SkipUnknownConditionKeys bool
 }
 
 // OptionF implements the functional options pattern for simulator options
 type OptionF func(*Options) error
 
-// WithFailOnUnknownCondition causes simulation to fail if we encounter a Conditon we do not know
-// how to handle
-func WithFailOnUnknownCondition() OptionF {
+// WithSkipUnknownConditionOperators toggles SkipUnknownConditionOperators to true
+func WithSkipUnknownConditionOperators() OptionF {
 	return func(opt *Options) error {
-		opt.FailOnUnknownCondition = true
+		opt.SkipUnknownConditionOperators = true
+		return nil
+	}
+}
+
+// WithSkipUnknownConditionKeys toggles SkipUnknownConditionKeys to true
+func WithSkipUnknownConditionKeys() OptionF {
+	return func(opt *Options) error {
+		opt.SkipUnknownConditionKeys = true
 		return nil
 	}
 }

@@ -9,7 +9,7 @@ import (
 )
 
 // evalFunction is the blueprint of a function that allows us to evaluate a single statement
-type evalFunction func(*trace.Trace, *Options, AuthContext, *policy.Statement) (bool, error)
+type evalFunction func(*subject, *policy.Statement) (bool, error)
 
 // evalIsSameAccount determines whether or not the provided Principal + Resource exist within the
 // same AWS account
@@ -26,18 +26,19 @@ func evalIsSameAccount(p *entities.Principal, r *entities.Resource) bool {
 
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
 // and different-account evaluations
-func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
+func evalOverallAccess(s *subject) (*Result, error) {
 
+	// FIXME(nsiow) figure out where trace should be set -- here or when `subject` is created
 	trc := trace.New()
 
 	// TODO(nsiow) good time to validate that the ac Action even applies to the ac Resource based on
 	//             SAR values
 
 	// TODO(nsiow) this may be ridiculously too large to include in trace
-	trc.Attr("authContext", ac)
+	trc.Attr("authContext", s.ac)
 
 	// Calculate SCP access, if present
-	scpAccess, err := evalSCP(trc, opt, ac)
+	scpAccess, err := evalSCP(s)
 	if err != nil {
 		return nil, fmt.Errorf("error evaluating SCP: %w", err)
 	}
@@ -51,7 +52,7 @@ func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
 	}
 
 	// Calculate permissions boundary access, if present
-	pbAccess, err := evalPermissionsBoundary(trc, opt, ac)
+	pbAccess, err := evalPermissionsBoundary(s)
 	if err != nil {
 		return nil, fmt.Errorf("error evaluating permission boundary: %w", err)
 	}
@@ -65,7 +66,7 @@ func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
 	}
 
 	// Calculate Principal access
-	pAccess, err := evalPrincipalAccess(trc, opt, ac)
+	pAccess, err := evalPrincipalAccess(s)
 	if err != nil {
 		return nil, fmt.Errorf("error evaluating principal access: %w", err)
 	}
@@ -76,7 +77,7 @@ func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
 	}
 
 	// Calculate Resource access
-	rAccess, err := evalResourceAccess(trc, opt, ac)
+	rAccess, err := evalResourceAccess(s)
 	if err != nil {
 		return nil, fmt.Errorf("error evaluating resource access: %w", err)
 	}
@@ -87,7 +88,7 @@ func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
 	}
 
 	// If same account, access is granted if the Principal has access
-	if evalIsSameAccount(ac.Principal, ac.Resource) {
+	if evalIsSameAccount(s.ac.Principal, s.ac.Resource) {
 		if pAccess.Contains(policy.EFFECT_ALLOW) {
 			trc.Decision("[allow] access granted via same-account identity policy")
 			return &Result{Trace: trc, IsAllowed: true}, nil

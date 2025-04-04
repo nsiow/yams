@@ -7,7 +7,6 @@ import (
 	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
 // TestPrincipalAccess checks identity-policy evaluation logic for statements
@@ -194,8 +193,8 @@ func TestPrincipalAccess(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
-		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalPrincipalAccess(trace.New(), &opts, ac)
+		subj := newSubject(&ac, &Options{})
+		res, err := evalPrincipalAccess(subj)
 		if err != nil {
 			return nil, err
 		}

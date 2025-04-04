@@ -4,17 +4,17 @@ import (
 	"testing"
 )
 
-func TestWithFailOnUnknownCondition(t *testing.T) {
+func TestWithSkipUnknownCondition(t *testing.T) {
 	// Apply option
 	opt := Options{}
-	f := WithFailOnUnknownCondition()
+	f := WithSkipUnknownConditionOperators()
 	err := f(&opt)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	// Check results
-	if opt.FailOnUnknownCondition != true {
-		t.Fatalf("expected: %v, got: %v", true, opt.FailOnUnknownCondition)
+	if opt.SkipUnknownConditionOperators != true {
+		t.Fatalf("expected: %v, got: %v", true, opt.SkipUnknownConditionOperators)
 	}
 }

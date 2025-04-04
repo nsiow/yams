@@ -2,18 +2,17 @@ package sim
 
 import (
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
 // evalPermissionsBoundary assesses the permissions boundary of the Principal to determine whether
 // or not it allows the provided AuthContext
-func evalPermissionsBoundary(trc *trace.Trace, opt *Options, ac AuthContext) (Decision, error) {
+func evalPermissionsBoundary(s *subject) (Decision, error) {
 
-	trc.Push("evaluating permission boundaries")
-	defer trc.Pop()
+	s.trc.Push("evaluating permission boundaries")
+	defer s.trc.Pop()
 
 	// Empty permissions boundary = allowed; otherwise we have to evaluate
-	if ac.Principal.PermissionsBoundary.Empty() {
+	if s.ac.Principal.PermissionsBoundary.Empty() {
 		decision := Decision{}
 		decision.Add(policy.EFFECT_ALLOW)
 		return decision, nil
@@ -26,5 +25,5 @@ func evalPermissionsBoundary(trc *trace.Trace, opt *Options, ac AuthContext) (De
 		evalStatementMatchesCondition,
 	}
 
-	return evalPolicy(trc, opt, ac, ac.Principal.PermissionsBoundary, funcs)
+	return evalPolicy(s, s.ac.Principal.PermissionsBoundary, funcs)
 }

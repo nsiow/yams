@@ -7,7 +7,6 @@ import (
 	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
 // TestResourceAccess checks resource-policy evaluation logic for statements
@@ -143,8 +142,8 @@ func TestResourceAccess(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
-		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalResourceAccess(trace.New(), &opts, ac)
+		subj := newSubject(&ac, &Options{})
+		res, err := evalResourceAccess(subj)
 		if err != nil {
 			return nil, err
 		}

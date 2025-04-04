@@ -7,7 +7,6 @@ import (
 	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
 // TestStatementMatchesAction checks action-matching logic for statements
@@ -113,7 +112,8 @@ func TestStatementMatchesAction(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesAction(trace.New(), &Options{}, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, &Options{})
+		return evalStatementMatchesAction(subj, &i.stmt)
 	})
 }
 
@@ -238,7 +238,8 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesPrincipal(trace.New(), &Options{}, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, &Options{})
+		return evalStatementMatchesPrincipal(subj, &i.stmt)
 	})
 }
 
@@ -333,6 +334,7 @@ func TestStatementMatchesResource(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesResource(trace.New(), &Options{}, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, &Options{})
+		return evalStatementMatchesResource(subj, &i.stmt)
 	})
 }

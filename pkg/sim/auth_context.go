@@ -37,14 +37,13 @@ const (
 // VariableExpansionRegex defines the variable to use for expanding policy variables
 var VariableExpansionRegex = regexp.MustCompile(`\${([a-zA-Z0-9]+:\S+?)}`)
 
-// Key retrieves the value for the requested key from the AuthContext
+// ConditionKey retrieves the value for the requested key from the AuthContext
 // TODO(nsiow) key retrieval should be case insensitive... I think
 // TODO(nsiow) support Trace object here for even lower level debugging
-func (ac *AuthContext) Key(key string) string {
+func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 	key = normalizeKey(key)
 
-	// TODO(nsiow) implement some sort of option around this for faster, less-strict sims
-	if !ac.SupportsKey(key) {
+	if opts.SkipUnknownConditionKeys && !ac.supportsKey(key) {
 		return EMPTY
 	}
 
@@ -120,11 +119,10 @@ func (ac *AuthContext) Key(key string) string {
 }
 
 // MultiKey retrieves the values for the requested key from the AuthContext
-func (ac *AuthContext) MultiKey(key string) []string {
+func (ac *AuthContext) MultiKey(key string, opts *Options) []string {
 	key = normalizeKey(key)
 
-	// TODO(nsiow) implement some sort of option around this for faster, less-strict sims
-	if !ac.SupportsKey(key) {
+	if opts.SkipUnknownConditionKeys && !ac.supportsKey(key) {
 		return nil
 	}
 
@@ -148,20 +146,14 @@ func (ac *AuthContext) MultiKey(key string) []string {
 	return ac.MultiValueProperties.Get(key)
 }
 
-// SupportsKey consults the SAR package to determine whether or not the requested key is even
-// supported for the simulated API call
-func (ac *AuthContext) SupportsKey(key string) bool {
-	return true
-}
-
 // Substitute resolves and replaces all IAM variables within the provided values
-func (ac *AuthContext) Substitute(value string) string {
+func (ac *AuthContext) Substitute(value string, opts *Options) string {
 	matches := VariableExpansionRegex.FindAllStringSubmatch(value, -1)
 	for _, match := range matches {
 
 		placeholder := match[0]
 		variable := match[1]
-		resolved := ac.Key(variable)
+		resolved := ac.ConditionKey(variable, opts)
 		value = strings.ReplaceAll(value, placeholder, resolved)
 	}
 
@@ -219,4 +211,11 @@ func (ac *AuthContext) principalType() string {
 	default:
 		return EMPTY
 	}
+}
+
+// supportsKey consults the SAR package to determine whether or not the requested key is supported
+// for the simulated API call
+func (ac *AuthContext) supportsKey(key string) bool {
+	return true
+	// return slices.Contains(ac.Action.ActionConditionKeys, key)
 }

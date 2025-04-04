@@ -7,6 +7,7 @@ import (
 	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/aws/types"
 	"github.com/nsiow/yams/pkg/entities"
+	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
 // Simulator provides the ability to simulate IAM policies and the interactions between
@@ -46,7 +47,12 @@ func (s *Simulator) SetUniverse(universe entities.Universe) {
 // Simulate determines whether the provided AuthContext would be allowed
 func (s *Simulator) Simulate(ac AuthContext) (*Result, error) {
 	// TODO(nsiow) perform AuthContext validation
-	return evalOverallAccess(&s.options, ac)
+	// FIXME(nsiow) only use a constructor for creating subjects
+	return evalOverallAccess(&subject{
+		ac:   &ac,
+		trc:  trace.New(),
+		opts: &s.options,
+	})
 }
 
 // SimulateByArn determines whether the operation would be allowed

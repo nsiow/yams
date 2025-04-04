@@ -7,7 +7,6 @@ import (
 	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
 // TestSCP tests functionality of SCP evaluations
@@ -219,7 +218,8 @@ func TestSCP(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
-		res, err := evalSCP(trace.New(), &Options{}, ac)
+		subj := newSubject(&ac, &Options{})
+		res, err := evalSCP(subj)
 		if err != nil {
 			return nil, err
 		}

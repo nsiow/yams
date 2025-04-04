@@ -5,18 +5,17 @@ import (
 
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
 // evalSCP assesses the service control policies of the Principal to determine whether or not it
 // allows the provided AuthContext
-func evalSCP(trc *trace.Trace, opt *Options, ac AuthContext) (Decision, error) {
+func evalSCP(s *subject) (Decision, error) {
 
-	trc.Push("evaluating service control policies")
-	defer trc.Pop()
+	s.trc.Push("evaluating service control policies")
+	defer s.trc.Pop()
 
 	// Missing account or empty SCP = allowed; otherwise we have to evaluate
-	account := ac.Principal.Account
+	account := s.ac.Principal.Account
 	if len(account.SCPs) == 0 {
 		decision := Decision{}
 		decision.Add(policy.EFFECT_ALLOW)
@@ -37,14 +36,14 @@ func evalSCP(trc *trace.Trace, opt *Options, ac AuthContext) (Decision, error) {
 
 		// Calculate access for this layer
 		var err error
-		layerDecision, err = evalControlPolicyLayer(trc, opt, ac, account, funcs, layer, i+1)
+		layerDecision, err = evalControlPolicyLayer(s, account, funcs, layer, i+1)
 		if err != nil {
 			return layerDecision, err
 		}
 
 		// If not allowed at this layer, propagate result up; should be denied
 		if !layerDecision.Allowed() {
-			trc.Observation(
+			s.trc.Observation(
 				fmt.Sprintf("SCP access denied at layer %d of %d", i+1, len(account.SCPs)))
 			return layerDecision, nil
 		}
@@ -58,20 +57,18 @@ func evalSCP(trc *trace.Trace, opt *Options, ac AuthContext) (Decision, error) {
 // This is separated since each logical layer must result in an ALLOW decision in order to
 // continue
 func evalControlPolicyLayer(
-	trc *trace.Trace,
-	opt *Options,
-	ac AuthContext,
+	s *subject,
 	account entities.Account,
 	funcs []evalFunction,
 	layer []policy.Policy,
 	layerId int) (Decision, error) {
 
-	trc.Push(fmt.Sprintf("evaluating SCP layer %d of %d", layerId, len(account.SCPs)))
-	defer trc.Pop()
+	s.trc.Push(fmt.Sprintf("evaluating SCP layer %d of %d", layerId, len(account.SCPs)))
+	defer s.trc.Pop()
 
 	decision := Decision{}
 	for _, pol := range layer {
-		result, err := evalPolicy(trc, opt, ac, pol, funcs)
+		result, err := evalPolicy(s, pol, funcs)
 		if err != nil {
 			return decision, err
 		}

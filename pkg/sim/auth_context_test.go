@@ -265,7 +265,7 @@ func TestAuthContextKeys(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
-		got := i.ac.Key(i.key)
+		got := i.ac.ConditionKey(i.key, &Options{})
 		return got, nil
 	})
 }
@@ -297,7 +297,7 @@ func TestAuthContextMultiKeys(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) ([]string, error) {
-		got := i.ac.MultiKey(i.key)
+		got := i.ac.MultiKey(i.key, &Options{})
 		return got, nil
 	})
 }
@@ -379,7 +379,7 @@ func TestResolve(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
-		got := i.ac.Substitute(i.str)
+		got := i.ac.Substitute(i.str, &Options{})
 		return got, nil
 	})
 }

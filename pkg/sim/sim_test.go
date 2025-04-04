@@ -24,15 +24,15 @@ func TestNewSimulator(t *testing.T) {
 	}
 
 	// Try with a simple option; validate that it got applied
-	sim, err = NewSimulator(WithFailOnUnknownCondition())
+	sim, err = NewSimulator(WithSkipUnknownConditionOperators())
 	if err != nil {
 		t.Fatalf("unexpected error creating a simulator with options: %v", err)
 	}
 	if sim == nil {
 		t.Fatalf("unexpected nil simulator when creating with options")
 	}
-	if sim.options.FailOnUnknownCondition != true {
-		t.Fatalf("expected option FailOnUnknownCondition to be applied, but saw 'false'")
+	if sim.options.SkipUnknownConditionOperators != true {
+		t.Fatalf("expected option SkipUnknownCondition to be applied, but saw 'false'")
 	}
 
 	// Try with an option that always fails
@@ -299,7 +299,7 @@ func TestComputeAccessSummary(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (map[string]int, error) {
-		sim, _ := NewSimulator(WithFailOnUnknownCondition())
+		sim, _ := NewSimulator()
 		sim.SetUniverse(i.universe)
 		summary, err := sim.ComputeAccessSummary(i.actions)
 		if err != nil {
