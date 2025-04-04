@@ -43,10 +43,10 @@ var VariableExpansionRegex = regexp.MustCompile(`\${([a-zA-Z0-9]+:\S+?)}`)
 func (ac *AuthContext) Key(key string) string {
 	key = normalizeKey(key)
 
-	// // TODO(nsiow) implement some sort of option around this for faster, less-strict sims
-	// if !ac.SupportsKey(key) {
-	// 	return EMPTY
-	// }
+	// TODO(nsiow) implement some sort of option around this for faster, less-strict sims
+	if !ac.SupportsKey(key) {
+		return EMPTY
+	}
 
 	// Try handling prefixes first...
 	switch {
@@ -119,21 +119,14 @@ func (ac *AuthContext) Key(key string) string {
 	return ac.Properties.Get(key)
 }
 
-// normalizeKey performs any required key normalization to process the provided key
-func normalizeKey(key string) string {
-	// TODO(nsiow) this is a rough approximation
-	substr := strings.SplitN(key, "/", 2)
-	switch len(substr) {
-	case 1:
-		return strings.ToLower(key)
-	default:
-		return strings.ToLower(substr[0]) + "/" + substr[1]
-	}
-}
-
 // MultiKey retrieves the values for the requested key from the AuthContext
 func (ac *AuthContext) MultiKey(key string) []string {
 	key = normalizeKey(key)
+
+	// TODO(nsiow) implement some sort of option around this for faster, less-strict sims
+	if !ac.SupportsKey(key) {
+		return nil
+	}
 
 	switch key {
 	case condkey.PrincipalServiceNamesList,
@@ -161,8 +154,8 @@ func (ac *AuthContext) SupportsKey(key string) bool {
 	return true
 }
 
-// Resolve resolves and replaces all IAM variables within the provided values
-func (ac *AuthContext) Resolve(value string) string {
+// Substitute resolves and replaces all IAM variables within the provided values
+func (ac *AuthContext) Substitute(value string) string {
 	matches := VariableExpansionRegex.FindAllStringSubmatch(value, -1)
 	for _, match := range matches {
 
@@ -173,6 +166,28 @@ func (ac *AuthContext) Resolve(value string) string {
 	}
 
 	return value
+}
+
+// now returns the auth context's current frame of reference for the current time
+func (ac *AuthContext) now() time.Time {
+	// TODO(nsiow) wrap in DoOnce?
+	if ac.Time.IsZero() {
+		ac.Time = time.Now()
+	}
+
+	return ac.Time
+}
+
+// normalizeKey performs any required key normalization to process the provided key
+func normalizeKey(key string) string {
+	// TODO(nsiow) this is a rough approximation
+	substr := strings.SplitN(key, "/", 2)
+	switch len(substr) {
+	case 1:
+		return strings.ToLower(key)
+	default:
+		return strings.ToLower(substr[0]) + "/" + substr[1]
+	}
 }
 
 // extractTag defines how to get the value of the requested tag
@@ -204,14 +219,4 @@ func (ac *AuthContext) principalType() string {
 	default:
 		return EMPTY
 	}
-}
-
-// now returns the auth context's current frame of reference for the current time
-func (ac *AuthContext) now() time.Time {
-	// TODO(nsiow) wrap in DoOnce?
-	if ac.Time.IsZero() {
-		ac.Time = time.Now()
-	}
-
-	return ac.Time
 }

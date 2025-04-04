@@ -379,7 +379,7 @@ func TestResolve(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
-		got := i.ac.Resolve(i.str)
+		got := i.ac.Substitute(i.str)
 		return got, nil
 	})
 }

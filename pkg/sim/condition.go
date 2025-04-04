@@ -319,7 +319,7 @@ func Mod_Not(f CondInner) CondInner {
 func Mod_ResolveVariables(f CondInner) CondInner {
 	return func(ac AuthContext, trc *trace.Trace, left string, right policy.Value) bool {
 		for i := range right {
-			right[i] = ac.Resolve(right[i])
+			right[i] = ac.Substitute(right[i])
 		}
 		return f(ac, trc, left, right)
 	}

@@ -85,11 +85,12 @@ def normalize(service: Service) -> Service:
     service = resolve_resource_pointers(service)
     return service
 
-# aws:RequestTag/${TagKey} => aws:RequestTag
+# aws:RequestTag/${TagKey} => aws:requesttag
 def normalize_condition_variables(service: Service) -> Service:
     for action in service.Actions:
         for i in range(len(action.ActionConditionKeys)):
-            condition_key = re.sub(r'[/:]\${[a-zA-Z0-9]+}$', '', action.ActionConditionKeys[i])
+            condition_key = re.sub(r'[/:]\${[a-z0-9]+}$', '', action.ActionConditionKeys[i])
+            condition_key = condition_key.lower()
             action.ActionConditionKeys[i] = condition_key
     return service
 
