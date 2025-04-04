@@ -14,8 +14,8 @@ type Action struct {
 	Name                string
 	Service             string // technically doesn't exist, but we add this
 	ActionConditionKeys []string
-	// TODO(nsiow) implement resource checks in the simulator
-	Resources []ResourcePointer
+	Resources           []ResourcePointer
+	ResolvedResources   []Resource // technically doesn't exist, but we add this
 }
 
 // ShortName provides the :-contatenated string representation of the action

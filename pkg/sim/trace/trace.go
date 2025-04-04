@@ -2,6 +2,7 @@ package trace
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 )
 
@@ -86,10 +87,7 @@ func (t *Trace) Decision(msg string) {
 // copyAttr is a helper function which makes a copy of the provided attributes
 func (t *Trace) copyAttr(m map[string]any) map[string]any {
 	c := make(map[string]any)
-	for k, v := range m {
-		c[k] = v
-	}
-
+	maps.Copy(c, m)
 	return c
 }
 

@@ -28,20 +28,21 @@ class ServiceListing(pydantic.BaseModel):
 class ResourcePointer(pydantic.BaseModel):
     Name: str
 
+class Resource(pydantic.BaseModel):
+    Name: str
+    ARNFormats: list[str] = []
+    ConditionKeys: list[str] = []
+
 class Action(pydantic.BaseModel):
     Name: str
     Service: str | None = None
     ActionConditionKeys: list[str] = []
     Resources: list[ResourcePointer] = []
+    ResolvedResources: list[Resource] = []
 
 class Condition(pydantic.BaseModel):
     Name: str
     Types: list[str]
-
-class Resource(pydantic.BaseModel):
-    Name: str
-    ARNFormats: list[str] = []
-    ConditionKeys: list[str] = []
 
 class Service(pydantic.BaseModel):
     Name: str
@@ -80,7 +81,8 @@ def fetch_service(service_listing: ServiceListing) -> Service:
 
 def normalize(service: Service) -> Service:
     service = normalize_condition_variables(service)
-    service = normalize_propagate_service(service)
+    service = propagate_service(service)
+    service = resolve_resource_pointers(service)
     return service
 
 # aws:RequestTag/${TagKey} => aws:RequestTag
@@ -92,9 +94,22 @@ def normalize_condition_variables(service: Service) -> Service:
     return service
 
 # add Service.Name to all Service.Actions.Service
-def normalize_propagate_service(service: Service) -> Service:
+def propagate_service(service: Service) -> Service:
     for action in service.Actions:
         action.Service = service.Name
+    return service
+
+# resolve Service.Actions[].ResolvedResources
+def resolve_resource_pointers(service: Service) -> Service:
+    for action in service.Actions:
+        for resource in action.Resources:
+            try:
+                resolved = next(r for r in service.Resources if r.Name == resource.Name)
+                action.ResolvedResources.append(resolved)
+            except StopIteration:
+                raise ValueError('unable to resolve pointer for {}/{}/{}'.format(
+                    service.Name, action.Name, resource.Name
+                ))
     return service
 
 # ------------------------------------------------------------------------------------------------

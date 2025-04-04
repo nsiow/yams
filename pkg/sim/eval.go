@@ -30,6 +30,9 @@ func evalOverallAccess(opt *Options, ac AuthContext) (*Result, error) {
 
 	trc := trace.New()
 
+	// TODO(nsiow) good time to validate that the ac Action even applies to the ac Resource based on
+	//             SAR values
+
 	// TODO(nsiow) this may be ridiculously too large to include in trace
 	trc.Attr("authContext", ac)
 
