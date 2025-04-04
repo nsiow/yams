@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
+	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
@@ -44,7 +45,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "x_account_implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
 					AccountId:        "88888",
@@ -62,7 +63,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "x_account_principal_only_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -88,7 +89,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "x_account_resource_only_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -116,7 +117,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 
 			Name: "x_account_principal_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -142,7 +143,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "x_account_resource_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -166,7 +167,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "x_account_allow_and_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -204,7 +205,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "error_nonexistent_principal_condition",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -238,7 +239,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "error_nonexistent_resource_condition",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -291,7 +292,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "same_account_implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
 					AccountId:        "88888",
@@ -309,7 +310,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "same_account_simple_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -335,7 +336,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "same_account_simple_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -361,7 +362,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "allow_and_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -398,7 +399,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "same_account_error_nonexistent_condition",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -433,7 +434,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		// {
 		// 	Name: "same_account_resource_access",
 		// 	Input: AuthContext{
-		// 		Action: "s3:listbucket",
+		// 		Action: sar.MustLookupString("s3:listbucket"),
 		// 		Principal:& entities.Principal{
 		// 			Arn: "arn:aws:iam::88888:role/myrole",
 		//			Account: "88888",
@@ -460,7 +461,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "error_bad_permissions_boundary",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -489,7 +490,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "permissions_boundary_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -524,7 +525,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "permissions_boundary_explicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -559,7 +560,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "permissions_boundary_implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -594,7 +595,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "error_bad_scp",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -629,7 +630,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "scp_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -670,7 +671,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "scp_explicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -722,7 +723,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "scp_implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -763,7 +764,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "scp_layer_implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",

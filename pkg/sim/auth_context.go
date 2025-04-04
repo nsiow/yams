@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nsiow/yams/pkg/aws/types"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/loaders/awsconfig"
 	condkey "github.com/nsiow/yams/pkg/policy/condition/keys"
@@ -17,7 +18,7 @@ import (
 // AuthContext defines the tertiary context of a request that can be used for authz decisions
 type AuthContext struct {
 	Time                 time.Time
-	Action               string
+	Action               types.Action
 	Principal            *entities.Principal
 	Resource             *entities.Resource
 	Properties           *PropertyBag[string]

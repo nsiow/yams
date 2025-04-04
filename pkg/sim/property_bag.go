@@ -7,7 +7,7 @@ import (
 // fold defines the internal implementation of case-folding used for bag keys
 var fold = strings.ToLower
 
-// PropertyBag implements a generic bag interface which case-folds its string keys
+// PropertyBag implements a generic map interface which case-folds its string keys
 type PropertyBag[T any] struct {
 	innerMap map[string]T
 }

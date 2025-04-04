@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
+	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim/trace"
@@ -17,7 +18,7 @@ func TestSCP(t *testing.T) {
 			Input: AuthContext{
 				Principal: &entities.Principal{},
 				Resource:  &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:    "s3:ListBucket",
+				Action:    sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -44,7 +45,7 @@ func TestSCP(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   "s3:ListBucket",
+				Action:   sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -71,7 +72,7 @@ func TestSCP(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   "s3:ListBucket",
+				Action:   sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_DENY,
@@ -98,7 +99,7 @@ func TestSCP(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   "s3:ListBucket",
+				Action:   sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -125,7 +126,7 @@ func TestSCP(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   "s3:ListBucket",
+				Action:   sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect(nil),
 		},
@@ -162,7 +163,7 @@ func TestSCP(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   "s3:ListBucket",
+				Action:   sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect(nil),
 		},
@@ -209,7 +210,7 @@ func TestSCP(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   "s3:ListBucket",
+				Action:   sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_DENY,

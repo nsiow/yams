@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
+	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim/trace"
@@ -15,7 +16,7 @@ func TestResourceAccess(t *testing.T) {
 		{
 			Name: "implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
@@ -29,7 +30,7 @@ func TestResourceAccess(t *testing.T) {
 		{
 			Name: "simple_match",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
@@ -54,7 +55,7 @@ func TestResourceAccess(t *testing.T) {
 		{
 			Name: "explicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
@@ -79,7 +80,7 @@ func TestResourceAccess(t *testing.T) {
 		{
 			Name: "allow_and_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
@@ -112,7 +113,7 @@ func TestResourceAccess(t *testing.T) {
 		{
 			Name: "error_nonexistent_condition",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},

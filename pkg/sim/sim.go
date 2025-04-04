@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/nsiow/yams/pkg/aws/sar"
+	"github.com/nsiow/yams/pkg/aws/types"
 	"github.com/nsiow/yams/pkg/entities"
 )
 
@@ -51,8 +53,13 @@ func (s *Simulator) Simulate(ac AuthContext) (*Result, error) {
 func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[string]string) (*Result, error) {
 
 	ac := AuthContext{}
-	ac.Action = action
 	ac.Properties = NewBagFromMap(ctx)
+
+	if resolvedAction, ok := sar.LookupString(action); !ok {
+		return nil, fmt.Errorf("unable to resolve action '%s'", action)
+	} else {
+		ac.Action = resolvedAction
+	}
 
 	// Locate Principal
 	found := false
@@ -87,7 +94,7 @@ func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[st
 //
 // The summary is returned in a map of format map[<resource_arn>]: <# of principals with access>
 // where access is defined as any of the provided actions being allowed
-func (s *Simulator) ComputeAccessSummary(actions []string) (map[string]int, error) {
+func (s *Simulator) ComputeAccessSummary(actions []types.Action) (map[string]int, error) {
 	// TODO(nsiow) this needs to be parallelized
 	// Iterate over the matrix of Resources x Principals x Actions
 	access := make(map[string]int)

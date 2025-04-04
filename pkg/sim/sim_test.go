@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
+	"github.com/nsiow/yams/pkg/aws/sar"
+	"github.com/nsiow/yams/pkg/aws/types"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
@@ -75,7 +77,7 @@ func TestSimulate(t *testing.T) {
 		{
 			Name: "same_account_implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
 					AccountId:        "88888",
@@ -93,7 +95,7 @@ func TestSimulate(t *testing.T) {
 		{
 			Name: "same_account_simple_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -221,7 +223,7 @@ func TestSimulateByArn(t *testing.T) {
 func TestComputeAccessSummary(t *testing.T) {
 	type input struct {
 		universe entities.Universe
-		actions  []string
+		actions  []types.Action
 	}
 
 	tests := []testlib.TestCase[input, map[string]int]{
@@ -229,7 +231,7 @@ func TestComputeAccessSummary(t *testing.T) {
 			Name: "simple_universe_1",
 			Input: input{
 				universe: SimpleTestUniverse_1,
-				actions:  []string{"s3:listbucket"},
+				actions:  []types.Action{sar.MustLookupString("s3:listbucket")},
 			},
 			Want: map[string]int{
 				"arn:aws:s3:::bucket1": 1,
@@ -241,7 +243,7 @@ func TestComputeAccessSummary(t *testing.T) {
 			Name: "unrelated_actions",
 			Input: input{
 				universe: SimpleTestUniverse_1,
-				actions:  []string{"this:doesnotexist"},
+				actions:  []types.Action{sar.MustLookupString("sqs:listqueues")},
 			},
 			Want: map[string]int{
 				"arn:aws:s3:::bucket1": 0,
@@ -260,7 +262,7 @@ func TestComputeAccessSummary(t *testing.T) {
 			Name:      "error_nonexistent_condition",
 			ShouldErr: true,
 			Input: input{
-				actions: []string{"s3:listbucket"},
+				actions: []types.Action{sar.MustLookupString("s3:listbucket")},
 				universe: entities.Universe{
 					Principals: []entities.Principal{
 						{

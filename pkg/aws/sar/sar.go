@@ -25,6 +25,10 @@ func Index() map[string]map[string]types.Action {
 
 // Lookup allows for querying a specific api call based on service + action name
 func Lookup(service, action string) (types.Action, bool) {
+	// SAR index uses lower-case keys
+	service = strings.ToLower(service)
+	action = strings.ToLower(action)
+
 	idx := sarIndex()
 	if actionMap, exists := idx[service]; exists {
 		if apicall, exists := actionMap[action]; exists {
@@ -37,12 +41,22 @@ func Lookup(service, action string) (types.Action, bool) {
 
 // LookupString allows for querying a specific api call based on the "service:action" shorthand
 func LookupString(serviceAction string) (types.Action, bool) {
-	components := strings.SplitN(serviceAction, ":", 1)
+	components := strings.SplitN(serviceAction, ":", 2)
 	if len(components) != 2 {
 		return types.Action{}, false
 	}
 
 	return Lookup(components[0], components[1])
+}
+
+// MustLookupString allows for querying a specific api call based on the "service:action" with
+// such great confidence that we will panic if we do not find it
+func MustLookupString(serviceAction string) types.Action {
+	if a, ok := LookupString(serviceAction); ok {
+		return a
+	}
+
+	panic(fmt.Sprintf("unable to resolve service:action from SAR: '%s'", serviceAction))
 }
 
 // query is a struct used to represent the internal state of a SAR query

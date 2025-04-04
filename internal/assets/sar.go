@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 
 	"github.com/nsiow/yams/pkg/aws/types"
@@ -58,12 +59,14 @@ func loadSAR(compressedData []byte) {
 	// build the index, once
 	newIndex := make(map[string]map[string]types.Action)
 	for _, service := range newData {
+		serviceName := strings.ToLower(service.Name)
 		if _, exists := newIndex[service.Name]; !exists {
-			newIndex[service.Name] = make(map[string]types.Action)
+			newIndex[serviceName] = make(map[string]types.Action)
 		}
 
 		for _, action := range service.Actions {
-			newIndex[service.Name][action.Name] = action
+			actionName := strings.ToLower(action.Name)
+			newIndex[serviceName][actionName] = action
 		}
 	}
 

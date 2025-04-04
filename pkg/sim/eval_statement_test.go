@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
+	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim/trace"
@@ -30,7 +31,7 @@ func TestStatementMatchesAction(t *testing.T) {
 		{
 			Name: "simple_wildcard",
 			Input: input{
-				ac:   AuthContext{Action: "s3:getobject"},
+				ac:   AuthContext{Action: sar.MustLookupString("s3:getobject")},
 				stmt: policy.Statement{Action: []string{"*"}},
 			},
 			Want: true,
@@ -38,15 +39,15 @@ func TestStatementMatchesAction(t *testing.T) {
 		{
 			Name: "simple_direct_match",
 			Input: input{
-				ac:   AuthContext{Action: "s2:getobject"},
-				stmt: policy.Statement{Action: []string{"s2:getobject"}},
+				ac:   AuthContext{Action: sar.MustLookupString("s3:getobject")},
+				stmt: policy.Statement{Action: []string{"s3:getobject"}},
 			},
 			Want: true,
 		},
 		{
 			Name: "other_action",
 			Input: input{
-				ac:   AuthContext{Action: "s3:putobject"},
+				ac:   AuthContext{Action: sar.MustLookupString("s3:putobject")},
 				stmt: policy.Statement{Action: []string{"s3:getobject"}},
 			},
 			Want: false,
@@ -54,7 +55,7 @@ func TestStatementMatchesAction(t *testing.T) {
 		{
 			Name: "two_actions",
 			Input: input{
-				ac:   AuthContext{Action: "s3:getobject"},
+				ac:   AuthContext{Action: sar.MustLookupString("s3:getobject")},
 				stmt: policy.Statement{Action: []string{"s3:putobject", "s3:getobject"}},
 			},
 			Want: true,
@@ -62,7 +63,7 @@ func TestStatementMatchesAction(t *testing.T) {
 		{
 			Name: "diff_casing",
 			Input: input{
-				ac:   AuthContext{Action: "s3:gEtObJeCt"},
+				ac:   AuthContext{Action: sar.MustLookupString("s3:gEtObJeCt")},
 				stmt: policy.Statement{Action: []string{"s3:putobject", "s3:getobject"}},
 			},
 			Want: true,
@@ -72,7 +73,7 @@ func TestStatementMatchesAction(t *testing.T) {
 		{
 			Name: "notaction_simple_wildcard",
 			Input: input{
-				ac:   AuthContext{Action: "s3:getobject"},
+				ac:   AuthContext{Action: sar.MustLookupString("s3:getobject")},
 				stmt: policy.Statement{NotAction: []string{"*"}},
 			},
 			Want: false,
@@ -80,7 +81,7 @@ func TestStatementMatchesAction(t *testing.T) {
 		{
 			Name: "notaction_simple_direct_match",
 			Input: input{
-				ac:   AuthContext{Action: "s3:getobject"},
+				ac:   AuthContext{Action: sar.MustLookupString("s3:getobject")},
 				stmt: policy.Statement{NotAction: []string{"s3:getobject"}},
 			},
 			Want: false,
@@ -88,7 +89,7 @@ func TestStatementMatchesAction(t *testing.T) {
 		{
 			Name: "notaction_other_action",
 			Input: input{
-				ac:   AuthContext{Action: "sqs:sendmessage"},
+				ac:   AuthContext{Action: sar.MustLookupString("sqs:sendmessage")},
 				stmt: policy.Statement{NotAction: []string{"s3:getobject"}},
 			},
 			Want: true,
@@ -96,7 +97,7 @@ func TestStatementMatchesAction(t *testing.T) {
 		{
 			Name: "notaction_two_actions",
 			Input: input{
-				ac:   AuthContext{Action: "s3:getobject"},
+				ac:   AuthContext{Action: sar.MustLookupString("s3:getobject")},
 				stmt: policy.Statement{NotAction: []string{"s3:putobject", "s3:getobject"}},
 			},
 			Want: false,
@@ -104,7 +105,7 @@ func TestStatementMatchesAction(t *testing.T) {
 		{
 			Name: "notaction_diff_casing",
 			Input: input{
-				ac:   AuthContext{Action: "s3:gEtObJeCt"},
+				ac:   AuthContext{Action: sar.MustLookupString("s3:gEtObJeCt")},
 				stmt: policy.Statement{NotAction: []string{"s3:putobject", "s3:getobject"}},
 			},
 			Want: false,
