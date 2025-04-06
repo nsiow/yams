@@ -49,8 +49,9 @@ func evalStatementMatchesAction(s *subject, stmt *policy.Statement) (bool, error
 		_gate.Invert()
 	}
 
+	shortName := s.ac.Action.ShortName()
 	for _, a := range action {
-		match := wildcard.MatchSegmentsIgnoreCase(a, s.ac.Action.Name)
+		match := wildcard.MatchSegmentsIgnoreCase(a, shortName)
 		if match {
 			s.trc.Attr("action", a)
 			s.trc.Observation("action matched")
