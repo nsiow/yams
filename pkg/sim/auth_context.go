@@ -218,6 +218,5 @@ func (ac *AuthContext) principalType() string {
 // for the simulated API call
 // TODO(nsiow) perform condition key type validation
 func (ac *AuthContext) supportsKey(key string) bool {
-	return true
 	return slices.Contains(ac.Action.ActionConditionKeys, key)
 }

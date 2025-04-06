@@ -101,11 +101,10 @@ func (s *Simulator) Validate(ac AuthContext) error {
 
 // Simulate determines whether the provided AuthContext would be allowed
 func (s *Simulator) Simulate(ac AuthContext) (*Result, error) {
-	// TODO(nsiow) perform AuthContext validation
-	// err := s.Validate(ac)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	err := s.Validate(ac)
+	if err != nil {
+		return nil, err
+	}
 
 	subj := newSubject(&ac, &s.options)
 	return evalOverallAccess(subj)

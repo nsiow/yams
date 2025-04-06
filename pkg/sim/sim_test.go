@@ -243,7 +243,7 @@ func TestComputeAccessSummary(t *testing.T) {
 			Name: "unrelated_actions",
 			Input: input{
 				universe: SimpleTestUniverse_1,
-				actions:  []*types.Action{sar.MustLookupString("sqs:listqueues")},
+				actions:  []*types.Action{sar.MustLookupString("s3:getbucketlocation")},
 			},
 			Want: map[string]int{
 				"arn:aws:s3:::bucket1": 0,
