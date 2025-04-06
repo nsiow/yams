@@ -24,7 +24,7 @@ func evalPolicies(s *subject, policies []policy.Policy, funcs []evalFunction) (D
 }
 
 // evalPolicy computes whether the provided policy matches the AuthContext
-// FIXME(nsiow) re-add trace statements to all of the below functions
+// TODO(nsiow) re-add trace statements to all of the below functions
 // (evalPolicy/evalPolicies/evalStatement)
 func evalPolicy(s *subject, policy policy.Policy, funcs []evalFunction) (Decision, error) {
 

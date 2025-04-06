@@ -7,7 +7,6 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 )
 
-// TestNewValue creates a Value with different variables and determines correct functionality
 func TestNewValue(t *testing.T) {
 	tests := []testlib.TestCase[Value, []string]{
 		{
@@ -22,7 +21,6 @@ func TestNewValue(t *testing.T) {
 	})
 }
 
-// TestMarshal validates the JSON marshalling behavior of various cases
 func TestMarshal(t *testing.T) {
 	type exampleStruct struct {
 		S Value
@@ -49,7 +47,6 @@ func TestMarshal(t *testing.T) {
 	})
 }
 
-// TestUnmarshal validates the JSON unmarshalling behavior of various cases
 func TestUnmarshal(t *testing.T) {
 	type exampleStruct struct {
 		S Value
@@ -81,7 +78,6 @@ func TestUnmarshal(t *testing.T) {
 	})
 }
 
-// TestInvalid validates the handling of invalid JSON fragments
 func TestInvalid(t *testing.T) {
 	tests := []testlib.TestCase[string, any]{
 		{Input: `a`, ShouldErr: true},
@@ -93,7 +89,6 @@ func TestInvalid(t *testing.T) {
 	})
 }
 
-// TestEmpty validates the correct emptiness behavior of a Value
 func TestEmpty(t *testing.T) {
 	tests := []testlib.TestCase[Value, bool]{
 		{Input: nil, Want: true},

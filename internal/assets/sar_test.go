@@ -2,40 +2,39 @@ package assets
 
 import (
 	"encoding/base64"
+	"sync"
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
 )
 
-// -----------------------------------------------------------------------------------------------
-// Test Functions
-// -----------------------------------------------------------------------------------------------
-
-// TestValidSarDataLoad confirms the successful loading of valid data
 func TestValidSarDataLoad(t *testing.T) {
 	sar := SAR()
 	if len(sar) < MINIMUM_SAR_SIZE {
-		t.Fatalf("expected >= %d SAR entries but saw %d",
-			MINIMUM_SAR_SIZE,
-			len(sar),
-		)
+		t.Fatalf("expected >= %d SAR entries but saw %d", MINIMUM_SAR_SIZE, len(sar))
 	}
+	sarDataLoad = sync.Once{} // reset data loading
 }
 
-// TestInvalidSarGzip confirms the failed loading of corrupted gzip data
+func TestValidSarIndexLoad(t *testing.T) {
+	idx := SARIndex()
+	if len(idx) < MINIMUM_SAR_SIZE {
+		t.Fatalf("expected >= %d SAR index entries but saw %d", MINIMUM_SAR_SIZE, len(idx))
+	}
+	sarDataLoad = sync.Once{} // reset data loading
+}
+
 func TestInvalidSarGzip(t *testing.T) {
 	defer testlib.AssertPanicWithText(t, `error unwrapping SAR data: EOF`)
 	loadSAR([]byte{})
 }
 
-// TestInvalidSarDecode confirms the failed loading of corrupted JSON data
 func TestInvalidSarDecode(t *testing.T) {
 	defer testlib.AssertPanicWithText(t, `error decoding SAR data: unexpected end of JSON input`)
 	loadSAR(fixtureInvalidEncodedSar())
 
 }
 
-// TestInvalidSarEmpty confirms the failed loading of a too-short SAR list
 func TestInvalidSarEmpty(t *testing.T) {
 	defer testlib.AssertPanicWithText(t, `error validating SAR data, len too small: 0`)
 	loadSAR(fixtureInvalidEmptySar())

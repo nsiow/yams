@@ -19,7 +19,7 @@ var sarData []types.Service
 var sarIndex map[string]map[string]types.Action // map[service]map[action]action
 var sarDataLoad sync.Once
 
-// The minimum number of API calls expected; used to detect regressions
+// The minimum number of documented services expected; used to detect regressions
 // Last updated 03-23-2025
 var MINIMUM_SAR_SIZE = 415
 

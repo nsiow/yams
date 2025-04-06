@@ -9,7 +9,6 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestResourceAccess checks resource-policy evaluation logic for statements
 func TestResourceAccess(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
 		{

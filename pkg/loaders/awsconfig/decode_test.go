@@ -8,7 +8,6 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestDecodePolicyString confirms correct decoding of both valid and invalid policy strings
 func TestDecodePolicyString(t *testing.T) {
 	tests := []testlib.TestCase[string, policy.Policy]{
 		{

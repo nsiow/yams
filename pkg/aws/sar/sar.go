@@ -15,13 +15,8 @@ type predicateKey = string
 // sar is a local alias hiding the asset implementation of SAR
 var sar = assets.SAR
 
-// sarIndex is a local alias hiding the asset implementation of SAR
+// sarIndex is a local alias hiding the asset implementation of the SAR index
 var sarIndex = assets.SARIndex
-
-// Index returns a double-map with structure <service>/<action>/types.Action
-func Index() map[string]map[string]types.Action {
-	return assets.SARIndex()
-}
 
 // Lookup allows for querying a specific api call based on service + action name
 func Lookup(service, action string) (*types.Action, bool) {
@@ -41,7 +36,7 @@ func Lookup(service, action string) (*types.Action, bool) {
 
 // LookupString allows for querying a specific api call based on the "service:action" shorthand
 func LookupString(serviceAction string) (*types.Action, bool) {
-	components := strings.SplitN(serviceAction, ":", 2)
+	components := strings.Split(serviceAction, ":")
 	if len(components) != 2 {
 		return &types.Action{}, false
 	}

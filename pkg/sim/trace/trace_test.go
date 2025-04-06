@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-// TestTraceLevel validates the behavior of Trace levels
 func TestTraceLevel(t *testing.T) {
 	// Create a new trace
 	trc := New()
@@ -47,7 +46,6 @@ func TestTraceLevel(t *testing.T) {
 	}
 }
 
-// TestTraceLog validates the output of the Trace logger
 func TestTraceLog(t *testing.T) {
 	// Create a new trace
 	trc := New()
@@ -69,7 +67,6 @@ func TestTraceLog(t *testing.T) {
 	}
 }
 
-// TestTraceSingle validates the behavior of a basic simulation Trace
 func TestTraceSingle(t *testing.T) {
 	// Create a new trace
 	trc := New()
@@ -95,7 +92,6 @@ func TestTraceSingle(t *testing.T) {
 	}
 }
 
-// TestTraceMany validates the behavior of a nested simulation Trace
 func TestTraceMany(t *testing.T) {
 	// Create a new trace
 	trc := New()

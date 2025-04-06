@@ -7,7 +7,6 @@ import (
 	"github.com/nsiow/yams/pkg/entities"
 )
 
-// TestAuthContextKeys validates correct retrieval of Condition keys
 func TestAuthContextKeys(t *testing.T) {
 	type input struct {
 		ac  AuthContext
@@ -270,7 +269,6 @@ func TestAuthContextKeys(t *testing.T) {
 	})
 }
 
-// TestAuthContextMultiKeys validates correct retrieval of multi-valued Condition keys
 func TestAuthContextMultiKeys(t *testing.T) {
 	type input struct {
 		ac  AuthContext
@@ -302,7 +300,6 @@ func TestAuthContextMultiKeys(t *testing.T) {
 	})
 }
 
-// TestResolve validates the functionality of our variable resolution/expansion logic
 func TestResolve(t *testing.T) {
 	type input struct {
 		str string
@@ -384,8 +381,6 @@ func TestResolve(t *testing.T) {
 	})
 }
 
-// TestAuthContextReferenceTime is a minor test which validates that an unset time will result
-// in a reference time of "now", which is measured by being "some time in the future"
 func TestAuthContextReferenceTime(t *testing.T) {
 	ac := AuthContext{}
 	authContextTime := ac.now()

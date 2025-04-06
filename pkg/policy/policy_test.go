@@ -7,7 +7,6 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 )
 
-// TestPolicyEmpty validates our test of empty policy behavior
 func TestPolicyEmpty(t *testing.T) {
 	tests := []testlib.TestCase[string, bool]{
 		{
@@ -57,7 +56,6 @@ func TestPolicyEmpty(t *testing.T) {
 	})
 }
 
-// TestPolicyValid ensures correct handling of valid/invalid policies
 func TestPolicyValid(t *testing.T) {
 	tests := []testlib.TestCase[string, bool]{
 		{
@@ -116,7 +114,6 @@ func TestPolicyValid(t *testing.T) {
 	})
 }
 
-// TestPolicyGrammar confirms we got the right shape for our policy grammar
 func TestPolicyGrammar(t *testing.T) {
 	tests := []testlib.TestCase[string, Policy]{
 		{
@@ -356,7 +353,6 @@ func TestPolicyGrammar(t *testing.T) {
 	})
 }
 
-// TestValidate confirms correct validation behavior for parsed policy statements
 func TestValidate(t *testing.T) {
 	tests := []testlib.TestCase[string, any]{
 		{

@@ -7,7 +7,6 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 )
 
-// TestPolicyMarshal validates the process of rendering policies as JSON
 func TestPolicyMarshal(t *testing.T) {
 	tests := []testlib.TestCase[Policy, string]{
 		{

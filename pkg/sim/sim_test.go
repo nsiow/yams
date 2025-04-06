@@ -12,7 +12,6 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestNewSimulator validates our ability to create new simulator with and without options
 func TestNewSimulator(t *testing.T) {
 	// Try with no options
 	sim, err := NewSimulator()
@@ -45,7 +44,6 @@ func TestNewSimulator(t *testing.T) {
 	}
 }
 
-// TestSimulatorUniverse validates our ability to manipulate the Universe of the simulator
 func TestSimulatorUniverse(t *testing.T) {
 
 	// Define our universe
@@ -68,10 +66,6 @@ func TestSimulatorUniverse(t *testing.T) {
 	}
 }
 
-// TestSimulate validates the simulator's ability to correctly simulate a single event
-//
-// We are keeping these tests simple in terms of evaluation logic, as we really just want to test
-// the simulator interface vs the logic which is tested deeply elsewhere
 func TestSimulate(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, bool]{
 		{
@@ -132,8 +126,6 @@ func TestSimulate(t *testing.T) {
 	})
 }
 
-// TestSimulateByArn validates the simulator's ability to correctly simulate access based on ARN
-// lookups
 func TestSimulateByArn(t *testing.T) {
 	type input struct {
 		universe     entities.Universe
@@ -218,8 +210,6 @@ func TestSimulateByArn(t *testing.T) {
 	})
 }
 
-// TestComputeAccessSummary validates the simulator's ability to construct a summary of access
-// between Principals + Resources
 func TestComputeAccessSummary(t *testing.T) {
 	type input struct {
 		universe entities.Universe
@@ -310,8 +300,6 @@ func TestComputeAccessSummary(t *testing.T) {
 	})
 }
 
-// SimpleTestUniverse_1 defines a very simple but reusable test universe for basic,
-// non-exhaustive unit tests
 var SimpleTestUniverse_1 = entities.Universe{
 	Principals: []entities.Principal{
 		{

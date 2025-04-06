@@ -14,7 +14,6 @@ type input struct {
 	options Options
 }
 
-// TestStatementBase checks some basic condition shape/matching logic
 func TestStatementBase(t *testing.T) {
 	tests := []testlib.TestCase[input, bool]{
 		{
@@ -2050,9 +2049,9 @@ func TestArnNotLike(t *testing.T) {
 	})
 }
 
-// --------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------
 // Test weird stuff
-// --------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------
 
 func TestIfExists(t *testing.T) {
 	tests := []testlib.TestCase[input, bool]{

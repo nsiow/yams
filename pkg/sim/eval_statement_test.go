@@ -9,7 +9,6 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestStatementMatchesAction checks action-matching logic for statements
 func TestStatementMatchesAction(t *testing.T) {
 	type input struct {
 		ac   AuthContext
@@ -117,7 +116,6 @@ func TestStatementMatchesAction(t *testing.T) {
 	})
 }
 
-// TestStatementMatchesPrincipal checks principal-matching logic for statements
 func TestStatementMatchesPrincipal(t *testing.T) {
 	type input struct {
 		ac   AuthContext
@@ -243,7 +241,6 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 	})
 }
 
-// TestStatementMatchesResource checks resource-matching logic for statements
 func TestStatementMatchesResource(t *testing.T) {
 	type input struct {
 		ac   AuthContext

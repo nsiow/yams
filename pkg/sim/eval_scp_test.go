@@ -9,7 +9,6 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestSCP tests functionality of SCP evaluations
 func TestSCP(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
 		{

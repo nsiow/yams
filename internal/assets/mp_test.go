@@ -7,11 +7,6 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 )
 
-// -----------------------------------------------------------------------------------------------
-// Test Functions
-// -----------------------------------------------------------------------------------------------
-
-// TestValidPolicyDataLoad confirms the successful loading of valid data
 func TestValidPolicyDataLoad(t *testing.T) {
 	policies := ManagedPolicyData()
 	if len(policies) < MINIMUM_POLICYSET_SIZE {
@@ -22,14 +17,12 @@ func TestValidPolicyDataLoad(t *testing.T) {
 	}
 }
 
-// TestInvalidPolicyGzip confirms the failed loading of corrupted gzip data
 func TestInvalidPolicyGzip(t *testing.T) {
 	defer testlib.AssertPanicWithText(t,
 		`error unwrapping managed policy data: EOF`)
 	loadManagedPolicyData([]byte{})
 }
 
-// TestInvalidPolicyDecode confirms the failed loading of corrupted JSON data
 func TestInvalidPolicyDecode(t *testing.T) {
 	defer testlib.AssertPanicWithText(t,
 		`error decoding managed policy data: unexpected end of JSON input`)
@@ -37,7 +30,6 @@ func TestInvalidPolicyDecode(t *testing.T) {
 
 }
 
-// TestInvalidPolicyEmpty confirms the failed loading of a too-short policy list
 func TestInvalidPolicyEmpty(t *testing.T) {
 	defer testlib.AssertPanicWithText(t,
 		`error validating managed policy data, len too small: 0`)

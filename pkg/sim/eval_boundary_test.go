@@ -9,7 +9,6 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestPermissionsBoundary tests functionality of permissions boundary evaluations
 func TestPermissionsBoundary(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
 		{

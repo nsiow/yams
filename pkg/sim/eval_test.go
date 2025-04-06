@@ -9,7 +9,6 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestEvalIsSameAccount checks same vs x-account checking behavior
 func TestEvalIsSameAccount(t *testing.T) {
 	type input struct {
 		principal *entities.Principal
@@ -38,8 +37,6 @@ func TestEvalIsSameAccount(t *testing.T) {
 	})
 }
 
-// TestOverallAccess_XAccount checks both principal-side and resource-side logic where the
-// resource + principal reside within the same account
 func TestOverallAccess_XAccount(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, bool]{
 		{
@@ -285,8 +282,6 @@ func TestOverallAccess_XAccount(t *testing.T) {
 	})
 }
 
-// TestOverallAccess_SameAccount checks both principal-side and resource-side logic where the
-// resource + principal reside within the same account
 func TestOverallAccess_SameAccount(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, bool]{
 		{

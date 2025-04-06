@@ -6,7 +6,6 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 )
 
-// TestMap validates the correct retrieval of the full managed policy map
 func TestMap(t *testing.T) {
 	pmap := Map()
 
@@ -16,7 +15,6 @@ func TestMap(t *testing.T) {
 	}
 }
 
-// TestMapContents spotchecks a handful of managed policy map items
 func TestMapContents(t *testing.T) {
 	pmap := Map()
 
@@ -49,7 +47,6 @@ func TestMapContents(t *testing.T) {
 	})
 }
 
-// TestAll validates the correct retrieval of the full managed policy set
 func TestAll(t *testing.T) {
 	plist := All()
 
@@ -59,7 +56,6 @@ func TestAll(t *testing.T) {
 	}
 }
 
-// TestGet validates the correct retrieval of specific managed policies
 func TestGet(t *testing.T) {
 	tests := []testlib.TestCase[string, bool]{
 		{

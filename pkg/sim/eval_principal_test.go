@@ -9,7 +9,6 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestPrincipalAccess checks identity-policy evaluation logic for statements
 func TestPrincipalAccess(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
 		{

@@ -150,7 +150,6 @@ func TestWildcard(t *testing.T) {
 	})
 }
 
-// TestMatchAllOrNothing validates correct matching behavior for All/Nothing matches
 func TestMatchAllOrNothing(t *testing.T) {
 	type input struct {
 		pattern string
@@ -186,7 +185,6 @@ func TestMatchAllOrNothing(t *testing.T) {
 	})
 }
 
-// TestMatchArn validates correct matching behavior for Arn matches
 func TestMatchArn(t *testing.T) {
 	type input struct {
 		pattern string

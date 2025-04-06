@@ -1,51 +1,143 @@
 package sar
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
 )
 
-// TestMap validates the correct retrieval of the full SAR map
-func TestMap(t *testing.T) {
-	idx := sarIndex()
-
-	// Validate that we have a minimum number of entries
-	if len(idx) < 400 {
-		t.Fatalf("test failed, SAR map did not have enough entries")
+func TestLookup(t *testing.T) {
+	type input struct {
+		service string
+		name    string
 	}
+
+	tests := []testlib.TestCase[input, bool]{
+		{
+			Input: input{
+				service: "s3",
+				name:    "getobject",
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				service: "S3",
+				name:    "GETOBJECT",
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				service: "sqs",
+				name:    "lIsTquEuEs",
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				service: "foo",
+				name:    "bar",
+			},
+			Want: false,
+		},
+		{
+			Input: input{
+				service: "s3",
+				name:    "listqueues",
+			},
+			Want: false,
+		},
+	}
+
+	// Lookup
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
+		action, exists := Lookup(i.service, i.name)
+		// if it doesn't exist, perform no validation
+		if !exists {
+			return false, nil
+		}
+
+		// if it does exist, ensure that the values equal provided parameters
+		return strings.EqualFold(action.Service, i.service) &&
+			strings.EqualFold(action.Name, i.name), nil
+	})
+
+	// LookupString
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
+		action, exists := LookupString(i.service + ":" + i.name)
+		// if it doesn't exist, perform no validation
+		if !exists {
+			return false, nil
+		}
+
+		// if it does exist, ensure that the values equal provided parameters
+		return strings.EqualFold(action.Service, i.service) &&
+			strings.EqualFold(action.Name, i.name), nil
+	})
 }
 
-// TestMapContents spotchecks a handful of SAR items
-func TestMapContents(t *testing.T) {
-	idx := sarIndex()
-
+func TestLookupStringInvalid(t *testing.T) {
 	tests := []testlib.TestCase[string, bool]{
 		{
-			Input: "foo",
+			Input: "foo:bar:baz",
 			Want:  false,
 		},
 		{
-			Input: "account",
-			Want:  true,
-		},
-		{
-			Input: "ec2",
-			Want:  true,
-		},
-		{
-			Input: "s3",
-			Want:  true,
+			Input: "s3_listbuckets",
+			Want:  false,
 		},
 	}
 
+	// LookupString
 	testlib.RunTestSuite(t, tests, func(i string) (bool, error) {
-		_, exists := idx[i]
+		_, exists := LookupString(i)
 		return exists, nil
 	})
 }
 
-// TestAll validates the correct retrieval of the full SAR dataset
+func TestMustLookupString(t *testing.T) {
+	tests := []testlib.TestCase[string, bool]{
+		{
+			Input: "s3:getobject",
+			Want:  true,
+		},
+		{
+			Input: "S3:GETOBJECT",
+			Want:  true,
+		},
+		{
+			Input: "sqs:lIsTquEuEs",
+			Want:  true,
+		},
+	}
+
+	// MustLookupString
+	testlib.RunTestSuite(t, tests, func(i string) (bool, error) {
+		action := MustLookupString(i)
+		return strings.EqualFold(i, action.ShortName()), nil
+	})
+}
+
+func TestMustLookupStringInvalid(t *testing.T) {
+	tests := []testlib.TestCase[string, any]{
+		{
+			Input: "foo:bar:baz",
+		},
+		{
+			Input: "s3_listbuckets",
+		},
+	}
+
+	// LookupString
+	testlib.RunTestSuite(t, tests, func(i string) (any, error) {
+		defer testlib.AssertPanicWithText(t, "unable to resolve service:action from SAR: '.*'")
+		action := MustLookupString(i)
+		return action, nil
+	})
+}
+
 func TestAll(t *testing.T) {
 	numEntries := 0
 	for _, service := range sar() {
@@ -60,7 +152,6 @@ func TestAll(t *testing.T) {
 	}
 }
 
-// TestQuery validates the correct retrieval of API calls via filtering
 func TestQuery(t *testing.T) {
 	tests := []testlib.TestCase[func(*Query) *Query, []string]{
 		{

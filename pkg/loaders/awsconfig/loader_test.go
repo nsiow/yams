@@ -10,7 +10,6 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestLoadJson confirms that we can correctly load data from JSON arrays of AWS Config data
 func TestLoadJson(t *testing.T) {
 	tests := []testlib.TestCase[string, entities.Universe]{
 

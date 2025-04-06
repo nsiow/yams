@@ -8,13 +8,11 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 )
 
-// TestBasicLogger confirms that you can create and use a basic named logger
 func TestBasicLogger(t *testing.T) {
 	l := Logger("foo")
 	l.Info("message", "foo", "bar")
 }
 
-// TestConvertLevel validates correct mapping of env variables to logging levels
 func TestConvertLevel(t *testing.T) {
 	// Save original value and reset at end of function
 	orig := os.Getenv(YAMS_LOG_LEVEL_ENV_VAR)

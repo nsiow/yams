@@ -7,7 +7,6 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestPolicyStorageRetrieval confirms the ability to store/retrieve managed policies correctly
 func TestPolicyStorageRetrieval(t *testing.T) {
 	type input struct {
 		store    bool            // whether or not to store the provided policy before the test
@@ -171,7 +170,6 @@ func TestPolicyStorageRetrieval(t *testing.T) {
 	})
 }
 
-// TestArnNormalization confirms the ability to correctly normalize policy/group/etc ARNs
 func TestArnNormalization(t *testing.T) {
 	type input struct {
 		policyType string
