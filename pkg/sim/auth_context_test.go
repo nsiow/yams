@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
+	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 )
 
@@ -264,7 +265,7 @@ func TestAuthContextKeys(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
-		got := i.ac.ConditionKey(i.key, NewOptions(WithSkipServiceAuthorizationValidation()))
+		got := i.ac.ConditionKey(i.key, TestingSimulationOptions)
 		return got, nil
 	})
 }
@@ -295,7 +296,7 @@ func TestAuthContextMultiKeys(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) ([]string, error) {
-		got := i.ac.MultiKey(i.key, NewOptions(WithSkipServiceAuthorizationValidation()))
+		got := i.ac.MultiKey(i.key, TestingSimulationOptions)
 		return got, nil
 	})
 }
@@ -376,7 +377,7 @@ func TestResolve(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
-		got := i.ac.Substitute(i.str, NewOptions(WithSkipServiceAuthorizationValidation()))
+		got := i.ac.Substitute(i.str, TestingSimulationOptions)
 		return got, nil
 	})
 }
@@ -388,4 +389,159 @@ func TestAuthContextReferenceTime(t *testing.T) {
 	if !authContextTime.After(testlib.TestTime()) {
 		t.Fatalf("expected default time to be after our test reference time")
 	}
+}
+
+func TestSARValidation(t *testing.T) {
+	type input struct {
+		ac  AuthContext
+		key string
+	}
+
+	// FIXME(nsiow) write more of these tests... like so many more
+
+	tests := []testlib.TestCase[input, string]{
+		{
+			Name: "supported_resource_tag",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("s3:getobject"),
+					Properties: NewBagFromMap(map[string]string{
+						"s3:authtype": "REST-HEADER",
+					}),
+				},
+				key: "s3:AuthType",
+			},
+			Want: "REST-HEADER",
+		},
+		{
+			Name: "unsupported_request_tag",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:FooBar": "some-value-here",
+					}),
+				},
+				key: "aws:FooBar",
+			},
+			Want: "",
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
+		got := i.ac.ConditionKey(i.key, NewOptions(WithFailOnUnknownConditionOperator()))
+		return got, nil
+	})
+}
+
+func TestSARValidationMultiKey(t *testing.T) {
+	type input struct {
+		ac  AuthContext
+		key string
+	}
+
+	tests := []testlib.TestCase[input, []string]{
+		{
+			Name: "supported_resource_tag",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:createqueue"),
+					MultiValueProperties: NewBagFromMap(map[string][]string{
+						"aws:TagKeys": {
+							"color",
+							"temperature",
+							"department",
+						},
+					}),
+				},
+				key: "aws:tagkeys",
+			},
+			Want: []string{
+				"color",
+				"temperature",
+				"department",
+			},
+		},
+		{
+			Name: "unsupported_request_tag",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					MultiValueProperties: NewBagFromMap(map[string][]string{
+						"s3:TagKeys": {
+							"color",
+							"temperature",
+							"department",
+						},
+					}),
+				},
+				key: "s3:tagkeys",
+			},
+			Want: nil,
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(i input) ([]string, error) {
+		got := i.ac.MultiKey(i.key, NewOptions(WithFailOnUnknownConditionOperator()))
+		return got, nil
+	})
+}
+
+func TestExtractTag(t *testing.T) {
+	type input struct {
+		key  string
+		tags []entities.Tag
+	}
+
+	tests := []testlib.TestCase[input, string]{
+		{
+			Name: "principal_tag",
+			Input: input{
+				key: "aws:PrincipalTag/color",
+				tags: []entities.Tag{
+					{
+						Key:   "temperature",
+						Value: "5",
+					},
+					{
+						Key:   "color",
+						Value: "blue",
+					},
+				},
+			},
+			Want: "blue",
+		},
+		{
+			Name: "invalid_tag_structure",
+			Input: input{
+				key: "color",
+				tags: []entities.Tag{
+					{
+						Key:   "color",
+						Value: "blue",
+					},
+				},
+			},
+			Want: "",
+		},
+		{
+			Name: "missing_tag",
+			Input: input{
+				key: "color",
+				tags: []entities.Tag{
+					{
+						Key:   "temperature",
+						Value: "5",
+					},
+				},
+			},
+			Want: "",
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
+		ac := AuthContext{}
+		got := ac.extractTag(i.key, i.tags)
+		return got, nil
+	})
 }

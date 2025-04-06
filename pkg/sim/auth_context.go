@@ -11,6 +11,7 @@ import (
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/loaders/awsconfig"
 	condkey "github.com/nsiow/yams/pkg/policy/condition/keys"
+	"github.com/nsiow/yams/pkg/sim/wildcard"
 )
 
 // TODO(nsiow) decide if principal/resource should be pointers or values; if pointers, implement
@@ -218,5 +219,21 @@ func (ac *AuthContext) principalType() string {
 // for the simulated API call
 // TODO(nsiow) perform condition key type validation
 func (ac *AuthContext) supportsKey(key string) bool {
-	return slices.Contains(ac.Action.ActionConditionKeys, key)
+	// First check if action supports key directly
+	if slices.Contains(ac.Action.ActionConditionKeys, key) {
+		return true
+	}
+
+	// Otherwise check for each matched resource
+	for _, resource := range ac.Action.ResolvedResources {
+		for _, format := range resource.ARNFormats {
+			if ac.Resource != nil && wildcard.MatchSegments(format, ac.Resource.Arn) {
+				if slices.Contains(resource.ConditionKeys, key) {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
 }
