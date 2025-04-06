@@ -20,10 +20,6 @@ type Action struct {
 
 // ShortName provides the :-contatenated string representation of the action
 func (a *Action) ShortName() string {
-	if len(a.Service) == 0 || len(a.Name) == 0 {
-		return ""
-	}
-
 	return a.Service + ":" + a.Name
 }
 

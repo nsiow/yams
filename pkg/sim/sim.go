@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/nsiow/yams/pkg/aws/sar"
-	"github.com/nsiow/yams/pkg/aws/types"
+	"github.com/nsiow/yams/pkg/aws/sar/types"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/sim/wildcard"
 )
@@ -20,16 +20,7 @@ type Simulator struct {
 // NewSimulator creates and returns a Simulator with the provided options
 func NewSimulator(o ...OptionF) (*Simulator, error) {
 	s := Simulator{}
-
-	// Execute any provided options
-	var opts Options
-	for _, opt := range o {
-		err := opt(&opts)
-		if err != nil {
-			return nil, errors.Join(fmt.Errorf("error executing simulator options"), err)
-		}
-	}
-	s.options = opts
+	s.options = *NewOptions(o...)
 
 	return &s, nil
 }

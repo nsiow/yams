@@ -8,7 +8,7 @@ import (
 
 // evalCheckCondition assesses a single condition operator to determine whether or not it matches
 // the provided AuthContext
-func evalCheckCondition(s *subject, op string, cond map[string]policy.Value) (bool, error) {
+func evalCheckCondition(s *subject, op string, cond policy.ConditionValues) (bool, error) {
 
 	// TODO(nsiow) implement PushWithAttr so that `op` is in a more appropriate context?
 	s.trc.Push("evaluating Operation")
@@ -24,11 +24,11 @@ func evalCheckCondition(s *subject, op string, cond map[string]policy.Value) (bo
 	// Check to see if the condition operator is supported
 	f, exists := ResolveConditionEvaluator(op)
 	if !exists {
-		if s.opts.SkipUnknownConditionOperators {
-			return true, nil
+		if s.opts.FailOnUnknownConditionOperator {
+			return false, fmt.Errorf("[FailOnUnknownConditionOperator] unknown operator: '%s'", op)
 		} else {
 			s.trc.Observation("no match; unknown condition")
-			return false, fmt.Errorf("unknown condition operator '%s'", op)
+			return false, nil
 		}
 	}
 

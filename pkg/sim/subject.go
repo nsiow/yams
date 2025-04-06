@@ -20,9 +20,3 @@ func newSubject(ac *AuthContext, opts *Options) *subject {
 		trc:  trace.New(),
 	}
 }
-
-// newSubjectWithDefaultOptions creates a new `subject` struct with the provided authorization
-// context and no customizations
-func newSubjectWithDefaultOptions(ac *AuthContext) *subject {
-	return newSubject(ac, &Options{})
-}

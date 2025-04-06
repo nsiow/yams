@@ -272,7 +272,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			t.Fatalf("supposed to be testing x-account, but saw same account for: %+v", ac)
 		}
 
-		subj := newSubjectWithDefaultOptions(&ac)
+		subj := newSubject(&ac, TestingSimulationOptions)
 		res, err := evalOverallAccess(subj)
 		if err != nil {
 			return false, err
@@ -816,7 +816,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			t.Fatalf("supposed to be testing same account, but saw x-account for: %+v", ac)
 		}
 
-		subj := newSubjectWithDefaultOptions(&ac)
+		subj := newSubject(&ac, TestingSimulationOptions)
 		res, err := evalOverallAccess(subj)
 		if err != nil {
 			return false, err

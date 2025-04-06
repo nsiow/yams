@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nsiow/yams/pkg/aws/types"
+	"github.com/nsiow/yams/pkg/aws/sar/types"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/loaders/awsconfig"
 	condkey "github.com/nsiow/yams/pkg/policy/condition/keys"
@@ -44,7 +44,7 @@ var VariableExpansionRegex = regexp.MustCompile(`\${([a-zA-Z0-9]+:\S+?)}`)
 func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 	key = normalizeKey(key)
 
-	if opts.SkipUnknownConditionKeys && !ac.supportsKey(key) {
+	if !opts.SkipServiceAuthorizationValidation && !ac.supportsKey(key) {
 		return EMPTY
 	}
 
@@ -123,7 +123,7 @@ func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 func (ac *AuthContext) MultiKey(key string, opts *Options) []string {
 	key = normalizeKey(key)
 
-	if opts.SkipUnknownConditionKeys && !ac.supportsKey(key) {
+	if !opts.SkipServiceAuthorizationValidation && !ac.supportsKey(key) {
 		return nil
 	}
 

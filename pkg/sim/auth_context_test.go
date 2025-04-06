@@ -264,7 +264,7 @@ func TestAuthContextKeys(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
-		got := i.ac.ConditionKey(i.key, &Options{})
+		got := i.ac.ConditionKey(i.key, NewOptions(WithSkipServiceAuthorizationValidation()))
 		return got, nil
 	})
 }
@@ -295,7 +295,7 @@ func TestAuthContextMultiKeys(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) ([]string, error) {
-		got := i.ac.MultiKey(i.key, &Options{})
+		got := i.ac.MultiKey(i.key, NewOptions(WithSkipServiceAuthorizationValidation()))
 		return got, nil
 	})
 }
@@ -376,7 +376,7 @@ func TestResolve(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
-		got := i.ac.Substitute(i.str, &Options{})
+		got := i.ac.Substitute(i.str, NewOptions(WithSkipServiceAuthorizationValidation()))
 		return got, nil
 	})
 }

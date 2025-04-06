@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/nsiow/yams/pkg/aws/types"
+	"github.com/nsiow/yams/pkg/aws/sar/types"
 )
 
 //go:embed sar_v2.json.gz

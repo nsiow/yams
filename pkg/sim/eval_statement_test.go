@@ -236,7 +236,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		subj := newSubject(&i.ac, &Options{})
+		subj := newSubject(&i.ac, TestingSimulationOptions)
 		return evalStatementMatchesPrincipal(subj, &i.stmt)
 	})
 }

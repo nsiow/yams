@@ -2,19 +2,41 @@ package sim
 
 import (
 	"testing"
+
+	"github.com/nsiow/yams/internal/testlib"
 )
 
-func TestWithSkipUnknownCondition(t *testing.T) {
-	// Apply option
-	opt := Options{}
-	f := WithSkipUnknownConditionOperators()
-	err := f(&opt)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+func TestOptions(t *testing.T) {
+	tests := []testlib.TestCase[[]OptionF, *Options]{
+		{
+			Input: []OptionF{},
+			Want:  &Options{},
+		},
+		{
+			Input: []OptionF{
+				WithSkipServiceAuthorizationValidation(),
+			},
+			Want: &Options{SkipServiceAuthorizationValidation: true},
+		},
+		{
+			Input: []OptionF{
+				WithFailOnUnknownConditionOperator(),
+			},
+			Want: &Options{FailOnUnknownConditionOperator: true},
+		},
+		{
+			Input: []OptionF{
+				WithSkipServiceAuthorizationValidation(),
+				WithFailOnUnknownConditionOperator(),
+			},
+			Want: &Options{
+				SkipServiceAuthorizationValidation: true,
+				FailOnUnknownConditionOperator:     true,
+			},
+		},
 	}
 
-	// Check results
-	if opt.SkipUnknownConditionOperators != true {
-		t.Fatalf("expected: %v, got: %v", true, opt.SkipUnknownConditionOperators)
-	}
+	testlib.RunTestSuite(t, tests, func(i []OptionF) (*Options, error) {
+		return NewOptions(i...), nil
+	})
 }

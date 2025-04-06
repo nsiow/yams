@@ -1,13 +1,12 @@
 package sim
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/aws/sar"
-	"github.com/nsiow/yams/pkg/aws/types"
+	"github.com/nsiow/yams/pkg/aws/sar/types"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
@@ -23,24 +22,15 @@ func TestNewSimulator(t *testing.T) {
 	}
 
 	// Try with a simple option; validate that it got applied
-	sim, err = NewSimulator(WithSkipUnknownConditionOperators())
+	sim, err = NewSimulator(WithSkipServiceAuthorizationValidation())
 	if err != nil {
 		t.Fatalf("unexpected error creating a simulator with options: %v", err)
 	}
 	if sim == nil {
 		t.Fatalf("unexpected nil simulator when creating with options")
 	}
-	if sim.options.SkipUnknownConditionOperators != true {
+	if sim.options.SkipServiceAuthorizationValidation != true {
 		t.Fatalf("expected option SkipUnknownCondition to be applied, but saw 'false'")
-	}
-
-	// Try with an option that always fails
-	errorOpt := func(opt *Options) error {
-		return fmt.Errorf("expected error for testing")
-	}
-	_, err = NewSimulator(errorOpt)
-	if err == nil {
-		t.Fatalf("expected error with a custom option, but saw success")
 	}
 }
 
@@ -290,6 +280,7 @@ func TestComputeAccessSummary(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (map[string]int, error) {
 		sim, _ := NewSimulator()
+		sim.options = *TestingSimulationOptions
 		sim.SetUniverse(i.universe)
 		summary, err := sim.ComputeAccessSummary(i.actions)
 		if err != nil {

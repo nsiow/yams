@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/nsiow/yams/internal/assets"
-	"github.com/nsiow/yams/pkg/aws/types"
+	"github.com/nsiow/yams/pkg/aws/sar/types"
 )
 
 // Type aliases for service authorization semantics

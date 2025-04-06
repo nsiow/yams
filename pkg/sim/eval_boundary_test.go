@@ -160,7 +160,7 @@ func TestPermissionsBoundary(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
-		subj := newSubject(&ac, &Options{})
+		subj := newSubject(&ac, TestingSimulationOptions)
 		res, err := evalPermissionsBoundary(subj)
 		if err != nil {
 			return nil, err
