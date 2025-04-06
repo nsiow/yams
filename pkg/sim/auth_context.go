@@ -2,6 +2,7 @@ package sim
 
 import (
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -18,7 +19,7 @@ import (
 // AuthContext defines the tertiary context of a request that can be used for authz decisions
 type AuthContext struct {
 	Time                 time.Time
-	Action               types.Action
+	Action               *types.Action
 	Principal            *entities.Principal
 	Resource             *entities.Resource
 	Properties           *PropertyBag[string]
@@ -215,7 +216,8 @@ func (ac *AuthContext) principalType() string {
 
 // supportsKey consults the SAR package to determine whether or not the requested key is supported
 // for the simulated API call
+// TODO(nsiow) perform condition key type validation
 func (ac *AuthContext) supportsKey(key string) bool {
 	return true
-	// return slices.Contains(ac.Action.ActionConditionKeys, key)
+	return slices.Contains(ac.Action.ActionConditionKeys, key)
 }

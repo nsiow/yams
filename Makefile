@@ -23,6 +23,7 @@ $(CLI): $(GO_FILES)
 clean:
 	rm -f $(CLI)
 	rm -f coverage.*
+	go clean -testcache
 
 # --------------------------------------------------------------------------------
 # Testing

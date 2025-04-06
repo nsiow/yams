@@ -81,17 +81,33 @@ def fetch_service(service_listing: ServiceListing) -> Service:
 
 def normalize(service: Service) -> Service:
     service = normalize_condition_variables(service)
+    service = normalize_resource_arn_formats(service)
     service = propagate_service(service)
     service = resolve_resource_pointers(service)
     return service
 
 # aws:RequestTag/${TagKey} => aws:requesttag
 def normalize_condition_variables(service: Service) -> Service:
+    condkey_regex = r'[/:]\${[a-z0-9]+}$'
     for action in service.Actions:
         for i in range(len(action.ActionConditionKeys)):
-            condition_key = re.sub(r'[/:]\${[a-z0-9]+}$', '', action.ActionConditionKeys[i])
+            condition_key = re.sub(condkey_regex, '', action.ActionConditionKeys[i])
             condition_key = condition_key.lower()
             action.ActionConditionKeys[i] = condition_key
+    for resource in service.Resources:
+        for i in range(len(resource.ConditionKeys)):
+            condition_key = re.sub(condkey_regex, '', resource.ConditionKeys[i])
+            condition_key = condition_key.lower()
+            resource.ConditionKeys[i] = condition_key
+    return service
+
+# arn:${Partition}:dynamodb:${Region}:${Account}:table/${TableName} => arn:*:dynamodb:*:*:table/*
+def normalize_resource_arn_formats(service: Service) -> Service:
+    arn_format_regex = r'\${[a-zA-Z0-9]+?}'
+    for resource in service.Resources:
+        for i in range(len(resource.ARNFormats)):
+            format = re.sub(arn_format_regex, '*', resource.ARNFormats[i])
+            resource.ARNFormats[i] = format
     return service
 
 # add Service.Name to all Service.Actions.Service

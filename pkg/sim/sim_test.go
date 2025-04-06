@@ -223,7 +223,7 @@ func TestSimulateByArn(t *testing.T) {
 func TestComputeAccessSummary(t *testing.T) {
 	type input struct {
 		universe entities.Universe
-		actions  []types.Action
+		actions  []*types.Action
 	}
 
 	tests := []testlib.TestCase[input, map[string]int]{
@@ -231,7 +231,7 @@ func TestComputeAccessSummary(t *testing.T) {
 			Name: "simple_universe_1",
 			Input: input{
 				universe: SimpleTestUniverse_1,
-				actions:  []types.Action{sar.MustLookupString("s3:listbucket")},
+				actions:  []*types.Action{sar.MustLookupString("s3:listbucket")},
 			},
 			Want: map[string]int{
 				"arn:aws:s3:::bucket1": 1,
@@ -243,7 +243,7 @@ func TestComputeAccessSummary(t *testing.T) {
 			Name: "unrelated_actions",
 			Input: input{
 				universe: SimpleTestUniverse_1,
-				actions:  []types.Action{sar.MustLookupString("sqs:listqueues")},
+				actions:  []*types.Action{sar.MustLookupString("sqs:listqueues")},
 			},
 			Want: map[string]int{
 				"arn:aws:s3:::bucket1": 0,
@@ -262,7 +262,7 @@ func TestComputeAccessSummary(t *testing.T) {
 			Name:      "error_nonexistent_condition",
 			ShouldErr: true,
 			Input: input{
-				actions: []types.Action{sar.MustLookupString("s3:listbucket")},
+				actions: []*types.Action{sar.MustLookupString("s3:listbucket")},
 				universe: entities.Universe{
 					Principals: []entities.Principal{
 						{

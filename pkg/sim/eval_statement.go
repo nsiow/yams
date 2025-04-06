@@ -32,8 +32,7 @@ func evalStatementMatchesAction(s *subject, stmt *policy.Statement) (bool, error
 	defer s.trc.Pop()
 
 	// Handle empty Action
-	actionName := s.ac.Action.ShortName()
-	if len(actionName) == 0 {
+	if s.ac.Action == nil {
 		s.trc.Observation("AuthContext missing Action")
 		return false, nil
 	}
@@ -51,7 +50,7 @@ func evalStatementMatchesAction(s *subject, stmt *policy.Statement) (bool, error
 	}
 
 	for _, a := range action {
-		match := wildcard.MatchSegmentsIgnoreCase(a, actionName)
+		match := wildcard.MatchSegmentsIgnoreCase(a, s.ac.Action.Name)
 		if match {
 			s.trc.Attr("action", a)
 			s.trc.Observation("action matched")
