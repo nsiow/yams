@@ -79,14 +79,6 @@ func (s *Simulator) Validate(ac AuthContext) error {
 			ac.Resource.Arn, ac.Action.ShortName(), allowedResources)
 	}
 
-	// Handle unset property bags
-	if ac.Properties == nil {
-		ac.Properties = NewBag[string]()
-	}
-	if ac.MultiValueProperties == nil {
-		ac.MultiValueProperties = NewBag[[]string]()
-	}
-
 	return nil
 }
 

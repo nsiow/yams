@@ -31,14 +31,14 @@ func (b *PropertyBag[T]) Put(k string, v T) {
 }
 
 // NewBag creates and returns a new case-folded bag with the specified value type T
-func NewBag[T any]() *PropertyBag[T] {
-	return &PropertyBag[T]{innerMap: map[string]T{}}
+func NewBag[T any]() PropertyBag[T] {
+	return PropertyBag[T]{innerMap: map[string]T{}}
 }
 
 // NewBagFroMap creates and returns a new case-folded bag with the specified value type T,
 // seeded using the folded key/values from the provided map
-func NewBagFromMap[T any](other map[string]T) *PropertyBag[T] {
-	b := &PropertyBag[T]{innerMap: make(map[string]T)}
+func NewBagFromMap[T any](other map[string]T) PropertyBag[T] {
+	b := PropertyBag[T]{innerMap: make(map[string]T)}
 
 	for k, v := range other {
 		b.Put(k, v)

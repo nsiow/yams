@@ -19,12 +19,13 @@ import (
 
 // AuthContext defines the tertiary context of a request that can be used for authz decisions
 type AuthContext struct {
+	Action    *types.Action
+	Principal *entities.Principal
+	Resource  *entities.Resource
+
 	Time                 time.Time
-	Action               *types.Action
-	Principal            *entities.Principal
-	Resource             *entities.Resource
-	Properties           *PropertyBag[string]
-	MultiValueProperties *PropertyBag[[]string]
+	Properties           PropertyBag[string]
+	MultiValueProperties PropertyBag[[]string]
 }
 
 // Static values
@@ -43,48 +44,16 @@ var VariableExpansionRegex = regexp.MustCompile(`\${([a-zA-Z0-9]+:\S+?)}`)
 // TODO(nsiow) key retrieval should be case insensitive... I think
 // TODO(nsiow) support Trace object here for even lower level debugging
 func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
-	key = normalizeKey(key)
 
-	if !opts.SkipServiceAuthorizationValidation && !ac.supportsKey(key) {
-		return EMPTY
-	}
+	normalizedKey := normalizeKey(key)
+	normalizedPrefix := keyPrefix(normalizedKey)
 
-	// Try handling prefixes first...
-	switch {
-	case strings.HasPrefix(key, condkey.PrincipalTagPrefix):
-		return ac.extractTag(key, ac.Principal.Tags)
-	case strings.HasPrefix(key, condkey.ResourceTagPrefix):
-		return ac.extractTag(key, ac.Resource.Tags)
-		// For RequestTags/, we will process like a standard key
-	}
+	switch normalizedPrefix {
 
-	// TODO(nsiow) handle case where ${aws:PrincipalTag/foo} is in Resource= field, etc
+	// ---------------------------------------------------------------------------------------------
+	// Global keys; default handling
+	// ---------------------------------------------------------------------------------------------
 
-	// ... otherwise handle as a static key
-	switch key {
-	case condkey.PrincipalArn:
-		return ac.Principal.Arn
-	case condkey.PrincipalAccount:
-		return ac.Principal.AccountId
-	case condkey.PrincipalIsAwsService:
-		break
-	case condkey.PrincipalServiceName:
-		break
-	case condkey.PrincipalType:
-		return ac.principalType()
-	case condkey.ResourceAccount:
-		return ac.Resource.AccountId
-	case condkey.CurrentTime:
-		return ac.now().UTC().Format(TIME_FORMAT)
-	case condkey.EpochTime:
-		return strconv.FormatInt(ac.now().Unix(), 10)
-	case condkey.PrincipalOrgId:
-		return ac.Principal.Account.OrgId
-	case condkey.ResourceOrgId:
-		return ac.Resource.Account.OrgId
-
-	// We'll enumerate these for potential special handling in the future, but otherwise just use
-	// default behavior
 	case
 		condkey.CalledViaFirst,
 		condkey.CalledViaLast,
@@ -111,24 +80,79 @@ func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 		condkey.Username,
 		condkey.ViaAwsService,
 		condkey.VpcSourceIp:
+		return ac.Properties.Get(key)
+
+	// ---------------------------------------------------------------------------------------------
+	// Global keys; special handling
+	// ---------------------------------------------------------------------------------------------
+
+	case condkey.PrincipalArn:
+		return ac.Principal.Arn
+	case condkey.PrincipalAccount:
+		return ac.Principal.AccountId
+	case condkey.PrincipalIsAwsService:
 		break
+	case condkey.PrincipalServiceName:
+		break
+	case condkey.PrincipalType:
+		return ac.principalType()
+	case condkey.ResourceAccount:
+		return ac.Resource.AccountId
+	case condkey.CurrentTime:
+		return ac.now().UTC().Format(TIME_FORMAT)
+	case condkey.EpochTime:
+		return strconv.FormatInt(ac.now().Unix(), 10)
+	case condkey.PrincipalOrgId:
+		return ac.Principal.Account.OrgId
+	case condkey.ResourceOrgId:
+		return ac.Resource.Account.OrgId
+
+	// ---------------------------------------------------------------------------------------------
+	// Global key prefixes; special handling
+	// ---------------------------------------------------------------------------------------------
+
+	case condkey.PrincipalTagPrefix:
+		return ac.extractTag(key, ac.Principal.Tags)
 	}
 
-	if ac.Properties == nil {
+	// ---------------------------------------------------------------------------------------------
+	// SAR check
+	// ---------------------------------------------------------------------------------------------
+
+	// If it's not a global condition key, then we need to check the authorization reference
+	if !opts.SkipServiceAuthorizationValidation && !ac.supportsKey(normalizedPrefix) {
 		return EMPTY
 	}
+
+	// ---------------------------------------------------------------------------------------------
+	// Local keys; prefix handling
+	// ---------------------------------------------------------------------------------------------
+
+	switch normalizedPrefix {
+	case condkey.ResourceTagPrefix:
+		return ac.extractTag(key, ac.Resource.Tags)
+	case condkey.RequestTagPrefix:
+		return ac.Properties.Get(key)
+	}
+
+	// ---------------------------------------------------------------------------------------------
+	// Local keys; default handling
+	// ---------------------------------------------------------------------------------------------
+
 	return ac.Properties.Get(key)
 }
 
 // MultiKey retrieves the values for the requested key from the AuthContext
 func (ac *AuthContext) MultiKey(key string, opts *Options) []string {
-	key = normalizeKey(key)
 
-	if !opts.SkipServiceAuthorizationValidation && !ac.supportsKey(key) {
-		return nil
-	}
+	normalizedKey := normalizeKey(key)
+	normalizedPrefix := keyPrefix(normalizedKey)
 
-	switch key {
+	// ---------------------------------------------------------------------------------------------
+	// Global keys; default handling
+	// ---------------------------------------------------------------------------------------------
+
+	switch normalizedPrefix {
 	case condkey.PrincipalServiceNamesList,
 		condkey.CalledVia,
 		condkey.TagKeys,
@@ -142,9 +166,18 @@ func (ac *AuthContext) MultiKey(key string, opts *Options) []string {
 		// 	break
 	}
 
-	if ac.MultiValueProperties == nil {
+	// ---------------------------------------------------------------------------------------------
+	// SAR check
+	// ---------------------------------------------------------------------------------------------
+
+	if !opts.SkipServiceAuthorizationValidation && !ac.supportsKey(normalizedPrefix) {
 		return nil
 	}
+
+	// ---------------------------------------------------------------------------------------------
+	// Local keys; default handling
+	// ---------------------------------------------------------------------------------------------
+
 	return ac.MultiValueProperties.Get(key)
 }
 
@@ -184,6 +217,13 @@ func normalizeKey(key string) string {
 	}
 }
 
+// keyPrefix returns the prefix portion of the condition key, sans any attribute-getters
+// afterwards; e.g. aws:RequestTag/foo becomes aws:RequestTag
+func keyPrefix(key string) string {
+	substr := strings.SplitN(key, "/", 2)
+	return substr[0]
+}
+
 // extractTag defines how to get the value of the requested tag
 // TODO(nsiow) figure out if slashes are allowed in tag keys
 func (ac *AuthContext) extractTag(key string, tags []entities.Tag) string {
@@ -219,8 +259,10 @@ func (ac *AuthContext) principalType() string {
 // for the simulated API call
 // TODO(nsiow) perform condition key type validation
 func (ac *AuthContext) supportsKey(key string) bool {
-	// First check if action supports key directly
-	if slices.Contains(ac.Action.ActionConditionKeys, key) {
+	normalizedPrefix := keyPrefix(key)
+
+	// Second, check if action supports key directly
+	if slices.Contains(ac.Action.ActionConditionKeys, normalizedPrefix) {
 		return true
 	}
 
@@ -228,7 +270,7 @@ func (ac *AuthContext) supportsKey(key string) bool {
 	for _, resource := range ac.Action.ResolvedResources {
 		for _, format := range resource.ARNFormats {
 			if ac.Resource != nil && wildcard.MatchSegments(format, ac.Resource.Arn) {
-				if slices.Contains(resource.ConditionKeys, key) {
+				if slices.Contains(resource.ConditionKeys, normalizedPrefix) {
 					return true
 				}
 			}

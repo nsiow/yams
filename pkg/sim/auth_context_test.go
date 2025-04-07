@@ -489,14 +489,16 @@ func TestSARValidationMultiKey(t *testing.T) {
 
 func TestExtractTag(t *testing.T) {
 	type input struct {
+		ac   AuthContext
 		key  string
 		tags []entities.Tag
 	}
 
 	tests := []testlib.TestCase[input, string]{
 		{
-			Name: "principal_tag",
+			Name: "valid_global_condition_key",
 			Input: input{
+				ac:  AuthContext{},
 				key: "aws:PrincipalTag/color",
 				tags: []entities.Tag{
 					{
@@ -514,6 +516,7 @@ func TestExtractTag(t *testing.T) {
 		{
 			Name: "invalid_tag_structure",
 			Input: input{
+				ac:  AuthContext{},
 				key: "color",
 				tags: []entities.Tag{
 					{
@@ -527,6 +530,7 @@ func TestExtractTag(t *testing.T) {
 		{
 			Name: "missing_tag",
 			Input: input{
+				ac:  AuthContext{},
 				key: "color",
 				tags: []entities.Tag{
 					{
@@ -540,8 +544,45 @@ func TestExtractTag(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
-		ac := AuthContext{}
-		got := ac.extractTag(i.key, i.tags)
+		got := i.ac.extractTag(i.key, i.tags)
+		return got, nil
+	})
+}
+
+func TestSupportsKey(t *testing.T) {
+	type input struct {
+		ac  AuthContext
+		key string
+	}
+
+	tests := []testlib.TestCase[input, bool]{
+		{
+			Name: "valid_api_condition_key",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("s3:getobject"),
+				},
+				key: "s3:authtype",
+			},
+			Want: true,
+		},
+		{
+			Name: "valid_resource_condition_key",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("dynamodb:query"),
+					Resource: &entities.Resource{
+						Arn: "arn:aws:dynamodb:us-west-2:55555:table/MyTable",
+					},
+				},
+				key: "aws:resourcetag/foo",
+			},
+			Want: true,
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
+		got := i.ac.supportsKey(i.key)
 		return got, nil
 	})
 }

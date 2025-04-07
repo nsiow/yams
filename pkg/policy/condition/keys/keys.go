@@ -4,9 +4,9 @@ package keys
 
 // This const block holds string constants corresponding to AWS global condition keys
 const (
-	PrincipalTagPrefix = "aws:principaltag/"
-	ResourceTagPrefix  = "aws:resourcetag/"
-	RequestTagPrefix   = "aws:requesttag/"
+	PrincipalTagPrefix = "aws:principaltag"
+	ResourceTagPrefix  = "aws:resourcetag"
+	RequestTagPrefix   = "aws:requesttag"
 
 	PrincipalArn              = "aws:principalarn"
 	PrincipalAccount          = "aws:principalaccount"

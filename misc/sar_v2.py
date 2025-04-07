@@ -88,7 +88,7 @@ def normalize(service: Service) -> Service:
 
 # aws:RequestTag/${TagKey} => aws:requesttag
 def normalize_condition_variables(service: Service) -> Service:
-    condkey_regex = r'[/:]\${[a-z0-9]+}$'
+    condkey_regex = r'[/:]\${[a-zA-Z0-9]+}$'
     for action in service.Actions:
         for i in range(len(action.ActionConditionKeys)):
             condition_key = re.sub(condkey_regex, '', action.ActionConditionKeys[i])
