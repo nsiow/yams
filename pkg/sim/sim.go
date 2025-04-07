@@ -7,7 +7,6 @@ import (
 	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/aws/sar/types"
 	"github.com/nsiow/yams/pkg/entities"
-	"github.com/nsiow/yams/pkg/sim/wildcard"
 )
 
 // Simulator provides the ability to simulate IAM policies and the interactions between
@@ -35,56 +34,9 @@ func (s *Simulator) SetUniverse(universe entities.Universe) {
 	s.universe = universe
 }
 
-// Validate checks that the provided AuthContext is valid and ready for simulation
-func (s *Simulator) Validate(ac AuthContext) error {
-	// Handle the case where no principal is provided
-	if ac.Principal == nil {
-		return fmt.Errorf("AuthContext is missing Principal")
-	}
-
-	// Handle the case where no action is provided
-	if ac.Action == nil {
-		return fmt.Errorf("AuthContext is missing Action")
-	}
-
-	// Handle the case where a resource is provided for a resource-less call
-	allowedResources := ac.Action.ResolvedResources
-	if len(allowedResources) == 0 && ac.Resource != nil {
-		return fmt.Errorf("API call %s accepts no resources but was provided: %v",
-			ac.Action.ShortName(), *ac.Resource)
-	}
-
-	// Handle the case where a call requires a resouce but none is provided
-	if len(allowedResources) > 0 && ac.Resource == nil {
-		return fmt.Errorf("API call %s requires resources but none were provided",
-			ac.Action.ShortName())
-	}
-
-	// Check resource patterns against provided resource
-	match := false
-	for _, allowedResource := range allowedResources {
-		for _, allowedFormat := range allowedResource.ARNFormats {
-			if wildcard.MatchSegments(allowedFormat, ac.Resource.Arn) {
-				match = true
-				break
-			}
-		}
-		if match {
-			break
-		}
-	}
-	if !match {
-		return fmt.Errorf(
-			"resource ARN '%s' does not match any of allowed patterns for API call '%s': %v",
-			ac.Resource.Arn, ac.Action.ShortName(), allowedResources)
-	}
-
-	return nil
-}
-
 // Simulate determines whether the provided AuthContext would be allowed
 func (s *Simulator) Simulate(ac AuthContext) (*Result, error) {
-	err := s.Validate(ac)
+	err := ac.Validate()
 	if err != nil {
 		return nil, err
 	}

@@ -102,6 +102,32 @@ func TestSimulate(t *testing.T) {
 			},
 			Want: true,
 		},
+		{
+			Name: "invalid_auth_context",
+			Input: AuthContext{
+				Action: sar.MustLookupString("sqs:getqueueurl"),
+				Principal: &entities.Principal{
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+				},
+			},
+			ShouldErr: true,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
@@ -180,6 +206,16 @@ func TestSimulateByArn(t *testing.T) {
 			Input: input{
 				universe:     SimpleTestUniverse_1,
 				action:       "s3:listbucket",
+				principalArn: "arn:aws:iam::88888:role/role1",
+				resourceArn:  "arn:aws:s3:::doesnotexist",
+			},
+			ShouldErr: true,
+		},
+		{
+			Name: "invalid_action",
+			Input: input{
+				universe:     SimpleTestUniverse_1,
+				action:       "s3:doesnotexist",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::doesnotexist",
 			},

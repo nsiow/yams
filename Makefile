@@ -54,6 +54,10 @@ test:
 testv: GO_TEST_FLAGS+=-v
 testv: test
 
+.PHONY: testcount
+testcount:
+	@echo "Ran <$$(make testv | grep '=== RUN' | wc -l)> tests"
+
 .PHONY: cov
 cov: coverage.out
 

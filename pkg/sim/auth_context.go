@@ -1,6 +1,7 @@
 package sim
 
 import (
+	"fmt"
 	"regexp"
 	"slices"
 	"strconv"
@@ -193,6 +194,55 @@ func (ac *AuthContext) Substitute(value string, opts *Options) string {
 	}
 
 	return value
+}
+
+// Validate checks that the given AuthContext is valid and ready for simulation
+func (ac *AuthContext) Validate() error {
+	// Handle the case where no principal is provided
+	if ac.Principal == nil {
+		return fmt.Errorf("AuthContext is missing Principal")
+	}
+
+	// Handle the case where no action is provided
+	if ac.Action == nil {
+		return fmt.Errorf("AuthContext is missing Action")
+	}
+
+	// Handle the case where a resource is provided for a resource-less call
+	allowedResources := ac.Action.ResolvedResources
+	if len(allowedResources) == 0 && ac.Resource != nil {
+		return fmt.Errorf("API call %s accepts no resources but was provided: %v",
+			ac.Action.ShortName(), *ac.Resource)
+	}
+
+	// Handle the case where a call requires a resource but none is provided
+	if len(allowedResources) > 0 && ac.Resource == nil {
+		return fmt.Errorf("API call %s requires resources but none were provided",
+			ac.Action.ShortName())
+	}
+
+	// Handle the case where the wrong resources are provided for the particular call
+	if len(allowedResources) > 0 {
+		match := false
+		for _, allowedResource := range allowedResources {
+			for _, allowedFormat := range allowedResource.ARNFormats {
+				if wildcard.MatchSegments(allowedFormat, ac.Resource.Arn) {
+					match = true
+					break
+				}
+			}
+			if match {
+				break
+			}
+		}
+		if !match {
+			return fmt.Errorf(
+				"resource ARN '%s' does not match any of allowed patterns for API call '%s': %v",
+				ac.Resource.Arn, ac.Action.ShortName(), allowedResources)
+		}
+	}
+
+	return nil
 }
 
 // now returns the auth context's current frame of reference for the current time

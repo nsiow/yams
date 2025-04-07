@@ -301,7 +301,7 @@ func TestAuthContextMultiKeys(t *testing.T) {
 	})
 }
 
-func TestResolve(t *testing.T) {
+func TestSubstitute(t *testing.T) {
 	type input struct {
 		str string
 		ac  AuthContext
@@ -379,6 +379,70 @@ func TestResolve(t *testing.T) {
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
 		got := i.ac.Substitute(i.str, TestingSimulationOptions)
 		return got, nil
+	})
+}
+
+func TestValidate(t *testing.T) {
+	tests := []testlib.TestCase[AuthContext, any]{
+		{
+			Name: "valid_auth_context",
+			Input: AuthContext{
+				Principal: &entities.Principal{},
+				Action:    sar.MustLookupString("sqs:listqueues"),
+			},
+			ShouldErr: false,
+		},
+		{
+			Name:      "empty_auth_context",
+			Input:     AuthContext{},
+			ShouldErr: true,
+		},
+		{
+			Name: "missing_principal",
+			Input: AuthContext{
+				Resource: &entities.Resource{},
+			},
+			ShouldErr: true,
+		},
+		{
+			Name: "missing_action",
+			Input: AuthContext{
+				Principal: &entities.Principal{},
+			},
+			ShouldErr: true,
+		},
+		{
+			Name: "resource_unexpectedly_provided",
+			Input: AuthContext{
+				Principal: &entities.Principal{},
+				Action:    sar.MustLookupString("sqs:listqueues"),
+				Resource:  &entities.Resource{},
+			},
+			ShouldErr: true,
+		},
+		{
+			Name: "wrong_resource_provided",
+			Input: AuthContext{
+				Principal: &entities.Principal{},
+				Action:    sar.MustLookupString("sqs:getqueueurl"),
+				Resource: &entities.Resource{
+					Arn: "arn:aws:s3:::nsiow-test",
+				},
+			},
+			ShouldErr: true,
+		},
+		{
+			Name: "resource_unexpectedly_missing",
+			Input: AuthContext{
+				Principal: &entities.Principal{},
+				Action:    sar.MustLookupString("sqs:getqueueurl"),
+			},
+			ShouldErr: true,
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(i AuthContext) (any, error) {
+		return nil, i.Validate()
 	})
 }
 
