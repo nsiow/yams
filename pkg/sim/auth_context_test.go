@@ -15,6 +15,355 @@ func TestAuthContextKeys(t *testing.T) {
 	}
 
 	tests := []testlib.TestCase[input, string]{
+
+		// -------------------------------------------------------------------------------------------
+		// Global keys; default handling
+		// -------------------------------------------------------------------------------------------
+
+		{
+			Name: "called_via_first",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:CalledViaFirst": "anchovy",
+					}),
+				},
+				key: "aws:calledviafirst",
+			},
+			Want: "anchovy",
+		},
+		{
+			Name: "called_via_last",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:CalledViaLast": "bass",
+					}),
+				},
+				key: "aws:calledvialast",
+			},
+			Want: "bass",
+		},
+		{
+			Name: "ec2_instance_source_private_ipv4",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:Ec2InstanceSourcePrivateIPv4": "carp",
+					}),
+				},
+				key: "aws:ec2instancesourceprivateipv4",
+			},
+			Want: "carp",
+		},
+		{
+			Name: "ec2_instance_source_vpc",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:Ec2InstanceSourceVPC": "eel",
+					}),
+				},
+				key: "aws:ec2instancesourcevpc",
+			},
+			Want: "eel",
+		},
+		{
+			Name: "federated_provider",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:FederatedProvider": "flounder",
+					}),
+				},
+				key: "aws:federatedprovider",
+			},
+			Want: "flounder",
+		},
+		{
+			Name: "multi_factor_auth_age",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:MultiFactorAuthAge": "guppy",
+					}),
+				},
+				key: "aws:multifactorauthage",
+			},
+			Want: "guppy",
+		},
+		{
+			Name: "multi_factor_auth_present",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:MultiFactorAuthPresent": "halibut",
+					}),
+				},
+				key: "aws:multifactorauthpresent",
+			},
+			Want: "halibut",
+		},
+		{
+			Name: "principal_service_names_list",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:PrincipalServiceNamesList": "herring",
+					}),
+				},
+				key: "aws:principalservicenameslist",
+			},
+			Want: "herring",
+		},
+
+		{
+			Name: "referer",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:Referer": "mackerel",
+					}),
+				},
+				key: "aws:referer",
+			},
+			Want: "mackerel",
+		},
+		{
+			Name: "requested_region",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:RequestedRegion": "salmon",
+					}),
+				},
+				key: "aws:requestedregion",
+			},
+			Want: "salmon",
+		},
+		{
+			Name: "role_delivery",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"ec2:RoleDelivery": "trout",
+					}),
+				},
+				key: "ec2:roledelivery",
+			},
+			Want: "trout",
+		},
+		{
+			Name: "secure_transport",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:SecureTransport": "tuna",
+					}),
+				},
+				key: "aws:securetransport",
+			},
+			Want: "tuna",
+		},
+		{
+			Name: "source_account",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:SourceAccount": "urchin",
+					}),
+				},
+				key: "aws:sourceaccount",
+			},
+			Want: "urchin",
+		},
+		{
+			Name: "source_arn",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:SourceArn": "walleye",
+					}),
+				},
+				key: "aws:sourcearn",
+			},
+			Want: "walleye",
+		},
+		{
+			Name: "source_identity",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:SourceIdentity": "xenopus",
+					}),
+				},
+				key: "aws:sourceidentity",
+			},
+			Want: "xenopus",
+		},
+		{
+			Name: "source_instance_arn",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"ec2:SourceInstanceArn": "yellowfin",
+					}),
+				},
+				key: "ec2:sourceinstancearn",
+			},
+			Want: "yellowfin",
+		},
+		{
+			Name: "source_ip",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:SourceIp": "zander",
+					}),
+				},
+				key: "aws:sourceip",
+			},
+			Want: "zander",
+		},
+		{
+			Name: "source_org_id",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:SourceOrgID": "abalone",
+					}),
+				},
+				key: "aws:sourceorgid",
+			},
+			Want: "abalone",
+		},
+		{
+			Name: "source_vpc",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:SourceVpc": "blenny",
+					}),
+				},
+				key: "aws:sourcevpc",
+			},
+			Want: "blenny",
+		},
+		{
+			Name: "source_vpce",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:SourceVPCE": "cod",
+					}),
+				},
+				key: "aws:sourcevpce",
+			},
+			Want: "cod",
+		},
+		{
+			Name: "token_issue_time",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:TokenIssueTime": "dorado",
+					}),
+				},
+				key: "aws:tokenissuetime",
+			},
+			Want: "dorado",
+		},
+		{
+			Name: "user_agent",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:UserAgent": "escolar",
+					}),
+				},
+				key: "aws:useragent",
+			},
+			Want: "escolar",
+		},
+		{
+			Name: "user_id",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:UserId": "fluke",
+					}),
+				},
+				key: "aws:userid",
+			},
+			Want: "fluke",
+		},
+		{
+			Name: "username",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:Username": "gurnard",
+					}),
+				},
+				key: "aws:username",
+			},
+			Want: "gurnard",
+		},
+		{
+			Name: "via_aws_service",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:ViaAWSService": "haddock",
+					}),
+				},
+				key: "aws:viaawsservice",
+			},
+			Want: "haddock",
+		},
+		{
+			Name: "vpc_source_ip",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Properties: NewBagFromMap(map[string]string{
+						"aws:VpcSourceIP": "ilexander",
+					}),
+				},
+				key: "aws:vpcsourceip",
+			},
+			Want: "ilexander",
+		},
+
+		// -------------------------------------------------------------------------------------------
+		// Global keys; special handling
+		// -------------------------------------------------------------------------------------------
+
 		{
 			Name: "principal_tag",
 			Input: input{
@@ -51,7 +400,7 @@ func TestAuthContextKeys(t *testing.T) {
 				},
 				key: "aws:PrincipalTag/foo/and/more",
 			},
-			Want: "",
+			Want: EMPTY,
 		},
 		{
 			Name: "principal_tag_does_not_exist",
@@ -72,7 +421,7 @@ func TestAuthContextKeys(t *testing.T) {
 				},
 				key: "aws:PrincipalTag/DNE",
 			},
-			Want: "",
+			Want: EMPTY,
 		},
 		{
 			Name: "resource_tag",
@@ -117,7 +466,7 @@ func TestAuthContextKeys(t *testing.T) {
 				},
 				key: "aws:PrincipalIsAWSService",
 			},
-			Want: "true",
+			Want: "false", // we do not support AWS service evaluation
 		},
 		{
 			Name: "principal_service_name",
@@ -129,7 +478,7 @@ func TestAuthContextKeys(t *testing.T) {
 				},
 				key: "aws:PrincipalServiceName",
 			},
-			Want: "cloudtrail.amazonaws.com",
+			Want: EMPTY, // we do not support AWS service evaluation
 		},
 		{
 			Name: "principal_type_role",
@@ -142,7 +491,7 @@ func TestAuthContextKeys(t *testing.T) {
 				},
 				key: "aws:PrincipalType",
 			},
-			Want: "Role", // TODO(nsiow) check casing/values
+			Want: "AssumedRole",
 		},
 		{
 			Name: "principal_type_user",
@@ -155,7 +504,7 @@ func TestAuthContextKeys(t *testing.T) {
 				},
 				key: "aws:PrincipalType",
 			},
-			Want: "User", // TODO(nsiow) check casing/values
+			Want: "User",
 		},
 		{
 			Name: "principal_type_user",
@@ -168,7 +517,7 @@ func TestAuthContextKeys(t *testing.T) {
 				},
 				key: "aws:PrincipalType",
 			},
-			Want: "",
+			Want: EMPTY,
 		},
 		{
 			Name: "principal_account",
@@ -260,7 +609,7 @@ func TestAuthContextKeys(t *testing.T) {
 				ac:  AuthContext{},
 				key: "aws:ThisDoesNotExist",
 			},
-			Want: "",
+			Want: EMPTY,
 		},
 	}
 
@@ -364,7 +713,7 @@ func TestSubstitute(t *testing.T) {
 				str: "${aws:SomeStringKey}",
 				ac:  AuthContext{},
 			},
-			Want: "",
+			Want: EMPTY,
 		},
 		{
 			Name: "invalid_key",
@@ -372,7 +721,7 @@ func TestSubstitute(t *testing.T) {
 				str: "${aws:SomeStringKey}",
 				ac:  AuthContext{},
 			},
-			Want: "",
+			Want: EMPTY,
 		},
 	}
 
@@ -461,39 +810,104 @@ func TestSARValidation(t *testing.T) {
 		key string
 	}
 
-	// FIXME(nsiow) write more of these tests... like so many more
-
 	tests := []testlib.TestCase[input, string]{
 		{
-			Name: "supported_resource_tag",
+			Name: "valid_action_condition",
 			Input: input{
 				ac: AuthContext{
 					Action: sar.MustLookupString("s3:getobject"),
 					Properties: NewBagFromMap(map[string]string{
-						"s3:authtype": "REST-HEADER",
+						"s3:AuthType": "REST-HEADER",
 					}),
 				},
-				key: "s3:AuthType",
+				key: "s3:authtype",
 			},
 			Want: "REST-HEADER",
 		},
 		{
-			Name: "unsupported_request_tag",
+			Name: "invalid_action_condition",
 			Input: input{
 				ac: AuthContext{
 					Action: sar.MustLookupString("sqs:listqueues"),
 					Properties: NewBagFromMap(map[string]string{
-						"aws:FooBar": "some-value-here",
+						"s3:AuthType": "REST-HEADER",
 					}),
 				},
-				key: "aws:FooBar",
+				key: "aws:authtype",
 			},
-			Want: "",
+			Want: EMPTY,
+		},
+		{
+			Name: "valid_resource_condition",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("dynamodb:query"),
+					Resource: &entities.Resource{
+						Arn: "arn:aws:dynamodb:us-west-2:55555:table/MyTable",
+						Tags: []entities.Tag{
+							{
+								Key:   "Foo",
+								Value: "Bar",
+							},
+						},
+					},
+					Properties: NewBagFromMap(map[string]string{
+						"aws:ResourceTag/Foo": "Bar",
+					}),
+				},
+				key: "aws:ResourceTag/Foo",
+			},
+			Want: "Bar",
+		},
+		{
+			Name: "valid_resource_condition",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("s3:getobject"),
+					Resource: &entities.Resource{
+						Arn: "arn:aws:s3:::MyBucket/foo.txt",
+						Tags: []entities.Tag{
+							{
+								Key:   "Foo",
+								Value: "Bar",
+							},
+						},
+					},
+					Properties: NewBagFromMap(map[string]string{
+						"aws:ResourceTag/Foo": "Bar",
+					}),
+				},
+				key: "aws:ResourceTag/Foo",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "another_invalid_resource_condition",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("dynamodb:query"),
+					Resource: &entities.Resource{
+						Arn: "arn:aws:dynamodb:us-west-2:55555:table/MyTable",
+						Tags: []entities.Tag{
+							{
+								Key:   "Foo",
+								Value: "Bar",
+							},
+						},
+					},
+					Properties: NewBagFromMap(map[string]string{
+						"aws:RequestTag/Foo": "Bar",
+					}),
+				},
+				key: "aws:RequestTag/Foo",
+			},
+			Want: EMPTY,
 		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
-		got := i.ac.ConditionKey(i.key, NewOptions(WithFailOnUnknownConditionOperator()))
+		opts := NewOptions(WithFailOnUnknownConditionOperator()) // don't skip SAR validation for this
+		got := i.ac.ConditionKey(i.key, opts)
 		return got, nil
 	})
 }
@@ -589,7 +1003,7 @@ func TestExtractTag(t *testing.T) {
 					},
 				},
 			},
-			Want: "",
+			Want: EMPTY,
 		},
 		{
 			Name: "missing_tag",
@@ -603,7 +1017,7 @@ func TestExtractTag(t *testing.T) {
 					},
 				},
 			},
-			Want: "",
+			Want: EMPTY,
 		},
 	}
 

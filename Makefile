@@ -58,6 +58,10 @@ testv: test
 testcount:
 	@echo "Ran <$$(make testv | grep '=== RUN' | wc -l)> tests"
 
+.PHONY: loc
+loc:
+	cloc --include-lang=Go --not-match-f '.*_test.go' .
+
 .PHONY: cov
 cov: coverage.out
 

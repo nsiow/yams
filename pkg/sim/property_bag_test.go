@@ -140,7 +140,7 @@ func TestPropertyBagDelete(t *testing.T) {
 	b.Delete("fOo")
 
 	// Check key again
-	v, ok = b.Check("foo")
+	_, ok = b.Check("foo")
 	if ok {
 		t.Fatalf("somehow able to retrieve unexpected key: 'foo'")
 	}

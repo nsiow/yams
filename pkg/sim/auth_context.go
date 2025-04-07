@@ -59,6 +59,7 @@ func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 		condkey.CalledViaFirst,
 		condkey.CalledViaLast,
 		condkey.Ec2InstanceSourcePrivateIPv4,
+		condkey.Ec2InstanceSourceVpc,
 		condkey.FederatedProvider,
 		condkey.MultiFactorAuthAge,
 		condkey.MultiFactorAuthPresent,
@@ -77,6 +78,7 @@ func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 		condkey.SourceVpce,
 		condkey.TokenIssueTime,
 		condkey.UserAgent,
+		// TODO(nsiow) implement userid/username where possible for principals
 		condkey.UserId,
 		condkey.Username,
 		condkey.ViaAwsService,
@@ -92,9 +94,9 @@ func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 	case condkey.PrincipalAccount:
 		return ac.Principal.AccountId
 	case condkey.PrincipalIsAwsService:
-		break
+		return "false" // we do not support simulation for AWS services
 	case condkey.PrincipalServiceName:
-		break
+		return EMPTY // we do not support simulation for AWS services
 	case condkey.PrincipalType:
 		return ac.principalType()
 	case condkey.ResourceAccount:
@@ -297,7 +299,7 @@ func (ac *AuthContext) extractTag(key string, tags []entities.Tag) string {
 func (ac *AuthContext) principalType() string {
 	switch ac.Principal.Type {
 	case awsconfig.CONST_TYPE_AWS_IAM_ROLE:
-		return "Role"
+		return "AssumedRole"
 	case awsconfig.CONST_TYPE_AWS_IAM_USER:
 		return "User"
 	default:
