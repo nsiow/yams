@@ -12,24 +12,6 @@ type PropertyBag[T any] struct {
 	innerMap map[string]T
 }
 
-// Check folds the input key and then checks the bag for a value matching the provided key
-func (b *PropertyBag[T]) Check(k string) (T, bool) {
-	v, ok := b.innerMap[fold(k)]
-	return v, ok
-}
-
-// Get folds the input key and then returns the matched value (or the zero-value for the
-// registered type if a match cannot be found)
-func (b *PropertyBag[T]) Get(k string) T {
-	v := b.innerMap[fold(k)]
-	return v
-}
-
-// Put saves the provided value to our Bag after folding the input key
-func (b *PropertyBag[T]) Put(k string, v T) {
-	b.innerMap[fold(k)] = v
-}
-
 // NewBag creates and returns a new case-folded bag with the specified value type T
 func NewBag[T any]() PropertyBag[T] {
 	return PropertyBag[T]{innerMap: map[string]T{}}
@@ -45,4 +27,27 @@ func NewBagFromMap[T any](other map[string]T) PropertyBag[T] {
 	}
 
 	return b
+}
+
+// Get folds the input key and then returns the matched value (or the zero-value for the
+// registered type if a match cannot be found)
+func (b *PropertyBag[T]) Get(k string) T {
+	v := b.innerMap[fold(k)]
+	return v
+}
+
+// Check folds the input key and then checks the bag for a value matching the provided key
+func (b *PropertyBag[T]) Check(k string) (T, bool) {
+	v, ok := b.innerMap[fold(k)]
+	return v, ok
+}
+
+// Put saves the provided value to our Bag after folding the input key
+func (b *PropertyBag[T]) Put(k string, v T) {
+	b.innerMap[fold(k)] = v
+}
+
+// Delete removes the key+value pair
+func (b *PropertyBag[T]) Delete(k string) {
+	delete(b.innerMap, fold(k))
 }
