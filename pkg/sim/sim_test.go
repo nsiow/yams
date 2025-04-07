@@ -1,16 +1,16 @@
 package sim
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
+	"github.com/nsiow/yams/pkg/aws/sar"
+	"github.com/nsiow/yams/pkg/aws/sar/types"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestNewSimulator validates our ability to create new simulator with and without options
 func TestNewSimulator(t *testing.T) {
 	// Try with no options
 	sim, err := NewSimulator()
@@ -22,32 +22,22 @@ func TestNewSimulator(t *testing.T) {
 	}
 
 	// Try with a simple option; validate that it got applied
-	sim, err = NewSimulator(WithFailOnUnknownCondition())
+	sim, err = NewSimulator(WithSkipServiceAuthorizationValidation())
 	if err != nil {
 		t.Fatalf("unexpected error creating a simulator with options: %v", err)
 	}
 	if sim == nil {
 		t.Fatalf("unexpected nil simulator when creating with options")
 	}
-	if sim.options.FailOnUnknownCondition != true {
-		t.Fatalf("expected option FailOnUnknownCondition to be applied, but saw 'false'")
-	}
-
-	// Try with an option that always fails
-	errorOpt := func(opt *Options) error {
-		return fmt.Errorf("expected error for testing")
-	}
-	_, err = NewSimulator(errorOpt)
-	if err == nil {
-		t.Fatalf("expected error with a custom option, but saw success")
+	if sim.options.SkipServiceAuthorizationValidation != true {
+		t.Fatalf("expected option SkipUnknownCondition to be applied, but saw 'false'")
 	}
 }
 
-// TestSimulatorEnvironment validates our ability to manipulate the Environment of the simulator
-func TestSimulatorEnvironment(t *testing.T) {
+func TestSimulatorUniverse(t *testing.T) {
 
-	// Define our environment
-	env := entities.Environment{
+	// Define our universe
+	universe := entities.Universe{
 		Principals: []entities.Principal{
 			{
 				Arn: "arn:aws:iam::88888:role/exampleRole",
@@ -55,27 +45,23 @@ func TestSimulatorEnvironment(t *testing.T) {
 		},
 	}
 
-	// Create a simulator and set Environment
+	// Create a simulator and set Universe
 	sim, _ := NewSimulator()
-	sim.SetEnvironment(&env)
+	sim.SetUniverse(universe)
 
-	// Compare retrieved environment to ours
-	got := sim.Environment()
-	if !reflect.DeepEqual(env, *got) {
-		t.Fatalf("retrieved environment %+v does not match ours: %+v", got, env)
+	// Compare retrieved universe to ours
+	got := sim.Universe()
+	if !reflect.DeepEqual(universe, got) {
+		t.Fatalf("retrieved universe %+v does not match ours: %+v", got, universe)
 	}
 }
 
-// TestSimulate validates the simulator's ability to correctly simulate a single event
-//
-// We are keeping these tests simple in terms of evaluation logic, as we really just want to test
-// the simulator interface vs the logic which is tested deeply elsewhere
 func TestSimulate(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, bool]{
 		{
 			Name: "same_account_implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
 					AccountId:        "88888",
@@ -93,7 +79,7 @@ func TestSimulate(t *testing.T) {
 		{
 			Name: "same_account_simple_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -116,6 +102,32 @@ func TestSimulate(t *testing.T) {
 			},
 			Want: true,
 		},
+		{
+			Name: "invalid_auth_context",
+			Input: AuthContext{
+				Action: sar.MustLookupString("sqs:getqueueurl"),
+				Principal: &entities.Principal{
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.Resource{
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+				},
+			},
+			ShouldErr: true,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
@@ -130,11 +142,9 @@ func TestSimulate(t *testing.T) {
 	})
 }
 
-// TestSimulateByArn validates the simulator's ability to correctly simulate access based on ARN
-// lookups
 func TestSimulateByArn(t *testing.T) {
 	type input struct {
-		env          *entities.Environment
+		universe     entities.Universe
 		action       string
 		principalArn string
 		resourceArn  string
@@ -144,7 +154,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "test_allow",
 			Input: input{
-				env:          &SimpleTestEnvironment_1,
+				universe:     SimpleTestUniverse_1,
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::bucket1",
@@ -154,7 +164,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "test_deny",
 			Input: input{
-				env:          &SimpleTestEnvironment_1,
+				universe:     SimpleTestUniverse_1,
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::bucket3",
@@ -162,9 +172,9 @@ func TestSimulateByArn(t *testing.T) {
 			Want: false,
 		},
 		{
-			Name: "test_empty_environment",
+			Name: "test_empty_universe",
 			Input: input{
-				env:          nil,
+				universe:     entities.Universe{},
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::bucket1",
@@ -174,7 +184,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "both_missing",
 			Input: input{
-				env:          &SimpleTestEnvironment_1,
+				universe:     SimpleTestUniverse_1,
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/doesnotexist",
 				resourceArn:  "arn:aws:s3:::doesnotexist",
@@ -184,7 +194,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "principal_missing",
 			Input: input{
-				env:          &SimpleTestEnvironment_1,
+				universe:     SimpleTestUniverse_1,
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/doesnotexist",
 				resourceArn:  "arn:aws:s3:::bucket1",
@@ -194,8 +204,18 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "resource_missing",
 			Input: input{
-				env:          &SimpleTestEnvironment_1,
+				universe:     SimpleTestUniverse_1,
 				action:       "s3:listbucket",
+				principalArn: "arn:aws:iam::88888:role/role1",
+				resourceArn:  "arn:aws:s3:::doesnotexist",
+			},
+			ShouldErr: true,
+		},
+		{
+			Name: "invalid_action",
+			Input: input{
+				universe:     SimpleTestUniverse_1,
+				action:       "s3:doesnotexist",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::doesnotexist",
 			},
@@ -205,7 +225,7 @@ func TestSimulateByArn(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		sim, _ := NewSimulator()
-		sim.SetEnvironment(i.env)
+		sim.SetUniverse(i.universe)
 		res, err := sim.SimulateByArn(i.action, i.principalArn, i.resourceArn, nil)
 		if err != nil {
 			return false, err
@@ -216,20 +236,18 @@ func TestSimulateByArn(t *testing.T) {
 	})
 }
 
-// TestComputeAccessSummary validates the simulator's ability to construct a summary of access
-// between Principals + Resources
 func TestComputeAccessSummary(t *testing.T) {
 	type input struct {
-		env     *entities.Environment
-		actions []string
+		universe entities.Universe
+		actions  []*types.Action
 	}
 
 	tests := []testlib.TestCase[input, map[string]int]{
 		{
-			Name: "simple_environment_1",
+			Name: "simple_universe_1",
 			Input: input{
-				env:     &SimpleTestEnvironment_1,
-				actions: []string{"s3:listbucket"},
+				universe: SimpleTestUniverse_1,
+				actions:  []*types.Action{sar.MustLookupString("s3:listbucket")},
 			},
 			Want: map[string]int{
 				"arn:aws:s3:::bucket1": 1,
@@ -240,8 +258,8 @@ func TestComputeAccessSummary(t *testing.T) {
 		{
 			Name: "unrelated_actions",
 			Input: input{
-				env:     &SimpleTestEnvironment_1,
-				actions: []string{"this:doesnotexist"},
+				universe: SimpleTestUniverse_1,
+				actions:  []*types.Action{sar.MustLookupString("s3:getbucketlocation")},
 			},
 			Want: map[string]int{
 				"arn:aws:s3:::bucket1": 0,
@@ -250,25 +268,18 @@ func TestComputeAccessSummary(t *testing.T) {
 			},
 		},
 		{
-			Name: "empty_environment",
+			Name: "empty_universe",
 			Input: input{
-				env: &entities.Environment{},
+				universe: entities.Universe{},
 			},
 			Want: map[string]int{},
-		},
-		{
-			Name: "no_environment",
-			Input: input{
-				env: nil,
-			},
-			ShouldErr: true,
 		},
 		{
 			Name:      "error_nonexistent_condition",
 			ShouldErr: true,
 			Input: input{
-				actions: []string{"s3:listbucket"},
-				env: &entities.Environment{
+				actions: []*types.Action{sar.MustLookupString("s3:listbucket")},
+				universe: entities.Universe{
 					Principals: []entities.Principal{
 						{
 							Arn:       "arn:aws:iam::88888:role/role1",
@@ -304,8 +315,9 @@ func TestComputeAccessSummary(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (map[string]int, error) {
-		sim, _ := NewSimulator(WithFailOnUnknownCondition())
-		sim.SetEnvironment(i.env)
+		sim, _ := NewSimulator()
+		sim.options = *TestingSimulationOptions
+		sim.SetUniverse(i.universe)
 		summary, err := sim.ComputeAccessSummary(i.actions)
 		if err != nil {
 			return nil, err
@@ -315,9 +327,7 @@ func TestComputeAccessSummary(t *testing.T) {
 	})
 }
 
-// SimpleTestEnvironment_1 defines a very simple but reusable test environment for basic,
-// non-exhaustive unit tests
-var SimpleTestEnvironment_1 entities.Environment = entities.Environment{
+var SimpleTestUniverse_1 = entities.Universe{
 	Principals: []entities.Principal{
 		{
 			Arn:       "arn:aws:iam::88888:role/role1",

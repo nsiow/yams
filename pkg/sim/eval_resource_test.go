@@ -4,18 +4,17 @@ import (
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
+	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
-// TestResourceAccess checks resource-policy evaluation logic for statements
 func TestResourceAccess(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
 		{
 			Name: "implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
@@ -29,7 +28,7 @@ func TestResourceAccess(t *testing.T) {
 		{
 			Name: "simple_match",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
@@ -54,7 +53,7 @@ func TestResourceAccess(t *testing.T) {
 		{
 			Name: "explicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
@@ -79,7 +78,7 @@ func TestResourceAccess(t *testing.T) {
 		{
 			Name: "allow_and_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
@@ -112,7 +111,7 @@ func TestResourceAccess(t *testing.T) {
 		{
 			Name: "error_nonexistent_condition",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
@@ -142,8 +141,8 @@ func TestResourceAccess(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
-		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalResourceAccess(trace.New(), &opts, ac)
+		subj := newSubject(&ac, TestingSimulationOptions)
+		res, err := evalResourceAccess(subj)
 		if err != nil {
 			return nil, err
 		}

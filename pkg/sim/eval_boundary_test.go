@@ -4,12 +4,11 @@ import (
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
+	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
-// TestPermissionsBoundary tests functionality of permissions boundary evaluations
 func TestPermissionsBoundary(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
 		{
@@ -27,7 +26,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   "s3:ListBucket",
+				Action:   sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -48,7 +47,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   "s3:ListBucket",
+				Action:   sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_DENY,
@@ -69,7 +68,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   "s3:ListBucket",
+				Action:   sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect(nil),
 		},
@@ -88,7 +87,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   "s3:ListBucket",
+				Action:   sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -114,7 +113,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   "s3:ListBucket",
+				Action:   sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect(nil),
 		},
@@ -133,7 +132,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "*"},
-				Action:   "iam:ListRoles",
+				Action:   sar.MustLookupString("iam:ListRoles"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -154,14 +153,15 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.Resource{Arn: "*"},
-				Action:   "iam:ListRoles",
+				Action:   sar.MustLookupString("iam:ListRoles"),
 			},
 			Want: []policy.Effect(nil),
 		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
-		res, err := evalPermissionsBoundary(trace.New(), &Options{}, ac)
+		subj := newSubject(&ac, TestingSimulationOptions)
+		res, err := evalPermissionsBoundary(subj)
 		if err != nil {
 			return nil, err
 		}

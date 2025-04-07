@@ -4,18 +4,17 @@ import (
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
+	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
-// TestPrincipalAccess checks identity-policy evaluation logic for statements
 func TestPrincipalAccess(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
 		{
 			Name: "implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
 					InlinePolicies:   nil,
@@ -30,7 +29,7 @@ func TestPrincipalAccess(t *testing.T) {
 		{
 			Name: "simple_inline_policy",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 					InlinePolicies: []policy.Policy{
@@ -54,7 +53,7 @@ func TestPrincipalAccess(t *testing.T) {
 		{
 			Name: "simple_attached_policy",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 					AttachedPolicies: []policy.Policy{
@@ -78,7 +77,7 @@ func TestPrincipalAccess(t *testing.T) {
 		{
 			Name: "simple_inline_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 					InlinePolicies: []policy.Policy{
@@ -102,7 +101,7 @@ func TestPrincipalAccess(t *testing.T) {
 		{
 			Name: "simple_attached_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 					AttachedPolicies: []policy.Policy{
@@ -126,7 +125,7 @@ func TestPrincipalAccess(t *testing.T) {
 		{
 			Name: "allow_and_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 					InlinePolicies: []policy.Policy{
@@ -161,7 +160,7 @@ func TestPrincipalAccess(t *testing.T) {
 		{
 			Name: "error_nonexistent_condition",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 					InlinePolicies: []policy.Policy{
@@ -193,8 +192,8 @@ func TestPrincipalAccess(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
-		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalPrincipalAccess(trace.New(), &opts, ac)
+		subj := newSubject(&ac, TestingSimulationOptions)
+		res, err := evalPrincipalAccess(subj)
 		if err != nil {
 			return nil, err
 		}

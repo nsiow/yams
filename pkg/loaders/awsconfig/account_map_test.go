@@ -8,7 +8,6 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestAccountStorageRetrieval confirms the ability to store/retrieve accounts directly
 func TestAccountStorageRetrieval(t *testing.T) {
 	type input struct {
 		store     bool             // whether or not to store the provided account before the test

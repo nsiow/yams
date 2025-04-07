@@ -1,79 +1,157 @@
 package sar
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
 )
 
-// TestMap validates the correct retrieval of the full SAR map
-func TestMap(t *testing.T) {
-	sarmap := Map()
-
-	// Validate that we have a minimum number of entries
-	if len(sarmap) < 400 {
-		t.Fatalf("test failed, SAR map did not have enough entries")
+func TestLookup(t *testing.T) {
+	type input struct {
+		service string
+		name    string
 	}
+
+	tests := []testlib.TestCase[input, bool]{
+		{
+			Input: input{
+				service: "s3",
+				name:    "getobject",
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				service: "S3",
+				name:    "GETOBJECT",
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				service: "sqs",
+				name:    "lIsTquEuEs",
+			},
+			Want: true,
+		},
+		{
+			Input: input{
+				service: "foo",
+				name:    "bar",
+			},
+			Want: false,
+		},
+		{
+			Input: input{
+				service: "s3",
+				name:    "listqueues",
+			},
+			Want: false,
+		},
+	}
+
+	// Lookup
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
+		action, exists := Lookup(i.service, i.name)
+		// if it doesn't exist, perform no validation
+		if !exists {
+			return false, nil
+		}
+
+		// if it does exist, ensure that the values equal provided parameters
+		return strings.EqualFold(action.Service, i.service) &&
+			strings.EqualFold(action.Name, i.name), nil
+	})
+
+	// LookupString
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
+		action, exists := LookupString(i.service + ":" + i.name)
+		// if it doesn't exist, perform no validation
+		if !exists {
+			return false, nil
+		}
+
+		// if it does exist, ensure that the values equal provided parameters
+		return strings.EqualFold(action.Service, i.service) &&
+			strings.EqualFold(action.Name, i.name), nil
+	})
 }
 
-// TestMapContents spotchecks a handful of SAR items
-func TestMapContents(t *testing.T) {
-	sarmap := Map()
-
+func TestLookupStringInvalid(t *testing.T) {
 	tests := []testlib.TestCase[string, bool]{
 		{
-			Input: "foo",
+			Input: "foo:bar:baz",
 			Want:  false,
 		},
 		{
-			Input: "account",
-			Want:  true,
-		},
-		{
-			Input: "ec2",
-			Want:  true,
-		},
-		{
-			Input: "s3",
-			Want:  true,
+			Input: "s3_listbuckets",
+			Want:  false,
 		},
 	}
 
+	// LookupString
 	testlib.RunTestSuite(t, tests, func(i string) (bool, error) {
-		_, exists := sarmap[i]
+		_, exists := LookupString(i)
 		return exists, nil
 	})
 }
 
-// TestAll validates the correct retrieval of the full managed policy set
-func TestAll(t *testing.T) {
-	apicalls := All()
+func TestMustLookupString(t *testing.T) {
+	tests := []testlib.TestCase[string, bool]{
+		{
+			Input: "s3:getobject",
+			Want:  true,
+		},
+		{
+			Input: "S3:GETOBJECT",
+			Want:  true,
+		},
+		{
+			Input: "sqs:lIsTquEuEs",
+			Want:  true,
+		},
+	}
 
+	// MustLookupString
+	testlib.RunTestSuite(t, tests, func(i string) (bool, error) {
+		action := MustLookupString(i)
+		return strings.EqualFold(i, action.ShortName()), nil
+	})
+}
+
+func TestMustLookupStringInvalid(t *testing.T) {
+	tests := []testlib.TestCase[string, any]{
+		{
+			Input: "foo:bar:baz",
+		},
+		{
+			Input: "s3_listbuckets",
+		},
+	}
+
+	// LookupString
+	testlib.RunTestSuite(t, tests, func(i string) (any, error) {
+		defer testlib.AssertPanicWithText(t, "unable to resolve service:action from SAR: '.*'")
+		action := MustLookupString(i)
+		return action, nil
+	})
+}
+
+func TestAll(t *testing.T) {
 	numEntries := 0
-	for range apicalls {
-		numEntries += 1
+	for _, service := range sar() {
+		for range service.Actions {
+			numEntries += 1
+		}
 	}
 
 	// Validate that we have a minimum number of entries
-	if numEntries < 25_000 {
+	if numEntries < 15_000 {
 		t.Fatalf("test failed, API call list did not have enough entries (%d)", numEntries)
 	}
 }
 
-// TestIter exercises the iteration behavior of the API call iteration
-func TestIter(t *testing.T) {
-	apicalls := All()
-
-	numEntries := 0
-	for range apicalls {
-		numEntries += 1
-		if numEntries == 50 {
-			break
-		}
-	}
-}
-
-// TestQuery validates the correct retrieval of API calls via filtering
 func TestQuery(t *testing.T) {
 	tests := []testlib.TestCase[func(*Query) *Query, []string]{
 		{
@@ -96,21 +174,15 @@ func TestQuery(t *testing.T) {
 		},
 		{
 			Input: func(q *Query) *Query {
-				return q.WithService("aCcOuNt").WithAccessLevel(ACCESS_LEVEL_WRITE)
-			},
-			Want: []string{"AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "DisableRegion", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "EnableRegion", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "PutAlternateContact", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "PutContactInformation", "AcceptPrimaryEmailUpdate", "StartPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate"},
-		},
-		{
-			Input: func(q *Query) *Query {
 				return q.WithService("aCcOuNt")
 			},
-			Want: []string{"AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "DisableRegion", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "EnableRegion", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "GetAccountInformation", "GetAlternateContact", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "GetContactInformation", "AcceptPrimaryEmailUpdate", "GetPrimaryEmail", "GetRegionOptStatus", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "ListRegions", "AcceptPrimaryEmailUpdate", "PutAlternateContact", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "PutContactInformation", "AcceptPrimaryEmailUpdate", "StartPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate"},
+			Want: []string{"AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "DisableRegion", "EnableRegion", "GetAccountInformation", "GetAlternateContact", "GetContactInformation", "GetPrimaryEmail", "GetRegionOptStatus", "ListRegions", "PutAlternateContact", "PutContactInformation", "StartPrimaryEmailUpdate"},
 		},
 		{
 			Input: func(q *Query) *Query {
 				return q.WithService("account")
 			},
-			Want: []string{"AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "DisableRegion", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "EnableRegion", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "GetAccountInformation", "GetAlternateContact", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "GetContactInformation", "AcceptPrimaryEmailUpdate", "GetPrimaryEmail", "GetRegionOptStatus", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "ListRegions", "AcceptPrimaryEmailUpdate", "PutAlternateContact", "AcceptPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate", "PutContactInformation", "AcceptPrimaryEmailUpdate", "StartPrimaryEmailUpdate", "AcceptPrimaryEmailUpdate"},
+			Want: []string{"AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "DisableRegion", "EnableRegion", "GetAccountInformation", "GetAlternateContact", "GetContactInformation", "GetPrimaryEmail", "GetRegionOptStatus", "ListRegions", "PutAlternateContact", "PutContactInformation", "StartPrimaryEmailUpdate"},
 		},
 	}
 
@@ -119,8 +191,8 @@ func TestQuery(t *testing.T) {
 		t.Logf("created query: %s", q.String())
 
 		actionNames := []string{}
-		for _, call := range q.Results() {
-			actionNames = append(actionNames, call.Action)
+		for _, action := range q.Results() {
+			actionNames = append(actionNames, action.Name)
 		}
 
 		return actionNames, nil

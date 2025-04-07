@@ -10,16 +10,15 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestLoadJson confirms that we can correctly load data from JSON arrays of AWS Config data
 func TestLoadJson(t *testing.T) {
-	tests := []testlib.TestCase[string, entities.Environment]{
+	tests := []testlib.TestCase[string, entities.Universe]{
 
 		// Valid
 
 		{
 			Name:  "valid_empty_json",
 			Input: `../../../testdata/environments/valid_empty.json`,
-			Want: entities.Environment{
+			Want: entities.Universe{
 				Principals: []entities.Principal(nil),
 				Resources:  []entities.Resource(nil),
 			},
@@ -27,7 +26,7 @@ func TestLoadJson(t *testing.T) {
 		{
 			Name:  "valid_empty_jsonl",
 			Input: `../../../testdata/environments/valid_empty.jsonl`,
-			Want: entities.Environment{
+			Want: entities.Universe{
 				Principals: []entities.Principal(nil),
 				Resources:  []entities.Resource(nil),
 			},
@@ -187,7 +186,7 @@ func TestLoadJson(t *testing.T) {
 		},
 	}
 
-	testlib.RunTestSuite(t, tests, func(fp string) (entities.Environment, error) {
+	testlib.RunTestSuite(t, tests, func(fp string) (entities.Universe, error) {
 		// Load test data
 		data, err := os.ReadFile(fp)
 		if err != nil {
@@ -208,14 +207,14 @@ func TestLoadJson(t *testing.T) {
 
 		// Handle loading errors; these may be expected
 		if err != nil {
-			return entities.Environment{}, err
+			return entities.Universe{}, err
 		}
 		return l.Environment(), nil
 	})
 }
 
 // Define some common test variables here, which we'll use across multiple tests
-var simple1Output entities.Environment = entities.Environment{
+var simple1Output entities.Universe = entities.Universe{
 	Principals: []entities.Principal{
 		{
 			Type:      "AWS::IAM::Role",
@@ -382,7 +381,7 @@ var simple1Output entities.Environment = entities.Environment{
 	},
 }
 
-var user1Output entities.Environment = entities.Environment{
+var user1Output entities.Universe = entities.Universe{
 	Principals: []entities.Principal{
 		{
 			Type:      "AWS::IAM::User",
@@ -471,7 +470,7 @@ var user1Output entities.Environment = entities.Environment{
 	},
 }
 
-var permissionsBoundaryOutput entities.Environment = entities.Environment{
+var permissionsBoundaryOutput entities.Universe = entities.Universe{
 	Principals: []entities.Principal{
 		{
 			Type:      "AWS::IAM::User",
@@ -533,7 +532,7 @@ var permissionsBoundaryOutput entities.Environment = entities.Environment{
 	},
 }
 
-var scpOutput entities.Environment = entities.Environment{
+var scpOutput entities.Universe = entities.Universe{
 	Principals: []entities.Principal{
 		{
 			Type:      "AWS::IAM::Role",

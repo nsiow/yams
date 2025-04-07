@@ -6,16 +6,13 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
 type input struct {
-	ac      AuthContext
-	stmt    policy.Statement
-	options Options
+	ac   AuthContext
+	stmt policy.Statement
 }
 
-// TestStatementBase checks some basic condition shape/matching logic
 func TestStatementBase(t *testing.T) {
 	tests := []testlib.TestCase[input, bool]{
 		{
@@ -41,40 +38,9 @@ func TestStatementBase(t *testing.T) {
 			Want: false,
 		},
 		{
-			Name: "nonexistent_operator_fail",
-			Input: input{
-				ac:      AuthContext{},
-				options: Options{FailOnUnknownCondition: true},
-				stmt: policy.Statement{
-					Condition: policy.ConditionBlock{
-						"StringEqualsThisDoesNotExist": {
-							"foo": []string{"bar"},
-						},
-					},
-				},
-			},
-			ShouldErr: true,
-		},
-		{
-			Name: "nonexistent_operator_no_fail",
-			Input: input{
-				ac:      AuthContext{},
-				options: Options{FailOnUnknownCondition: false},
-				stmt: policy.Statement{
-					Condition: policy.ConditionBlock{
-						"StringEqualsThisDoesNotExist": {
-							"foo": []string{"bar"},
-						},
-					},
-				},
-			},
-			Want: true,
-		},
-		{
 			Name: "nonexistent_lhs",
 			Input: input{
-				ac:      AuthContext{},
-				options: Options{FailOnUnknownCondition: false},
+				ac: AuthContext{},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
 						"StringLike": {
@@ -85,10 +51,25 @@ func TestStatementBase(t *testing.T) {
 			},
 			Want: false,
 		},
+		{
+			Name: "nonexistent_operator",
+			Input: input{
+				ac: AuthContext{},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringEqualsThisDoesNotExist": {
+							"foo": []string{"bar"},
+						},
+					},
+				},
+			},
+			ShouldErr: true,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -147,7 +128,8 @@ func TestStringEquals(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -192,7 +174,8 @@ func TestStringEqualsIgnoreCase(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -233,7 +216,8 @@ func TestStringNotEquals(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -274,7 +258,8 @@ func TestStringNotEqualsIgnoreCase(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -317,7 +302,8 @@ func TestStringLike(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -358,7 +344,8 @@ func TestStringNotLike(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -372,9 +359,9 @@ func TestNumericConversion(t *testing.T) {
 			Name: "non_numeric_lhs",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "foo",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -390,9 +377,9 @@ func TestNumericConversion(t *testing.T) {
 			Name: "non_numeric_rhs",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "123",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -407,7 +394,8 @@ func TestNumericConversion(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 
 }
@@ -418,9 +406,9 @@ func TestNumericEquals(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -437,9 +425,9 @@ func TestNumericEquals(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -454,7 +442,8 @@ func TestNumericEquals(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -464,9 +453,9 @@ func TestNumericNotEquals(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -482,9 +471,9 @@ func TestNumericNotEquals(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -500,7 +489,8 @@ func TestNumericNotEquals(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -510,9 +500,9 @@ func TestNumericLessThan(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -529,9 +519,9 @@ func TestNumericLessThan(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -546,7 +536,8 @@ func TestNumericLessThan(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -556,9 +547,9 @@ func TestNumericLessThanEquals(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -575,9 +566,9 @@ func TestNumericLessThanEquals(t *testing.T) {
 			Name: "simple_equals_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -593,9 +584,9 @@ func TestNumericLessThanEquals(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -610,7 +601,8 @@ func TestNumericLessThanEquals(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -620,9 +612,9 @@ func TestNumericGreaterThan(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -639,9 +631,9 @@ func TestNumericGreaterThan(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -657,9 +649,9 @@ func TestNumericGreaterThan(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -674,7 +666,8 @@ func TestNumericGreaterThan(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -688,9 +681,9 @@ func TestNumericGreaterThanEquals(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -707,9 +700,9 @@ func TestNumericGreaterThanEquals(t *testing.T) {
 			Name: "simple_match_equals",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -725,9 +718,9 @@ func TestNumericGreaterThanEquals(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeNumericKey": "100",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -742,7 +735,8 @@ func TestNumericGreaterThanEquals(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -752,9 +746,9 @@ func TestDateEquals(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "2024-01-01T10:11:12",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -770,9 +764,9 @@ func TestDateEquals(t *testing.T) {
 			Name: "simple_match_epoch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1704103872",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -788,9 +782,9 @@ func TestDateEquals(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "2024-01-01T10:11:12",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -806,9 +800,9 @@ func TestDateEquals(t *testing.T) {
 			Name: "invalid_lhs",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "foo",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -824,9 +818,9 @@ func TestDateEquals(t *testing.T) {
 			Name: "invalid_rhs",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "2024-01-01T10:12:11",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -841,7 +835,8 @@ func TestDateEquals(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -851,9 +846,9 @@ func TestDateNotEquals(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "2024-01-01T10:11:12",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -869,9 +864,9 @@ func TestDateNotEquals(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "2024-01-01T10:11:12",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -887,9 +882,9 @@ func TestDateNotEquals(t *testing.T) {
 			Name: "simple_nomatch_epoch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1704103872",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -904,7 +899,8 @@ func TestDateNotEquals(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -914,9 +910,9 @@ func TestDateLessThan(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1212-12-12T12:12:12",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -932,9 +928,9 @@ func TestDateLessThan(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "2024-01-01T10:11:12",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -950,9 +946,9 @@ func TestDateLessThan(t *testing.T) {
 			Name: "simple_match_epoch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1704103872",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -967,7 +963,8 @@ func TestDateLessThan(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -977,9 +974,9 @@ func TestDateLessThanEquals(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1212-12-12T12:12:12",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -995,9 +992,9 @@ func TestDateLessThanEquals(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "2024-01-01T10:11:12",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1013,9 +1010,9 @@ func TestDateLessThanEquals(t *testing.T) {
 			Name: "simple_match_epoch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1704103872",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1031,9 +1028,9 @@ func TestDateLessThanEquals(t *testing.T) {
 			Name: "simple_equals_epoch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1704103872",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1048,7 +1045,8 @@ func TestDateLessThanEquals(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -1058,9 +1056,9 @@ func TestDateGreaterThan(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "2024-01-01T10:11:12",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1076,9 +1074,9 @@ func TestDateGreaterThan(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1212-12-12T12:12:12",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1095,9 +1093,9 @@ func TestDateGreaterThan(t *testing.T) {
 			Name: "simple_match_epoch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1804103872",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1113,9 +1111,9 @@ func TestDateGreaterThan(t *testing.T) {
 			Name: "simple_equals_epoch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1704103872",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1130,7 +1128,8 @@ func TestDateGreaterThan(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -1140,9 +1139,9 @@ func TestDateGreaterThanEquals(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "2024-01-01T10:11:12",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1158,9 +1157,9 @@ func TestDateGreaterThanEquals(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1212-12-12T12:12:12",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1176,9 +1175,9 @@ func TestDateGreaterThanEquals(t *testing.T) {
 			Name: "simple_match_epoch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1804103872",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1194,9 +1193,9 @@ func TestDateGreaterThanEquals(t *testing.T) {
 			Name: "simple_equals_epoch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeDateKey": "1704103872",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1211,7 +1210,8 @@ func TestDateGreaterThanEquals(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -1225,9 +1225,9 @@ func TestBool(t *testing.T) {
 			Name: "simple_true",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SecureTransport": "true",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1243,9 +1243,9 @@ func TestBool(t *testing.T) {
 			Name: "simple_false",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SecureTransport": "false",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1261,9 +1261,9 @@ func TestBool(t *testing.T) {
 			Name: "simple_true_false",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SecureTransport": "true",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1279,9 +1279,9 @@ func TestBool(t *testing.T) {
 			Name: "simple_false_true",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SecureTransport": "false",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1297,9 +1297,9 @@ func TestBool(t *testing.T) {
 			Name: "ignore_case_true",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SecureTransport": "true",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1315,9 +1315,9 @@ func TestBool(t *testing.T) {
 			Name: "invalid_lhs",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SecureTransport": "foo",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1333,9 +1333,9 @@ func TestBool(t *testing.T) {
 			Name: "invalid_rhs",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SecureTransport": "true",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1350,7 +1350,8 @@ func TestBool(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -1364,9 +1365,9 @@ func TestBinary(t *testing.T) {
 			Name: "simple_true",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeBinaryKey": "Zm9vCg==",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1382,9 +1383,9 @@ func TestBinary(t *testing.T) {
 			Name: "simple_false",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeBinaryKey": "YmFyCg==",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1400,9 +1401,9 @@ func TestBinary(t *testing.T) {
 			Name: "equal_but_invalid",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeBinaryKey": "foo",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1418,9 +1419,9 @@ func TestBinary(t *testing.T) {
 			Name: "equal_but_invalid_reversed",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeBinaryKey": "Zm9vCg==",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1435,7 +1436,8 @@ func TestBinary(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -1449,9 +1451,9 @@ func TestIpAddress(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "10.0.0.1",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1467,9 +1469,9 @@ func TestIpAddress(t *testing.T) {
 			Name: "simple_match_ipv6",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1485,9 +1487,9 @@ func TestIpAddress(t *testing.T) {
 			Name: "simple_match_multi",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "10.0.0.1",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1503,9 +1505,9 @@ func TestIpAddress(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "128.252.0.1",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1521,9 +1523,9 @@ func TestIpAddress(t *testing.T) {
 			Name: "simple_nomatch_ipv6",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "2001:1db8:85a3:0000:0000:8a2e:0370:7334",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1539,9 +1541,9 @@ func TestIpAddress(t *testing.T) {
 			Name: "match_but_not_ips",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "foo",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1557,9 +1559,9 @@ func TestIpAddress(t *testing.T) {
 			Name: "match_but_not_ips_reversed",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "10.0.0.1",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1575,9 +1577,9 @@ func TestIpAddress(t *testing.T) {
 			Name: "match_but_wrong_order",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "10.0.0.0/8",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1592,7 +1594,8 @@ func TestIpAddress(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -1602,9 +1605,9 @@ func TestNotIpAddress(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "10.0.0.1",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1620,9 +1623,9 @@ func TestNotIpAddress(t *testing.T) {
 			Name: "simple_nomatch_ipv6",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1638,9 +1641,9 @@ func TestNotIpAddress(t *testing.T) {
 			Name: "simple_nomatch_multi",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "10.0.0.1",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1656,9 +1659,9 @@ func TestNotIpAddress(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "128.252.0.1",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1674,9 +1677,9 @@ func TestNotIpAddress(t *testing.T) {
 			Name: "simple_match_ipv6",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceIp": "2001:1db8:85a3:0000:0000:8a2e:0370:7334",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1691,7 +1694,8 @@ func TestNotIpAddress(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -1705,9 +1709,9 @@ func TestArnEquals(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1723,9 +1727,9 @@ func TestArnEquals(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1741,9 +1745,9 @@ func TestArnEquals(t *testing.T) {
 			Name: "match_diff_region",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1759,9 +1763,9 @@ func TestArnEquals(t *testing.T) {
 			Name: "nomatch_diff_account",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1776,7 +1780,8 @@ func TestArnEquals(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -1786,9 +1791,9 @@ func TestArnNotEquals(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1804,9 +1809,9 @@ func TestArnNotEquals(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1822,9 +1827,9 @@ func TestArnNotEquals(t *testing.T) {
 			Name: "nomatch_diff_region",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1840,9 +1845,9 @@ func TestArnNotEquals(t *testing.T) {
 			Name: "match_diff_account",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1857,7 +1862,8 @@ func TestArnNotEquals(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -1867,9 +1873,9 @@ func TestArnLike(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1885,9 +1891,9 @@ func TestArnLike(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1903,9 +1909,9 @@ func TestArnLike(t *testing.T) {
 			Name: "match_diff_region",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1921,9 +1927,9 @@ func TestArnLike(t *testing.T) {
 			Name: "nomatch_diff_account",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1938,7 +1944,8 @@ func TestArnLike(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -1948,9 +1955,9 @@ func TestArnNotLike(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1966,9 +1973,9 @@ func TestArnNotLike(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -1984,9 +1991,9 @@ func TestArnNotLike(t *testing.T) {
 			Name: "nomatch_diff_region",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -2002,9 +2009,9 @@ func TestArnNotLike(t *testing.T) {
 			Name: "match_diff_account",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -2019,13 +2026,14 @@ func TestArnNotLike(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
-// --------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------
 // Test weird stuff
-// --------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------
 
 func TestIfExists(t *testing.T) {
 	tests := []testlib.TestCase[input, bool]{
@@ -2033,9 +2041,9 @@ func TestIfExists(t *testing.T) {
 			Name: "string_equals_if_exists",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeContextKey": "foo",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -2051,9 +2059,9 @@ func TestIfExists(t *testing.T) {
 			Name: "string_equals_if_exists_missing",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeContextKey": "foo",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -2069,9 +2077,9 @@ func TestIfExists(t *testing.T) {
 			Name: "numeric_equals_if_exists_missing",
 			Input: input{
 				ac: AuthContext{
-					Properties: map[string]string{
+					Properties: NewBagFromMap(map[string]string{
 						"aws:SomeContextKey": "8888",
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -2086,7 +2094,8 @@ func TestIfExists(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -2096,11 +2105,11 @@ func TestForAllValues(t *testing.T) {
 			Name: "simple_equals",
 			Input: input{
 				ac: AuthContext{
-					MultiValueProperties: map[string][]string{
+					MultiValueProperties: NewBagFromMap(map[string][]string{
 						"aws:TagKeys": {
 							"foo", "bar", "baz",
 						},
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -2116,11 +2125,11 @@ func TestForAllValues(t *testing.T) {
 			Name: "simple_not_equals",
 			Input: input{
 				ac: AuthContext{
-					MultiValueProperties: map[string][]string{
+					MultiValueProperties: NewBagFromMap(map[string][]string{
 						"aws:TagKeys": {
 							"foo", "bar", "baz", "other",
 						},
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -2149,7 +2158,8 @@ func TestForAllValues(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }
 
@@ -2159,11 +2169,11 @@ func TestForAnyValues(t *testing.T) {
 			Name: "simple_equals",
 			Input: input{
 				ac: AuthContext{
-					MultiValueProperties: map[string][]string{
+					MultiValueProperties: NewBagFromMap(map[string][]string{
 						"aws:TagKeys": {
 							"baz",
 						},
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -2179,11 +2189,11 @@ func TestForAnyValues(t *testing.T) {
 			Name: "simple_not_equals",
 			Input: input{
 				ac: AuthContext{
-					MultiValueProperties: map[string][]string{
+					MultiValueProperties: NewBagFromMap(map[string][]string{
 						"aws:TagKeys": {
 							"lots", "of", "other", "strings",
 						},
-					},
+					}),
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -2212,6 +2222,7 @@ func TestForAnyValues(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalStatementMatchesCondition(trace.New(), &i.options, i.ac, &i.stmt)
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt)
 	})
 }

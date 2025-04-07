@@ -1,11 +1,10 @@
 package condition
 
 // This const block holds string constants corresponding to AWS condition operators
-// TODO(nsiow) add comments + references
 const (
-	// ------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------
 	// String Functions
-	// ------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------
 
 	StringEquals              = "StringEquals"
 	StringNotEquals           = "StringNotEquals"
@@ -16,7 +15,10 @@ const (
 	StringLikeIgnoreCase      = "StringLikeIgnoreCase"
 	StringNotLikeIgnoreCase   = "StringNotLikeIgnoreCase"
 
+	// ---------------------------------------------------------------------------------------------
 	// Numeric Functions
+	// ---------------------------------------------------------------------------------------------
+
 	NumericEquals            = "NumericEquals"
 	NumericNotEquals         = "NumericNotEquals"
 	NumericLessThan          = "NumericLessThan"
@@ -24,7 +26,10 @@ const (
 	NumericGreaterThan       = "NumericGreaterThan"
 	NumericGreaterThanEquals = "NumericGreaterThanEquals"
 
+	// ---------------------------------------------------------------------------------------------
 	// Date Functions
+	// ---------------------------------------------------------------------------------------------
+
 	DateEquals            = "DateEquals"
 	DateNotEquals         = "DateNotEquals"
 	DateLessThan          = "DateLessThan"
@@ -32,19 +37,35 @@ const (
 	DateGreaterThan       = "DateGreaterThan"
 	DateGreaterThanEquals = "DateGreaterThanEquals"
 
+	// ---------------------------------------------------------------------------------------------
 	// Bool Functions
+	// ---------------------------------------------------------------------------------------------
+
 	Bool = "Bool"
 
+	// ---------------------------------------------------------------------------------------------
 	// Binary Functions
+	// ---------------------------------------------------------------------------------------------
+
 	BinaryEquals = "BinaryEquals"
 
-	// IP Address Functions
+	// ---------------------------------------------------------------------------------------------
+	// IP Functions
+	// ---------------------------------------------------------------------------------------------
+
 	IpAddress    = "IpAddress"
 	NotIpAddress = "NotIpAddress"
+
+	// ---------------------------------------------------------------------------------------------
+	// Arn Functions
+	// ---------------------------------------------------------------------------------------------
 
 	// Arn functions
 	ArnEquals    = "ArnEquals"
 	ArnNotEquals = "ArnNotEquals"
 	ArnLike      = "ArnLike"
 	ArnNotLike   = "ArnNotLike"
+
+	// TODO(nsiow) add Null operator
+	// https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html#Conditions_Null
 )

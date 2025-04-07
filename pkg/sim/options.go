@@ -1,20 +1,47 @@
 package sim
 
-// Sim contains all possible customizatons for simulator logic + runtime
+// Options contains all possible customizatons for simulator logic + behavior
 type Options struct {
-	// FailOnUnknownCondition determines whether or not to fail on unknown Condition evaluation
-	// TODO(nsiow) make opts.FailOnUnknownCondition default
-	FailOnUnknownCondition bool
+	// FailOnUnknownConditionOperator implements a stricter check for condition operators, resulting
+	// in a policy simulation error if we encounter one we do not know
+	FailOnUnknownConditionOperator bool
+
+	// SkipServiceAuthorizationValidation foregoes the usual validation via the Service Authoization
+	// Reference. This will result in faster simulation but at the cost of real-world accuracy
+	SkipServiceAuthorizationValidation bool
+}
+
+// NewOptions creates and returns a new Options struct parameterized with the provided options
+func NewOptions(funcs ...OptionF) *Options {
+	o := &Options{}
+	for _, f := range funcs {
+		f(o)
+	}
+	return o
 }
 
 // OptionF implements the functional options pattern for simulator options
-type OptionF func(*Options) error
+type OptionF func(*Options)
 
-// WithFailOnUnknownCondition causes simulation to fail if we encounter a Conditon we do not know
-// how to handle
-func WithFailOnUnknownCondition() OptionF {
-	return func(opt *Options) error {
-		opt.FailOnUnknownCondition = true
-		return nil
+// WithFailOnUnknownConditionOperator toggles FailOnUnknownConditionOperator to true
+func WithFailOnUnknownConditionOperator() OptionF {
+	return func(opt *Options) {
+		opt.FailOnUnknownConditionOperator = true
 	}
 }
+
+// WithSkipServiceAuthorizationValidation toggles SkipServiceAuthorizationValidation to true
+func WithSkipServiceAuthorizationValidation() OptionF {
+	return func(opt *Options) {
+		opt.SkipServiceAuthorizationValidation = true
+	}
+}
+
+// TestingSimulationOptions provides a specific set of simulation options appropriate for most
+// tests. It allows for exercising difficult-to-reach error paths while also allowing us to bend
+// the rules a bit for testing -- fewer checks around the specifics of the dummy resource calls we
+// use
+var TestingSimulationOptions = NewOptions(
+	WithFailOnUnknownConditionOperator(),
+	WithSkipServiceAuthorizationValidation(),
+)

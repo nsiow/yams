@@ -4,23 +4,19 @@ import (
 	"fmt"
 
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
 // evalPrincipalAccess calculates the Principal-side access to the specified Resource
-func evalPrincipalAccess(
-	trc *trace.Trace,
-	opt *Options,
-	ac AuthContext) (Decision, error) {
+func evalPrincipalAccess(s *subject) (Decision, error) {
 
-	trc.Push("evaluating principal policies")
-	defer trc.Pop()
+	s.trc.Push("evaluating principal policies")
+	defer s.trc.Pop()
 
 	// Specify the types of policies we will consider for Principal access
 	effectivePolicies := map[string][]policy.Policy{
-		"inline":  ac.Principal.InlinePolicies,
-		"managed": ac.Principal.AttachedPolicies,
-		"group":   ac.Principal.GroupPolicies,
+		"inline":  s.ac.Principal.InlinePolicies,
+		"managed": s.ac.Principal.AttachedPolicies,
+		"group":   s.ac.Principal.GroupPolicies,
 	}
 
 	// Specify the statement evaluation funcs we will consider for Principal access
@@ -33,15 +29,15 @@ func evalPrincipalAccess(
 	// Iterate over policy types / policies / statements to evaluate access
 	decision := Decision{}
 	for policytype, policies := range effectivePolicies {
-		trc.Push(fmt.Sprintf("policytype=%s", policytype))
-		eff, err := evalPolicies(trc, opt, ac, policies, funcs)
+		s.trc.Push(fmt.Sprintf("policytype=%s", policytype))
+		eff, err := evalPolicies(s, policies, funcs)
 		if err != nil {
-			trc.Pop()
+			s.trc.Pop()
 			return decision, err
 		}
 
 		decision.Merge(eff)
-		trc.Pop()
+		s.trc.Pop()
 	}
 
 	return decision, nil

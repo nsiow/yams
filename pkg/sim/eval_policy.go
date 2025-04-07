@@ -2,21 +2,15 @@ package sim
 
 import (
 	"github.com/nsiow/yams/pkg/policy"
-	"github.com/nsiow/yams/pkg/sim/trace"
 )
 
 // evalPolicies computes whether the provided policies match the AuthContext
-func evalPolicies(
-	trc *trace.Trace,
-	opt *Options,
-	ac AuthContext,
-	policies []policy.Policy,
-	funcs []evalFunction) (Decision, error) {
+func evalPolicies(s *subject, policies []policy.Policy, funcs []evalFunction) (Decision, error) {
 
 	decision := Decision{}
 
 	for _, pol := range policies {
-		eff, err := evalPolicy(trc, opt, ac, pol, funcs)
+		eff, err := evalPolicy(s, pol, funcs)
 		if err != nil {
 			return eff, err
 		}
@@ -30,19 +24,14 @@ func evalPolicies(
 }
 
 // evalPolicy computes whether the provided policy matches the AuthContext
-// FIXME(nsiow) re-add trace statements to all of the below functions
+// TODO(nsiow) re-add trace statements to all of the below functions
 // (evalPolicy/evalPolicies/evalStatement)
-func evalPolicy(
-	trc *trace.Trace,
-	opt *Options,
-	ac AuthContext,
-	policy policy.Policy,
-	funcs []evalFunction) (Decision, error) {
+func evalPolicy(s *subject, policy policy.Policy, funcs []evalFunction) (Decision, error) {
 
 	decision := Decision{}
 
 	for _, stmt := range policy.Statement {
-		effect, err := evalStatement(trc, opt, ac, stmt, funcs)
+		effect, err := evalStatement(s, stmt, funcs)
 		if err != nil {
 			return effect, err
 		}

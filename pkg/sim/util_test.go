@@ -6,7 +6,6 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 )
 
-// TestId validates correct resolution behavior of Id(...)
 func TestId(t *testing.T) {
 	type input struct {
 		id  string

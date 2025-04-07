@@ -4,47 +4,45 @@ import (
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
+	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// TestEvalIsSameAccount checks same vs x-account checking behavior
 func TestEvalIsSameAccount(t *testing.T) {
 	type input struct {
-		principal entities.Principal
-		resource  entities.Resource
+		principal *entities.Principal
+		resource  *entities.Resource
 	}
 
 	tests := []testlib.TestCase[input, bool]{
 		{
 			Input: input{
-				principal: entities.Principal{AccountId: "88888"},
-				resource:  entities.Resource{AccountId: "88888"},
+				principal: &entities.Principal{AccountId: "88888"},
+				resource:  &entities.Resource{AccountId: "88888"},
 			},
 			Want: true,
 		},
 		{
 			Input: input{
-				principal: entities.Principal{AccountId: "88888"},
-				resource:  entities.Resource{AccountId: "12345"},
+				principal: &entities.Principal{AccountId: "88888"},
+				resource:  &entities.Resource{AccountId: "12345"},
 			},
 			Want: false,
 		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalIsSameAccount(&i.principal, &i.resource), nil
+		return evalIsSameAccount(i.principal, i.resource), nil
 	})
 }
 
-// TestOverallAccess_XAccount checks both principal-side and resource-side logic where the
-// resource + principal reside within the same account
 func TestOverallAccess_XAccount(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, bool]{
 		{
 			Name: "x_account_implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
 					AccountId:        "88888",
@@ -62,7 +60,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "x_account_principal_only_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -88,7 +86,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "x_account_resource_only_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -116,7 +114,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 
 			Name: "x_account_principal_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -142,7 +140,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "x_account_resource_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -166,7 +164,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "x_account_allow_and_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -204,7 +202,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "error_nonexistent_principal_condition",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -238,7 +236,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		{
 			Name: "error_nonexistent_resource_condition",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -274,8 +272,8 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			t.Fatalf("supposed to be testing x-account, but saw same account for: %+v", ac)
 		}
 
-		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalOverallAccess(&opts, ac)
+		subj := newSubject(&ac, TestingSimulationOptions)
+		res, err := evalOverallAccess(subj)
 		if err != nil {
 			return false, err
 		}
@@ -284,14 +282,12 @@ func TestOverallAccess_XAccount(t *testing.T) {
 	})
 }
 
-// TestOverallAccess_SameAccount checks both principal-side and resource-side logic where the
-// resource + principal reside within the same account
 func TestOverallAccess_SameAccount(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, bool]{
 		{
 			Name: "same_account_implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:              "arn:aws:iam::88888:role/myrole",
 					AccountId:        "88888",
@@ -309,7 +305,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "same_account_simple_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -335,7 +331,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "same_account_simple_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -361,7 +357,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "allow_and_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -398,7 +394,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "same_account_error_nonexistent_condition",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -433,12 +429,12 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		// {
 		// 	Name: "same_account_resource_access",
 		// 	Input: AuthContext{
-		// 		Action: "s3:listbucket",
-		// 		Principal: &entities.Principal{
+		// 		Action: sar.MustLookupString("s3:listbucket"),
+		// 		Principal:& entities.Principal{
 		// 			Arn: "arn:aws:iam::88888:role/myrole",
 		//			Account: "88888",
 		// 		},
-		// 		Resource: &entities.Resource{
+		// 		Resource:& entities.Resource{
 		// 			Arn: "arn:aws:s3:::mybucket",
 		//			Account: "88888",
 		// 			Policy: policy.Policy{
@@ -460,7 +456,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "error_bad_permissions_boundary",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -489,7 +485,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "permissions_boundary_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -524,7 +520,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "permissions_boundary_explicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -559,7 +555,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "permissions_boundary_implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -594,7 +590,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "error_bad_scp",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -629,7 +625,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "scp_allow",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -670,7 +666,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "scp_explicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -722,7 +718,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "scp_implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -763,7 +759,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		{
 			Name: "scp_layer_implicit_deny",
 			Input: AuthContext{
-				Action: "s3:listbucket",
+				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
@@ -820,8 +816,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			t.Fatalf("supposed to be testing same account, but saw x-account for: %+v", ac)
 		}
 
-		opts := Options{FailOnUnknownCondition: true}
-		res, err := evalOverallAccess(&opts, ac)
+		subj := newSubject(&ac, TestingSimulationOptions)
+		res, err := evalOverallAccess(subj)
 		if err != nil {
 			return false, err
 		}

@@ -1,17 +1,10 @@
 package sim
 
-import (
-	"github.com/nsiow/yams/pkg/sim/trace"
-)
-
 // evalResourceAccess calculates the Resource-side access with regard to the specified Principal
-func evalResourceAccess(
-	trc *trace.Trace,
-	opt *Options,
-	ac AuthContext) (Decision, error) {
+func evalResourceAccess(s *subject) (Decision, error) {
 
-	trc.Push("evaluating resource policies")
-	defer trc.Pop()
+	s.trc.Push("evaluating resource policies")
+	defer s.trc.Pop()
 
 	// Specify the statement evaluation funcs we will consider for Principal access
 	funcs := []evalFunction{
@@ -21,5 +14,5 @@ func evalResourceAccess(
 	}
 
 	// Iterate over resource policy statements to evaluate access
-	return evalPolicy(trc, opt, ac, ac.Resource.Policy, funcs)
+	return evalPolicy(s, s.ac.Resource.Policy, funcs)
 }

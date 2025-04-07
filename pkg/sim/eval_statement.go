@@ -3,20 +3,14 @@ package sim
 import (
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim/gate"
-	"github.com/nsiow/yams/pkg/sim/trace"
 	"github.com/nsiow/yams/pkg/sim/wildcard"
 )
 
 // evalStatement computes whether the provided statements match the AuthContext
-func evalStatement(
-	trc *trace.Trace,
-	opt *Options,
-	ac AuthContext,
-	stmt policy.Statement,
-	funcs []evalFunction) (Decision, error) {
+func evalStatement(s *subject, stmt policy.Statement, funcs []evalFunction) (Decision, error) {
 
 	for _, f := range funcs {
-		match, err := f(trc, opt, ac, &stmt)
+		match, err := f(s, &stmt)
 		if err != nil {
 			return Decision{}, err
 		}
@@ -32,18 +26,14 @@ func evalStatement(
 }
 
 // evalStatementMatchesAction computes whether the Statement matches the AuthContext's Action
-func evalStatementMatchesAction(
-	trc *trace.Trace,
-	opt *Options,
-	ac AuthContext,
-	stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesAction(s *subject, stmt *policy.Statement) (bool, error) {
 
-	trc.Push("evaluating Action")
-	defer trc.Pop()
+	s.trc.Push("evaluating Action")
+	defer s.trc.Pop()
 
 	// Handle empty Action
-	if len(ac.Action) == 0 {
-		trc.Observation("AuthContext missing Action")
+	if s.ac.Action == nil {
+		s.trc.Observation("AuthContext missing Action")
 		return false, nil
 	}
 
@@ -51,40 +41,37 @@ func evalStatementMatchesAction(
 	var _gate gate.Gate
 	var action policy.Action
 	if !stmt.Action.Empty() {
-		trc.Observation("using Action block")
+		s.trc.Observation("using Action block")
 		action = stmt.Action
 	} else {
-		trc.Observation("using NotAction block")
+		s.trc.Observation("using NotAction block")
 		action = stmt.NotAction
 		_gate.Invert()
 	}
 
+	shortName := s.ac.Action.ShortName()
 	for _, a := range action {
-		match := wildcard.MatchSegmentsIgnoreCase(a, ac.Action)
+		match := wildcard.MatchSegmentsIgnoreCase(a, shortName)
 		if match {
-			trc.Attr("action", a)
-			trc.Observation("action matched")
+			s.trc.Attr("action", a)
+			s.trc.Observation("action matched")
 			return _gate.Apply(true), nil
 		}
 	}
 
-	trc.Observation("no actions match")
+	s.trc.Observation("no actions match")
 	return _gate.Apply(false), nil
 }
 
 // evalStatementMatchesPrincipal computes whether the Statement matches the AuthContext's Principal
-func evalStatementMatchesPrincipal(
-	trc *trace.Trace,
-	opt *Options,
-	ac AuthContext,
-	stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) (bool, error) {
 
-	trc.Push("evaluating Principal")
-	defer trc.Pop()
+	s.trc.Push("evaluating Principal")
+	defer s.trc.Pop()
 
 	// Handle empty Principal
-	if ac.Principal == nil {
-		trc.Observation("AuthContext missing Principal")
+	if s.ac.Principal == nil {
+		s.trc.Observation("AuthContext missing Principal")
 		return false, nil
 	}
 
@@ -93,23 +80,23 @@ func evalStatementMatchesPrincipal(
 	var principals policy.Principal
 	switch {
 	case stmt.Principal.All:
-		trc.Observation("saw special Principal=* block")
+		s.trc.Observation("saw special Principal=* block")
 		return true, nil
 	case stmt.NotPrincipal.All:
-		trc.Observation("saw special NotPrincipal=* block")
+		s.trc.Observation("saw special NotPrincipal=* block")
 		return false, nil
 	case !stmt.Principal.Empty():
-		trc.Observation("using Principal block")
+		s.trc.Observation("using Principal block")
 		principals = stmt.Principal
 	default:
-		trc.Observation("using NotPrincipal block")
+		s.trc.Observation("using NotPrincipal block")
 		principals = stmt.NotPrincipal
 		_gate.Invert()
 	}
 
 	// TODO(nsiow) validate that this is how Principals are evaluated - exact matches?
 	for _, p := range principals.AWS {
-		match := wildcard.MatchAllOrNothing(p, ac.Principal.Arn)
+		match := wildcard.MatchAllOrNothing(p, s.ac.Principal.Arn)
 		if match {
 			return _gate.Apply(true), nil
 		}
@@ -119,18 +106,14 @@ func evalStatementMatchesPrincipal(
 }
 
 // evalStatementMatchesResource computes whether the Statement matches the AuthContext's Resource
-func evalStatementMatchesResource(
-	trc *trace.Trace,
-	opt *Options,
-	ac AuthContext,
-	stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesResource(s *subject, stmt *policy.Statement) (bool, error) {
 
-	trc.Push("evaluating Resource")
-	defer trc.Pop()
+	s.trc.Push("evaluating Resource")
+	defer s.trc.Pop()
 
 	// Handle empty Resource
-	if ac.Resource == nil {
-		trc.Observation("AuthContext missing Resource")
+	if s.ac.Resource == nil {
+		s.trc.Observation("AuthContext missing Resource")
 		return false, nil
 	}
 
@@ -138,10 +121,10 @@ func evalStatementMatchesResource(
 	var _gate gate.Gate
 	var resources policy.Resource
 	if !stmt.Resource.Empty() {
-		trc.Observation("using Resource block")
+		s.trc.Observation("using Resource block")
 		resources = stmt.Resource
 	} else {
-		trc.Observation("using NotResource block")
+		s.trc.Observation("using NotResource block")
 		resources = stmt.NotResource
 		_gate.Invert()
 	}
@@ -149,7 +132,7 @@ func evalStatementMatchesResource(
 	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
 	// TODO(nsiow) this needs to support variable expansion
 	for _, r := range resources {
-		match := wildcard.MatchSegments(r, ac.Resource.Arn)
+		match := wildcard.MatchSegments(r, s.ac.Resource.Arn)
 		if match {
 			return _gate.Apply(true), nil
 		}
@@ -160,27 +143,23 @@ func evalStatementMatchesResource(
 
 // evalStatementMatchesCondition computes whether the Statement's Conditions hold true given the
 // provided AuthContext
-func evalStatementMatchesCondition(
-	trc *trace.Trace,
-	opt *Options,
-	ac AuthContext,
-	stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesCondition(s *subject, stmt *policy.Statement) (bool, error) {
 
-	trc.Push("evaluating Condition")
-	defer trc.Pop()
+	s.trc.Push("evaluating Condition")
+	defer s.trc.Pop()
 
 	for op, cond := range stmt.Condition {
-		result, err := evalCheckCondition(trc, opt, ac, op, cond)
+		result, err := evalCheckCondition(s, op, cond)
 		if err != nil {
 			return false, err
 		}
 
 		if !result {
-			trc.Observation("condition evaluated to false")
+			s.trc.Observation("condition evaluated to false")
 			return false, nil
 		}
 	}
 
-	trc.Observation("condition evaluated to true")
+	s.trc.Observation("condition evaluated to true")
 	return true, nil
 }

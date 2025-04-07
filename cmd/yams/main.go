@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// Attempt to parse the data
-	var env entities.Environment
+	var env entities.Universe
 	switch rc.CacheFormat {
 	case CONST_CACHE_FORMAT_AWS_CONFIG:
 		l := awsconfig.NewLoader()

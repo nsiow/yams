@@ -6,7 +6,6 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 )
 
-// TestService validates our ability to extract service names from canonical type names
 func TestService(t *testing.T) {
 	tests := []testlib.TestCase[Resource, string]{
 		{
@@ -36,7 +35,6 @@ func TestService(t *testing.T) {
 	})
 }
 
-// TestSubresourceArn validates our ability to extract subresources from a primary resource
 func TestSubresourceArn(t *testing.T) {
 	type input struct {
 		resource Resource

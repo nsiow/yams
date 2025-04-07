@@ -2,45 +2,56 @@ package sar
 
 import (
 	"fmt"
-	"iter"
 	"strings"
 
 	"github.com/nsiow/yams/internal/assets"
-	"github.com/nsiow/yams/pkg/entities"
-)
-
-// Constants for access levels
-const (
-	ACCESS_LEVEL_WRITE       = "Write"
-	ACCESS_LEVEL_READ        = "Read"
-	ACCESS_LEVEL_LIST        = "List"
-	ACCESS_LEVEL_TAGGING     = "Tagging"
-	ACCESS_LEVEL_PERMISSIONS = "Permissions management"
+	"github.com/nsiow/yams/pkg/aws/sar/types"
 )
 
 // Type aliases for service authorization semantics
 type predicateType = string
 type predicateKey = string
 
-// data is a local alias hiding the asset implementation of SAR data
-var data = assets.SarData
+// sar is a local alias hiding the asset implementation of SAR
+var sar = assets.SAR
 
-// Map returns a map with format key=service, value=action list for all AWS APIs
-func Map() map[string][]entities.ApiCall {
-	return data()
-}
+// sarIndex is a local alias hiding the asset implementation of the SAR index
+var sarIndex = assets.SARIndex
 
-// All returns a slice containing all known AWS API calls
-func All() iter.Seq[entities.ApiCall] {
-	return func(yield func(entities.ApiCall) bool) {
-		for _, callList := range data() {
-			for _, call := range callList {
-				if !yield(call) {
-					return
-				}
-			}
+// Lookup allows for querying a specific api call based on service + action name
+func Lookup(service, action string) (*types.Action, bool) {
+	// SAR index uses lower-case keys
+	service = strings.ToLower(service)
+	action = strings.ToLower(action)
+
+	idx := sarIndex()
+	if actionMap, exists := idx[service]; exists {
+		if apicall, exists := actionMap[action]; exists {
+			return &apicall, true
 		}
 	}
+
+	return &types.Action{}, false
+}
+
+// LookupString allows for querying a specific api call based on the "service:action" shorthand
+func LookupString(serviceAction string) (*types.Action, bool) {
+	components := strings.Split(serviceAction, ":")
+	if len(components) != 2 {
+		return &types.Action{}, false
+	}
+
+	return Lookup(components[0], components[1])
+}
+
+// MustLookupString allows for querying a specific api call based on the "service:action" with
+// such great confidence that we will panic if we do not find it
+func MustLookupString(serviceAction string) *types.Action {
+	if a, ok := LookupString(serviceAction); ok {
+		return a
+	}
+
+	panic(fmt.Sprintf("unable to resolve service:action from SAR: '%s'", serviceAction))
 }
 
 // query is a struct used to represent the internal state of a SAR query
@@ -76,7 +87,7 @@ func (q *Query) add(service, key string, pred predicate) *Query {
 
 // check filters the provided API call definition through the provided predicates and returns
 // whether or not ALL of the predicates are matched
-func (q *Query) check(apicall entities.ApiCall) bool {
+func (q *Query) check(action types.Action) bool {
 	if len(q.predicates) == 0 {
 		return false
 	}
@@ -84,7 +95,7 @@ func (q *Query) check(apicall entities.ApiCall) bool {
 	for _, filters := range q.predicates {
 		matchedAny := false
 		for _, predicate := range filters {
-			match := predicate(apicall)
+			match := predicate(action)
 			if match {
 				matchedAny = true
 				break
@@ -99,36 +110,32 @@ func (q *Query) check(apicall entities.ApiCall) bool {
 	return true
 }
 
+// TODO(nsiow) add wildcard matching to querying
+
 // predicate represents a conditional filter to be applied to an AWS API call definition
-type predicate = func(entities.ApiCall) bool
+type predicate = func(types.Action) bool
 
 // WithService adds a new filter to the query filtering on the "service" field
-// TODO(nsiow) add wildcard matching to querying
 func (q *Query) WithService(service string) *Query {
-	return q.add("service", service, func(a entities.ApiCall) bool {
+	return q.add("service", service, func(a types.Action) bool {
 		return strings.EqualFold(a.Service, service)
 	})
 }
 
 // WithName adds a new filter to the query filtering on the "name" field
 func (q *Query) WithName(name string) *Query {
-	return q.add("name", name, func(a entities.ApiCall) bool {
-		return strings.EqualFold(a.Action, name)
-	})
-}
-
-// WithAccessLevel adds a new filter to the query filtering on the "access_level" field
-func (q *Query) WithAccessLevel(level string) *Query {
-	return q.add("access_level", level, func(a entities.ApiCall) bool {
-		return strings.EqualFold(a.AccessLevel, level)
+	return q.add("name", name, func(a types.Action) bool {
+		return strings.EqualFold(a.Name, name)
 	})
 }
 
 // Results executes the query and returns all matching API calls
-func (q *Query) Results() (results []entities.ApiCall) {
-	for call := range All() {
-		if q.check(call) {
-			results = append(results, call)
+func (q *Query) Results() (results []types.Action) {
+	for _, service := range sar() {
+		for _, action := range service.Actions {
+			if q.check(action) {
+				results = append(results, action)
+			}
 		}
 	}
 

@@ -23,6 +23,7 @@ $(CLI): $(GO_FILES)
 clean:
 	rm -f $(CLI)
 	rm -f coverage.*
+	go clean -testcache
 
 # --------------------------------------------------------------------------------
 # Testing
@@ -37,6 +38,10 @@ COVERAGE_OMIT ?= '(yams/cmd|yams/internal/testlib)'
 format:
 	go fmt ./...
 
+.PHONY: vet
+vet:
+	go vet ./...
+
 .PHONY: lint
 lint:
 	golangci-lint run
@@ -48,6 +53,14 @@ test:
 .PHONY: testv
 testv: GO_TEST_FLAGS+=-v
 testv: test
+
+.PHONY: testcount
+testcount:
+	@echo "Ran <$$(make testv | grep '=== RUN' | wc -l)> tests"
+
+.PHONY: loc
+loc:
+	cloc --include-lang=Go --not-match-f '.*_test.go' .
 
 .PHONY: cov
 cov: coverage.out
@@ -83,7 +96,7 @@ data: sar mp
 .PHONY: sar
 sar: $(BUILD_DATA_DIR)/sar.json.gz
 
-$(BUILD_DATA_DIR)/sar.json.gz: ./misc/sar.py
+$(BUILD_DATA_DIR)/sar.json.gz: ./misc/sar_v2.py
 	./$< $@
 
 .PHONY: mp

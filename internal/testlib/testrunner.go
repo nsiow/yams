@@ -22,6 +22,7 @@ func TestTime() time.Time {
 }
 
 // TestCase defines a single executable test case meant to be part of a suite
+// MAYBE(nsiow) wrap in a constructor that requires names for tests?
 type TestCase[I, O any] struct {
 	Name  string
 	Input I
