@@ -13,7 +13,7 @@ import (
 	"github.com/nsiow/yams/pkg/aws/sar/types"
 )
 
-//go:embed sar_v2.json.gz
+//go:embed sar.json.gz
 var compressedSarData []byte
 var sarData []types.Service
 var sarIndex map[string]map[string]types.Action // map[service]map[action]action

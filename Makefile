@@ -96,13 +96,7 @@ data: sar mp
 .PHONY: sar
 sar: $(BUILD_DATA_DIR)/sar.json.gz
 
-$(BUILD_DATA_DIR)/sar.json.gz: ./misc/sar.py
-	./$< $@
-
-.PHONY: sar_v2
-sar_v2: $(BUILD_DATA_DIR)/sar_v2.json.gz
-
-$(BUILD_DATA_DIR)/sar_v2.json.gz: ./misc/sar_v2.py
+$(BUILD_DATA_DIR)/sar.json.gz: ./misc/sar_v2.py
 	./$< $@
 
 .PHONY: mp
