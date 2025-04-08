@@ -1,12 +1,14 @@
 package sim
 
-import "strings"
+import (
+	"strings"
+)
 
 // isStrictCall returns whether the specified API is one that requires both Principal + Resource
 // policy in order to be allowed; even if same account
 func isStrictCall(s *subject) bool {
 	// strict calls always require involve both a Principal + Resource
-	if s.ac.Principal == nil || s.ac.Resource == nil {
+	if s.ac == nil || s.ac.Principal == nil || s.ac.Resource == nil {
 		return false
 	}
 
@@ -16,7 +18,7 @@ func isStrictCall(s *subject) bool {
 	}
 
 	// kms case
-	if strings.EqualFold("kms", s.ac.Action.ShortName()) &&
+	if strings.EqualFold("kms", s.ac.Action.Service) &&
 		strings.EqualFold("AWS::KMS::Key", s.ac.Resource.Type) {
 		return true
 	}
@@ -27,22 +29,23 @@ func isStrictCall(s *subject) bool {
 
 // evalSameAccountExplicitPrincipalCase handles the special case where the Resource policy
 // granting explicit access to the Principal circumvents the need for Principal-policy access
-// TODO(nsiow) figure out
-func evalSameAccountExplicitPrincipalCase(s *subject) bool {
-	// this edge case always requires that principal + resource exist in the same account, and to do
-	// so they must actually both exist
-	if s.ac.Principal == nil || s.ac.Resource == nil {
-		return false
+func evalSameAccountExplicitPrincipalCase(s *subject) (Decision, error) {
+
+	// Has to have a resource policy, otherwise this will never have an effect
+	if s.ac.Resource == nil || s.ac.Resource.Policy.Empty() {
+		return Decision{}, nil
 	}
 
 	s.trc.Push("evaluating same-account explicit-resource-policy edge case")
 	defer s.trc.Pop()
 
-	for _, stmt := range s.ac.Resource.Policy.Statement {
-		if stmt.Principal.AWS.Contains(s.ac.Principal.Arn) {
-			return true
-		}
+	// Specify the statement evaluation funcs we will consider for Principal access
+	funcs := []evalFunction{
+		evalStatementMatchesAction,
+		evalStatementMatchesPrincipalExact,
+		evalStatementMatchesCondition,
 	}
 
-	return false
+	// Iterate over resource policy statements to evaluate access
+	return evalPolicy(s, s.ac.Resource.Policy, funcs)
 }

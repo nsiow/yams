@@ -77,7 +77,12 @@ func evalOverallAccess(s *subject) (*Result, error) {
 			return &Result{Trace: s.trc, IsAllowed: true}, nil
 		}
 
-		if evalSameAccountExplicitPrincipalCase(s) {
+		// Same-account-explicit-principal edge case
+		edgeAccess, err := evalSameAccountExplicitPrincipalCase(s)
+		if err != nil {
+			return nil, fmt.Errorf("error evaluating same-account-explicit-principal: %w", err)
+		}
+		if edgeAccess.Allowed() {
 			s.trc.Decision("[allow] access granted via same-account explicit-principal case")
 			return &Result{Trace: s.trc, IsAllowed: true}, nil
 		}

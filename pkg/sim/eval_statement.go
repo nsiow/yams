@@ -69,13 +69,11 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) (bool, er
 	s.trc.Push("evaluating Principal")
 	defer s.trc.Pop()
 
-	// Handle empty Principal
 	if s.ac.Principal == nil {
 		s.trc.Observation("AuthContext missing Principal")
 		return false, nil
 	}
 
-	// Determine which Principal block to use
 	var _gate gate.Gate
 	var principals policy.Principal
 	switch {
@@ -103,6 +101,21 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) (bool, er
 	}
 
 	return _gate.Apply(false), nil
+}
+
+// evalStatementMatchesPrincipalExact computes whether the Statement matches the AuthContext's
+// Principal using an exact-match criteria (no wildcards)
+func evalStatementMatchesPrincipalExact(s *subject, stmt *policy.Statement) (bool, error) {
+
+	s.trc.Push("evaluating Principal exact-match case")
+	defer s.trc.Pop()
+
+	if s.ac.Principal == nil {
+		s.trc.Observation("AuthContext missing Principal")
+		return false, nil
+	}
+
+	return stmt.Principal.AWS.Contains(s.ac.Principal.Arn), nil
 }
 
 // evalStatementMatchesResource computes whether the Statement matches the AuthContext's Resource
