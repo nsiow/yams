@@ -10,30 +10,26 @@ import (
 )
 
 func TestEvalIsSameAccount(t *testing.T) {
-	type input struct {
-		principal *entities.Principal
-		resource  *entities.Resource
-	}
-
-	tests := []testlib.TestCase[input, bool]{
+	tests := []testlib.TestCase[AuthContext, bool]{
 		{
-			Input: input{
-				principal: &entities.Principal{AccountId: "88888"},
-				resource:  &entities.Resource{AccountId: "88888"},
+			Input: AuthContext{
+				Principal: &entities.Principal{AccountId: "88888"},
+				Resource:  &entities.Resource{AccountId: "88888"},
 			},
 			Want: true,
 		},
 		{
-			Input: input{
-				principal: &entities.Principal{AccountId: "88888"},
-				resource:  &entities.Resource{AccountId: "12345"},
+			Input: AuthContext{
+				Principal: &entities.Principal{AccountId: "88888"},
+				Resource:  &entities.Resource{AccountId: "12345"},
 			},
 			Want: false,
 		},
 	}
 
-	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		return evalIsSameAccount(i.principal, i.resource), nil
+	testlib.RunTestSuite(t, tests, func(i AuthContext) (bool, error) {
+		subj := newSubject(&i, TestingSimulationOptions)
+		return evalIsSameAccount(subj), nil
 	})
 }
 

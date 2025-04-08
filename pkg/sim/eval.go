@@ -3,7 +3,6 @@ package sim
 import (
 	"fmt"
 
-	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -12,8 +11,10 @@ type evalFunction func(*subject, *policy.Statement) (bool, error)
 
 // evalIsSameAccount determines whether or not the provided Principal + Resource exist within the
 // same AWS account
-func evalIsSameAccount(p *entities.Principal, r *entities.Resource) bool {
-	return p.AccountId == r.AccountId
+func evalIsSameAccount(s *subject) bool {
+	return s.ac.Principal != nil &&
+		s.ac.Resource != nil &&
+		s.ac.Principal.AccountId == s.ac.Resource.AccountId
 }
 
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
@@ -60,7 +61,7 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	}
 
 	// Calculate Resource access
-	rAccess, err := evalResourceAccess(s)
+	rAccess, extra, err := evalResourceAccess(s)
 	if err != nil {
 		return nil, fmt.Errorf("error evaluating resource access: %w", err)
 	}
@@ -71,18 +72,14 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	}
 
 	// If same account, access is granted if the Principal has access
-	if evalIsSameAccount(s.ac.Principal, s.ac.Resource) {
+	if evalIsSameAccount(s) {
 		if pAccess.Contains(policy.EFFECT_ALLOW) && !isStrictCall(s) {
 			s.trc.Decision("[allow] access granted via same-account identity policy")
 			return &Result{Trace: s.trc, IsAllowed: true}, nil
 		}
 
 		// Same-account-explicit-principal edge case
-		edgeAccess, err := evalSameAccountExplicitPrincipalCase(s)
-		if err != nil {
-			return nil, fmt.Errorf("error evaluating same-account-explicit-principal: %w", err)
-		}
-		if edgeAccess.Allowed() {
+		if extra.ResourceAccessAllowsExplicitPrincipal {
 			s.trc.Decision("[allow] access granted via same-account explicit-principal case")
 			return &Result{Trace: s.trc, IsAllowed: true}, nil
 		}
