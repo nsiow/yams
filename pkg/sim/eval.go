@@ -16,13 +16,6 @@ func evalIsSameAccount(p *entities.Principal, r *entities.Resource) bool {
 	return p.AccountId == r.AccountId
 }
 
-// evalSameAccountExplicitPrincipalCase handles the special case where the Resource policy
-// granting explicit access to the Principal circumvents the need for Principal-policy access
-// func evalSameAccountExplicitPrincipalCase(_ *entities.Principal, _ *entities.Resource) bool {
-// 	// TODO(nsiow) implement correct behavior for same-account access via explicit ARN
-// 	return false
-// }
-
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
 // and different-account evaluations
 func evalOverallAccess(s *subject) (*Result, error) {
@@ -79,23 +72,21 @@ func evalOverallAccess(s *subject) (*Result, error) {
 
 	// If same account, access is granted if the Principal has access
 	if evalIsSameAccount(s.ac.Principal, s.ac.Resource) {
-		if pAccess.Contains(policy.EFFECT_ALLOW) {
+		if pAccess.Contains(policy.EFFECT_ALLOW) && !isStrictCall(s) {
 			s.trc.Decision("[allow] access granted via same-account identity policy")
 			return &Result{Trace: s.trc, IsAllowed: true}, nil
 		}
 
-		// TODO(nsiow) implement this behavior
-		// if evalSameAccountExplicitPrincipalCase(ac.Principal, ac.Resource) {
-		// s.trc.Decision("[allow] access granted via same-account explicit-resource-policy case")
-		// 	return &Result{Trace:s.trc, IsAllowed: true}, nil
-		// }
+		if evalSameAccountExplicitPrincipalCase(s) {
+			s.trc.Decision("[allow] access granted via same-account explicit-principal case")
+			return &Result{Trace: s.trc, IsAllowed: true}, nil
+		}
 
 		s.trc.Decision("[implicit deny] no identity-based policy allows this action")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 
-	// If x-account, access is granted if the Principal has access and the Resource permits that
-	// access
+	// Access is granted if the Principal has access and the Resource permits that access
 	if pAccess.Contains(policy.EFFECT_ALLOW) && rAccess.Contains(policy.EFFECT_ALLOW) {
 		s.trc.Decision("[allow] access granted via x-account identity + resource policies")
 		return &Result{Trace: s.trc, IsAllowed: true}, nil

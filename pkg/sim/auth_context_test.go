@@ -1009,7 +1009,7 @@ func TestExtractTag(t *testing.T) {
 			Name: "missing_tag",
 			Input: input{
 				ac:  AuthContext{},
-				key: "color",
+				key: "aws:PrincipalTag/color",
 				tags: []entities.Tag{
 					{
 						Key:   "temperature",

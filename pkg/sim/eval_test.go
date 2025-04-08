@@ -425,34 +425,33 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			},
 			ShouldErr: true,
 		},
-		// TODO(nsiow) uncomment this test when ready for same-account edge case handling
-		// {
-		// 	Name: "same_account_resource_access",
-		// 	Input: AuthContext{
-		// 		Action: sar.MustLookupString("s3:listbucket"),
-		// 		Principal:& entities.Principal{
-		// 			Arn: "arn:aws:iam::88888:role/myrole",
-		//			Account: "88888",
-		// 		},
-		// 		Resource:& entities.Resource{
-		// 			Arn: "arn:aws:s3:::mybucket",
-		//			Account: "88888",
-		// 			Policy: policy.Policy{
-		// 				Statement: []policy.Statement{
-		// 					{
-		// 						Effect:   policy.EFFECT_ALLOW,
-		// 						Action:   []string{"s3:listbucket"},
-		// 						Resource: []string{"arn:aws:s3:::mybucket"},
-		// 						Principal: policy.Principal{
-		// 							AWS: []string{"arn:aws:iam::88888:role/myrole"},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	Want: []policy.Effect{policy.EFFECT_ALLOW},
-		// },
+		{
+			Name: "same_account_resource_access",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.Principal{
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+				},
+				Resource: &entities.Resource{
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:listbucket"},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+								Principal: policy.Principal{
+									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
 		{
 			Name: "error_bad_permissions_boundary",
 			Input: AuthContext{

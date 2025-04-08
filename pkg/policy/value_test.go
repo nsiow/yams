@@ -102,3 +102,41 @@ func TestEmpty(t *testing.T) {
 		return v.Empty(), nil
 	})
 }
+
+func TestContains(t *testing.T) {
+	type input struct {
+		haystack Value
+		needle   string
+	}
+
+	tests := []testlib.TestCase[input, bool]{
+		{
+			Name: "simple_contains",
+			Input: input{
+				haystack: Value{"red", "green", "blue"},
+				needle:   "red",
+			},
+			Want: true,
+		},
+		{
+			Name: "empty_value",
+			Input: input{
+				haystack: Value{},
+				needle:   "red",
+			},
+			Want: false,
+		},
+		{
+			Name: "respect_case",
+			Input: input{
+				haystack: Value{"quick", "brown", "fox"},
+				needle:   "FOX",
+			},
+			Want: false,
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return i.haystack.Contains(i.needle), nil
+	})
+}
