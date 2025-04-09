@@ -111,7 +111,6 @@ func (s *Simulator) ComputeAccessSummary(actions []*types.Action) (map[string]in
 				}
 
 				if result.IsAllowed {
-					fmt.Printf("access allowed between %s and %s\n", r.Arn, p.Arn)
 					access[r.Arn]++
 					break
 				}

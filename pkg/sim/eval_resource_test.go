@@ -142,7 +142,7 @@ func TestResourceAccess(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
 		subj := newSubject(&ac, TestingSimulationOptions)
-		res, _, err := evalResourceAccess(subj)
+		res, err := evalResourceAccess(subj)
 		if err != nil {
 			return nil, err
 		}

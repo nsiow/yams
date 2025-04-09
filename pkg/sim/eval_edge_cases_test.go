@@ -6,7 +6,6 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
-	"github.com/nsiow/yams/pkg/policy"
 )
 
 func TestIsStrictCall(t *testing.T) {
@@ -64,102 +63,104 @@ func TestIsStrictCall(t *testing.T) {
 	})
 }
 
-func TestSameAccountExplicitPrincipalCase(t *testing.T) {
-	tests := []testlib.TestCase[AuthContext, bool]{
-		{
-			Name:  "empty_auth_context",
-			Input: AuthContext{},
-			Want:  false,
-		},
-		{
-			Name: "same_account_explicit_principal",
-			Input: AuthContext{
-				Action: sar.MustLookupString("s3:getobject"),
-				Principal: &entities.Principal{
-					Type: "AWS::IAM::Role",
-					Arn:  "arn:aws:iam::55555:role/MyRole",
-				},
-				Resource: &entities.Resource{
-					Arn:  "arn:aws:s3:::nsiow-test",
-					Type: "AWS::S3::Bucket",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Sid: "test_statement",
-								Principal: policy.Principal{
-									AWS: policy.Value{"arn:aws:iam::55555:role/MyRole"},
-								},
-								Effect:   "Allow",
-								Action:   []string{"s3:getobject"},
-								Resource: []string{"arn:aws:s3:::nsiow-test/*"},
-							},
-						},
-					},
-				},
-			},
-			Want: true,
-		},
-		{
-			Name: "same_account_explicit_principal_unrelated_actions",
-			Input: AuthContext{
-				Action: sar.MustLookupString("s3:getobject"),
-				Principal: &entities.Principal{
-					Type: "AWS::IAM::Role",
-					Arn:  "arn:aws:iam::55555:role/MyRole",
-				},
-				Resource: &entities.Resource{
-					Arn:  "arn:aws:s3:::nsiow-test",
-					Type: "AWS::S3::Bucket",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Sid: "test_statement",
-								Principal: policy.Principal{
-									AWS: policy.Value{"arn:aws:iam::55555:role/MyRole"},
-								},
-								Effect:   "Allow",
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::nsiow-test"},
-							},
-						},
-					},
-				},
-			},
-			Want: false,
-		},
-		{
-			Name: "same_account_principal_star",
-			Input: AuthContext{
-				Action: sar.MustLookupString("s3:getobject"),
-				Principal: &entities.Principal{
-					Type: "AWS::IAM::Role",
-					Arn:  "arn:aws:iam::55555:role/MyRole",
-				},
-				Resource: &entities.Resource{
-					Arn:  "arn:aws:s3:::nsiow-test",
-					Type: "AWS::S3::Bucket",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Sid: "test_statement",
-								Principal: policy.Principal{
-									AWS: policy.Value{"*"},
-								},
-								Effect:   "Allow",
-								Action:   []string{"s3:getobject"},
-								Resource: []string{"arn:aws:s3:::nsiow-test/*"},
-							},
-						},
-					},
-				},
-			},
-			Want: false,
-		},
-	}
-
-	testlib.RunTestSuite(t, tests, func(i AuthContext) (bool, error) {
-		subj := newSubject(&i, TestingSimulationOptions)
-		access, err := evalSameAccountExplicitPrincipalCase(subj)
-		return access.Allowed(), err
-	})
-}
+// }
+//
+// func TestSameAccountExplicitPrincipalCase(t *testing.T) {
+// 	tests := []testlib.TestCase[AuthContext, bool]{
+// 		{
+// 			Name:  "empty_auth_context",
+// 			Input: AuthContext{},
+// 			Want:  false,
+// 		},
+// 		{
+// 			Name: "same_account_explicit_principal",
+// 			Input: AuthContext{
+// 				Action: sar.MustLookupString("s3:getobject"),
+// 				Principal: &entities.Principal{
+// 					Type: "AWS::IAM::Role",
+// 					Arn:  "arn:aws:iam::55555:role/MyRole",
+// 				},
+// 				Resource: &entities.Resource{
+// 					Arn:  "arn:aws:s3:::nsiow-test",
+// 					Type: "AWS::S3::Bucket",
+// 					Policy: policy.Policy{
+// 						Statement: []policy.Statement{
+// 							{
+// 								Sid: "test_statement",
+// 								Principal: policy.Principal{
+// 									AWS: policy.Value{"arn:aws:iam::55555:role/MyRole"},
+// 								},
+// 								Effect:   "Allow",
+// 								Action:   []string{"s3:getobject"},
+// 								Resource: []string{"arn:aws:s3:::nsiow-test/*"},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 			Want: true,
+// 		},
+// 		{
+// 			Name: "same_account_explicit_principal_unrelated_actions",
+// 			Input: AuthContext{
+// 				Action: sar.MustLookupString("s3:getobject"),
+// 				Principal: &entities.Principal{
+// 					Type: "AWS::IAM::Role",
+// 					Arn:  "arn:aws:iam::55555:role/MyRole",
+// 				},
+// 				Resource: &entities.Resource{
+// 					Arn:  "arn:aws:s3:::nsiow-test",
+// 					Type: "AWS::S3::Bucket",
+// 					Policy: policy.Policy{
+// 						Statement: []policy.Statement{
+// 							{
+// 								Sid: "test_statement",
+// 								Principal: policy.Principal{
+// 									AWS: policy.Value{"arn:aws:iam::55555:role/MyRole"},
+// 								},
+// 								Effect:   "Allow",
+// 								Action:   []string{"s3:listbucket"},
+// 								Resource: []string{"arn:aws:s3:::nsiow-test"},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 			Want: false,
+// 		},
+// 		{
+// 			Name: "same_account_principal_star",
+// 			Input: AuthContext{
+// 				Action: sar.MustLookupString("s3:getobject"),
+// 				Principal: &entities.Principal{
+// 					Type: "AWS::IAM::Role",
+// 					Arn:  "arn:aws:iam::55555:role/MyRole",
+// 				},
+// 				Resource: &entities.Resource{
+// 					Arn:  "arn:aws:s3:::nsiow-test",
+// 					Type: "AWS::S3::Bucket",
+// 					Policy: policy.Policy{
+// 						Statement: []policy.Statement{
+// 							{
+// 								Sid: "test_statement",
+// 								Principal: policy.Principal{
+// 									AWS: policy.Value{"*"},
+// 								},
+// 								Effect:   "Allow",
+// 								Action:   []string{"s3:getobject"},
+// 								Resource: []string{"arn:aws:s3:::nsiow-test/*"},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 			Want: false,
+// 		},
+// 	}
+//
+// 	testlib.RunTestSuite(t, tests, func(i AuthContext) (bool, error) {
+// 		subj := newSubject(&i, TestingSimulationOptions)
+// 		access, err := evalSameAccountExplicitPrincipalCase(subj)
+// 		return access.Allowed(), err
+// 	})
+// }

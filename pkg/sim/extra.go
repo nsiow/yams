@@ -1,6 +1,6 @@
 package sim
 
-// Extra is a necessary evil of IAM evaluations quirks that need to be handled separately
+// Extra is a necessary evil of IAM evaluations quirks that need to be handled delicately
 type Extra struct {
-	ResourceAccessAllowsExplicitPrincipal bool
+	ResourceAllowsExplicitPrincipal bool
 }

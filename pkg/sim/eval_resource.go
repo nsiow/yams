@@ -1,9 +1,8 @@
 package sim
 
 // evalResourceAccess calculates the Resource-side access with regard to the specified Principal
-func evalResourceAccess(s *subject) (Decision, Extra, error) {
+func evalResourceAccess(s *subject) (Decision, error) {
 
-	extra := Extra{}
 	s.trc.Push("evaluating resource policies")
 	defer s.trc.Pop()
 
@@ -17,21 +16,21 @@ func evalResourceAccess(s *subject) (Decision, Extra, error) {
 	// Iterate over resource policy statements to evaluate access
 	dec, err := evalPolicy(s, s.ac.Resource.Policy, funcs)
 	if err != nil {
-		return dec, extra, err
+		return dec, err
 	}
 
 	// If the Principal and Resource are the same account, check for the explicit-principal edge
 	// case before returning
-	if evalIsSameAccount(s) {
+	if evalIsSameAccount(s) && !s.ac.Resource.Policy.Empty() {
 		funcs = []evalFunction{evalStatementMatchesPrincipalExact}
 		edgeCaseDecision, err := evalPolicy(s, s.ac.Resource.Policy, funcs)
 		if err != nil {
-			return dec, extra, err
+			return dec, err
 		}
 		if edgeCaseDecision.Allowed() {
-			extra.ResourceAccessAllowsExplicitPrincipal = true
+			s.extra.ResourceAllowsExplicitPrincipal = true
 		}
 	}
 
-	return dec, extra, nil
+	return dec, nil
 }

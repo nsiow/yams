@@ -61,7 +61,7 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	}
 
 	// Calculate Resource access
-	rAccess, extra, err := evalResourceAccess(s)
+	rAccess, err := evalResourceAccess(s)
 	if err != nil {
 		return nil, fmt.Errorf("error evaluating resource access: %w", err)
 	}
@@ -79,7 +79,7 @@ func evalOverallAccess(s *subject) (*Result, error) {
 		}
 
 		// Same-account-explicit-principal edge case
-		if extra.ResourceAccessAllowsExplicitPrincipal {
+		if s.extra.ResourceAllowsExplicitPrincipal {
 			s.trc.Decision("[allow] access granted via same-account explicit-principal case")
 			return &Result{Trace: s.trc, IsAllowed: true}, nil
 		}
