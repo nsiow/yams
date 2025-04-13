@@ -67,7 +67,7 @@ func RunTestSuite[I, O any](
 
 // GenerateFailureOutput creates a more usable/readable "wanted vs got" diff for tests
 func GenerateFailureOutput[I, O any](tc TestCase[I, O], got any) string {
-	header := "// --------------------------------------------------"
+	header := "--------------------------------------------------"
 	tmpdir := os.TempDir()
 
 	wantedJson, _ := json.MarshalIndent(tc.Want, "", "  ")
@@ -89,15 +89,17 @@ func GenerateFailureOutput[I, O any](tc TestCase[I, O], got any) string {
 
 	return strings.Join([]string{
 		"test case failed",
-		strings.Join([]string{header, "// input", header}, "\n"),
+		strings.Join([]string{header, "|\tname", header}, "\n"),
+		tc.Name,
+		strings.Join([]string{header, "|\tinput", header}, "\n"),
 		fmt.Sprintf("%#v", tc.Input),
-		strings.Join([]string{header, "// wanted", header}, "\n"),
+		strings.Join([]string{header, "|\twanted", header}, "\n"),
 		fmt.Sprintf("%#v", tc.Want),
-		strings.Join([]string{header, "// got", header}, "\n"),
+		strings.Join([]string{header, "|\tgot", header}, "\n"),
 		fmt.Sprintf("%#v", got),
-		strings.Join([]string{header, "// wanted (pretty)", header}, "\n"),
+		strings.Join([]string{header, "|\twanted (pretty)", header}, "\n"),
 		fmt.Sprint(wantedMessage),
-		strings.Join([]string{header, "// got (pretty)", header}, "\n"),
+		strings.Join([]string{header, "|\tgot (pretty)", header}, "\n"),
 		fmt.Sprint(gotMessage),
 	}, "\n")
 }

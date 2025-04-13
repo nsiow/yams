@@ -3,6 +3,7 @@ package policy
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 )
 
 // Value is a JSON-centric helper struct to facilitate one-or-more value representations
@@ -82,4 +83,9 @@ func (v *Value) Count() int {
 // Empty returns whether or not the Value contains any values
 func (v *Value) Empty() bool {
 	return v.Count() == 0
+}
+
+// Contains returns whether or not the provided string is a member of the Value
+func (v *Value) Contains(s string) bool {
+	return slices.Contains(*v, s)
 }

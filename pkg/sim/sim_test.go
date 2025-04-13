@@ -259,7 +259,7 @@ func TestComputeAccessSummary(t *testing.T) {
 			Name: "unrelated_actions",
 			Input: input{
 				universe: SimpleTestUniverse_1,
-				actions:  []*types.Action{sar.MustLookupString("s3:getbucketlocation")},
+				actions:  []*types.Action{sar.MustLookupString("sns:publish")},
 			},
 			Want: map[string]int{
 				"arn:aws:s3:::bucket1": 0,
@@ -275,8 +275,8 @@ func TestComputeAccessSummary(t *testing.T) {
 			Want: map[string]int{},
 		},
 		{
-			Name:      "error_nonexistent_condition",
-			ShouldErr: true,
+			Name: "nonexistent_condition",
+			Want: map[string]int{"arn:aws:s3:::mybucket": 0},
 			Input: input{
 				actions: []*types.Action{sar.MustLookupString("s3:listbucket")},
 				universe: entities.Universe{

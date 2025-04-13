@@ -158,7 +158,7 @@ func TestPrincipalAccess(t *testing.T) {
 			Want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
 		},
 		{
-			Name: "error_nonexistent_condition",
+			Name: "nonexistent_condition",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
@@ -187,17 +187,13 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			ShouldErr: true,
+			Want: nil,
 		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
 		subj := newSubject(&ac, TestingSimulationOptions)
-		res, err := evalPrincipalAccess(subj)
-		if err != nil {
-			return nil, err
-		}
-
-		return res.Effects(), nil
+		decision := evalPrincipalAccess(subj)
+		return decision.Effects(), nil
 	})
 }

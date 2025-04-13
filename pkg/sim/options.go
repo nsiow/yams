@@ -2,10 +2,6 @@ package sim
 
 // Options contains all possible customizatons for simulator logic + behavior
 type Options struct {
-	// FailOnUnknownConditionOperator implements a stricter check for condition operators, resulting
-	// in a policy simulation error if we encounter one we do not know
-	FailOnUnknownConditionOperator bool
-
 	// SkipServiceAuthorizationValidation foregoes the usual validation via the Service Authoization
 	// Reference. This will result in faster simulation but at the cost of real-world accuracy
 	SkipServiceAuthorizationValidation bool
@@ -23,13 +19,6 @@ func NewOptions(funcs ...OptionF) *Options {
 // OptionF implements the functional options pattern for simulator options
 type OptionF func(*Options)
 
-// WithFailOnUnknownConditionOperator toggles FailOnUnknownConditionOperator to true
-func WithFailOnUnknownConditionOperator() OptionF {
-	return func(opt *Options) {
-		opt.FailOnUnknownConditionOperator = true
-	}
-}
-
 // WithSkipServiceAuthorizationValidation toggles SkipServiceAuthorizationValidation to true
 func WithSkipServiceAuthorizationValidation() OptionF {
 	return func(opt *Options) {
@@ -42,6 +31,5 @@ func WithSkipServiceAuthorizationValidation() OptionF {
 // the rules a bit for testing -- fewer checks around the specifics of the dummy resource calls we
 // use
 var TestingSimulationOptions = NewOptions(
-	WithFailOnUnknownConditionOperator(),
 	WithSkipServiceAuthorizationValidation(),
 )

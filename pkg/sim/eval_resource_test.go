@@ -109,7 +109,7 @@ func TestResourceAccess(t *testing.T) {
 			Want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
 		},
 		{
-			Name: "error_nonexistent_condition",
+			Name: "nonexistent_condition",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
@@ -136,17 +136,13 @@ func TestResourceAccess(t *testing.T) {
 					},
 				},
 			},
-			ShouldErr: true,
+			Want: nil,
 		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
 		subj := newSubject(&ac, TestingSimulationOptions)
-		res, err := evalResourceAccess(subj)
-		if err != nil {
-			return nil, err
-		}
-
-		return res.Effects(), nil
+		decision := evalResourceAccess(subj)
+		return decision.Effects(), nil
 	})
 }

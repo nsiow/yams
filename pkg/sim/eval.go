@@ -1,37 +1,26 @@
 package sim
 
 import (
-	"fmt"
-
-	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
 // evalFunction is the blueprint of a function that allows us to evaluate a single statement
-type evalFunction func(*subject, *policy.Statement) (bool, error)
+type evalFunction func(*subject, *policy.Statement) bool
 
 // evalIsSameAccount determines whether or not the provided Principal + Resource exist within the
 // same AWS account
-func evalIsSameAccount(p *entities.Principal, r *entities.Resource) bool {
-	return p.AccountId == r.AccountId
+func evalIsSameAccount(s *subject) bool {
+	return s.ac.Principal != nil &&
+		s.ac.Resource != nil &&
+		s.ac.Principal.AccountId == s.ac.Resource.AccountId
 }
-
-// evalSameAccountExplicitPrincipalCase handles the special case where the Resource policy
-// granting explicit access to the Principal circumvents the need for Principal-policy access
-// func evalSameAccountExplicitPrincipalCase(_ *entities.Principal, _ *entities.Resource) bool {
-// 	// TODO(nsiow) implement correct behavior for same-account access via explicit ARN
-// 	return false
-// }
 
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account
 // and different-account evaluations
 func evalOverallAccess(s *subject) (*Result, error) {
 
 	// Calculate SCP access, if present
-	scpAccess, err := evalSCP(s)
-	if err != nil {
-		return nil, fmt.Errorf("error evaluating SCP: %w", err)
-	}
+	scpAccess := evalSCP(s)
 	if scpAccess.Contains(policy.EFFECT_DENY) {
 		s.trc.Decision("[explicit deny] found in service control policies")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
@@ -42,10 +31,7 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	}
 
 	// Calculate permissions boundary access, if present
-	pbAccess, err := evalPermissionsBoundary(s)
-	if err != nil {
-		return nil, fmt.Errorf("error evaluating permission boundary: %w", err)
-	}
+	pbAccess := evalPermissionsBoundary(s)
 	if pbAccess.Contains(policy.EFFECT_DENY) {
 		s.trc.Decision("[explicit deny] found in permissions boundary")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
@@ -56,10 +42,7 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	}
 
 	// Calculate Principal access
-	pAccess, err := evalPrincipalAccess(s)
-	if err != nil {
-		return nil, fmt.Errorf("error evaluating principal access: %w", err)
-	}
+	pAccess := evalPrincipalAccess(s)
 	// ... check for explicit Deny results
 	if pAccess.Contains(policy.EFFECT_DENY) {
 		s.trc.Decision("[explicit deny] found in identity policy")
@@ -67,10 +50,7 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	}
 
 	// Calculate Resource access
-	rAccess, err := evalResourceAccess(s)
-	if err != nil {
-		return nil, fmt.Errorf("error evaluating resource access: %w", err)
-	}
+	rAccess := evalResourceAccess(s)
 	// ... check for explicit Deny results
 	if rAccess.Contains(policy.EFFECT_DENY) {
 		s.trc.Decision("[explicit deny] found in resource policy")
@@ -78,24 +58,23 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	}
 
 	// If same account, access is granted if the Principal has access
-	if evalIsSameAccount(s.ac.Principal, s.ac.Resource) {
-		if pAccess.Contains(policy.EFFECT_ALLOW) {
+	if evalIsSameAccount(s) {
+		if pAccess.Contains(policy.EFFECT_ALLOW) && !isStrictCall(s) {
 			s.trc.Decision("[allow] access granted via same-account identity policy")
 			return &Result{Trace: s.trc, IsAllowed: true}, nil
 		}
 
-		// TODO(nsiow) implement this behavior
-		// if evalSameAccountExplicitPrincipalCase(ac.Principal, ac.Resource) {
-		// s.trc.Decision("[allow] access granted via same-account explicit-resource-policy case")
-		// 	return &Result{Trace:s.trc, IsAllowed: true}, nil
-		// }
+		// Same-account-explicit-principal edge case
+		if s.extra.ResourceAllowsExplicitPrincipal {
+			s.trc.Decision("[allow] access granted via same-account explicit-principal case")
+			return &Result{Trace: s.trc, IsAllowed: true}, nil
+		}
 
 		s.trc.Decision("[implicit deny] no identity-based policy allows this action")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 
-	// If x-account, access is granted if the Principal has access and the Resource permits that
-	// access
+	// Access is granted if the Principal has access and the Resource permits that access
 	if pAccess.Contains(policy.EFFECT_ALLOW) && rAccess.Contains(policy.EFFECT_ALLOW) {
 		s.trc.Decision("[allow] access granted via x-account identity + resource policies")
 		return &Result{Trace: s.trc, IsAllowed: true}, nil

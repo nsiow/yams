@@ -7,7 +7,7 @@ import (
 )
 
 // evalPrincipalAccess calculates the Principal-side access to the specified Resource
-func evalPrincipalAccess(s *subject) (Decision, error) {
+func evalPrincipalAccess(s *subject) Decision {
 
 	s.trc.Push("evaluating principal policies")
 	defer s.trc.Pop()
@@ -30,15 +30,10 @@ func evalPrincipalAccess(s *subject) (Decision, error) {
 	decision := Decision{}
 	for policytype, policies := range effectivePolicies {
 		s.trc.Push(fmt.Sprintf("policytype=%s", policytype))
-		eff, err := evalPolicies(s, policies, funcs)
-		if err != nil {
-			s.trc.Pop()
-			return decision, err
-		}
-
-		decision.Merge(eff)
+		effect := evalPolicies(s, policies, funcs)
+		decision.Merge(effect)
 		s.trc.Pop()
 	}
 
-	return decision, nil
+	return decision
 }

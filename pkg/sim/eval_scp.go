@@ -9,7 +9,7 @@ import (
 
 // evalSCP assesses the service control policies of the Principal to determine whether or not it
 // allows the provided AuthContext
-func evalSCP(s *subject) (Decision, error) {
+func evalSCP(s *subject) Decision {
 
 	s.trc.Push("evaluating service control policies")
 	defer s.trc.Pop()
@@ -19,7 +19,7 @@ func evalSCP(s *subject) (Decision, error) {
 	if len(account.SCPs) == 0 {
 		decision := Decision{}
 		decision.Add(policy.EFFECT_ALLOW)
-		return decision, nil
+		return decision
 	}
 
 	// Specify the statement evaluation funcs we will consider for SCP access
@@ -35,21 +35,17 @@ func evalSCP(s *subject) (Decision, error) {
 	for i, layer := range account.SCPs {
 
 		// Calculate access for this layer
-		var err error
-		layerDecision, err = evalControlPolicyLayer(s, account, funcs, layer, i+1)
-		if err != nil {
-			return layerDecision, err
-		}
+		layerDecision = evalControlPolicyLayer(s, account, funcs, layer, i+1)
 
 		// If not allowed at this layer, propagate result up; should be denied
 		if !layerDecision.Allowed() {
 			s.trc.Observation(
 				fmt.Sprintf("SCP access denied at layer %d of %d", i+1, len(account.SCPs)))
-			return layerDecision, nil
+			return layerDecision
 		}
 	}
 
-	return layerDecision, nil
+	return layerDecision
 }
 
 // evalControlPolicyLayer evaluates a single "layer" of control policies
@@ -61,25 +57,16 @@ func evalControlPolicyLayer(
 	account entities.Account,
 	funcs []evalFunction,
 	layer []policy.Policy,
-	layerId int) (Decision, error) {
+	layerId int) Decision {
 
 	s.trc.Push(fmt.Sprintf("evaluating SCP layer %d of %d", layerId, len(account.SCPs)))
 	defer s.trc.Pop()
 
 	decision := Decision{}
 	for _, pol := range layer {
-		result, err := evalPolicy(s, pol, funcs)
-		if err != nil {
-			return decision, err
-		}
-
-		// TODO(nsiow) determine performance vs insight tradeoff of short-circuiting here
-		// if result.ExplicitlyDenied() {
-		// 	return decision, nil
-		// }
-
-		decision.Merge(result)
+		effect := evalPolicy(s, pol, funcs)
+		decision.Merge(effect)
 	}
 
-	return decision, nil
+	return decision
 }

@@ -906,7 +906,7 @@ func TestSARValidation(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
-		opts := NewOptions(WithFailOnUnknownConditionOperator()) // don't skip SAR validation for this
+		opts := NewOptions() // don't skip SAR validation for this
 		got := i.ac.ConditionKey(i.key, opts)
 		return got, nil
 	})
@@ -960,7 +960,7 @@ func TestSARValidationMultiKey(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) ([]string, error) {
-		got := i.ac.MultiKey(i.key, NewOptions(WithFailOnUnknownConditionOperator()))
+		got := i.ac.MultiKey(i.key, NewOptions())
 		return got, nil
 	})
 }
@@ -1009,7 +1009,7 @@ func TestExtractTag(t *testing.T) {
 			Name: "missing_tag",
 			Input: input{
 				ac:  AuthContext{},
-				key: "color",
+				key: "aws:PrincipalTag/color",
 				tags: []entities.Tag{
 					{
 						Key:   "temperature",

@@ -112,7 +112,7 @@ func TestStatementMatchesAction(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(&i.ac, &Options{})
-		return evalStatementMatchesAction(subj, &i.stmt)
+		return evalStatementMatchesAction(subj, &i.stmt), nil
 	})
 }
 
@@ -237,7 +237,100 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(&i.ac, TestingSimulationOptions)
-		return evalStatementMatchesPrincipal(subj, &i.stmt)
+		return evalStatementMatchesPrincipal(subj, &i.stmt), nil
+	})
+}
+
+func TestStatementMatchesPrincipalExact(t *testing.T) {
+	type input struct {
+		ac   AuthContext
+		stmt policy.Statement
+	}
+
+	tests := []testlib.TestCase[input, bool]{
+		// Missing
+		{
+			Name: "missing_principal",
+			Input: input{
+				ac:   AuthContext{},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"*"}}},
+			},
+			Want: false,
+		},
+		// Principal
+		{
+			Name: "simple_direct_match",
+			Input: input{
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerole"}}},
+			},
+			Want: true,
+		},
+		{
+			Name: "other_principal",
+			Input: input{
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerandomrole"}}},
+			},
+			Want: false,
+		},
+		{
+			Name: "two_principals",
+			Input: input{
+				ac: AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/secondrole"}},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{
+					"arn:aws:iam::88888:role/firstrole",
+					"arn:aws:iam::88888:role/secondrole"}}}},
+			Want: true,
+		},
+		{
+			Name: "special_principal_star",
+			Input: input{
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{Principal: policy.Principal{All: true}},
+			},
+			Want: false,
+		},
+
+		// NotPrincipal
+		{
+			Name: "notprincipal_simple_wildcard",
+			Input: input{
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"*"}}},
+			},
+			Want: false,
+		},
+		{
+			Name: "notprincipal_simple_direct_match",
+			Input: input{
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerole"}}},
+			},
+			Want: false,
+		},
+		{
+			Name: "notprincipal_other_principal",
+			Input: input{
+				ac:   AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/somerole"}},
+				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerandomrole"}}},
+			},
+			Want: false,
+		},
+		{
+			Name: "notprincipal_two_principals",
+			Input: input{
+				ac: AuthContext{Principal: &entities.Principal{Arn: "arn:aws:iam::88888:role/secondrole"}},
+				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{
+					"arn:aws:iam::88888:role/firstrole",
+					"arn:aws:iam::88888:role/secondrole"}}}},
+			Want: false,
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
+		subj := newSubject(&i.ac, TestingSimulationOptions)
+		return evalStatementMatchesPrincipalExact(subj, &i.stmt), nil
 	})
 }
 
@@ -332,6 +425,6 @@ func TestStatementMatchesResource(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(&i.ac, &Options{})
-		return evalStatementMatchesResource(subj, &i.stmt)
+		return evalStatementMatchesResource(subj, &i.stmt), nil
 	})
 }
