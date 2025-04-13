@@ -26,16 +26,16 @@ func main() {
 	}
 
 	// Attempt to parse the data
-	var env entities.Universe
+	var universe entities.Universe
 	switch rc.CacheFormat {
 	case CONST_CACHE_FORMAT_AWS_CONFIG:
-		l := awsconfig.NewLoader()
-		err = l.LoadJson(data)
-		env = l.Environment()
+		loader := awsconfig.NewLoader()
+		err = loader.LoadJson(data)
+		universe = loader.Universe()
 	case CONST_CACHE_FORMAT_AWS_CONFIG_LINES:
-		l := awsconfig.NewLoader()
-		err = l.LoadJsonl(data)
-		env = l.Environment()
+		loader := awsconfig.NewLoader()
+		err = loader.LoadJsonl(data)
+		universe = loader.Universe()
 	default:
 		fmt.Fprintf(os.Stderr, "unsure how to load cache format: %s", rc.CacheFormat)
 		os.Exit(1)
@@ -45,5 +45,5 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("loaded %d principals; %d resources from cache\n",
-		len(env.Principals), len(env.Resources))
+		len(universe.Principals), len(universe.Resources))
 }

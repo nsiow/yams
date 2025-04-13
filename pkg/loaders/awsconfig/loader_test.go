@@ -17,7 +17,7 @@ func TestLoadJson(t *testing.T) {
 
 		{
 			Name:  "valid_empty_json",
-			Input: `../../../testdata/environments/valid_empty.json`,
+			Input: `../../../testdata/universes/valid_empty.json`,
 			Want: entities.Universe{
 				Principals: []entities.Principal(nil),
 				Resources:  []entities.Resource(nil),
@@ -25,7 +25,7 @@ func TestLoadJson(t *testing.T) {
 		},
 		{
 			Name:  "valid_empty_jsonl",
-			Input: `../../../testdata/environments/valid_empty.jsonl`,
+			Input: `../../../testdata/universes/valid_empty.jsonl`,
 			Want: entities.Universe{
 				Principals: []entities.Principal(nil),
 				Resources:  []entities.Resource(nil),
@@ -33,27 +33,27 @@ func TestLoadJson(t *testing.T) {
 		},
 		{
 			Name:  "valid_simple_1_json",
-			Input: `../../../testdata/environments/valid_simple_1.json`,
+			Input: `../../../testdata/universes/valid_simple_1.json`,
 			Want:  simple1Output,
 		},
 		{
 			Name:  "valid_simple_1_jsonl",
-			Input: `../../../testdata/environments/valid_simple_1.jsonl`,
+			Input: `../../../testdata/universes/valid_simple_1.jsonl`,
 			Want:  simple1Output,
 		},
 		{
 			Name:  "valid_user_1_json",
-			Input: `../../../testdata/environments/valid_user_1.json`,
+			Input: `../../../testdata/universes/valid_user_1.json`,
 			Want:  user1Output,
 		},
 		{
 			Name:  "valid_permissions_boundaries",
-			Input: `../../../testdata/environments/valid_permissions_boundaries.json`,
+			Input: `../../../testdata/universes/valid_permissions_boundaries.json`,
 			Want:  permissionsBoundaryOutput,
 		},
 		{
 			Name:  "valid_scp",
-			Input: `../../../testdata/environments/valid_scp.json`,
+			Input: `../../../testdata/universes/valid_scp.json`,
 			Want:  scpOutput,
 		},
 
@@ -61,127 +61,127 @@ func TestLoadJson(t *testing.T) {
 
 		{
 			Name:      "invalid_json",
-			Input:     `../../../testdata/environments/invalid.json`,
+			Input:     `../../../testdata/universes/invalid.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_jsonl",
-			Input:     `../../../testdata/environments/invalid.jsonl`,
+			Input:     `../../../testdata/universes/invalid.jsonl`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_lots_o_junk",
-			Input:     `../../../testdata/environments/invalid_lots_o_junk.jsonl`,
+			Input:     `../../../testdata/universes/invalid_lots_o_junk.jsonl`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_policy_wrong_outer_type",
-			Input:     `../../../testdata/environments/invalid_policy_wrong_outer_type.json`,
+			Input:     `../../../testdata/universes/invalid_policy_wrong_outer_type.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_policy_no_default_version",
-			Input:     `../../../testdata/environments/invalid_policy_no_default_version.json`,
+			Input:     `../../../testdata/universes/invalid_policy_no_default_version.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_policy_bad_document",
-			Input:     `../../../testdata/environments/invalid_policy_bad_document.json`,
+			Input:     `../../../testdata/universes/invalid_policy_bad_document.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_role_bad_inline",
-			Input:     `../../../testdata/environments/invalid_role_bad_inline.json`,
+			Input:     `../../../testdata/universes/invalid_role_bad_inline.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_role_bad_permissions_boundary",
-			Input:     `../../../testdata/environments/invalid_role_bad_permissions_boundary.json`,
+			Input:     `../../../testdata/universes/invalid_role_bad_permissions_boundary.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_role_bad_inline_encoding",
-			Input:     `../../../testdata/environments/invalid_role_bad_inline_encoding.json`,
+			Input:     `../../../testdata/universes/invalid_role_bad_inline_encoding.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_role_bad_managed",
-			Input:     `../../../testdata/environments/invalid_role_bad_managed.json`,
+			Input:     `../../../testdata/universes/invalid_role_bad_managed.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_role_missing_managed",
-			Input:     `../../../testdata/environments/invalid_role_missing_managed.json`,
+			Input:     `../../../testdata/universes/invalid_role_missing_managed.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_role_missing_permissions_boundary",
-			Input:     `../../../testdata/environments/invalid_role_missing_permissions_boundary.json`,
+			Input:     `../../../testdata/universes/invalid_role_missing_permissions_boundary.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_user_bad_inline",
-			Input:     `../../../testdata/environments/invalid_user_bad_inline.json`,
+			Input:     `../../../testdata/universes/invalid_user_bad_inline.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_user_bad_inline_encoding",
-			Input:     `../../../testdata/environments/invalid_user_bad_inline_encoding.json`,
+			Input:     `../../../testdata/universes/invalid_user_bad_inline_encoding.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_user_bad_managed",
-			Input:     `../../../testdata/environments/invalid_user_bad_managed.json`,
+			Input:     `../../../testdata/universes/invalid_user_bad_managed.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_user_bad_permissions_boundary",
-			Input:     `../../../testdata/environments/invalid_user_bad_permissions_boundary.json`,
+			Input:     `../../../testdata/universes/invalid_user_bad_permissions_boundary.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_user_missing_managed",
-			Input:     `../../../testdata/environments/invalid_user_missing_managed.json`,
+			Input:     `../../../testdata/universes/invalid_user_missing_managed.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_user_missing_permissions_boundary",
-			Input:     `../../../testdata/environments/invalid_user_missing_permissions_boundary.json`,
+			Input:     `../../../testdata/universes/invalid_user_missing_permissions_boundary.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_resource_bad_policy",
-			Input:     `../../../testdata/environments/invalid_resource_bad_policy.json`,
+			Input:     `../../../testdata/universes/invalid_resource_bad_policy.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_resource_bad_policy_type",
-			Input:     `../../../testdata/environments/invalid_resource_bad_policy_type.json`,
+			Input:     `../../../testdata/universes/invalid_resource_bad_policy_type.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_user_bad_group",
-			Input:     `../../../testdata/environments/invalid_user_bad_group.json`,
+			Input:     `../../../testdata/universes/invalid_user_bad_group.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_user_missing_group",
-			Input:     `../../../testdata/environments/invalid_user_missing_group.json`,
+			Input:     `../../../testdata/universes/invalid_user_missing_group.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_group_bad_shape",
-			Input:     `../../../testdata/environments/invalid_group_bad_shape.json`,
+			Input:     `../../../testdata/universes/invalid_group_bad_shape.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_group_missing_policy",
-			Input:     `../../../testdata/environments/invalid_group_missing_policy.json`,
+			Input:     `../../../testdata/universes/invalid_group_missing_policy.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "invalid_scp",
-			Input:     `../../../testdata/environments/invalid_scp.json`,
+			Input:     `../../../testdata/universes/invalid_scp.json`,
 			ShouldErr: true,
 		},
 	}
@@ -209,7 +209,7 @@ func TestLoadJson(t *testing.T) {
 		if err != nil {
 			return entities.Universe{}, err
 		}
-		return l.Environment(), nil
+		return l.Universe(), nil
 	})
 }
 

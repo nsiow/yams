@@ -11,13 +11,9 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// Loader provides the ability to load resources/principals from AWS Config data
+// Loader provides the ability to load entity definitions from AWS Config data
 type Loader struct {
-	// principals contains all cloud principals
-	principals []entities.Principal
-
-	// resources contains all cloud resources
-	resources []entities.Resource
+	universe *entities.Universe
 }
 
 // NewLoader provisions and returns a new `Loader` struct, ready to use
@@ -25,22 +21,9 @@ func NewLoader() *Loader {
 	return &Loader{}
 }
 
-// Principals returns all principals loaded by the target loader
-func (l *Loader) Principals() []entities.Principal {
-	return l.principals
-}
-
-// Resources returns all resources loaded by the target loader
-func (l *Loader) Resources() []entities.Resource {
-	return l.resources
-}
-
-// Environment returns an Environment containing the loaded Principals + Resources
-func (l *Loader) Environment() entities.Universe {
-	return entities.Universe{
-		Principals: l.Principals(),
-		Resources:  l.Resources(),
-	}
+// Universe returns an Universe containing the loaded Principals + Resources
+func (l *Loader) Universe() *entities.Universe {
+	return l.universe
 }
 
 // LoadJson loads data from a provided JSON array
