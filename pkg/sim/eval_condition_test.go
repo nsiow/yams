@@ -77,17 +77,6 @@ func TestEvalCheckCondition(t *testing.T) {
 			Want: false,
 		},
 		{
-			Name: "hard_fail_unknown_operator",
-			Input: input{
-				ac: &AuthContext{},
-				op: "SomeOperator",
-				cond: policy.ConditionValues{
-					"color": []string{"yellow", "blue", "green"},
-				},
-			},
-			ShouldErr: true,
-		},
-		{
 			Name: "soft_fail_unknown_operator",
 			Input: input{
 				ac: &AuthContext{
@@ -112,6 +101,6 @@ func TestEvalCheckCondition(t *testing.T) {
 		}
 
 		subj := newSubject(i.ac, i.opts)
-		return evalCheckCondition(subj, i.op, i.cond)
+		return evalCheckCondition(subj, i.op, i.cond), nil
 	})
 }

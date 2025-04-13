@@ -6,7 +6,7 @@ import (
 
 // evalPermissionsBoundary assesses the permissions boundary of the Principal to determine whether
 // or not it allows the provided AuthContext
-func evalPermissionsBoundary(s *subject) (Decision, error) {
+func evalPermissionsBoundary(s *subject) Decision {
 
 	s.trc.Push("evaluating permission boundaries")
 	defer s.trc.Pop()
@@ -15,7 +15,7 @@ func evalPermissionsBoundary(s *subject) (Decision, error) {
 	if s.ac.Principal.PermissionsBoundary.Empty() {
 		decision := Decision{}
 		decision.Add(policy.EFFECT_ALLOW)
-		return decision, nil
+		return decision
 	}
 
 	// Specify the statement evaluation funcs we will consider for permission boundary access

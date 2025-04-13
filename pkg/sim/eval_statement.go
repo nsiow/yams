@@ -7,26 +7,21 @@ import (
 )
 
 // evalStatement computes whether the provided statements match the AuthContext
-func evalStatement(s *subject, stmt policy.Statement, funcs []evalFunction) (Decision, error) {
+func evalStatement(s *subject, stmt policy.Statement, funcs []evalFunction) Decision {
+	decision := Decision{}
 
 	for _, f := range funcs {
-		match, err := f(s, &stmt)
-		if err != nil {
-			return Decision{}, err
-		}
-
-		if !match {
-			return Decision{}, nil
+		if !f(s, &stmt) {
+			return decision
 		}
 	}
 
-	decision := Decision{}
 	decision.Add(stmt.Effect)
-	return decision, nil
+	return decision
 }
 
 // evalStatementMatchesAction computes whether the Statement matches the AuthContext's Action
-func evalStatementMatchesAction(s *subject, stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesAction(s *subject, stmt *policy.Statement) bool {
 
 	s.trc.Push("evaluating Action")
 	defer s.trc.Pop()
@@ -34,7 +29,7 @@ func evalStatementMatchesAction(s *subject, stmt *policy.Statement) (bool, error
 	// Handle empty Action
 	if s.ac.Action == nil {
 		s.trc.Observation("AuthContext missing Action")
-		return false, nil
+		return false
 	}
 
 	// Determine which Action block to use
@@ -55,23 +50,23 @@ func evalStatementMatchesAction(s *subject, stmt *policy.Statement) (bool, error
 		if match {
 			s.trc.Attr("action", a)
 			s.trc.Observation("action matched")
-			return _gate.Apply(true), nil
+			return _gate.Apply(true)
 		}
 	}
 
 	s.trc.Observation("no actions match")
-	return _gate.Apply(false), nil
+	return _gate.Apply(false)
 }
 
 // evalStatementMatchesPrincipal computes whether the Statement matches the AuthContext's Principal
-func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
 
 	s.trc.Push("evaluating Principal")
 	defer s.trc.Pop()
 
 	if s.ac.Principal == nil {
 		s.trc.Observation("AuthContext missing Principal")
-		return false, nil
+		return false
 	}
 
 	var _gate gate.Gate
@@ -79,10 +74,10 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) (bool, er
 	switch {
 	case stmt.Principal.All:
 		s.trc.Observation("saw special Principal=* block")
-		return true, nil
+		return true
 	case stmt.NotPrincipal.All:
 		s.trc.Observation("saw special NotPrincipal=* block")
-		return false, nil
+		return false
 	case !stmt.Principal.Empty():
 		s.trc.Observation("using Principal block")
 		principals = stmt.Principal
@@ -96,30 +91,30 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) (bool, er
 	for _, p := range principals.AWS {
 		match := wildcard.MatchAllOrNothing(p, s.ac.Principal.Arn)
 		if match {
-			return _gate.Apply(true), nil
+			return _gate.Apply(true)
 		}
 	}
 
-	return _gate.Apply(false), nil
+	return _gate.Apply(false)
 }
 
 // evalStatementMatchesPrincipalExact computes whether the Statement matches the AuthContext's
 // Principal using an exact-match criteria (no wildcards)
-func evalStatementMatchesPrincipalExact(s *subject, stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesPrincipalExact(s *subject, stmt *policy.Statement) bool {
 
 	s.trc.Push("evaluating Principal exact-match case")
 	defer s.trc.Pop()
 
 	if s.ac.Principal == nil {
 		s.trc.Observation("AuthContext missing Principal")
-		return false, nil
+		return false
 	}
 
-	return stmt.Principal.AWS.Contains(s.ac.Principal.Arn), nil
+	return stmt.Principal.AWS.Contains(s.ac.Principal.Arn)
 }
 
 // evalStatementMatchesResource computes whether the Statement matches the AuthContext's Resource
-func evalStatementMatchesResource(s *subject, stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
 
 	s.trc.Push("evaluating Resource")
 	defer s.trc.Pop()
@@ -127,7 +122,7 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) (bool, err
 	// Handle empty Resource
 	if s.ac.Resource == nil {
 		s.trc.Observation("AuthContext missing Resource")
-		return false, nil
+		return false
 	}
 
 	// Determine which Resource block to use
@@ -147,32 +142,27 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) (bool, err
 	for _, r := range resources {
 		match := wildcard.MatchSegments(r, s.ac.Resource.Arn)
 		if match {
-			return _gate.Apply(true), nil
+			return _gate.Apply(true)
 		}
 	}
 
-	return _gate.Apply(false), nil
+	return _gate.Apply(false)
 }
 
 // evalStatementMatchesCondition computes whether the Statement's Conditions hold true given the
 // provided AuthContext
-func evalStatementMatchesCondition(s *subject, stmt *policy.Statement) (bool, error) {
+func evalStatementMatchesCondition(s *subject, stmt *policy.Statement) bool {
 
 	s.trc.Push("evaluating Condition")
 	defer s.trc.Pop()
 
 	for op, cond := range stmt.Condition {
-		result, err := evalCheckCondition(s, op, cond)
-		if err != nil {
-			return false, err
-		}
-
-		if !result {
+		if !evalCheckCondition(s, op, cond) {
 			s.trc.Observation("condition evaluated to false")
-			return false, nil
+			return false
 		}
 	}
 
 	s.trc.Observation("condition evaluated to true")
-	return true, nil
+	return true
 }

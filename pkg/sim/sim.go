@@ -1,7 +1,6 @@
 package sim
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/nsiow/yams/pkg/aws/sar"
@@ -105,9 +104,11 @@ func (s *Simulator) ComputeAccessSummary(actions []*types.Action) (map[string]in
 					Principal:  &p,
 					Resource:   &r,
 					Properties: NewBag[string]()}
+
+				// Attempt to simulate, discard result on error
 				result, err := s.Simulate(ac)
 				if err != nil {
-					return nil, errors.Join(fmt.Errorf("error during simulation"), err)
+					continue
 				}
 
 				if result.IsAllowed {

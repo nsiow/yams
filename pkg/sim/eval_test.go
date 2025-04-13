@@ -196,7 +196,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Want: true,
 		},
 		{
-			Name: "error_nonexistent_principal_condition",
+			Name: "nonexistent_principal_condition",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
@@ -227,10 +227,10 @@ func TestOverallAccess_XAccount(t *testing.T) {
 					AccountId: "11111",
 				},
 			},
-			ShouldErr: true,
+			Want: false,
 		},
 		{
-			Name: "error_nonexistent_resource_condition",
+			Name: "nonexistent_resource_condition",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
@@ -259,7 +259,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 					},
 				},
 			},
-			ShouldErr: true,
+			Want: false,
 		},
 	}
 
@@ -388,7 +388,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Want: false,
 		},
 		{
-			Name: "same_account_error_nonexistent_condition",
+			Name: "same_account_nonexistent_condition",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.Principal{
@@ -419,7 +419,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					AccountId: "88888",
 				},
 			},
-			ShouldErr: true,
+			Want: false,
 		},
 		{
 			Name: "same_account_resource_access",
@@ -447,35 +447,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 				},
 			},
 			Want: true,
-		},
-		{
-			Name: "error_bad_permissions_boundary",
-			Input: AuthContext{
-				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					PermissionsBoundary: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
-								Condition: map[string]map[string]policy.Value{
-									"StringEqualsThisDoesNotExist": {
-										"foo": []string{"bar"},
-									},
-								},
-							},
-						},
-					},
-				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
-				},
-			},
-			ShouldErr: true,
 		},
 		{
 			Name: "permissions_boundary_allow",
@@ -581,41 +552,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 				},
 			},
 			Want: false,
-		},
-		{
-			Name: "error_bad_scp",
-			Input: AuthContext{
-				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					Account: entities.Account{
-						SCPs: [][]policy.Policy{
-							{
-								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_ALLOW,
-											Action:   []string{"*"},
-											Resource: []string{"*"},
-											Condition: map[string]map[string]policy.Value{
-												"StringEqualsThisDoesNotExist": {
-													"foo": []string{"bar"},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
-				},
-			},
-			ShouldErr: true,
 		},
 		{
 			Name: "scp_allow",

@@ -112,7 +112,7 @@ func TestStatementMatchesAction(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(&i.ac, &Options{})
-		return evalStatementMatchesAction(subj, &i.stmt)
+		return evalStatementMatchesAction(subj, &i.stmt), nil
 	})
 }
 
@@ -237,7 +237,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(&i.ac, TestingSimulationOptions)
-		return evalStatementMatchesPrincipal(subj, &i.stmt)
+		return evalStatementMatchesPrincipal(subj, &i.stmt), nil
 	})
 }
 
@@ -330,7 +330,7 @@ func TestStatementMatchesPrincipalExact(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(&i.ac, TestingSimulationOptions)
-		return evalStatementMatchesPrincipalExact(subj, &i.stmt)
+		return evalStatementMatchesPrincipalExact(subj, &i.stmt), nil
 	})
 }
 
@@ -425,6 +425,6 @@ func TestStatementMatchesResource(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(&i.ac, &Options{})
-		return evalStatementMatchesResource(subj, &i.stmt)
+		return evalStatementMatchesResource(subj, &i.stmt), nil
 	})
 }

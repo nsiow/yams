@@ -20,18 +20,10 @@ func TestOptions(t *testing.T) {
 		},
 		{
 			Input: []OptionF{
-				WithFailOnUnknownConditionOperator(),
-			},
-			Want: &Options{FailOnUnknownConditionOperator: true},
-		},
-		{
-			Input: []OptionF{
 				WithSkipServiceAuthorizationValidation(),
-				WithFailOnUnknownConditionOperator(),
 			},
 			Want: &Options{
 				SkipServiceAuthorizationValidation: true,
-				FailOnUnknownConditionOperator:     true,
 			},
 		},
 	}

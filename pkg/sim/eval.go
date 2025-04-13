@@ -1,13 +1,11 @@
 package sim
 
 import (
-	"fmt"
-
 	"github.com/nsiow/yams/pkg/policy"
 )
 
 // evalFunction is the blueprint of a function that allows us to evaluate a single statement
-type evalFunction func(*subject, *policy.Statement) (bool, error)
+type evalFunction func(*subject, *policy.Statement) bool
 
 // evalIsSameAccount determines whether or not the provided Principal + Resource exist within the
 // same AWS account
@@ -22,10 +20,7 @@ func evalIsSameAccount(s *subject) bool {
 func evalOverallAccess(s *subject) (*Result, error) {
 
 	// Calculate SCP access, if present
-	scpAccess, err := evalSCP(s)
-	if err != nil {
-		return nil, fmt.Errorf("error evaluating SCP: %w", err)
-	}
+	scpAccess := evalSCP(s)
 	if scpAccess.Contains(policy.EFFECT_DENY) {
 		s.trc.Decision("[explicit deny] found in service control policies")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
@@ -36,10 +31,7 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	}
 
 	// Calculate permissions boundary access, if present
-	pbAccess, err := evalPermissionsBoundary(s)
-	if err != nil {
-		return nil, fmt.Errorf("error evaluating permission boundary: %w", err)
-	}
+	pbAccess := evalPermissionsBoundary(s)
 	if pbAccess.Contains(policy.EFFECT_DENY) {
 		s.trc.Decision("[explicit deny] found in permissions boundary")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
@@ -50,10 +42,7 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	}
 
 	// Calculate Principal access
-	pAccess, err := evalPrincipalAccess(s)
-	if err != nil {
-		return nil, fmt.Errorf("error evaluating principal access: %w", err)
-	}
+	pAccess := evalPrincipalAccess(s)
 	// ... check for explicit Deny results
 	if pAccess.Contains(policy.EFFECT_DENY) {
 		s.trc.Decision("[explicit deny] found in identity policy")
@@ -61,10 +50,7 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	}
 
 	// Calculate Resource access
-	rAccess, err := evalResourceAccess(s)
-	if err != nil {
-		return nil, fmt.Errorf("error evaluating resource access: %w", err)
-	}
+	rAccess := evalResourceAccess(s)
 	// ... check for explicit Deny results
 	if rAccess.Contains(policy.EFFECT_DENY) {
 		s.trc.Decision("[explicit deny] found in resource policy")
