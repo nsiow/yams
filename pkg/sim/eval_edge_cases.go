@@ -6,6 +6,8 @@ import (
 
 // isStrictCall returns whether the specified API is one that requires both Principal + Resource
 // policy in order to be allowed; even if same account
+// TODO(nsiow) reimplement x-account logic to just reuse this code path rather than having two
+// different trees
 func isStrictCall(s *subject) bool {
 	// strict calls always require involve both a Principal + Resource
 	if s.ac == nil || s.ac.Principal == nil || s.ac.Resource == nil {
