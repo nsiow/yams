@@ -6,9 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/nsiow/yams/pkg/aws/managedpolicies"
 	"github.com/nsiow/yams/pkg/entities"
-	"github.com/nsiow/yams/pkg/policy"
 )
 
 // Loader provides the ability to load entity definitions from AWS Config data
@@ -28,18 +26,18 @@ func (l *Loader) Universe() *entities.Universe {
 
 // LoadJson loads data from a provided JSON array
 // TODO(nsiow) consider having this load from io.Reader instead
-func (a *Loader) LoadJson(data []byte) error {
+func (l *Loader) LoadJson(data []byte) error {
 	var items []ConfigItem
 	err := json.Unmarshal(data, &items)
 	if err != nil {
-		return fmt.Errorf("unable to load data as JSON: %v", err)
+		return fmt.Errorf("unable to load data as JSON: %w", err)
 	}
-	return a.loadItems(items)
+	return l.loadItems(items)
 }
 
 // LoadJson loads data from the provided newline-separate JSONL input
 // TODO(nsiow) consider having this load from io.Reader instead
-func (a *Loader) LoadJsonl(data []byte) error {
+func (l *Loader) LoadJsonl(data []byte) error {
 	r := bytes.NewReader(data)
 	s := bufio.NewScanner(r)
 
@@ -73,42 +71,33 @@ func (a *Loader) LoadJsonl(data []byte) error {
 	}
 
 	// Proceed to load
-	return a.loadItems(items)
+	return l.loadItems(items)
 }
 
 // loadItems loads data from the provided AWS Config items
-func (a *Loader) loadItems(items []ConfigItem) error {
-	// Load accounts first
-	accounts, err := loadAccounts(items)
-	if err != nil {
-		return fmt.Errorf("error loading accounts: %v", err)
+func (l *Loader) loadItems(items []ConfigItem) error {
+	for _, item := range items {
+		err := l.loadItem(item)
+		if err != nil {
+			return err
+		}
 	}
-
-	// Load policies (required to load principals)
-	policies, err := loadPolicies(items)
-	if err != nil {
-		return fmt.Errorf("error loading managed policies: %v", err)
-	}
-
-	// Load AWS-managed policies into the managed policy map
-	// (required because AWS Config does not report on them)
-	for arn, pol := range managedpolicies.Map() {
-		policies.Add(CONST_TYPE_AWS_IAM_POLICY, arn, []policy.Policy{pol})
-	}
-
-	// Load principals
-	principals, err := loadPrincipals(items, accounts, policies)
-	if err != nil {
-		return fmt.Errorf("error loading principals: %v", err)
-	}
-	a.principals = append(a.principals, principals...)
-
-	// Load resources
-	resources, err := loadResources(items, accounts)
-	if err != nil {
-		return fmt.Errorf("error loading resources: %v", err)
-	}
-	a.resources = append(a.resources, resources...)
 
 	return nil
+}
+
+// loadItem converts the provided ConfigItem into an `entities.*` struct and loads it into the
+// universe
+func (l *Loader) loadItem(item ConfigItem) error {
+	switch item.Type {
+	case CONST_TYPE_YAMS_ORGANIZATIONS_ACCOUNT:
+		return l.loadAccount(item)
+	default:
+		return fmt.Errorf("unsure how to handle config item of type: %s", item.Type)
+	}
+}
+
+// loadAccount parses the custom Yams::Account item and loads it as an [entities.Account] struct
+// TODO(nsiow) figure out correct struct linking for godoc
+func (l *Loader) loadAccount(item ConfigItem) error {
 }

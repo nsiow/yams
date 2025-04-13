@@ -15,9 +15,6 @@ type Resource struct {
 	// AccountId refers to the 12-digit AWS account ID where the Resource resides
 	AccountId string
 
-	// OrgId refers to the ID of the AWS Organizations org where the Resource resides
-	OrgId string
-
 	// Region refers to the AWS region ID where the Resource resides
 	Region string
 
@@ -29,10 +26,6 @@ type Resource struct {
 
 	// Policy refers to the resource policy associated with the Resource
 	Policy policy.Policy
-
-	// Account is the (optional) account reference for this Resource, providing additional policies
-	// and condition keys for evaluation
-	Account Account
 }
 
 // Service derives the AWS service name from the resource type in form AWS::<Service>::<Type>
