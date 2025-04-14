@@ -3,8 +3,6 @@ package entities
 import (
 	"iter"
 	"maps"
-
-	"github.com/nsiow/yams/pkg/policy"
 )
 
 // Universe contains the definition of all accounts/policies/principals/resources used for
@@ -13,7 +11,8 @@ import (
 // In order for something to be considered for simulation, it must be a part of this universe
 type Universe struct {
 	accounts   map[Arn]Account
-	policies   map[Arn]policy.Policy
+	groups     map[Arn]Group
+	policies   map[Arn]Policy
 	principals map[Arn]Principal
 	resources  map[Arn]Resource
 }
@@ -27,7 +26,7 @@ func (u *Universe) Accounts() iter.Seq[Account] {
 //
 // This includes any policy with an ARN, e.g. managed policies, SCPs, etc. It does not include
 // inline Principal or Resource policies
-func (u *Universe) Policies() iter.Seq[policy.Policy] {
+func (u *Universe) Policies() iter.Seq[Policy] {
 	return maps.Values(u.policies)
 }
 

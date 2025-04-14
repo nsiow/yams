@@ -158,8 +158,8 @@ func (p *Principal) MarshalJSON() ([]byte, error) {
 		return []byte(`"*"`), nil
 	}
 
-	type alias Principal
-	a := alias(*p)
+	type alias *Principal
+	a := alias(p)
 	return json.Marshal(a)
 }
 
