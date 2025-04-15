@@ -74,7 +74,6 @@ func (l *Loader) LoadJsonl(data []byte) error {
 	return l.loadItems(items)
 }
 
-// loadItems loads data from the provided AWS Config items
 func (l *Loader) loadItems(items []ConfigItem) error {
 	for _, item := range items {
 		err := l.loadItem(item)
@@ -86,18 +85,169 @@ func (l *Loader) loadItems(items []ConfigItem) error {
 	return nil
 }
 
-// loadItem converts the provided ConfigItem into an `entities.*` struct and loads it into the
-// universe
 func (l *Loader) loadItem(item ConfigItem) error {
 	switch item.Type {
 	case CONST_TYPE_YAMS_ORGANIZATIONS_ACCOUNT:
 		return l.loadAccount(item)
+	case CONST_TYPE_AWS_IAM_GROUP:
+		return l.loadGroup(item)
+	case CONST_TYPE_AWS_IAM_POLICY:
+		return l.loadManagedPolicy(item)
+	case CONST_TYPE_AWS_IAM_ROLE:
+		return l.loadRole(item)
+	case CONST_TYPE_AWS_IAM_USER:
+		return l.loadUser(item)
+	case CONST_TYPE_AWS_S3_BUCKET:
+		return l.loadBucket(item)
+	case CONST_TYPE_AWS_DYNAMODB_TABLE:
+		return l.loadTable(item)
+	case CONST_TYPE_AWS_SNS_TOPIC:
+		return l.loadTopic(item)
+	case CONST_TYPE_AWS_SQS_QUEUE:
+		return l.loadQueue(item)
+	case CONST_TYPE_AWS_KMS_KEY:
+		return l.loadKey(item)
 	default:
-		return fmt.Errorf("unsure how to handle config item of type: %s", item.Type)
+		return l.loadGenericResource(item)
 	}
 }
 
-// loadAccount parses the custom Yams::Account item and loads it as an [entities.Account] struct
 // TODO(nsiow) figure out correct struct linking for godoc
 func (l *Loader) loadAccount(item ConfigItem) error {
+	var target configAccount
+
+	err := json.Unmarshal(item.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.universe.PutAccount(target.asAccount())
+	return nil
+}
+
+func (l *Loader) loadGroup(item ConfigItem) error {
+	var target configGroup
+
+	err := json.Unmarshal(item.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.universe.PutGroup(target.asGroup())
+	return nil
+}
+
+func (l *Loader) loadManagedPolicy(item ConfigItem) error {
+	var target configIamManagedPolicy
+
+	err := json.Unmarshal(item.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	resolvedPolicy, err := target.asPolicy()
+	if err != nil {
+		return err
+	}
+
+	l.universe.PutPolicy(resolvedPolicy)
+	return nil
+}
+
+func (l *Loader) loadRole(item ConfigItem) error {
+	var target configIamRole
+
+	err := json.Unmarshal(item.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.universe.PutResource(target.asResource())
+	l.universe.PutPrincipal(target.asPrincipal())
+	return nil
+}
+
+func (l *Loader) loadUser(item ConfigItem) error {
+	var target configIamUser
+
+	err := json.Unmarshal(item.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.universe.PutResource(target.asResource())
+	l.universe.PutPrincipal(target.asPrincipal())
+	return nil
+}
+
+func (l *Loader) loadBucket(item ConfigItem) error {
+	var target configS3Bucket
+
+	err := json.Unmarshal(item.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.universe.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadTable(item ConfigItem) error {
+	var target configDynamodbTable
+
+	err := json.Unmarshal(item.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.universe.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadTopic(item ConfigItem) error {
+	var target configSnsTopic
+
+	err := json.Unmarshal(item.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.universe.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadQueue(item ConfigItem) error {
+	var target configSqsQueue
+
+	err := json.Unmarshal(item.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.universe.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadKey(item ConfigItem) error {
+	var target configKmsKey
+
+	err := json.Unmarshal(item.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.universe.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadGenericResource(item ConfigItem) error {
+	var target genericResource
+
+	err := json.Unmarshal(item.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.universe.PutResource(target.asResource())
+	return nil
 }

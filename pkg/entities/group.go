@@ -9,7 +9,7 @@ type Group struct {
 	AccountId string
 
 	// Arn refers to the Amazon Resource Name of the Resource
-	Arn string
+	Arn Arn
 
 	// Policy refers to the resource policy associated with the Resource
 	Policies []Arn

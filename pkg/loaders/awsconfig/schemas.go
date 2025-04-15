@@ -31,50 +31,113 @@ type inlinePolicy struct {
 // AWS::IAM::User
 // -------------------------------------------------------------------------------------------------
 
-type configUser struct {
+type configIamUser struct {
 	ConfigItem
-	AttachedManagedPolicies []policyRef    `json:"attachedManagedPolicies"`
-	GroupList               []string       `json:"groupList"`
-	PermissionsBoundary     boundaryRef    `json:"permissionsBoundary"`
-	UserPolicies            []inlinePolicy `json:"userPolicyList"`
+	Configuration struct {
+		AttachedManagedPolicies []policyRef    `json:"attachedManagedPolicies"`
+		GroupList               []string       `json:"groupList"`
+		PermissionsBoundary     boundaryRef    `json:"permissionsBoundary"`
+		UserPolicies            []inlinePolicy `json:"userPolicyList"`
+	} `json:"configuration"`
 }
 
-func (c *configUser) toEntity() (entities.Principal, error) {
+func (c *configIamUser) groupToArn(groupName string) string {
+	return fmt.Sprintf("arn:aws:iam::%s:group/%s", c.AccountId, groupName)
+}
+
+func (c *configIamUser) asPrincipal() entities.Principal {
 	return entities.Principal{
 		Type:      c.Type,
 		AccountId: c.AccountId,
 		Arn:       c.Arn,
 		Tags:      c.Tags,
-		InlinePolicies: common.Map(c.UserPolicies, func(x inlinePolicy) policy.Policy {
-			return policy.Policy(x.Document)
-		}),
-		AttachedPolicies: common.Map(c.AttachedManagedPolicies, func(x policyRef) entities.Arn {
-			return entities.Arn(x.Arn)
-		}),
-		// FIXME(nsiow) make a helper function for this
-		Groups: common.Map(c.GroupList, func(x string) entities.Arn {
-			groupArn := fmt.Sprintf("arn:aws:iam::%s:group/%s", c.AccountId, x)
-			return entities.Arn(groupArn)
-		}),
-		PermissionsBoundary: entities.Arn(c.PermissionsBoundary.Arn),
-	}, nil
+		InlinePolicies: common.Map(c.Configuration.UserPolicies,
+			func(x inlinePolicy) policy.Policy {
+				return policy.Policy(x.Document)
+			}),
+		AttachedPolicies: common.Map(c.Configuration.AttachedManagedPolicies,
+			func(x policyRef) entities.Arn {
+				return entities.Arn(x.Arn)
+			}),
+		Groups: common.Map(c.Configuration.GroupList,
+			func(x string) entities.Arn {
+				return entities.Arn(c.groupToArn(x))
+			}),
+		PermissionsBoundary: entities.Arn(c.Configuration.PermissionsBoundary.Arn),
+	}
+}
+
+func (c *configIamUser) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+		Policy:    policy.Policy{},
+	}
+}
+
+// -------------------------------------------------------------------------------------------------
+// AWS::IAM::Role
+// -------------------------------------------------------------------------------------------------
+
+type configIamRole struct {
+	ConfigItem
+	Configuration struct {
+		AssumeRolePolicyDocument encodedPolicy  `json:"assumeRolePolicyDocument"`
+		AttachedManagedPolicies  []policyRef    `json:"attachedManagedPolicies"`
+		PermissionsBoundary      boundaryRef    `json:"permissionsBoundary"`
+		RolePolicies             []inlinePolicy `json:"rolePolicyList"`
+	} `json:"configuration"`
+}
+
+func (c *configIamRole) asPrincipal() entities.Principal {
+	return entities.Principal{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+		InlinePolicies: common.Map(c.Configuration.RolePolicies,
+			func(x inlinePolicy) policy.Policy {
+				return policy.Policy(x.Document)
+			}),
+		AttachedPolicies: common.Map(c.Configuration.AttachedManagedPolicies,
+			func(x policyRef) entities.Arn {
+				return entities.Arn(x.Arn)
+			}),
+		PermissionsBoundary: entities.Arn(c.Configuration.PermissionsBoundary.Arn),
+	}
+}
+
+func (c *configIamRole) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+		Policy:    policy.Policy(c.Configuration.AssumeRolePolicyDocument),
+	}
 }
 
 // -------------------------------------------------------------------------------------------------
 // AWS::IAM::Policy
 // -------------------------------------------------------------------------------------------------
 
-type configManagedPolicy struct {
+type configIamManagedPolicy struct {
 	ConfigItem
-	PolicyVersionList []struct {
-		VersionId        string        `json:"versionId"`
-		IsDefaultVersion bool          `json:"isDefaultVersion"`
-		Document         encodedPolicy `json:"document"`
-	} `json:"policyVersionList"`
+	Configuration struct {
+		PolicyVersionList []struct {
+			VersionId        string        `json:"versionId"`
+			IsDefaultVersion bool          `json:"isDefaultVersion"`
+			Document         encodedPolicy `json:"document"`
+		} `json:"policyVersionList"`
+	} `json:"configuration"`
 }
 
-func (c *configManagedPolicy) toEntity() (entities.Policy, error) {
-	for _, pv := range c.PolicyVersionList {
+func (c *configIamManagedPolicy) asPolicy() (entities.Policy, error) {
+	for _, pv := range c.Configuration.PolicyVersionList {
 		if pv.IsDefaultVersion {
 			return entities.Policy{
 				Type:      c.Type,
@@ -94,12 +157,14 @@ func (c *configManagedPolicy) toEntity() (entities.Policy, error) {
 
 type configGroup struct {
 	ConfigItem
-	AttachedManagedPolicies []policyRef `json:"attachedManagedPolicies"`
+	Configuration struct {
+		AttachedManagedPolicies []policyRef `json:"attachedManagedPolicies"`
+	} `json:"configuration"`
 }
 
-func (c *configGroup) toEntity() (entities.Group, error) {
+func (c *configGroup) asGroup() entities.Group {
 	arns := []entities.Arn{}
-	for _, policyRef := range c.AttachedManagedPolicies {
+	for _, policyRef := range c.Configuration.AttachedManagedPolicies {
 		arns = append(arns, entities.Arn(policyRef.Arn))
 	}
 
@@ -107,10 +172,136 @@ func (c *configGroup) toEntity() (entities.Group, error) {
 		Type:      c.Type,
 		AccountId: c.AccountId,
 		Arn:       c.Arn,
-		Policies: common.Map(c.AttachedManagedPolicies, func(x policyRef) entities.Arn {
-			return entities.Arn(x.Arn)
-		}),
-	}, nil
+		Policies: common.Map(c.Configuration.AttachedManagedPolicies,
+			func(x policyRef) entities.Arn {
+				return entities.Arn(x.Arn)
+			}),
+	}
+}
+
+// --------------------------------------------------------------------------------
+// Generic resource
+// --------------------------------------------------------------------------------
+
+type genericResource struct {
+	ConfigItem
+}
+
+func (c *genericResource) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+		Policy:    policy.Policy{},
+	}
+}
+
+// -------------------------------------------------------------------------------------------------
+// AWS::S3::Bucket
+// -------------------------------------------------------------------------------------------------
+
+type configS3Bucket struct {
+	ConfigItem
+	SupplementaryConfiguration struct {
+		BucketPolicy struct {
+			PolicyText encodedPolicy `json:"policyText"`
+		}
+	} `json:"supplementaryConfiguration"`
+}
+
+func (c *configS3Bucket) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+		Policy:    policy.Policy(c.SupplementaryConfiguration.BucketPolicy.PolicyText),
+	}
+}
+
+// -------------------------------------------------------------------------------------------------
+// AWS::DynamoDB::Table
+// -------------------------------------------------------------------------------------------------
+
+type configDynamodbTable struct {
+	ConfigItem
+}
+
+func (c *configDynamodbTable) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+		Policy:    policy.Policy{}, // TODO(nsiow) implement DDB table policy support
+	}
+}
+
+// -------------------------------------------------------------------------------------------------
+// AWS::KMS::Key
+// -------------------------------------------------------------------------------------------------
+
+type configKmsKey struct {
+	ConfigItem
+}
+
+func (c *configKmsKey) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+		Policy:    policy.Policy{}, // TODO(nsiow) implement KMS key policy support
+	}
+}
+
+// --------------------------------------------------------------------------------
+// AWS::SNS::Topic
+// --------------------------------------------------------------------------------
+
+type configSnsTopic struct {
+	ConfigItem
+	Configuration struct {
+		Policy encodedPolicy
+	} `json:"configuration"`
+}
+
+func (c *configSnsTopic) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+		Policy:    policy.Policy(c.Configuration.Policy),
+	}
+}
+
+// --------------------------------------------------------------------------------
+// AWS::SQS::Queue
+// --------------------------------------------------------------------------------
+
+type configSqsQueue struct {
+	ConfigItem
+	Configuration struct {
+		Policy encodedPolicy
+	} `json:"configuration"`
+}
+
+func (c *configSqsQueue) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+		Policy:    policy.Policy(c.Configuration.Policy),
+	}
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -119,18 +310,20 @@ func (c *configGroup) toEntity() (entities.Group, error) {
 
 type configAccount struct {
 	ConfigItem
-	OrgId    string           `json:"orgId"`
-	OrgPaths []string         `json:"orgPaths"`
-	SCPs     [][]entities.Arn `json:"serviceControlPolicies"`
+	Configuration struct {
+		OrgId    string           `json:"orgId"`
+		OrgPaths []string         `json:"orgPaths"`
+		SCPs     [][]entities.Arn `json:"serviceControlPolicies"`
+	}
 }
 
-func (c *configAccount) toEntity() (entities.Account, error) {
+func (c *configAccount) asAccount() entities.Account {
 	return entities.Account{
 		Id:       c.AccountId,
-		OrgId:    c.OrgId,
-		OrgPaths: c.OrgPaths,
-		SCPs:     c.SCPs,
-	}, nil
+		OrgId:    c.Configuration.OrgId,
+		OrgPaths: c.Configuration.OrgPaths,
+		SCPs:     c.Configuration.SCPs,
+	}
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -139,14 +332,16 @@ func (c *configAccount) toEntity() (entities.Account, error) {
 
 type configSCP struct {
 	ConfigItem
-	Document encodedPolicy `json:"document"`
+	Configuration struct {
+		Document encodedPolicy `json:"document"`
+	}
 }
 
-func (c *configSCP) toEntity() (entities.Policy, error) {
+func (c *configSCP) asPolicy() entities.Policy {
 	return entities.Policy{
 		Type:      c.Type,
 		AccountId: c.AccountId,
 		Arn:       c.Arn,
-		Policy:    policy.Policy(c.Document),
-	}, nil
+		Policy:    policy.Policy(c.Configuration.Document),
+	}
 }

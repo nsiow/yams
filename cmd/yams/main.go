@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/loaders/awsconfig"
@@ -26,7 +27,7 @@ func main() {
 	}
 
 	// Attempt to parse the data
-	var universe entities.Universe
+	var universe *entities.Universe
 	switch rc.CacheFormat {
 	case CONST_CACHE_FORMAT_AWS_CONFIG:
 		loader := awsconfig.NewLoader()
@@ -45,5 +46,6 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("loaded %d principals; %d resources from cache\n",
-		len(universe.Principals), len(universe.Resources))
+		len(slices.Collect(universe.Principals())),
+		len(slices.Collect(universe.Resources())))
 }

@@ -37,13 +37,8 @@ func TestNewSimulator(t *testing.T) {
 func TestSimulatorUniverse(t *testing.T) {
 
 	// Define our universe
-	universe := entities.Universe{
-		Principals: []entities.Principal{
-			{
-				Arn: "arn:aws:iam::88888:role/exampleRole",
-			},
-		},
-	}
+	universe := entities.Universe{}
+	universe.PutAccount(entities.Account{Id: "55555"})
 
 	// Create a simulator and set Universe
 	sim, _ := NewSimulator()

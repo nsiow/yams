@@ -13,7 +13,7 @@ type Principal struct {
 	AccountId string
 
 	// Arn refers to the Amazon Resource Name of the Principal
-	Arn string
+	Arn Arn
 
 	// Tags refers to the AWS metadata tags attached to the Principal
 	Tags []Tag

@@ -19,7 +19,7 @@ type Resource struct {
 	Region string
 
 	// Arn refers to the Amazon Resource Name of the Resource
-	Arn string
+	Arn Arn
 
 	// Tags refers to the AWS metadata tags attached to the Resource
 	Tags []Tag
@@ -40,5 +40,5 @@ func (r *Resource) Service() (string, error) {
 
 // SubresourceArn returns the ARN of the specified subresource
 func (r *Resource) SubresourceArn(subpath string) string {
-	return strings.TrimRight(r.Arn, "/") + "/" + strings.TrimLeft(subpath, "/")
+	return strings.TrimRight(r.Arn.String(), "/") + "/" + strings.TrimLeft(subpath, "/")
 }

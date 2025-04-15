@@ -15,7 +15,7 @@ type Policy struct {
 	AccountId string
 
 	// Arn refers to the Amazon Resource Name of the Policy
-	Arn string
+	Arn Arn
 
 	// Policy contains the actual Policy data
 	Policy policy.Policy

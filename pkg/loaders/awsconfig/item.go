@@ -11,7 +11,7 @@ type ConfigItem struct {
 	Type      string          `json:"resourceType"`
 	AccountId string          `json:"accountId"`
 	Region    string          `json:"awsRegion"`
-	Arn       string          `json:"arn"`
+	Arn       entities.Arn    `json:"arn"`
 	Tags      []entities.Tag  `json:"tags"`
 	raw       json.RawMessage `json:"-"`
 }
