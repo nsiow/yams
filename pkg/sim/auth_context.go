@@ -19,14 +19,15 @@ import (
 //             sufficient null checks
 
 // AuthContext defines the tertiary context of a request that can be used for authz decisions
+// TODO(nsiow) decide if this should be public or private type
 type AuthContext struct {
 	Action    *types.Action
 	Principal *entities.Principal
 	Resource  *entities.Resource
 
 	Time                 time.Time
-	Properties           PropertyBag[string]
-	MultiValueProperties PropertyBag[[]string]
+	Properties           Bag[string]
+	MultiValueProperties Bag[[]string]
 }
 
 // Static values

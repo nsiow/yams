@@ -44,11 +44,22 @@ func (s *Simulator) Simulate(ac AuthContext) (*Result, error) {
 	return evalOverallAccess(subj)
 }
 
-// SimulateByArn determines whether the operation would be allowed
+// SimulateByArn determines whether the operation would be allowed between the Principal and
+// Resource specified by the provided ARN strings
+func (s *Simulator) SimulateByArnString(
+	action string,
+	principalString string,
+	resourceString string,
+	ctx map[string]string) (*Result, error) {
+	return s.SimulateByArn(action, entities.Arn(principalString), entities.Arn(resourceString), ctx)
+}
+
+// SimulateByArn determines whether the operation would be allowed between the Principal and
+// Resource specified by the provided ARNs
 func (s *Simulator) SimulateByArn(
 	action string,
-	principalArnString string,
-	resourceArnString string,
+	principalArn entities.Arn,
+	resourceArn entities.Arn,
 	ctx map[string]string) (*Result, error) {
 
 	ac := AuthContext{}
@@ -61,14 +72,14 @@ func (s *Simulator) SimulateByArn(
 	}
 
 	// Locate Principal
-	principal, ok := s.universe.Principal(entities.Arn(principalArnString))
+	principal, ok := s.universe.Principal(principalArn)
 	if !ok {
 		return nil, fmt.Errorf("simulator universe does not have Principal with Arn=%s", principal)
 	}
 	ac.Principal = principal
 
 	// Locate resource
-	resource, ok := s.universe.Resource(entities.Arn(resourceArnString))
+	resource, ok := s.universe.Resource(resourceArn)
 	if !ok {
 		return nil, fmt.Errorf("simulator universe does not have Resource with Arn=%s", resource)
 	}
