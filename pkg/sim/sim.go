@@ -11,7 +11,7 @@ import (
 // Simulator provides the ability to simulate IAM policies and the interactions between
 // Principals + Resources
 type Simulator struct {
-	universe entities.Universe
+	universe *entities.Universe
 	options  Options
 }
 
@@ -24,12 +24,12 @@ func NewSimulator(o ...OptionF) (*Simulator, error) {
 }
 
 // Universe returns a pointer to the current Universe being used by the Simulator
-func (s *Simulator) Universe() entities.Universe {
+func (s *Simulator) Universe() *entities.Universe {
 	return s.universe
 }
 
 // SetUniverse redefines the Universe used by the Simulator for access evaluations
-func (s *Simulator) SetUniverse(universe entities.Universe) {
+func (s *Simulator) SetUniverse(universe *entities.Universe) {
 	s.universe = universe
 }
 
@@ -45,7 +45,11 @@ func (s *Simulator) Simulate(ac AuthContext) (*Result, error) {
 }
 
 // SimulateByArn determines whether the operation would be allowed
-func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[string]string) (*Result, error) {
+func (s *Simulator) SimulateByArn(
+	action string,
+	principalArnString string,
+	resourceArnString string,
+	ctx map[string]string) (*Result, error) {
 
 	ac := AuthContext{}
 	ac.Properties = NewBagFromMap(ctx)
@@ -57,30 +61,18 @@ func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[st
 	}
 
 	// Locate Principal
-	found := false
-	for _, p := range s.universe.Principals {
-		if p.Arn == principal {
-			ac.Principal = &p
-			found = true
-			break
-		}
-	}
-	if !found {
+	principal, ok := s.universe.Principal(entities.Arn(principalArnString))
+	if !ok {
 		return nil, fmt.Errorf("simulator universe does not have Principal with Arn=%s", principal)
 	}
+	ac.Principal = principal
 
 	// Locate resource
-	found = false
-	for _, r := range s.universe.Resources {
-		if r.Arn == resource {
-			ac.Resource = &r
-			found = true
-			break
-		}
-	}
-	if !found {
+	resource, ok := s.universe.Resource(entities.Arn(resourceArnString))
+	if !ok {
 		return nil, fmt.Errorf("simulator universe does not have Resource with Arn=%s", resource)
 	}
+	ac.Resource = resource
 
 	return s.Simulate(ac)
 }
@@ -93,11 +85,11 @@ func (s *Simulator) ComputeAccessSummary(actions []*types.Action) (map[string]in
 	// TODO(nsiow) this needs to be parallelized
 	// Iterate over the matrix of Resources x Principals x Actions
 	access := make(map[string]int)
-	for _, r := range s.universe.Resources {
+	for r := range s.universe.Resources() {
 		// we do this because we always want resources to show up, even if nothing can access it
-		access[r.Arn] = 0
+		access[r.Arn.String()] = 0
 
-		for _, p := range s.universe.Principals {
+		for p := range s.universe.Principals() {
 			for _, a := range actions {
 				ac := AuthContext{
 					Action:     a,
@@ -112,7 +104,7 @@ func (s *Simulator) ComputeAccessSummary(actions []*types.Action) (map[string]in
 				}
 
 				if result.IsAllowed {
-					access[r.Arn]++
+					access[r.Arn.String()]++
 					break
 				}
 			}

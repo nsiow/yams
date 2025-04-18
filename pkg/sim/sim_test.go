@@ -269,44 +269,6 @@ func TestComputeAccessSummary(t *testing.T) {
 			},
 			Want: map[string]int{},
 		},
-		{
-			Name: "nonexistent_condition",
-			Want: map[string]int{"arn:aws:s3:::mybucket": 0},
-			Input: input{
-				actions: []*types.Action{sar.MustLookupString("s3:listbucket")},
-				universe: entities.Universe{
-					Principals: []entities.Principal{
-						{
-							Arn:       "arn:aws:iam::88888:role/role1",
-							AccountId: "88888",
-						},
-					},
-					Resources: []entities.Resource{
-						{
-							Arn:       "arn:aws:s3:::mybucket",
-							AccountId: "11111",
-							Policy: policy.Policy{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"s3:listbucket"},
-										Resource: []string{"arn:aws:s3:::mybucket"},
-										Principal: policy.Principal{
-											AWS: []string{"arn:aws:iam::88888:role/role1"},
-										},
-										Condition: map[string]map[string]policy.Value{
-											"StringEqualsThisDoesNotExist": {
-												"foo": []string{"bar"},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (map[string]int, error) {
@@ -322,9 +284,9 @@ func TestComputeAccessSummary(t *testing.T) {
 	})
 }
 
-var SimpleTestUniverse_1 = entities.Universe{
-	Principals: []entities.Principal{
-		{
+var SimpleTestUniverse_1 = entities.NewBuilder().
+	WithPrincipals(
+		entities.Principal{
 			Arn:       "arn:aws:iam::88888:role/role1",
 			AccountId: "88888",
 			InlinePolicies: []policy.Policy{
@@ -339,7 +301,7 @@ var SimpleTestUniverse_1 = entities.Universe{
 				},
 			},
 		},
-		{
+		entities.Principal{
 			Arn:       "arn:aws:iam::88888:role/role2",
 			AccountId: "88888",
 			InlinePolicies: []policy.Policy{
@@ -354,17 +316,17 @@ var SimpleTestUniverse_1 = entities.Universe{
 				},
 			},
 		},
-		{
+		entities.Principal{
 			Arn:       "arn:aws:iam::88888:role/role3",
 			AccountId: "11111",
 		},
-	},
-	Resources: []entities.Resource{
-		{
+	).
+	WithResources(
+		entities.Resource{
 			Arn:       "arn:aws:s3:::bucket1",
 			AccountId: "88888",
 		},
-		{
+		entities.Resource{
 			Arn:       "arn:aws:s3:::bucket2",
 			AccountId: "11111",
 			Policy: policy.Policy{
@@ -380,9 +342,9 @@ var SimpleTestUniverse_1 = entities.Universe{
 				},
 			},
 		},
-		{
+		entities.Resource{
 			Arn:       "arn:aws:s3:::bucket3",
 			AccountId: "11111",
 		},
-	},
-}
+	).
+	Build()

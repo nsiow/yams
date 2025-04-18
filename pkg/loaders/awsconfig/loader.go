@@ -16,7 +16,9 @@ type Loader struct {
 
 // NewLoader provisions and returns a new `Loader` struct, ready to use
 func NewLoader() *Loader {
-	return &Loader{}
+	return &Loader{
+		universe: entities.NewUniverse(),
+	}
 }
 
 // Universe returns an Universe containing the loaded Principals + Resources

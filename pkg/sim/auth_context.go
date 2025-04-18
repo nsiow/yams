@@ -90,7 +90,7 @@ func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 	// ---------------------------------------------------------------------------------------------
 
 	case condkey.PrincipalArn:
-		return ac.Principal.Arn
+		return ac.Principal.Arn.String()
 	case condkey.PrincipalAccount:
 		return ac.Principal.AccountId
 	case condkey.PrincipalIsAwsService:
