@@ -31,14 +31,14 @@ func evalPrincipalInlinePolicies(s *subject, policies []policy.Policy) Decision 
 
 	decision := Decision{}
 	for i, policy := range policies {
-		var policyId string
+		var pid string
 		if len(policy.Id) > 0 {
-			policyId = policyId
+			pid = policy.Id
 		} else {
-			policyId = fmt.Sprintf("inline(%d)", i)
+			pid = fmt.Sprintf("inline(%d)", i)
 		}
 
-		s.trc.Push(fmt.Sprintf("evaluating principal inline policy: %s", policyId))
+		s.trc.Push("evaluating principal inline policy: %s", pid)
 		decision.Merge(
 			evalPolicy(
 				s,
@@ -61,7 +61,7 @@ func evalPrincipalAttachedPolicies(s *subject, policies []entities.ManagedPolicy
 
 	decision := Decision{}
 	for _, policy := range policies {
-		s.trc.Push(fmt.Sprintf("evaluating principal attached policy: %s", policy.Arn))
+		s.trc.Push("evaluating principal attached policy: %s", policy.Arn)
 		decision.Merge(
 			evalPolicy(
 				s,

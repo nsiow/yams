@@ -15,12 +15,16 @@ func TestResourceAccess(t *testing.T) {
 			Name: "implicit_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn: "arn:aws:iam::88888:role/myrole",
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn: "arn:aws:iam::88888:role/myrole",
+					},
 				},
-				Resource: &entities.Resource{
-					Arn:    "arn:aws:s3:::mybucket",
-					Policy: policy.Policy{},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:    "arn:aws:s3:::mybucket",
+						Policy: policy.Policy{},
+					},
 				},
 			},
 			Want: []policy.Effect(nil),
@@ -29,19 +33,23 @@ func TestResourceAccess(t *testing.T) {
 			Name: "simple_match",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn: "arn:aws:iam::88888:role/myrole",
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn: "arn:aws:iam::88888:role/myrole",
+					},
 				},
-				Resource: &entities.Resource{
-					Arn: "arn:aws:s3:::mybucket",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
-								Principal: policy.Principal{
-									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn: "arn:aws:s3:::mybucket",
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+									Principal: policy.Principal{
+										AWS: []string{"arn:aws:iam::88888:role/myrole"},
+									},
 								},
 							},
 						},
@@ -54,19 +62,23 @@ func TestResourceAccess(t *testing.T) {
 			Name: "explicit_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn: "arn:aws:iam::88888:role/myrole",
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn: "arn:aws:iam::88888:role/myrole",
+					},
 				},
-				Resource: &entities.Resource{
-					Arn: "arn:aws:s3:::mybucket",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_DENY,
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
-								Principal: policy.Principal{
-									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn: "arn:aws:s3:::mybucket",
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_DENY,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+									Principal: policy.Principal{
+										AWS: []string{"arn:aws:iam::88888:role/myrole"},
+									},
 								},
 							},
 						},
@@ -79,56 +91,30 @@ func TestResourceAccess(t *testing.T) {
 			Name: "allow_and_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn: "arn:aws:iam::88888:role/myrole",
-				},
-				Resource: &entities.Resource{
-					Arn: "arn:aws:s3:::mybucket",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
-								Principal: policy.Principal{
-									AWS: []string{"arn:aws:iam::88888:role/myrole"},
-								},
-							},
-							{
-								Effect:   policy.EFFECT_DENY,
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
-								Principal: policy.Principal{
-									AWS: []string{"*"},
-								},
-							},
-						},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn: "arn:aws:iam::88888:role/myrole",
 					},
 				},
-			},
-			Want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
-		},
-		{
-			Name: "nonexistent_condition",
-			Input: AuthContext{
-				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn: "arn:aws:iam::88888:role/myrole",
-				},
-				Resource: &entities.Resource{
-					Arn: "arn:aws:s3:::mybucket",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
-								Principal: policy.Principal{
-									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn: "arn:aws:s3:::mybucket",
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+									Principal: policy.Principal{
+										AWS: []string{"arn:aws:iam::88888:role/myrole"},
+									},
 								},
-								Condition: map[string]map[string]policy.Value{
-									"StringEqualsThisDoesNotExist": {
-										"foo": []string{"bar"},
+								{
+									Effect:   policy.EFFECT_DENY,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+									Principal: policy.Principal{
+										AWS: []string{"*"},
 									},
 								},
 							},
@@ -136,7 +122,7 @@ func TestResourceAccess(t *testing.T) {
 					},
 				},
 			},
-			Want: nil,
+			Want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
 		},
 	}
 

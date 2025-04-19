@@ -42,7 +42,7 @@ func TestSimulatorUniverse(t *testing.T) {
 
 	// Create a simulator and set Universe
 	sim, _ := NewSimulator()
-	sim.SetUniverse(universe)
+	sim.SetUniverse(&universe)
 
 	// Compare retrieved universe to ours
 	got := sim.Universe()
@@ -57,16 +57,21 @@ func TestSimulate(t *testing.T) {
 			Name: "same_account_implicit_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:              "arn:aws:iam::88888:role/myrole",
-					AccountId:        "88888",
-					InlinePolicies:   nil,
-					AttachedPolicies: nil,
+
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:              "arn:aws:iam::88888:role/myrole",
+						AccountId:        "88888",
+						InlinePolicies:   nil,
+						AttachedPolicies: nil,
+					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
-					Policy:    policy.Policy{},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+						Policy:    policy.Policy{},
+					},
 				},
 			},
 			Want: false,
@@ -75,24 +80,28 @@ func TestSimulate(t *testing.T) {
 			Name: "same_account_simple_allow",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			Want: true,
@@ -101,24 +110,28 @@ func TestSimulate(t *testing.T) {
 			Name: "invalid_auth_context",
 			Input: AuthContext{
 				Action: sar.MustLookupString("sqs:getqueueurl"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			ShouldErr: true,
@@ -139,7 +152,7 @@ func TestSimulate(t *testing.T) {
 
 func TestSimulateByArn(t *testing.T) {
 	type input struct {
-		universe     entities.Universe
+		universe     *entities.Universe
 		action       string
 		principalArn string
 		resourceArn  string
@@ -169,7 +182,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "test_empty_universe",
 			Input: input{
-				universe:     entities.Universe{},
+				universe:     &entities.Universe{},
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::bucket1",
@@ -221,7 +234,12 @@ func TestSimulateByArn(t *testing.T) {
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		sim, _ := NewSimulator()
 		sim.SetUniverse(i.universe)
-		res, err := sim.SimulateByArn(i.action, i.principalArn, i.resourceArn, nil)
+		res, err := sim.SimulateByArn(
+			i.action,
+			entities.Arn(i.principalArn),
+			entities.Arn(i.resourceArn),
+			nil,
+		)
 		if err != nil {
 			return false, err
 		}
@@ -233,7 +251,7 @@ func TestSimulateByArn(t *testing.T) {
 
 func TestComputeAccessSummary(t *testing.T) {
 	type input struct {
-		universe entities.Universe
+		universe *entities.Universe
 		actions  []*types.Action
 	}
 
@@ -265,7 +283,7 @@ func TestComputeAccessSummary(t *testing.T) {
 		{
 			Name: "empty_universe",
 			Input: input{
-				universe: entities.Universe{},
+				universe: &entities.Universe{},
 			},
 			Want: map[string]int{},
 		},

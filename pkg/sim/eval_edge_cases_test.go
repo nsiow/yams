@@ -26,8 +26,8 @@ func TestIsStrictCall(t *testing.T) {
 			Name: "sts_assume_role",
 			Input: AuthContext{
 				Action:    sar.MustLookupString("sts:assumerole"),
-				Principal: &entities.Principal{},
-				Resource:  &entities.Resource{},
+				Principal: &entities.FrozenPrincipal{},
+				Resource:  &entities.FrozenResource{},
 			},
 			Want: true,
 		},
@@ -35,10 +35,12 @@ func TestIsStrictCall(t *testing.T) {
 			Name: "kms_plus_key",
 			Input: AuthContext{
 				Action:    sar.MustLookupString("kms:decrypt"),
-				Principal: &entities.Principal{},
-				Resource: &entities.Resource{
-					Arn:  "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
-					Type: "AWS::KMS::Key",
+				Principal: &entities.FrozenPrincipal{},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:  "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+						Type: "AWS::KMS::Key",
+					},
 				},
 			},
 			Want: true,
@@ -47,10 +49,12 @@ func TestIsStrictCall(t *testing.T) {
 			Name: "kms_sans_key",
 			Input: AuthContext{
 				Action:    sar.MustLookupString("kms:decrypt"),
-				Principal: &entities.Principal{},
-				Resource: &entities.Resource{
-					Arn:  "arn:aws:kms:us-west-2:111122223333:alias/ExampleAlias",
-					Type: "AWS::KMS::Alias",
+				Principal: &entities.FrozenPrincipal{},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:  "arn:aws:kms:us-west-2:111122223333:alias/ExampleAlias",
+						Type: "AWS::KMS::Alias",
+					},
 				},
 			},
 			Want: false,

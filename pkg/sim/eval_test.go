@@ -13,15 +13,23 @@ func TestEvalIsSameAccount(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, bool]{
 		{
 			Input: AuthContext{
-				Principal: &entities.Principal{AccountId: "88888"},
-				Resource:  &entities.Resource{AccountId: "88888"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{AccountId: "88888"},
+				},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{AccountId: "88888"},
+				},
 			},
 			Want: true,
 		},
 		{
 			Input: AuthContext{
-				Principal: &entities.Principal{AccountId: "88888"},
-				Resource:  &entities.Resource{AccountId: "12345"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{AccountId: "12345"},
+				},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{AccountId: "88888"},
+				},
 			},
 			Want: false,
 		},
@@ -39,16 +47,20 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Name: "x_account_implicit_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:              "arn:aws:iam::88888:role/myrole",
-					AccountId:        "88888",
-					InlinePolicies:   nil,
-					AttachedPolicies: nil,
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:              "arn:aws:iam::88888:role/myrole",
+						AccountId:        "88888",
+						InlinePolicies:   nil,
+						AttachedPolicies: nil,
+					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "11111",
-					Policy:    policy.Policy{},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "11111",
+						Policy:    policy.Policy{},
+					},
 				},
 			},
 			Want: false,
@@ -57,24 +69,28 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Name: "x_account_principal_only_allow",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "11111",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "11111",
+					},
 				},
 			},
 			Want: false,
@@ -83,21 +99,25 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Name: "x_account_resource_only_allow",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "11111",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
-								Principal: policy.Principal{
-									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "11111",
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+									Principal: policy.Principal{
+										AWS: []string{"arn:aws:iam::88888:role/myrole"},
+									},
 								},
 							},
 						},
@@ -111,24 +131,28 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Name: "x_account_principal_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_DENY,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_DENY,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "11111",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "11111",
+					},
 				},
 			},
 			Want: false,
@@ -137,19 +161,23 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Name: "x_account_resource_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "11111",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_DENY,
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "11111",
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_DENY,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
 							},
 						},
 					},
@@ -161,32 +189,36 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Name: "x_account_allow_and_allow",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "11111",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
-								Principal: policy.Principal{
-									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "11111",
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+									Principal: policy.Principal{
+										AWS: []string{"arn:aws:iam::88888:role/myrole"},
+									},
 								},
 							},
 						},
@@ -199,11 +231,55 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			Name: "nonexistent_principal_condition",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+										Principal: policy.Principal{
+											AWS: []string{"arn:aws:iam::88888:role/myrole"},
+										},
+										Condition: map[string]map[string]policy.Value{
+											"StringEqualsThisDoesNotExist": {
+												"foo": []string{"bar"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "11111",
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "nonexistent_resource_condition",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "11111",
+						Policy: policy.Policy{
 							Statement: []policy.Statement{
 								{
 									Effect:   policy.EFFECT_ALLOW,
@@ -216,42 +292,6 @@ func TestOverallAccess_XAccount(t *testing.T) {
 										"StringEqualsThisDoesNotExist": {
 											"foo": []string{"bar"},
 										},
-									},
-								},
-							},
-						},
-					},
-				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "11111",
-				},
-			},
-			Want: false,
-		},
-		{
-			Name: "nonexistent_resource_condition",
-			Input: AuthContext{
-				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "11111",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
-								Principal: policy.Principal{
-									AWS: []string{"arn:aws:iam::88888:role/myrole"},
-								},
-								Condition: map[string]map[string]policy.Value{
-									"StringEqualsThisDoesNotExist": {
-										"foo": []string{"bar"},
 									},
 								},
 							},
@@ -284,16 +324,20 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "same_account_implicit_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:              "arn:aws:iam::88888:role/myrole",
-					AccountId:        "88888",
-					InlinePolicies:   nil,
-					AttachedPolicies: nil,
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:              "arn:aws:iam::88888:role/myrole",
+						AccountId:        "88888",
+						InlinePolicies:   nil,
+						AttachedPolicies: nil,
+					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
-					Policy:    policy.Policy{},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+						Policy:    policy.Policy{},
+					},
 				},
 			},
 			Want: false,
@@ -302,24 +346,28 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "same_account_simple_allow",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			Want: true,
@@ -328,24 +376,28 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "same_account_simple_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_DENY,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_DENY,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			Want: false,
@@ -354,35 +406,41 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "allow_and_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
-					AttachedPolicies: []policy.Policy{
+					FrozenAttachedPolicies: []entities.ManagedPolicy{
 						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_DENY,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+							Policy: policy.Policy{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_DENY,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			Want: false,
@@ -391,22 +449,24 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "same_account_nonexistent_condition",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
-									Principal: policy.Principal{
-										AWS: []string{"arn:aws:iam::88888:role/myrole"},
-									},
-									Condition: map[string]map[string]policy.Value{
-										"StringEqualsThisDoesNotExist": {
-											"foo": []string{"bar"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+										Principal: policy.Principal{
+											AWS: []string{"arn:aws:iam::88888:role/myrole"},
+										},
+										Condition: map[string]map[string]policy.Value{
+											"StringEqualsThisDoesNotExist": {
+												"foo": []string{"bar"},
+											},
 										},
 									},
 								},
@@ -414,9 +474,11 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			Want: false,
@@ -425,21 +487,25 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "same_account_resource_access",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
-								Principal: policy.Principal{
-									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+									Principal: policy.Principal{
+										AWS: []string{"arn:aws:iam::88888:role/myrole"},
+									},
 								},
 							},
 						},
@@ -452,33 +518,39 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "permissions_boundary_allow",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
-					PermissionsBoundary: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:    policy.EFFECT_ALLOW,
-								NotAction: []string{"iam:*"},
-								Resource:  []string{"*"},
+					FrozenPermissionBoundary: entities.ManagedPolicy{
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:    policy.EFFECT_ALLOW,
+									NotAction: []string{"iam:*"},
+									Resource:  []string{"*"},
+								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			Want: true,
@@ -487,33 +559,39 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "permissions_boundary_explicit_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
-					PermissionsBoundary: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_DENY,
-								Action:   []string{"*"},
-								Resource: []string{"*"},
+					FrozenPermissionBoundary: entities.ManagedPolicy{
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_DENY,
+									Action:   []string{"*"},
+									Resource: []string{"*"},
+								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			Want: false,
@@ -522,33 +600,39 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "permissions_boundary_implicit_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
-					PermissionsBoundary: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"ec2:*"},
-								Resource: []string{"*"},
+					FrozenPermissionBoundary: entities.ManagedPolicy{
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"ec2:*"},
+									Resource: []string{"*"},
+								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			Want: false,
@@ -557,29 +641,33 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "scp_allow",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
-					Account: entities.Account{
-						SCPs: [][]policy.Policy{
+					FrozenAccount: entities.FrozenAccount{
+						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_ALLOW,
-											Action:   []string{"*"},
-											Resource: []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
@@ -587,9 +675,11 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			Want: true,
@@ -598,40 +688,44 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "scp_explicit_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
-					Account: entities.Account{
-						SCPs: [][]policy.Policy{
+					FrozenAccount: entities.FrozenAccount{
+						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_ALLOW,
-											Action:   []string{"*"},
-											Resource: []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
-							},
-							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_DENY,
-											Action:   []string{"*"},
-											Resource: []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_DENY,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
@@ -639,9 +733,11 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			Want: false,
@@ -650,29 +746,33 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "scp_implicit_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
-					Account: entities.Account{
-						SCPs: [][]policy.Policy{
+					FrozenAccount: entities.FrozenAccount{
+						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:    policy.EFFECT_ALLOW,
-											NotAction: []string{"s3:*"},
-											Resource:  []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"ec2:*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
@@ -680,9 +780,11 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			Want: false,
@@ -691,41 +793,45 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Name: "scp_layer_implicit_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn:       "arn:aws:iam::88888:role/myrole",
-					AccountId: "88888",
-					InlinePolicies: []policy.Policy{
-						{
-							Statement: []policy.Statement{
-								{
-									Effect:   policy.EFFECT_ALLOW,
-									Action:   []string{"s3:listbucket"},
-									Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{
+						Arn:       "arn:aws:iam::88888:role/myrole",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"s3:listbucket"},
+										Resource: []string{"arn:aws:s3:::mybucket"},
+									},
 								},
 							},
 						},
 					},
-					Account: entities.Account{
-						SCPs: [][]policy.Policy{
+					FrozenAccount: entities.FrozenAccount{
+						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:    policy.EFFECT_ALLOW,
-											NotAction: []string{"*"},
-											Resource:  []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"ec2:*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
-							},
-							{}, // <= missing
-							{
+								{}, // empty layter
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:    policy.EFFECT_ALLOW,
-											NotAction: []string{"*"},
-											Resource:  []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"ec2:*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
@@ -733,9 +839,11 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 						},
 					},
 				},
-				Resource: &entities.Resource{
-					Arn:       "arn:aws:s3:::mybucket",
-					AccountId: "88888",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn:       "arn:aws:s3:::mybucket",
+						AccountId: "88888",
+					},
 				},
 			},
 			Want: false,

@@ -16,5 +16,5 @@ const (
 
 	// Define constants for custom types
 	CONST_TYPE_YAMS_ORGANIZATIONS_ACCOUNT = "Yams::Organizations::Account"
-	CONST_TYPE_YAMS_ORGANIZATIONS_POLICY  = "Yams::Organizations::Policy"
+	CONST_TYPE_YAMS_ORGANIZATIONS_SCP     = "Yams::Organizations::ServiceControlPolicy"
 )

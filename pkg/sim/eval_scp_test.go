@@ -14,9 +14,18 @@ func TestSCP(t *testing.T) {
 		{
 			Name: "no_scps",
 			Input: AuthContext{
-				Principal: &entities.Principal{},
-				Resource:  &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:    sar.MustLookupString("s3:ListBucket"),
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{},
+					FrozenAccount: entities.FrozenAccount{
+						FrozenSCPs: [][]entities.ManagedPolicy{},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn: "arn:aws:s3:::mybucket",
+					},
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -25,16 +34,19 @@ func TestSCP(t *testing.T) {
 		{
 			Name: "allow_all",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					Account: entities.Account{
-						SCPs: [][]policy.Policy{
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{},
+					FrozenAccount: entities.FrozenAccount{
+						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_ALLOW,
-											Action:   []string{"*"},
-											Resource: []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
@@ -42,8 +54,12 @@ func TestSCP(t *testing.T) {
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   sar.MustLookupString("s3:ListBucket"),
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn: "arn:aws:s3:::mybucket",
+					},
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -52,16 +68,19 @@ func TestSCP(t *testing.T) {
 		{
 			Name: "deny_all",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					Account: entities.Account{
-						SCPs: [][]policy.Policy{
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{},
+					FrozenAccount: entities.FrozenAccount{
+						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_DENY,
-											Action:   []string{"*"},
-											Resource: []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_DENY,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
@@ -69,8 +88,12 @@ func TestSCP(t *testing.T) {
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   sar.MustLookupString("s3:ListBucket"),
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn: "arn:aws:s3:::mybucket",
+					},
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_DENY,
@@ -79,16 +102,19 @@ func TestSCP(t *testing.T) {
 		{
 			Name: "allowed_service",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					Account: entities.Account{
-						SCPs: [][]policy.Policy{
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{},
+					FrozenAccount: entities.FrozenAccount{
+						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_ALLOW,
-											Action:   []string{"s3:*"},
-											Resource: []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"s3:*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
@@ -96,8 +122,12 @@ func TestSCP(t *testing.T) {
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   sar.MustLookupString("s3:ListBucket"),
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn: "arn:aws:s3:::mybucket",
+					},
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -106,16 +136,19 @@ func TestSCP(t *testing.T) {
 		{
 			Name: "not_allowed_service",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					Account: entities.Account{
-						SCPs: [][]policy.Policy{
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{},
+					FrozenAccount: entities.FrozenAccount{
+						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_ALLOW,
-											Action:   []string{"ec2:*"},
-											Resource: []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"ec2:*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
@@ -123,36 +156,45 @@ func TestSCP(t *testing.T) {
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   sar.MustLookupString("s3:ListBucket"),
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn: "arn:aws:s3:::mybucket",
+					},
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect(nil),
 		},
 		{
 			Name: "mid_layer_implicit_deny",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					Account: entities.Account{
-						SCPs: [][]policy.Policy{
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{},
+					FrozenAccount: entities.FrozenAccount{
+						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_ALLOW,
-											Action:   []string{"*"},
-											Resource: []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
 							},
-							{}, // <= should cause a deny
+							{}, // should cause a deny
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_ALLOW,
-											Action:   []string{"*"},
-											Resource: []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
@@ -160,46 +202,57 @@ func TestSCP(t *testing.T) {
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   sar.MustLookupString("s3:ListBucket"),
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn: "arn:aws:s3:::mybucket",
+					},
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect(nil),
 		},
 		{
 			Name: "mid_layer_explicit_deny",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					Account: entities.Account{
-						SCPs: [][]policy.Policy{
+				Principal: &entities.FrozenPrincipal{
+					Principal: entities.Principal{},
+					FrozenAccount: entities.FrozenAccount{
+						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_ALLOW,
-											Action:   []string{"*"},
-											Resource: []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
 							},
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_DENY,
-											Action:   []string{"*"},
-											Resource: []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_DENY,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
 							},
 							{
 								{
-									Statement: []policy.Statement{
-										{
-											Effect:   policy.EFFECT_ALLOW,
-											Action:   []string{"*"},
-											Resource: []string{"*"},
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
 										},
 									},
 								},
@@ -207,8 +260,12 @@ func TestSCP(t *testing.T) {
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   sar.MustLookupString("s3:ListBucket"),
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn: "arn:aws:s3:::mybucket",
+					},
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_DENY,

@@ -163,11 +163,6 @@ type configGroup struct {
 }
 
 func (c *configGroup) asGroup() entities.Group {
-	arns := []entities.Arn{}
-	for _, policyRef := range c.Configuration.AttachedManagedPolicies {
-		arns = append(arns, entities.Arn(policyRef.Arn))
-	}
-
 	return entities.Group{
 		Type:      c.Type,
 		AccountId: c.AccountId,

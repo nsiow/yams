@@ -91,6 +91,8 @@ func (l *Loader) loadItem(item ConfigItem) error {
 	switch item.Type {
 	case CONST_TYPE_YAMS_ORGANIZATIONS_ACCOUNT:
 		return l.loadAccount(item)
+	case CONST_TYPE_YAMS_ORGANIZATIONS_SCP:
+		return l.loadSCP(item)
 	case CONST_TYPE_AWS_IAM_GROUP:
 		return l.loadGroup(item)
 	case CONST_TYPE_AWS_IAM_POLICY:
@@ -114,7 +116,6 @@ func (l *Loader) loadItem(item ConfigItem) error {
 	}
 }
 
-// TODO(nsiow) figure out correct struct linking for godoc
 func (l *Loader) loadAccount(item ConfigItem) error {
 	var target configAccount
 
@@ -124,6 +125,18 @@ func (l *Loader) loadAccount(item ConfigItem) error {
 	}
 
 	l.universe.PutAccount(target.asAccount())
+	return nil
+}
+
+func (l *Loader) loadSCP(item ConfigItem) error {
+	var target configSCP
+
+	err := json.Unmarshal(item.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.universe.PutPolicy(target.asPolicy())
 	return nil
 }
 
