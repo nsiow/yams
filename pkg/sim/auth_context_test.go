@@ -368,15 +368,17 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_tag",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
-						Tags: []entities.Tag{
-							{
-								Key:   "baz",
-								Value: "bam",
-							},
-							{
-								Key:   "foo",
-								Value: "bar",
+					Principal: &entities.FrozenPrincipal{
+						Principal: entities.Principal{
+							Tags: []entities.Tag{
+								{
+									Key:   "baz",
+									Value: "bam",
+								},
+								{
+									Key:   "foo",
+									Value: "bar",
+								},
 							},
 						},
 					},
@@ -389,11 +391,13 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_tag_bad_format",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
-						Tags: []entities.Tag{
-							{
-								Key:   "foo",
-								Value: "bar",
+					Principal: &entities.FrozenPrincipal{
+						Principal: entities.Principal{
+							Tags: []entities.Tag{
+								{
+									Key:   "foo",
+									Value: "bar",
+								},
 							},
 						},
 					},
@@ -406,15 +410,17 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_tag_does_not_exist",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
-						Tags: []entities.Tag{
-							{
-								Key:   "baz",
-								Value: "bam",
-							},
-							{
-								Key:   "foo",
-								Value: "bar",
+					Principal: &entities.FrozenPrincipal{
+						Principal: entities.Principal{
+							Tags: []entities.Tag{
+								{
+									Key:   "baz",
+									Value: "bam",
+								},
+								{
+									Key:   "foo",
+									Value: "bar",
+								},
 							},
 						},
 					},
@@ -427,15 +433,17 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "resource_tag",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{
-						Tags: []entities.Tag{
-							{
-								Key:   "baz",
-								Value: "bam",
-							},
-							{
-								Key:   "foo",
-								Value: "bar",
+					Resource: &entities.FrozenResource{
+						Resource: entities.Resource{
+							Tags: []entities.Tag{
+								{
+									Key:   "baz",
+									Value: "bam",
+								},
+								{
+									Key:   "foo",
+									Value: "bar",
+								},
 							},
 						},
 					},
@@ -484,9 +492,11 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_type_role",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
-						Type: "AWS::IAM::Role",
-						Arn:  "arn:aws:iam::88888:role/somerole",
+					Principal: &entities.FrozenPrincipal{
+						Principal: entities.Principal{
+							Type: "AWS::IAM::Role",
+							Arn:  "arn:aws:iam::88888:role/somerole",
+						},
 					},
 				},
 				key: "aws:PrincipalType",
@@ -497,9 +507,11 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_type_user",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
-						Type: "AWS::IAM::User",
-						Arn:  "arn:aws:iam::88888:user/someuser",
+					Principal: &entities.FrozenPrincipal{
+						Principal: entities.Principal{
+							Type: "AWS::IAM::User",
+							Arn:  "arn:aws:iam::88888:user/someuser",
+						},
 					},
 				},
 				key: "aws:PrincipalType",
@@ -510,9 +522,11 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_type_user",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
-						Type: "AWS::IAM::SomeNewEntityType",
-						Arn:  "arn:aws:iam::88888:thing/foo",
+					Principal: &entities.FrozenPrincipal{
+						Principal: entities.Principal{
+							Type: "AWS::IAM::SomeNewEntityType",
+							Arn:  "arn:aws:iam::88888:thing/foo",
+						},
 					},
 				},
 				key: "aws:PrincipalType",
@@ -523,8 +537,10 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_account",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
-						AccountId: "55555",
+					Principal: &entities.FrozenPrincipal{
+						Principal: entities.Principal{
+							AccountId: "55555",
+						},
 					},
 				},
 				key: "aws:PrincipalAccount",
@@ -535,9 +551,11 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "principal_org_id",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{
-						Account: entities.Account{
-							OrgId: "o-123",
+					Principal: &entities.FrozenPrincipal{
+						FrozenAccount: entities.FrozenAccount{
+							Account: entities.Account{
+								OrgId: "o-123",
+							},
 						},
 					},
 				},
@@ -549,8 +567,10 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "resource_account",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{
-						AccountId: "77777",
+					Resource: &entities.FrozenResource{
+						Resource: entities.Resource{
+							AccountId: "77777",
+						},
 					},
 				},
 				key: "aws:ResourceAccount",
@@ -561,9 +581,11 @@ func TestAuthContextKeys(t *testing.T) {
 			Name: "resource_org_id",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{
-						Account: entities.Account{
-							OrgId: "o-123",
+					Resource: &entities.FrozenResource{
+						FrozenAccount: entities.FrozenAccount{
+							Account: entities.Account{
+								OrgId: "o-123",
+							},
 						},
 					},
 				},
@@ -674,11 +696,13 @@ func TestSubstitute(t *testing.T) {
 			Input: input{
 				str: "arn:aws:s3:::somebucket/${aws:PrincipalTag/foo}",
 				ac: AuthContext{
-					Principal: &entities.Principal{
-						Tags: []entities.Tag{
-							{
-								Key:   "foo",
-								Value: "bar",
+					Principal: &entities.FrozenPrincipal{
+						Principal: entities.Principal{
+							Tags: []entities.Tag{
+								{
+									Key:   "foo",
+									Value: "bar",
+								},
 							},
 						},
 					},
@@ -691,15 +715,17 @@ func TestSubstitute(t *testing.T) {
 			Input: input{
 				str: "arn:aws:s3:::somebucket/${aws:PrincipalTag/foo}/${aws:PrincipalTag/hello}",
 				ac: AuthContext{
-					Principal: &entities.Principal{
-						Tags: []entities.Tag{
-							{
-								Key:   "foo",
-								Value: "bar",
-							},
-							{
-								Key:   "hello",
-								Value: "world",
+					Principal: &entities.FrozenPrincipal{
+						Principal: entities.Principal{
+							Tags: []entities.Tag{
+								{
+									Key:   "foo",
+									Value: "bar",
+								},
+								{
+									Key:   "hello",
+									Value: "world",
+								},
 							},
 						},
 					},
@@ -736,7 +762,7 @@ func TestValidate(t *testing.T) {
 		{
 			Name: "valid_auth_context",
 			Input: AuthContext{
-				Principal: &entities.Principal{},
+				Principal: &entities.FrozenPrincipal{},
 				Action:    sar.MustLookupString("sqs:listqueues"),
 			},
 			ShouldErr: false,
@@ -749,33 +775,35 @@ func TestValidate(t *testing.T) {
 		{
 			Name: "missing_principal",
 			Input: AuthContext{
-				Resource: &entities.Resource{},
+				Resource: &entities.FrozenResource{},
 			},
 			ShouldErr: true,
 		},
 		{
 			Name: "missing_action",
 			Input: AuthContext{
-				Principal: &entities.Principal{},
+				Principal: &entities.FrozenPrincipal{},
 			},
 			ShouldErr: true,
 		},
 		{
 			Name: "resource_unexpectedly_provided",
 			Input: AuthContext{
-				Principal: &entities.Principal{},
+				Principal: &entities.FrozenPrincipal{},
 				Action:    sar.MustLookupString("sqs:listqueues"),
-				Resource:  &entities.Resource{},
+				Resource:  &entities.FrozenResource{},
 			},
 			ShouldErr: true,
 		},
 		{
 			Name: "wrong_resource_provided",
 			Input: AuthContext{
-				Principal: &entities.Principal{},
+				Principal: &entities.FrozenPrincipal{},
 				Action:    sar.MustLookupString("sqs:getqueueurl"),
-				Resource: &entities.Resource{
-					Arn: "arn:aws:s3:::nsiow-test",
+				Resource: &entities.FrozenResource{
+					Resource: entities.Resource{
+						Arn: "arn:aws:s3:::nsiow-test",
+					},
 				},
 			},
 			ShouldErr: true,
@@ -783,7 +811,7 @@ func TestValidate(t *testing.T) {
 		{
 			Name: "resource_unexpectedly_missing",
 			Input: AuthContext{
-				Principal: &entities.Principal{},
+				Principal: &entities.FrozenPrincipal{},
 				Action:    sar.MustLookupString("sqs:getqueueurl"),
 			},
 			ShouldErr: true,
@@ -842,12 +870,14 @@ func TestSARValidation(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Action: sar.MustLookupString("dynamodb:query"),
-					Resource: &entities.Resource{
-						Arn: "arn:aws:dynamodb:us-west-2:55555:table/MyTable",
-						Tags: []entities.Tag{
-							{
-								Key:   "Foo",
-								Value: "Bar",
+					Resource: &entities.FrozenResource{
+						Resource: entities.Resource{
+							Arn: "arn:aws:dynamodb:us-west-2:55555:table/MyTable",
+							Tags: []entities.Tag{
+								{
+									Key:   "Foo",
+									Value: "Bar",
+								},
 							},
 						},
 					},
@@ -864,12 +894,14 @@ func TestSARValidation(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Action: sar.MustLookupString("s3:getobject"),
-					Resource: &entities.Resource{
-						Arn: "arn:aws:s3:::MyBucket/foo.txt",
-						Tags: []entities.Tag{
-							{
-								Key:   "Foo",
-								Value: "Bar",
+					Resource: &entities.FrozenResource{
+						Resource: entities.Resource{
+							Arn: "arn:aws:s3:::MyBucket/foo.txt",
+							Tags: []entities.Tag{
+								{
+									Key:   "Foo",
+									Value: "Bar",
+								},
 							},
 						},
 					},
@@ -886,12 +918,14 @@ func TestSARValidation(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Action: sar.MustLookupString("dynamodb:query"),
-					Resource: &entities.Resource{
-						Arn: "arn:aws:dynamodb:us-west-2:55555:table/MyTable",
-						Tags: []entities.Tag{
-							{
-								Key:   "Foo",
-								Value: "Bar",
+					Resource: &entities.FrozenResource{
+						Resource: entities.Resource{
+							Arn: "arn:aws:dynamodb:us-west-2:55555:table/MyTable",
+							Tags: []entities.Tag{
+								{
+									Key:   "Foo",
+									Value: "Bar",
+								},
 							},
 						},
 					},
@@ -1049,8 +1083,10 @@ func TestSupportsKey(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Action: sar.MustLookupString("dynamodb:query"),
-					Resource: &entities.Resource{
-						Arn: "arn:aws:dynamodb:us-west-2:55555:table/MyTable",
+					Resource: &entities.FrozenResource{
+						Resource: entities.Resource{
+							Arn: "arn:aws:dynamodb:us-west-2:55555:table/MyTable",
+						},
 					},
 				},
 				key: "aws:resourcetag/foo",

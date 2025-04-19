@@ -9,6 +9,9 @@ import (
 
 // Resource defines the general shape of an AWS cloud resource
 type Resource struct {
+	// uv is a reverse pointer back to the containing universe
+	uv *Universe `json:"-"`
+
 	// Type refers to the AWS resource type of the Resource
 	Type string
 

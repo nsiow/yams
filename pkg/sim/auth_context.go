@@ -22,8 +22,8 @@ import (
 // TODO(nsiow) decide if this should be public or private type
 type AuthContext struct {
 	Action    *types.Action
-	Principal *resolvedPrincipal
-	Resource  *resolvedResource
+	Principal *entities.FrozenPrincipal
+	Resource  *entities.FrozenResource
 
 	Time                 time.Time
 	Properties           Bag[string]
@@ -107,9 +107,9 @@ func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 	case condkey.EpochTime:
 		return strconv.FormatInt(ac.now().Unix(), 10)
 	case condkey.PrincipalOrgId:
-		return ac.Principal.ResolvedAccount.OrgId
+		return ac.Principal.FrozenAccount.OrgId
 	case condkey.ResourceOrgId:
-		return ac.Resource.ResolvedAccount.OrgId
+		return ac.Resource.FrozenAccount.OrgId
 
 	// ---------------------------------------------------------------------------------------------
 	// Global key prefixes; special handling

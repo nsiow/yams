@@ -73,16 +73,26 @@ func (s *Simulator) SimulateByArn(
 	}
 
 	// Locate Principal
-	ac.Principal, err = resolvePrincipal(principalArn, s.universe)
+	p, ok := s.universe.Principal(principalArn)
+	if !ok {
+		return nil, fmt.Errorf("no principal with arn: %s", principalArn)
+	}
+	fp, err := p.Freeze()
 	if err != nil {
 		return nil, fmt.Errorf("error attempting to resolve principal %s: %w", principalArn, err)
 	}
+	ac.Principal = &fp
 
-	// Locate resource
-	ac.Resource, err = resolveResource(resourceArn, s.universe)
+	// Locate Resource
+	r, ok := s.universe.Resource(resourceArn)
+	if !ok {
+		return nil, fmt.Errorf("no resource with arn: %s", resourceArn)
+	}
+	fr, err := r.Freeze()
 	if err != nil {
 		return nil, fmt.Errorf("error attempting to resolve resource %s: %w", resourceArn, err)
 	}
+	ac.Resource = &fr
 
 	return s.Simulate(ac)
 }
@@ -92,14 +102,20 @@ func (s *Simulator) SimulateByArn(
 // The summary is returned in a map of format map[<resource_arn>]: <# of principals with access>
 // where access is defined as any of the provided actions being allowed
 func (s *Simulator) ComputeAccessSummary(actions []*types.Action) (map[string]int, error) {
-	ps, err := resolvePrincipals(s.universe)
-	if err != nil {
-		return nil, fmt.Errorf("error while resolving principals for simulation: %w", err)
+	ps := make([]entities.FrozenPrincipal, 0)
+	for p, err := range s.universe.FrozenPrincipals() {
+		if err != nil {
+			return nil, fmt.Errorf("error while resolving principals for simulation: %w", err)
+		}
+		ps = append(ps, p)
 	}
 
-	rs, err := resolveResources(s.universe)
-	if err != nil {
-		return nil, fmt.Errorf("error while resolving resources for simulation: %w", err)
+	rs := make([]entities.FrozenResource, 0)
+	for r, err := range s.universe.FrozenResources() {
+		if err != nil {
+			return nil, fmt.Errorf("error while resolving resources for simulation: %w", err)
+		}
+		rs = append(rs, r)
 	}
 
 	// TODO(nsiow) this needs to be parallelized

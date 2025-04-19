@@ -12,7 +12,7 @@ func evalPermissionsBoundary(s *subject) Decision {
 	defer s.trc.Pop()
 
 	// Empty permissions boundary = allowed; otherwise we have to evaluate
-	boundary := s.ac.Principal.ResolvedPermissionBoundary.Policy.Policy
+	boundary := s.ac.Principal.FrozenPermissionBoundary.Policy
 	if boundary.Empty() {
 		decision := Decision{}
 		decision.Add(policy.EFFECT_ALLOW)

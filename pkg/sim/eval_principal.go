@@ -3,6 +3,7 @@ package sim
 import (
 	"fmt"
 
+	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -16,8 +17,8 @@ func evalPrincipalAccess(s *subject) Decision {
 
 	decision.Merge(
 		evalPrincipalInlinePolicies(s, s.ac.Principal.InlinePolicies),
-		evalPrincipalAttachedPolicies(s, s.ac.Principal.ResolvedAttachedPolicies),
-		evalPrincipalGroupPolicies(s, s.ac.Principal.ResolvedGroups),
+		evalPrincipalAttachedPolicies(s, s.ac.Principal.FrozenAttachedPolicies),
+		evalPrincipalGroupPolicies(s, s.ac.Principal.FrozenGroups),
 	)
 
 	return decision
@@ -54,7 +55,7 @@ func evalPrincipalInlinePolicies(s *subject, policies []policy.Policy) Decision 
 }
 
 // evalPrincipalAttachedPolicies calculates the Principal-side access based on attached policies
-func evalPrincipalAttachedPolicies(s *subject, policies []resolvedPolicy) Decision {
+func evalPrincipalAttachedPolicies(s *subject, policies []entities.ManagedPolicy) Decision {
 	s.trc.Push("evaluating principal attached policies")
 	defer s.trc.Pop()
 
@@ -64,7 +65,7 @@ func evalPrincipalAttachedPolicies(s *subject, policies []resolvedPolicy) Decisi
 		decision.Merge(
 			evalPolicy(
 				s,
-				policy.Policy.Policy,
+				policy.Policy,
 				evalStatementMatchesAction,
 				evalStatementMatchesResource,
 				evalStatementMatchesCondition,
@@ -77,7 +78,7 @@ func evalPrincipalAttachedPolicies(s *subject, policies []resolvedPolicy) Decisi
 }
 
 // evalPrincipalGroupPolicies calculates the Principal-side access based on group policies
-func evalPrincipalGroupPolicies(s *subject, groups []resolvedGroup) Decision {
+func evalPrincipalGroupPolicies(s *subject, groups []entities.FrozenGroup) Decision {
 	s.trc.Push("evaluating group principal policies")
 	defer s.trc.Pop()
 
@@ -85,12 +86,12 @@ func evalPrincipalGroupPolicies(s *subject, groups []resolvedGroup) Decision {
 	for _, group := range groups {
 		// FIXME(nsiow) move trc.Push(fmt.Sprintf(...)) to use new args format
 		s.trc.Push("evaluating group principal policies for group: %s", group.Arn)
-		for _, policy := range group.ResolvedPolicies {
+		for _, policy := range group.FrozenPolicies {
 			s.trc.Push("evaluating group principal policy: %s", policy.Arn)
 			decision.Merge(
 				evalPolicy(
 					s,
-					policy.Policy.Policy,
+					policy.Policy,
 					evalStatementMatchesAction,
 					evalStatementMatchesResource,
 					evalStatementMatchesCondition,

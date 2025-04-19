@@ -49,6 +49,7 @@ func (u *Universe) Account(id string) (*Account, bool) {
 
 // PutAccount saves the provided account into the universe, updating the definition if needed
 func (u *Universe) PutAccount(a Account) {
+	a.uv = u
 	u.accounts[a.Id] = a
 }
 
@@ -80,6 +81,7 @@ func (u *Universe) Group(arn Arn) (*Group, bool) {
 
 // PutGroup saves the provided group into the universe, updating the definition if needed
 func (u *Universe) PutGroup(g Group) {
+	g.uv = u
 	u.groups[g.Arn] = g
 }
 
@@ -114,6 +116,7 @@ func (u *Universe) Policy(arn Arn) (*ManagedPolicy, bool) {
 
 // PutPolicy saves the provided policy into the universe, updating the definition if needed
 func (u *Universe) PutPolicy(p ManagedPolicy) {
+	p.uv = u
 	u.policies[p.Arn] = p
 }
 
@@ -145,6 +148,7 @@ func (u *Universe) Principal(arn Arn) (*Principal, bool) {
 
 // PutPrincipal saves the provided principal into the universe, updating the definition if needed
 func (u *Universe) PutPrincipal(p Principal) {
+	p.uv = u
 	u.principals[p.Arn] = p
 	// TODO(nsiow) should this also update the resources where relevant (user/role)?
 }
@@ -177,6 +181,7 @@ func (u *Universe) Resource(arn Arn) (*Resource, bool) {
 
 // PutResource saves the provided resource into the universe, updating the definition if needed
 func (u *Universe) PutResource(r Resource) {
+	r.uv = u
 	u.resources[r.Arn] = r
 }
 

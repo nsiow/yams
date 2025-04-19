@@ -2,6 +2,9 @@ package entities
 
 // Account defines the general shape of an AWS account
 type Account struct {
+	// uv is a reverse pointer back to the containing universe
+	uv *Universe `json:"-"`
+
 	// AccountId refers to the 12-digit ID of this AWS account
 	Id string
 

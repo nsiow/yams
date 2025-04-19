@@ -1,6 +1,7 @@
 package sim
 
 import (
+	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -12,7 +13,7 @@ func evalSCP(s *subject) (decision Decision) {
 	defer s.trc.Pop()
 
 	// Missing account or empty SCP = allowed; otherwise we have to evaluate
-	account := s.ac.Principal.ResolvedAccount
+	account := s.ac.Principal.FrozenAccount
 	if len(account.SCPs) == 0 {
 		decision := Decision{}
 		decision.Add(policy.EFFECT_ALLOW)
@@ -21,7 +22,7 @@ func evalSCP(s *subject) (decision Decision) {
 	}
 
 	// Iterate through layers of SCP, only continuing if we get an allow result through each layer
-	for i, layer := range account.ResolvedSCPs {
+	for i, layer := range account.FrozenSCPs {
 
 		// Calculate access for this layer
 		decision.Merge(evalControlPolicyLayer(s, layer))
@@ -40,12 +41,12 @@ func evalSCP(s *subject) (decision Decision) {
 //
 // This is separated since each logical layer must result in an ALLOW decision in order to
 // continue
-func evalControlPolicyLayer(s *subject, layer []resolvedPolicy) (decision Decision) {
+func evalControlPolicyLayer(s *subject, layer []entities.ManagedPolicy) (decision Decision) {
 	for _, pol := range layer {
 		decision.Merge(
 			evalPolicy(
 				s,
-				pol.Policy.Policy,
+				pol.Policy,
 				evalStatementMatchesAction,
 				evalStatementMatchesResource,
 				evalStatementMatchesCondition,

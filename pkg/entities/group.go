@@ -2,6 +2,9 @@ package entities
 
 // Group defines the general shape of an AWS IAM group
 type Group struct {
+	// uv is a reverse pointer back to the containing universe
+	uv *Universe `json:"-"`
+
 	// Type refers to the AWS resource type of the Resource
 	Type string
 
