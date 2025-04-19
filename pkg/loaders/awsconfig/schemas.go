@@ -136,10 +136,10 @@ type configIamManagedPolicy struct {
 	} `json:"configuration"`
 }
 
-func (c *configIamManagedPolicy) asPolicy() (entities.Policy, error) {
+func (c *configIamManagedPolicy) asPolicy() (entities.ManagedPolicy, error) {
 	for _, pv := range c.Configuration.PolicyVersionList {
 		if pv.IsDefaultVersion {
-			return entities.Policy{
+			return entities.ManagedPolicy{
 				Type:      c.Type,
 				AccountId: c.AccountId,
 				Arn:       c.Arn,
@@ -148,7 +148,7 @@ func (c *configIamManagedPolicy) asPolicy() (entities.Policy, error) {
 		}
 	}
 
-	return entities.Policy{}, fmt.Errorf("unable to find default policy version for: %s", c.Arn)
+	return entities.ManagedPolicy{}, fmt.Errorf("unable to find default policy version for: %s", c.Arn)
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -337,8 +337,8 @@ type configSCP struct {
 	}
 }
 
-func (c *configSCP) asPolicy() entities.Policy {
-	return entities.Policy{
+func (c *configSCP) asPolicy() entities.ManagedPolicy {
+	return entities.ManagedPolicy{
 		Type:      c.Type,
 		AccountId: c.AccountId,
 		Arn:       c.Arn,

@@ -16,7 +16,7 @@ import (
 type Universe struct {
 	accounts   map[string]Account
 	groups     map[Arn]Group
-	policies   map[Arn]Policy
+	policies   map[Arn]ManagedPolicy
 	principals map[Arn]Principal
 	resources  map[Arn]Resource
 }
@@ -96,7 +96,7 @@ func (u *Universe) RemoveGroup(arn Arn) {
 //
 // This includes any policy with an ARN, e.g. managed policies, SCPs, etc. It does not include
 // inline Principal or Resource policies
-func (u *Universe) Policies() iter.Seq[Policy] {
+func (u *Universe) Policies() iter.Seq[ManagedPolicy] {
 	return maps.Values(u.policies)
 }
 
@@ -107,13 +107,13 @@ func (u *Universe) HasPolicy(arn Arn) bool {
 }
 
 // Policy attempts to retrieve the policy based on its ARN
-func (u *Universe) Policy(arn Arn) (*Policy, bool) {
+func (u *Universe) Policy(arn Arn) (*ManagedPolicy, bool) {
 	p, ok := u.policies[arn]
 	return &p, ok
 }
 
 // PutPolicy saves the provided policy into the universe, updating the definition if needed
-func (u *Universe) PutPolicy(p Policy) {
+func (u *Universe) PutPolicy(p ManagedPolicy) {
 	u.policies[p.Arn] = p
 }
 

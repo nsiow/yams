@@ -2,12 +2,12 @@ package entities
 
 import "github.com/nsiow/yams/pkg/policy"
 
-// Policy defines the general shape of an actualized IAM policy
+// ManagedPolicy defines the general shape of an actualized IAM policy
 //
-// This is distinct from the [policy.Policy] type which is focused on the data/grammar of a policy,
+// This is distinct from the [policy.ManagedPolicy] type which is focused on the data/grammar of a policy,
 // representing instead an "external" (non-inline) policy with an addressable ARN, such as a
 // customer managed policy or an SCP
-type Policy struct {
+type ManagedPolicy struct {
 	// Type refers to the AWS resource type of the Policy
 	Type string
 

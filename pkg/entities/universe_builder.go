@@ -28,7 +28,7 @@ func (ub *UniverseBuilder) WithGroups(groups ...Group) *UniverseBuilder {
 }
 
 // WithPolicies adds the provided policies to the universe under construction
-func (ub *UniverseBuilder) WithPolicies(policies ...Policy) *UniverseBuilder {
+func (ub *UniverseBuilder) WithPolicies(policies ...ManagedPolicy) *UniverseBuilder {
 	for _, p := range policies {
 		ub.universe.PutPolicy(p)
 	}

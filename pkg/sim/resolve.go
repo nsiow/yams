@@ -13,22 +13,22 @@ import (
 type resolvedAccount struct {
 	entities.Account
 
-	ResolvedSCPs [][]resolvedPolicy
+	ResolvedSCPs [][]entities.ManagedPolicy
 }
 
-func resolveAccount(id string, universe *entities.Universe) (resolvedAccount, error) {
-	a, ok := universe.Account(id)
+func resolveAccount(id string, uv *entities.Universe) (resolvedAccount, error) {
+	a, ok := uv.Account(id)
 	if !ok {
 		return resolvedAccount{}, nil
 	}
 
 	r := resolvedAccount{
 		Account:      *a,
-		ResolvedSCPs: make([][]resolvedPolicy, len(a.SCPs)),
+		ResolvedSCPs: make([][]entities.ManagedPolicy, len(a.SCPs)),
 	}
 
 	for i, layer := range a.SCPs {
-		policies, err := resolvePolicies(layer, universe)
+		policies, err := resolvePolicies(layer, uv)
 		if err != nil {
 			return resolvedAccount{}, err
 		}
@@ -45,13 +45,13 @@ func resolveAccount(id string, universe *entities.Universe) (resolvedAccount, er
 type resolvedGroup struct {
 	entities.Group
 
-	ResolvedPolicies []resolvedPolicy
+	ResolvedPolicies []entities.ManagedPolicy
 }
 
-func resolveGroup(arn entities.Arn, universe *entities.Universe) (*resolvedGroup, error) {
-	g, ok := universe.Group(arn)
+func resolveGroup(arn entities.Arn, uv *entities.Universe) (*resolvedGroup, error) {
+	g, ok := uv.Group(arn)
 	if !ok {
-		return nil, fmt.Errorf("unable to locate group with arn: %s", arn.String())
+		return nil, fmt.Errorf("cannot find group with arn: %s", arn.String())
 	}
 
 	r := resolvedGroup{
@@ -60,7 +60,7 @@ func resolveGroup(arn entities.Arn, universe *entities.Universe) (*resolvedGroup
 
 	var err error
 
-	r.ResolvedPolicies, err = resolvePolicies(r.Policies, universe)
+	r.ResolvedPolicies, err = resolvePolicies(r.Policies, uv)
 	if err != nil {
 		return nil, err
 	}
@@ -68,11 +68,11 @@ func resolveGroup(arn entities.Arn, universe *entities.Universe) (*resolvedGroup
 	return &r, nil
 }
 
-func resolveGroups(arns []entities.Arn, universe *entities.Universe) ([]resolvedGroup, error) {
+func resolveGroups(arns []entities.Arn, uv *entities.Universe) ([]resolvedGroup, error) {
 	groups := make([]resolvedGroup, len(arns))
 
 	for i, arn := range arns {
-		grp, err := resolveGroup(arn, universe)
+		grp, err := resolveGroup(arn, uv)
 		if err != nil {
 			return nil, err
 		}
@@ -91,15 +91,15 @@ type resolvedPrincipal struct {
 	entities.Principal
 
 	ResolvedAccount            resolvedAccount
-	ResolvedAttachedPolicies   []resolvedPolicy
+	ResolvedAttachedPolicies   []entities.ManagedPolicy
 	ResolvedGroups             []resolvedGroup
-	ResolvedPermissionBoundary resolvedPolicy
+	ResolvedPermissionBoundary entities.ManagedPolicy
 }
 
-func resolvePrincipal(arn entities.Arn, universe *entities.Universe) (*resolvedPrincipal, error) {
-	p, ok := universe.Principal(arn)
+func resolvePrincipal(arn entities.Arn, uv *entities.Universe) (*resolvedPrincipal, error) {
+	p, ok := uv.Principal(arn)
 	if !ok {
-		return nil, fmt.Errorf("unable to locate principal with arn: %s", arn.String())
+		return nil, fmt.Errorf("cannot find principal with arn: %s", arn.String())
 	}
 
 	r := resolvedPrincipal{
@@ -108,29 +108,43 @@ func resolvePrincipal(arn entities.Arn, universe *entities.Universe) (*resolvedP
 
 	var err error
 
-	r.ResolvedAccount, err = resolveAccount(r.AccountId, universe)
+	r.ResolvedAccount, err = resolveAccount(r.AccountId, uv)
 	if err != nil {
 		return nil, err
 	}
 
-	r.ResolvedAttachedPolicies, err = resolvePolicies(r.AttachedPolicies, universe)
+	r.ResolvedAttachedPolicies, err = resolvePolicies(r.AttachedPolicies, uv)
 	if err != nil {
 		return nil, err
 	}
 
-	r.ResolvedGroups, err = resolveGroups(r.Groups, universe)
+	r.ResolvedGroups, err = resolveGroups(r.Groups, uv)
 	if err != nil {
 		return nil, err
 	}
 
 	if !r.PermissionsBoundary.Empty() {
-		r.ResolvedPermissionBoundary, err = resolvePolicy(r.PermissionsBoundary, universe)
+		r.ResolvedPermissionBoundary, err = resolvePolicy(r.PermissionsBoundary, uv)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	return &r, nil
+}
+
+func resolvePrincipals(uv *entities.Universe) ([]resolvedPrincipal, error) {
+	resolved := make([]resolvedPrincipal, 0)
+
+	for p := range uv.Principals() {
+		r, err := resolvePrincipal(p.Arn, uv)
+		if err != nil {
+			return nil, err
+		}
+		resolved = append(resolved, *r)
+	}
+
+	return resolved, nil
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -144,10 +158,10 @@ type resolvedResource struct {
 	ResolvedAccount resolvedAccount
 }
 
-func resolveResource(arn entities.Arn, universe *entities.Universe) (*resolvedResource, error) {
-	resource, ok := universe.Resource(arn)
+func resolveResource(arn entities.Arn, uv *entities.Universe) (*resolvedResource, error) {
+	resource, ok := uv.Resource(arn)
 	if !ok {
-		return nil, fmt.Errorf("unable to locate resource with arn: %s", arn.String())
+		return nil, fmt.Errorf("cannot find resource with arn: %s", arn.String())
 	}
 
 	r := resolvedResource{
@@ -156,8 +170,8 @@ func resolveResource(arn entities.Arn, universe *entities.Universe) (*resolvedRe
 
 	var err error
 
-	if universe.HasAccount(r.AccountId) {
-		r.ResolvedAccount, err = resolveAccount(r.AccountId, universe)
+	if uv.HasAccount(r.AccountId) {
+		r.ResolvedAccount, err = resolveAccount(r.AccountId, uv)
 		if err != nil {
 			return nil, err
 		}
@@ -166,28 +180,39 @@ func resolveResource(arn entities.Arn, universe *entities.Universe) (*resolvedRe
 	return &r, nil
 }
 
+func resolveResources(uv *entities.Universe) ([]resolvedResource, error) {
+	resolved := make([]resolvedResource, 0)
+
+	for r := range uv.Resources() {
+		r2, err := resolveResource(r.Arn, uv)
+		if err != nil {
+			return nil, err
+		}
+		resolved = append(resolved, *r2)
+	}
+
+	return resolved, nil
+}
+
 // -------------------------------------------------------------------------------------------------
 // Policies
 // -------------------------------------------------------------------------------------------------
 
-type resolvedPolicy struct {
-	entities.Policy
-}
-
-func resolvePolicy(arn entities.Arn, universe *entities.Universe) (resolvedPolicy, error) {
-	pol, ok := universe.Policy(arn)
+func resolvePolicy(arn entities.Arn, uv *entities.Universe) (entities.ManagedPolicy, error) {
+	pol, ok := uv.Policy(arn)
 	if !ok {
-		return resolvedPolicy{}, fmt.Errorf("unable to locate policy with arn: %s", arn.String())
+		return entities.ManagedPolicy{}, fmt.Errorf("cannot find policy with arn: %s", arn.String())
 	}
 
-	return resolvedPolicy{*pol}, nil
+	return *pol, nil
 }
 
-func resolvePolicies(arns []entities.Arn, universe *entities.Universe) ([]resolvedPolicy, error) {
-	policies := make([]resolvedPolicy, len(arns))
+// FIXME(nsiow) change all mentions of "universe" to "uv" for conciseness
+func resolvePolicies(arns []entities.Arn, uv *entities.Universe) ([]entities.ManagedPolicy, error) {
+	policies := make([]entities.ManagedPolicy, len(arns))
 
 	for i, arn := range arns {
-		pol, err := resolvePolicy(arn, universe)
+		pol, err := resolvePolicy(arn, uv)
 		if err != nil {
 			return nil, err
 		}

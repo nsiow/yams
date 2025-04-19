@@ -62,6 +62,7 @@ func (s *Simulator) SimulateByArn(
 	resourceArn entities.Arn,
 	ctx map[string]string) (*Result, error) {
 
+	var err error
 	ac := AuthContext{}
 	ac.Properties = NewBagFromMap(ctx)
 
@@ -72,18 +73,16 @@ func (s *Simulator) SimulateByArn(
 	}
 
 	// Locate Principal
-	principal, ok := s.universe.Principal(principalArn)
-	if !ok {
-		return nil, fmt.Errorf("simulator universe does not have Principal with Arn=%s", principal)
+	ac.Principal, err = resolvePrincipal(principalArn, s.universe)
+	if err != nil {
+		return nil, fmt.Errorf("error attempting to resolve principal %s: %w", principalArn, err)
 	}
-	ac.Principal = principal
 
 	// Locate resource
-	resource, ok := s.universe.Resource(resourceArn)
-	if !ok {
-		return nil, fmt.Errorf("simulator universe does not have Resource with Arn=%s", resource)
+	ac.Resource, err = resolveResource(resourceArn, s.universe)
+	if err != nil {
+		return nil, fmt.Errorf("error attempting to resolve resource %s: %w", resourceArn, err)
 	}
-	ac.Resource = resource
 
 	return s.Simulate(ac)
 }
@@ -93,14 +92,24 @@ func (s *Simulator) SimulateByArn(
 // The summary is returned in a map of format map[<resource_arn>]: <# of principals with access>
 // where access is defined as any of the provided actions being allowed
 func (s *Simulator) ComputeAccessSummary(actions []*types.Action) (map[string]int, error) {
+	ps, err := resolvePrincipals(s.universe)
+	if err != nil {
+		return nil, fmt.Errorf("error while resolving principals for simulation: %w", err)
+	}
+
+	rs, err := resolveResources(s.universe)
+	if err != nil {
+		return nil, fmt.Errorf("error while resolving resources for simulation: %w", err)
+	}
+
 	// TODO(nsiow) this needs to be parallelized
 	// Iterate over the matrix of Resources x Principals x Actions
 	access := make(map[string]int)
-	for r := range s.universe.Resources() {
+	for _, r := range rs {
 		// we do this because we always want resources to show up, even if nothing can access it
 		access[r.Arn.String()] = 0
 
-		for p := range s.universe.Principals() {
+		for _, p := range ps {
 			for _, a := range actions {
 				ac := AuthContext{
 					Action:     a,
