@@ -3,7 +3,6 @@ package sim
 import (
 	"fmt"
 
-	"github.com/nsiow/yams/internal/opt"
 	"github.com/nsiow/yams/pkg/entities"
 )
 
@@ -14,29 +13,29 @@ import (
 type resolvedAccount struct {
 	entities.Account
 
-	ResolvedSCPs [][]entities.Policy
+	ResolvedSCPs [][]resolvedPolicy
 }
 
-func resolveAccount(id string, universe *entities.Universe) (*resolvedAccount, error) {
+func resolveAccount(id string, universe *entities.Universe) (resolvedAccount, error) {
 	a, ok := universe.Account(id)
 	if !ok {
-		return nil, nil
+		return resolvedAccount{}, nil
 	}
 
 	r := resolvedAccount{
 		Account:      *a,
-		ResolvedSCPs: make([][]entities.Policy, len(a.SCPs)),
+		ResolvedSCPs: make([][]resolvedPolicy, len(a.SCPs)),
 	}
 
 	for i, layer := range a.SCPs {
 		policies, err := resolvePolicies(layer, universe)
 		if err != nil {
-			return nil, err
+			return resolvedAccount{}, err
 		}
 		r.ResolvedSCPs[i] = policies
 	}
 
-	return &r, nil
+	return r, nil
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -46,7 +45,7 @@ func resolveAccount(id string, universe *entities.Universe) (*resolvedAccount, e
 type resolvedGroup struct {
 	entities.Group
 
-	ResolvedPolicies []entities.Policy
+	ResolvedPolicies []resolvedPolicy
 }
 
 func resolveGroup(arn entities.Arn, universe *entities.Universe) (*resolvedGroup, error) {
@@ -91,10 +90,10 @@ func resolveGroups(arns []entities.Arn, universe *entities.Universe) ([]resolved
 type resolvedPrincipal struct {
 	entities.Principal
 
-	ResolvedAccount            opt.Option[resolvedAccount]
-	ResolvedAttachedPolicies   []entities.Policy
+	ResolvedAccount            resolvedAccount
+	ResolvedAttachedPolicies   []resolvedPolicy
 	ResolvedGroups             []resolvedGroup
-	ResolvedPermissionBoundary opt.Option[entities.Policy]
+	ResolvedPermissionBoundary resolvedPolicy
 }
 
 func resolvePrincipal(arn entities.Arn, universe *entities.Universe) (*resolvedPrincipal, error) {
@@ -109,12 +108,9 @@ func resolvePrincipal(arn entities.Arn, universe *entities.Universe) (*resolvedP
 
 	var err error
 
-	if universe.HasAccount(r.AccountId) {
-		resolved, err := resolveAccount(r.AccountId, universe)
-		if err != nil {
-			return nil, err
-		}
-		r.ResolvedAccount = opt.Some(*resolved)
+	r.ResolvedAccount, err = resolveAccount(r.AccountId, universe)
+	if err != nil {
+		return nil, err
 	}
 
 	r.ResolvedAttachedPolicies, err = resolvePolicies(r.AttachedPolicies, universe)
@@ -128,11 +124,10 @@ func resolvePrincipal(arn entities.Arn, universe *entities.Universe) (*resolvedP
 	}
 
 	if !r.PermissionsBoundary.Empty() {
-		resolved, err := resolvePolicy(r.PermissionsBoundary, universe)
+		r.ResolvedPermissionBoundary, err = resolvePolicy(r.PermissionsBoundary, universe)
 		if err != nil {
 			return nil, err
 		}
-		r.ResolvedPermissionBoundary = opt.Some(resolved)
 	}
 
 	return &r, nil
@@ -146,7 +141,7 @@ type resolvedResource struct {
 	entities.Resource
 
 	// TODO(nsiow) RCPs go here
-	ResolvedAccount opt.Option[resolvedAccount]
+	ResolvedAccount resolvedAccount
 }
 
 func resolveResource(arn entities.Arn, universe *entities.Universe) (*resolvedResource, error) {
@@ -159,12 +154,13 @@ func resolveResource(arn entities.Arn, universe *entities.Universe) (*resolvedRe
 		Resource: *resource,
 	}
 
+	var err error
+
 	if universe.HasAccount(r.AccountId) {
-		resolved, err := resolveAccount(r.AccountId, universe)
+		r.ResolvedAccount, err = resolveAccount(r.AccountId, universe)
 		if err != nil {
 			return nil, err
 		}
-		r.ResolvedAccount = opt.Some(*resolved)
 	}
 
 	return &r, nil
@@ -174,17 +170,21 @@ func resolveResource(arn entities.Arn, universe *entities.Universe) (*resolvedRe
 // Policies
 // -------------------------------------------------------------------------------------------------
 
-func resolvePolicy(arn entities.Arn, universe *entities.Universe) (entities.Policy, error) {
-	pol, ok := universe.Policy(arn)
-	if !ok {
-		return entities.Policy{}, fmt.Errorf("unable to locate policy with arn: %s", arn.String())
-	}
-
-	return *pol, nil
+type resolvedPolicy struct {
+	entities.Policy
 }
 
-func resolvePolicies(arns []entities.Arn, universe *entities.Universe) ([]entities.Policy, error) {
-	policies := make([]entities.Policy, len(arns))
+func resolvePolicy(arn entities.Arn, universe *entities.Universe) (resolvedPolicy, error) {
+	pol, ok := universe.Policy(arn)
+	if !ok {
+		return resolvedPolicy{}, fmt.Errorf("unable to locate policy with arn: %s", arn.String())
+	}
+
+	return resolvedPolicy{*pol}, nil
+}
+
+func resolvePolicies(arns []entities.Arn, universe *entities.Universe) ([]resolvedPolicy, error) {
+	policies := make([]resolvedPolicy, len(arns))
 
 	for i, arn := range arns {
 		pol, err := resolvePolicy(arn, universe)

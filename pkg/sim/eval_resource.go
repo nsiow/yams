@@ -6,21 +6,18 @@ func evalResourceAccess(s *subject) Decision {
 	s.trc.Push("evaluating resource policies")
 	defer s.trc.Pop()
 
-	// Specify the statement evaluation funcs we will consider for Principal access
-	funcs := []evalFunction{
+	// Iterate over resource policy statements to evaluate access
+	decision := evalPolicy(s,
+		s.ac.Resource.Policy,
 		evalStatementMatchesAction,
 		evalStatementMatchesPrincipal,
 		evalStatementMatchesCondition,
-	}
-
-	// Iterate over resource policy statements to evaluate access
-	decision := evalPolicy(s, s.ac.Resource.Policy, funcs)
+	)
 
 	// If the Principal and Resource are the same account, check for the explicit-principal edge
 	// case before returning
 	if evalIsSameAccount(s) && !s.ac.Resource.Policy.Empty() {
-		funcs = []evalFunction{evalStatementMatchesPrincipalExact}
-		edgeCaseDecision := evalPolicy(s, s.ac.Resource.Policy, funcs)
+		edgeCaseDecision := evalPolicy(s, s.ac.Resource.Policy, evalStatementMatchesPrincipalExact)
 		if edgeCaseDecision.Allowed() {
 			s.extra.ResourceAllowsExplicitPrincipal = true
 		}

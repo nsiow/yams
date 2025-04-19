@@ -22,8 +22,8 @@ func New() *Trace {
 }
 
 // Push creates a new frame and attribute set at current depth + 1
-func (t *Trace) Push(frame string) {
-	t.stack = append(t.stack, frame)
+func (t *Trace) Push(frame string, args ...any) {
+	t.stack = append(t.stack, t.format(frame, args...))
 	t.attrs = append(t.attrs, make(map[string]any))
 }
 
@@ -71,17 +71,26 @@ func (t *Trace) SetLevel(l Level) {
 }
 
 // Observation records a single record about comparison (e.g. "I compared these two things")
-func (t *Trace) Observation(msg string) {
+func (t *Trace) Observation(msg string, args ...any) {
 	if t.minLevel <= LEVEL_OBSERVATION {
-		t.save(msg)
+		t.save(t.format(msg, args...))
 	}
 }
 
 // Decision records a single record about an access decision (e.g. "This resulted in Effect=Allow")
-func (t *Trace) Decision(msg string) {
+func (t *Trace) Decision(msg string, args ...any) {
 	if t.minLevel <= LEVEL_DECISION {
-		t.save(msg)
+		t.save(t.format(msg, args...))
 	}
+}
+
+// format is a helper function for sprintf-style formatting of message arguments
+func (t *Trace) format(msg string, args ...any) string {
+	if len(args) == 0 {
+		return msg
+	}
+
+	return fmt.Sprintf(msg, args...)
 }
 
 // copyAttr is a helper function which makes a copy of the provided attributes

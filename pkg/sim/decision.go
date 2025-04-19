@@ -54,9 +54,11 @@ func (e *Decision) ExplicitlyDenied() bool {
 	return e.Contains(policy.EFFECT_DENY)
 }
 
-// Merge combines the provided Decision with our target
-func (e *Decision) Merge(other Decision) {
-	for _, effect := range other.Effects() {
-		e.Add(effect)
+// Merge combines the provided Decision(s) with our target
+func (e *Decision) Merge(others ...Decision) {
+	for _, other := range others {
+		for _, effect := range other.Effects() {
+			e.Add(effect)
+		}
 	}
 }

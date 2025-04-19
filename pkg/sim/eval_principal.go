@@ -12,26 +12,92 @@ func evalPrincipalAccess(s *subject) Decision {
 	s.trc.Push("evaluating principal policies")
 	defer s.trc.Pop()
 
-	// Specify the types of policies we will consider for Principal access
-	effectivePolicies := map[string][]policy.Policy{
-		"inline":  s.ac.Principal.InlinePolicies,
-		"managed": s.ac.Principal.AttachedPolicies,
-		"group":   s.ac.Principal.GroupPolicies,
-	}
-
-	// Specify the statement evaluation funcs we will consider for Principal access
-	funcs := []evalFunction{
-		evalStatementMatchesAction,
-		evalStatementMatchesResource,
-		evalStatementMatchesCondition,
-	}
-
-	// Iterate over policy types / policies / statements to evaluate access
 	decision := Decision{}
-	for policytype, policies := range effectivePolicies {
-		s.trc.Push(fmt.Sprintf("policytype=%s", policytype))
-		effect := evalPolicies(s, policies, funcs)
-		decision.Merge(effect)
+
+	decision.Merge(
+		evalPrincipalInlinePolicies(s, s.ac.Principal.InlinePolicies),
+		evalPrincipalAttachedPolicies(s, s.ac.Principal.ResolvedAttachedPolicies),
+		evalPrincipalGroupPolicies(s, s.ac.Principal.ResolvedGroups),
+	)
+
+	return decision
+}
+
+// evalPrincipalInlinePolicies calculates the Principal-side access based on inline policies
+func evalPrincipalInlinePolicies(s *subject, policies []policy.Policy) Decision {
+	s.trc.Push("evaluating principal inline policies")
+	defer s.trc.Pop()
+
+	decision := Decision{}
+	for i, policy := range policies {
+		var policyId string
+		if len(policy.Id) > 0 {
+			policyId = policyId
+		} else {
+			policyId = fmt.Sprintf("inline(%d)", i)
+		}
+
+		s.trc.Push(fmt.Sprintf("evaluating principal inline policy: %s", policyId))
+		decision.Merge(
+			evalPolicy(
+				s,
+				policy,
+				evalStatementMatchesAction,
+				evalStatementMatchesResource,
+				evalStatementMatchesCondition,
+			),
+		)
+		s.trc.Pop()
+	}
+
+	return decision
+}
+
+// evalPrincipalAttachedPolicies calculates the Principal-side access based on attached policies
+func evalPrincipalAttachedPolicies(s *subject, policies []resolvedPolicy) Decision {
+	s.trc.Push("evaluating principal attached policies")
+	defer s.trc.Pop()
+
+	decision := Decision{}
+	for _, policy := range policies {
+		s.trc.Push(fmt.Sprintf("evaluating principal attached policy: %s", policy.Arn))
+		decision.Merge(
+			evalPolicy(
+				s,
+				policy.Policy.Policy,
+				evalStatementMatchesAction,
+				evalStatementMatchesResource,
+				evalStatementMatchesCondition,
+			),
+		)
+		s.trc.Pop()
+	}
+
+	return decision
+}
+
+// evalPrincipalGroupPolicies calculates the Principal-side access based on group policies
+func evalPrincipalGroupPolicies(s *subject, groups []resolvedGroup) Decision {
+	s.trc.Push("evaluating group principal policies")
+	defer s.trc.Pop()
+
+	decision := Decision{}
+	for _, group := range groups {
+		// FIXME(nsiow) move trc.Push(fmt.Sprintf(...)) to use new args format
+		s.trc.Push("evaluating group principal policies for group: %s", group.Arn)
+		for _, policy := range group.ResolvedPolicies {
+			s.trc.Push("evaluating group principal policy: %s", policy.Arn)
+			decision.Merge(
+				evalPolicy(
+					s,
+					policy.Policy.Policy,
+					evalStatementMatchesAction,
+					evalStatementMatchesResource,
+					evalStatementMatchesCondition,
+				),
+			)
+			s.trc.Pop()
+		}
 		s.trc.Pop()
 	}
 

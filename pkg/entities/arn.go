@@ -23,6 +23,10 @@ func (a Arn) component(idx int) string {
 	return components[idx]
 }
 
+func (a Arn) Empty() bool {
+	return len(a) == 0
+}
+
 func (a Arn) String() string {
 	return string(a)
 }

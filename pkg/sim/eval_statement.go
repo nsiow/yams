@@ -89,7 +89,7 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
 
 	// TODO(nsiow) validate that this is how Principals are evaluated - exact matches?
 	for _, p := range principals.AWS {
-		match := wildcard.MatchAllOrNothing(p, s.ac.Principal.Arn)
+		match := wildcard.MatchAllOrNothing(p, s.ac.Principal.Arn.String())
 		if match {
 			return _gate.Apply(true)
 		}
@@ -110,7 +110,7 @@ func evalStatementMatchesPrincipalExact(s *subject, stmt *policy.Statement) bool
 		return false
 	}
 
-	return stmt.Principal.AWS.Contains(s.ac.Principal.Arn)
+	return stmt.Principal.AWS.Contains(s.ac.Principal.Arn.String())
 }
 
 // evalStatementMatchesResource computes whether the Statement matches the AuthContext's Resource
@@ -140,7 +140,7 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
 	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
 	// TODO(nsiow) this needs to support variable expansion
 	for _, r := range resources {
-		match := wildcard.MatchSegments(r, s.ac.Resource.Arn)
+		match := wildcard.MatchSegments(r, s.ac.Resource.Arn.String())
 		if match {
 			return _gate.Apply(true)
 		}
