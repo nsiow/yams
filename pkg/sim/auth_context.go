@@ -22,8 +22,8 @@ import (
 // TODO(nsiow) decide if this should be public or private type
 type AuthContext struct {
 	Action    *types.Action
-	Principal *entities.Principal
-	Resource  *entities.Resource
+	Principal *resolvedPrincipal
+	Resource  *resolvedResource
 
 	Time                 time.Time
 	Properties           Bag[string]
@@ -107,9 +107,17 @@ func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 	case condkey.EpochTime:
 		return strconv.FormatInt(ac.now().Unix(), 10)
 	case condkey.PrincipalOrgId:
-		return ac.Principal.Account.OrgId
+		if acct, ok := ac.Principal.ResolvedAccount.Get(); ok {
+			return acct.OrgId
+		} else {
+			return EMPTY
+		}
 	case condkey.ResourceOrgId:
-		return ac.Resource.Account.OrgId
+		if acct, ok := ac.Resource.ResolvedAccount.Get(); ok {
+			return acct.OrgId
+		} else {
+			return EMPTY
+		}
 
 	// ---------------------------------------------------------------------------------------------
 	// Global key prefixes; special handling
@@ -229,7 +237,7 @@ func (ac *AuthContext) Validate() error {
 		match := false
 		for _, allowedResource := range allowedResources {
 			for _, allowedFormat := range allowedResource.ARNFormats {
-				if wildcard.MatchSegments(allowedFormat, ac.Resource.Arn) {
+				if wildcard.MatchSegments(allowedFormat, ac.Resource.Arn.String()) {
 					match = true
 					break
 				}
@@ -322,7 +330,7 @@ func (ac *AuthContext) supportsKey(key string) bool {
 	// Otherwise check for each matched resource
 	for _, resource := range ac.Action.ResolvedResources {
 		for _, format := range resource.ARNFormats {
-			if ac.Resource != nil && wildcard.MatchSegments(format, ac.Resource.Arn) {
+			if ac.Resource != nil && wildcard.MatchSegments(format, ac.Resource.Arn.String()) {
 				if slices.Contains(resource.ConditionKeys, normalizedPrefix) {
 					return true
 				}

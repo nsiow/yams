@@ -146,6 +146,7 @@ type resolvedResource struct {
 	entities.Resource
 
 	// TODO(nsiow) RCPs go here
+	ResolvedAccount opt.Option[resolvedAccount]
 }
 
 func resolveResource(arn entities.Arn, universe *entities.Universe) (*resolvedResource, error) {
@@ -156,6 +157,14 @@ func resolveResource(arn entities.Arn, universe *entities.Universe) (*resolvedRe
 
 	r := resolvedResource{
 		Resource: *resource,
+	}
+
+	if universe.HasAccount(r.AccountId) {
+		resolved, err := resolveAccount(r.AccountId, universe)
+		if err != nil {
+			return nil, err
+		}
+		r.ResolvedAccount = opt.Some(*resolved)
 	}
 
 	return &r, nil
