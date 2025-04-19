@@ -35,6 +35,12 @@ func (u *Universe) Accounts() iter.Seq[Account] {
 	return maps.Values(u.accounts)
 }
 
+// HasAccount returns whether or not the specified account exists in the universe
+func (u *Universe) HasAccount(id string) bool {
+	_, ok := u.Account(id)
+	return ok
+}
+
 // Account attempts to retrieve the account based on its id
 func (u *Universe) Account(id string) (*Account, bool) {
 	a, ok := u.accounts[id]
@@ -58,6 +64,12 @@ func (u *Universe) RemoveAccount(id string) {
 // Groups returns an iterator over all the Group entities known to the universe
 func (u *Universe) Groups() iter.Seq[Group] {
 	return maps.Values(u.groups)
+}
+
+// HasGroup returns whether or not the specified group exists in the universe
+func (u *Universe) HasGroup(arn Arn) bool {
+	_, ok := u.Group(arn)
+	return ok
 }
 
 // Group attempts to retrieve the group based on its ARN
@@ -88,6 +100,12 @@ func (u *Universe) Policies() iter.Seq[Policy] {
 	return maps.Values(u.policies)
 }
 
+// HasPolicy returns whether or not the specified policy exists in the universe
+func (u *Universe) HasPolicy(arn Arn) bool {
+	_, ok := u.Principal(arn)
+	return ok
+}
+
 // Policy attempts to retrieve the policy based on its ARN
 func (u *Universe) Policy(arn Arn) (*Policy, bool) {
 	p, ok := u.policies[arn]
@@ -111,6 +129,12 @@ func (u *Universe) RemovePolicy(arn Arn) {
 // Principals returns an iterator over all the Principal entities known to the universe
 func (u *Universe) Principals() iter.Seq[Principal] {
 	return maps.Values(u.principals)
+}
+
+// HasPrincipal returns whether or not the specified principal exists in the universe
+func (u *Universe) HasPrincipal(arn Arn) bool {
+	_, ok := u.Principal(arn)
+	return ok
 }
 
 // Principal attempts to retrieve the principal based on its ARN
@@ -137,6 +161,12 @@ func (u *Universe) RemovePrincipal(arn Arn) {
 // Resources returns an iterator over all the Resource entities known to the universe
 func (u *Universe) Resources() iter.Seq[Resource] {
 	return maps.Values(u.resources)
+}
+
+// HasResource returns whether or not the specified resource exists in the universe
+func (u *Universe) HasResource(arn Arn) bool {
+	_, ok := u.Resource(arn)
+	return ok
 }
 
 // Resource attempts to retrieve the resource based on its ARN

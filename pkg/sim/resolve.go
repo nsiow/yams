@@ -3,8 +3,8 @@ package sim
 import (
 	"fmt"
 
+	"github.com/nsiow/yams/internal/opt"
 	"github.com/nsiow/yams/pkg/entities"
-	"github.com/nsiow/yams/pkg/policy"
 )
 
 // -------------------------------------------------------------------------------------------------
@@ -17,10 +17,10 @@ type resolvedAccount struct {
 	ResolvedSCPs [][]entities.Policy
 }
 
-func resolveAccount(accountId string, universe *entities.Universe) (*resolvedAccount, error) {
-	a, ok := universe.Account(accountId)
+func resolveAccount(id string, universe *entities.Universe) (*resolvedAccount, error) {
+	a, ok := universe.Account(id)
 	if !ok {
-		return nil, fmt.Errorf("unable to locate account with arn: %s", accountId)
+		return nil, nil
 	}
 
 	r := resolvedAccount{
@@ -91,10 +91,10 @@ func resolveGroups(arns []entities.Arn, universe *entities.Universe) ([]resolved
 type resolvedPrincipal struct {
 	entities.Principal
 
-	ResolvedAccount            resolvedAccount
+	ResolvedAccount            opt.Option[resolvedAccount]
 	ResolvedAttachedPolicies   []entities.Policy
 	ResolvedGroups             []resolvedGroup
-	ResolvedPermissionBoundary entities.Policy
+	ResolvedPermissionBoundary opt.Option[entities.Policy]
 }
 
 func resolvePrincipal(arn entities.Arn, universe *entities.Universe) (*resolvedPrincipal, error) {
@@ -109,6 +109,14 @@ func resolvePrincipal(arn entities.Arn, universe *entities.Universe) (*resolvedP
 
 	var err error
 
+	if universe.HasAccount(r.AccountId) {
+		resolved, err := resolveAccount(r.AccountId, universe)
+		if err != nil {
+			return nil, err
+		}
+		r.ResolvedAccount = opt.Some(*resolved)
+	}
+
 	r.ResolvedAttachedPolicies, err = resolvePolicies(r.AttachedPolicies, universe)
 	if err != nil {
 		return nil, err
@@ -117,6 +125,14 @@ func resolvePrincipal(arn entities.Arn, universe *entities.Universe) (*resolvedP
 	r.ResolvedGroups, err = resolveGroups(r.Groups, universe)
 	if err != nil {
 		return nil, err
+	}
+
+	if !r.PermissionsBoundary.Empty() {
+		resolved, err := resolvePolicy(r.PermissionsBoundary, universe)
+		if err != nil {
+			return nil, err
+		}
+		r.ResolvedPermissionBoundary = opt.Some(resolved)
 	}
 
 	return &r, nil
@@ -129,20 +145,33 @@ func resolvePrincipal(arn entities.Arn, universe *entities.Universe) (*resolvedP
 type resolvedResource struct {
 	entities.Resource
 
-	ResolvedPolicy policy.Policy
+	// TODO(nsiow) RCPs go here
+}
+
+func resolveResource(arn entities.Arn, universe *entities.Universe) (*resolvedResource, error) {
+	resource, ok := universe.Resource(arn)
+	if !ok {
+		return nil, fmt.Errorf("unable to locate resource with arn: %s", arn.String())
+	}
+
+	r := resolvedResource{
+		Resource: *resource,
+	}
+
+	return &r, nil
 }
 
 // -------------------------------------------------------------------------------------------------
 // Policies
 // -------------------------------------------------------------------------------------------------
 
-func resolvePolicy(arn entities.Arn, universe *entities.Universe) (*entities.Policy, error) {
+func resolvePolicy(arn entities.Arn, universe *entities.Universe) (entities.Policy, error) {
 	pol, ok := universe.Policy(arn)
 	if !ok {
-		return nil, fmt.Errorf("unable to locate policy with arn: %s", arn.String())
+		return entities.Policy{}, fmt.Errorf("unable to locate policy with arn: %s", arn.String())
 	}
 
-	return pol, nil
+	return *pol, nil
 }
 
 func resolvePolicies(arns []entities.Arn, universe *entities.Universe) ([]entities.Policy, error) {
@@ -154,7 +183,7 @@ func resolvePolicies(arns []entities.Arn, universe *entities.Universe) ([]entiti
 			return nil, err
 		}
 
-		policies[i] = *pol
+		policies[i] = pol
 	}
 
 	return policies, nil

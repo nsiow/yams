@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"github.com/nsiow/yams/internal/opt"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -29,5 +30,5 @@ type Principal struct {
 	Groups []Arn
 
 	// PermissionsBoundary refers to the policy set as the Principal's permissions boundary
-	PermissionsBoundary Arn
+	PermissionsBoundary opt.Option[Arn]
 }
