@@ -2,9 +2,9 @@ package awsconfig
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/nsiow/yams/pkg/entities"
 )
@@ -27,28 +27,30 @@ func (l *Loader) Universe() *entities.Universe {
 }
 
 // LoadJson loads data from a provided JSON array
-// TODO(nsiow) consider having this load from io.Reader instead
-func (l *Loader) LoadJson(data []byte) error {
-	var items []ConfigItem
-	err := json.Unmarshal(data, &items)
+func (l *Loader) LoadJson(reader io.Reader) error {
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+
+	var blobs []configBlob
+	err = json.Unmarshal(data, &blobs)
 	if err != nil {
 		return fmt.Errorf("unable to load data as JSON: %w", err)
 	}
-	return l.loadItems(items)
+	return l.loadItems(blobs)
 }
 
 // LoadJson loads data from the provided newline-separate JSONL input
-// TODO(nsiow) consider having this load from io.Reader instead
-func (l *Loader) LoadJsonl(data []byte) error {
-	r := bytes.NewReader(data)
-	s := bufio.NewScanner(r)
+func (l *Loader) LoadJsonl(reader io.Reader) error {
+	s := bufio.NewScanner(reader)
 
 	// Some buffer customization, since these JSON blobs can get big
 	// TODO(nsiow) move these to constants
 	buf := make([]byte, 0, 64*1024)
 	s.Buffer(buf, 1024*1024)
 
-	var items []ConfigItem
+	var blobs []configBlob
 	for s.Scan() {
 		// Read the next line; skip empty lines
 		b := s.Bytes()
@@ -57,14 +59,14 @@ func (l *Loader) LoadJsonl(data []byte) error {
 		}
 
 		// Unmarshal into a single item
-		var i ConfigItem
+		var i configBlob
 		err := json.Unmarshal(b, &i)
 		if err != nil {
 			return err
 		}
 
 		// Add to running list of items
-		items = append(items, i)
+		blobs = append(blobs, i)
 	}
 
 	// If we encountered an error scanning, return it
@@ -73,12 +75,12 @@ func (l *Loader) LoadJsonl(data []byte) error {
 	}
 
 	// Proceed to load
-	return l.loadItems(items)
+	return l.loadItems(blobs)
 }
 
-func (l *Loader) loadItems(items []ConfigItem) error {
-	for _, item := range items {
-		err := l.loadItem(item)
+func (l *Loader) loadItems(blobs []configBlob) error {
+	for _, blob := range blobs {
+		err := l.loadItem(blob)
 		if err != nil {
 			return err
 		}
@@ -87,39 +89,43 @@ func (l *Loader) loadItems(items []ConfigItem) error {
 	return nil
 }
 
-func (l *Loader) loadItem(item ConfigItem) error {
-	switch item.Type {
+// -------------------------------------------------------------------------------------------------
+// Load routing
+// -------------------------------------------------------------------------------------------------
+
+func (l *Loader) loadItem(blob configBlob) error {
+	switch blob.Type {
 	case CONST_TYPE_YAMS_ORGANIZATIONS_ACCOUNT:
-		return l.loadAccount(item)
+		return l.loadAccount(blob)
 	case CONST_TYPE_YAMS_ORGANIZATIONS_SCP:
-		return l.loadSCP(item)
+		return l.loadSCP(blob)
 	case CONST_TYPE_AWS_IAM_GROUP:
-		return l.loadGroup(item)
+		return l.loadGroup(blob)
 	case CONST_TYPE_AWS_IAM_POLICY:
-		return l.loadManagedPolicy(item)
+		return l.loadManagedPolicy(blob)
 	case CONST_TYPE_AWS_IAM_ROLE:
-		return l.loadRole(item)
+		return l.loadRole(blob)
 	case CONST_TYPE_AWS_IAM_USER:
-		return l.loadUser(item)
+		return l.loadUser(blob)
 	case CONST_TYPE_AWS_S3_BUCKET:
-		return l.loadBucket(item)
+		return l.loadBucket(blob)
 	case CONST_TYPE_AWS_DYNAMODB_TABLE:
-		return l.loadTable(item)
+		return l.loadTable(blob)
 	case CONST_TYPE_AWS_SNS_TOPIC:
-		return l.loadTopic(item)
+		return l.loadTopic(blob)
 	case CONST_TYPE_AWS_SQS_QUEUE:
-		return l.loadQueue(item)
+		return l.loadQueue(blob)
 	case CONST_TYPE_AWS_KMS_KEY:
-		return l.loadKey(item)
+		return l.loadKey(blob)
 	default:
-		return l.loadGenericResource(item)
+		return l.loadGenericResource(blob)
 	}
 }
 
-func (l *Loader) loadAccount(item ConfigItem) error {
+func (l *Loader) loadAccount(blob configBlob) error {
 	var target configAccount
 
-	err := json.Unmarshal(item.raw, &target)
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
 		return err
 	}
@@ -128,10 +134,10 @@ func (l *Loader) loadAccount(item ConfigItem) error {
 	return nil
 }
 
-func (l *Loader) loadSCP(item ConfigItem) error {
+func (l *Loader) loadSCP(blob configBlob) error {
 	var target configSCP
 
-	err := json.Unmarshal(item.raw, &target)
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
 		return err
 	}
@@ -140,10 +146,10 @@ func (l *Loader) loadSCP(item ConfigItem) error {
 	return nil
 }
 
-func (l *Loader) loadGroup(item ConfigItem) error {
+func (l *Loader) loadGroup(blob configBlob) error {
 	var target configGroup
 
-	err := json.Unmarshal(item.raw, &target)
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
 		return err
 	}
@@ -152,10 +158,10 @@ func (l *Loader) loadGroup(item ConfigItem) error {
 	return nil
 }
 
-func (l *Loader) loadManagedPolicy(item ConfigItem) error {
+func (l *Loader) loadManagedPolicy(blob configBlob) error {
 	var target configIamManagedPolicy
 
-	err := json.Unmarshal(item.raw, &target)
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
 		return err
 	}
@@ -169,10 +175,10 @@ func (l *Loader) loadManagedPolicy(item ConfigItem) error {
 	return nil
 }
 
-func (l *Loader) loadRole(item ConfigItem) error {
+func (l *Loader) loadRole(blob configBlob) error {
 	var target configIamRole
 
-	err := json.Unmarshal(item.raw, &target)
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
 		return err
 	}
@@ -182,10 +188,10 @@ func (l *Loader) loadRole(item ConfigItem) error {
 	return nil
 }
 
-func (l *Loader) loadUser(item ConfigItem) error {
+func (l *Loader) loadUser(blob configBlob) error {
 	var target configIamUser
 
-	err := json.Unmarshal(item.raw, &target)
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
 		return err
 	}
@@ -195,10 +201,10 @@ func (l *Loader) loadUser(item ConfigItem) error {
 	return nil
 }
 
-func (l *Loader) loadBucket(item ConfigItem) error {
+func (l *Loader) loadBucket(blob configBlob) error {
 	var target configS3Bucket
 
-	err := json.Unmarshal(item.raw, &target)
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
 		return err
 	}
@@ -207,10 +213,10 @@ func (l *Loader) loadBucket(item ConfigItem) error {
 	return nil
 }
 
-func (l *Loader) loadTable(item ConfigItem) error {
+func (l *Loader) loadTable(blob configBlob) error {
 	var target configDynamodbTable
 
-	err := json.Unmarshal(item.raw, &target)
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
 		return err
 	}
@@ -219,10 +225,10 @@ func (l *Loader) loadTable(item ConfigItem) error {
 	return nil
 }
 
-func (l *Loader) loadTopic(item ConfigItem) error {
+func (l *Loader) loadTopic(blob configBlob) error {
 	var target configSnsTopic
 
-	err := json.Unmarshal(item.raw, &target)
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
 		return err
 	}
@@ -231,10 +237,10 @@ func (l *Loader) loadTopic(item ConfigItem) error {
 	return nil
 }
 
-func (l *Loader) loadQueue(item ConfigItem) error {
+func (l *Loader) loadQueue(blob configBlob) error {
 	var target configSqsQueue
 
-	err := json.Unmarshal(item.raw, &target)
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
 		return err
 	}
@@ -243,10 +249,10 @@ func (l *Loader) loadQueue(item ConfigItem) error {
 	return nil
 }
 
-func (l *Loader) loadKey(item ConfigItem) error {
+func (l *Loader) loadKey(blob configBlob) error {
 	var target configKmsKey
 
-	err := json.Unmarshal(item.raw, &target)
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
 		return err
 	}
@@ -255,10 +261,10 @@ func (l *Loader) loadKey(item ConfigItem) error {
 	return nil
 }
 
-func (l *Loader) loadGenericResource(item ConfigItem) error {
+func (l *Loader) loadGenericResource(blob configBlob) error {
 	var target genericResource
 
-	err := json.Unmarshal(item.raw, &target)
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
 		return err
 	}

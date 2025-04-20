@@ -8,23 +8,31 @@ import (
 
 // ConfigItem defines the structure of a generic CI from AWS Config
 type ConfigItem struct {
-	Type      string          `json:"resourceType"`
-	AccountId string          `json:"accountId"`
-	Region    string          `json:"awsRegion"`
-	Arn       entities.Arn    `json:"arn"`
-	Tags      []entities.Tag  `json:"tags"`
-	raw       json.RawMessage `json:"-"`
+	Type      string         `json:"resourceType"`
+	AccountId string         `json:"accountId"`
+	Region    string         `json:"awsRegion"`
+	Arn       entities.Arn   `json:"arn"`
+	Tags      []entities.Tag `json:"tags"`
 }
 
-func (c *ConfigItem) UnmarshalJSON(data []byte) error {
-	type alias *ConfigItem
-	a := alias(c)
+// configBlob is an internal-only struct used for multi-stage JSON unmarshalling
+//
+// When unmarshalling from JSON, it allows us to peek at the type of the config item before
+// delegating to a more specialized handler
+type configBlob struct {
+	Type string          `json:"resourceType"`
+	raw  json.RawMessage `json:"-"`
+}
+
+func (c *configBlob) UnmarshalJSON(data []byte) error {
+	type alias configBlob
+	var a alias
 	err := json.Unmarshal(data, &a)
 	if err != nil {
 		return err
 	}
 
-	*c = ConfigItem(*a)
+	c.Type = a.Type
 	c.raw = data
 	return nil
 }

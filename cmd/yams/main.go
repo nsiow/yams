@@ -20,9 +20,9 @@ func main() {
 	debug("running %v with flags: %+v", os.Args[0], rc)
 
 	// Read the provided cache file
-	data, err := os.ReadFile(rc.Cache)
+	file, err := os.Open(rc.Cache)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to read cache file: %v", err)
+		fmt.Fprintf(os.Stderr, "unable to open cache file: %v", err)
 		os.Exit(1)
 	}
 
@@ -31,11 +31,11 @@ func main() {
 	switch rc.CacheFormat {
 	case CONST_CACHE_FORMAT_AWS_CONFIG:
 		loader := awsconfig.NewLoader()
-		err = loader.LoadJson(data)
+		err = loader.LoadJson(file)
 		universe = loader.Universe()
 	case CONST_CACHE_FORMAT_AWS_CONFIG_LINES:
 		loader := awsconfig.NewLoader()
-		err = loader.LoadJsonl(data)
+		err = loader.LoadJsonl(file)
 		universe = loader.Universe()
 	default:
 		fmt.Fprintf(os.Stderr, "unsure how to load cache format: %s", rc.CacheFormat)
