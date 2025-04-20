@@ -102,20 +102,14 @@ func (s *Simulator) SimulateByArn(
 // The summary is returned in a map of format map[<resource_arn>]: <# of principals with access>
 // where access is defined as any of the provided actions being allowed
 func (s *Simulator) ComputeAccessSummary(actions []*types.Action) (map[string]int, error) {
-	ps := make([]entities.FrozenPrincipal, 0)
-	for p, err := range s.universe.FrozenPrincipals() {
-		if err != nil {
-			return nil, fmt.Errorf("error while resolving principals for simulation: %w", err)
-		}
-		ps = append(ps, p)
+	ps, err := s.universe.FrozenPrincipals()
+	if err != nil {
+		return nil, fmt.Errorf("error while freezing principals for simulation: %w", err)
 	}
 
-	rs := make([]entities.FrozenResource, 0)
-	for r, err := range s.universe.FrozenResources() {
-		if err != nil {
-			return nil, fmt.Errorf("error while resolving resources for simulation: %w", err)
-		}
-		rs = append(rs, r)
+	rs, err := s.universe.FrozenResources()
+	if err != nil {
+		return nil, fmt.Errorf("error while freezing resources for simulation: %w", err)
 	}
 
 	// TODO(nsiow) this needs to be parallelized

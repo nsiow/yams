@@ -2,33 +2,38 @@ package entities
 
 import (
 	"fmt"
-	"iter"
 )
 
 // -------------------------------------------------------------------------------------------------
 // Universe
 // -------------------------------------------------------------------------------------------------
 
-func (u *Universe) FrozenPrincipals() iter.Seq2[FrozenPrincipal, error] {
-	return func(yield func(FrozenPrincipal, error) bool) {
-		for p := range u.Principals() {
-			f, err := p.Freeze()
-			if !yield(f, err) {
-				return
-			}
+func (u *Universe) FrozenPrincipals() ([]FrozenPrincipal, error) {
+	var fs []FrozenPrincipal
+
+	for p := range u.Principals() {
+		f, err := p.Freeze()
+		if err != nil {
+			return nil, err
 		}
+		fs = append(fs, f)
 	}
+
+	return fs, nil
 }
 
-func (u *Universe) FrozenResources() iter.Seq2[FrozenResource, error] {
-	return func(yield func(FrozenResource, error) bool) {
-		for r := range u.Resources() {
-			f, err := r.Freeze()
-			if !yield(f, err) {
-				return
-			}
+func (u *Universe) FrozenResources() ([]FrozenResource, error) {
+	var fs []FrozenResource
+
+	for r := range u.Resources() {
+		f, err := r.Freeze()
+		if err != nil {
+			return nil, err
 		}
+		fs = append(fs, f)
 	}
+
+	return fs, nil
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -46,16 +51,15 @@ func (a *Account) Freeze() (FrozenAccount, error) {
 	}
 
 	frozen := FrozenAccount{
-		Account:    *a,
-		FrozenSCPs: make([][]ManagedPolicy, len(a.SCPs)),
+		Account: *a,
 	}
 
-	for i, layer := range a.SCPs {
+	for _, layer := range a.SCPs {
 		policies, err := freezePolicies(layer, a.uv)
 		if err != nil {
 			return FrozenAccount{}, err
 		}
-		frozen.FrozenSCPs[i] = policies
+		frozen.FrozenSCPs = append(frozen.FrozenSCPs, policies)
 	}
 
 	return frozen, nil
@@ -120,14 +124,18 @@ func (p *Principal) Freeze() (FrozenPrincipal, error) {
 		}
 	}
 
-	f.FrozenAttachedPolicies, err = freezePolicies(f.AttachedPolicies, f.uv)
-	if err != nil {
-		return FrozenPrincipal{}, err
+	if len(f.AttachedPolicies) > 0 {
+		f.FrozenAttachedPolicies, err = freezePolicies(f.AttachedPolicies, f.uv)
+		if err != nil {
+			return FrozenPrincipal{}, err
+		}
 	}
 
-	f.FrozenGroups, err = freezeGroups(f.Groups, f.uv)
-	if err != nil {
-		return FrozenPrincipal{}, err
+	if len(f.Groups) > 0 {
+		f.FrozenGroups, err = freezeGroups(f.Groups, f.uv)
+		if err != nil {
+			return FrozenPrincipal{}, err
+		}
 	}
 
 	if !f.PermissionsBoundary.Empty() {

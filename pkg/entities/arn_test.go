@@ -6,6 +6,31 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 )
 
+func TestEmpty(t *testing.T) {
+	tests := []testlib.TestCase[string, bool]{
+		{
+			Name:  "empty",
+			Input: "",
+			Want:  true,
+		},
+		{
+			Name:  "s3_bucket",
+			Input: "arn:aws:s3:::my-bucket",
+			Want:  false,
+		},
+		{
+			Name:  "s3_object",
+			Input: "arn:aws:s3:::my-bucket/folder/object.txt",
+			Want:  false,
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(i string) (bool, error) {
+		a := Arn(i)
+		return a.Empty(), nil
+	})
+}
+
 func TestArn(t *testing.T) {
 	type output struct {
 		Partition    string
@@ -17,6 +42,11 @@ func TestArn(t *testing.T) {
 	}
 
 	tests := []testlib.TestCase[string, output]{
+		{
+			Name:  "empty",
+			Input: "",
+			Want:  output{},
+		},
 		{
 			Name:  "s3_bucket",
 			Input: "arn:aws:s3:::my-bucket",

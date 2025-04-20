@@ -1,7 +1,6 @@
 package testlib
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -53,7 +52,7 @@ func RunTestSuite[I, O any](
 				return
 			case err == nil && !tc.ShouldErr:
 				if !reflect.DeepEqual(tc.Want, got) {
-					msg := GenerateFailureOutput(tc, got)
+					msg := generateFailureOutput(tc, got)
 					t.Fatal(msg)
 				}
 			case err != nil && !tc.ShouldErr:
@@ -65,24 +64,28 @@ func RunTestSuite[I, O any](
 	}
 }
 
-// GenerateFailureOutput creates a more usable/readable "wanted vs got" diff for tests
-func GenerateFailureOutput[I, O any](tc TestCase[I, O], got any) string {
+// generateFailureOutput creates a more usable/readable "wanted vs got" diff for tests
+func generateFailureOutput[I, O any](tc TestCase[I, O], got any) string {
 	header := "--------------------------------------------------"
 	tmpdir := os.TempDir()
 
-	wantedJson, _ := json.MarshalIndent(tc.Want, "", "  ")
-	gotJson, _ := json.MarshalIndent(got, "", "  ")
+	prettyWanted := prettyPrint(tc.Want)
+	prettyGot := prettyPrint(got)
+
+	if len(tc.Name) == 0 {
+		tc.Name = "noname"
+	}
 
 	wantedMessage := "unable to generate for output for `wanted`"
-	wantedFile := path.Join(tmpdir, fmt.Sprintf("yams.%s.wanted.json", tc.Name))
-	err := os.WriteFile(wantedFile, wantedJson, 0644)
+	wantedFile := path.Join(tmpdir, fmt.Sprintf("yams.%s.wanted.debug", tc.Name))
+	err := os.WriteFile(wantedFile, []byte(prettyWanted), 0644)
 	if err == nil {
 		wantedMessage = fmt.Sprintf("expected output available @ %s", wantedFile)
 	}
 
 	gotMessage := "unable to generate for output for `got`"
 	gotFile := path.Join(tmpdir, fmt.Sprintf("yams.%s.got.json", tc.Name))
-	err = os.WriteFile(gotFile, gotJson, 0644)
+	err = os.WriteFile(gotFile, []byte(prettyGot), 0644)
 	if err == nil {
 		gotMessage = fmt.Sprintf("observed output available @ %s", gotFile)
 	}
@@ -92,14 +95,25 @@ func GenerateFailureOutput[I, O any](tc TestCase[I, O], got any) string {
 		strings.Join([]string{header, "|\tname", header}, "\n"),
 		tc.Name,
 		strings.Join([]string{header, "|\tinput", header}, "\n"),
-		fmt.Sprintf("%#v", tc.Input),
+		fmt.Sprintf("%s", prettyPrint(tc.Input)),
 		strings.Join([]string{header, "|\twanted", header}, "\n"),
-		fmt.Sprintf("%#v", tc.Want),
+		fmt.Sprintf("%s", prettyPrint(tc.Want)),
 		strings.Join([]string{header, "|\tgot", header}, "\n"),
-		fmt.Sprintf("%#v", got),
+		fmt.Sprintf("%s", prettyPrint(got)),
 		strings.Join([]string{header, "|\twanted (pretty)", header}, "\n"),
 		fmt.Sprint(wantedMessage),
 		strings.Join([]string{header, "|\tgot (pretty)", header}, "\n"),
 		fmt.Sprint(gotMessage),
+		strings.Join([]string{header, "|\tdiff command", header}, "\n"),
+		fmt.Sprintf("diff %s %s", wantedFile, gotFile),
 	}, "\n")
+}
+
+func prettyPrint(obj any) string {
+	pretty := fmt.Sprintf("%#v", obj)
+	pretty = strings.ReplaceAll(pretty, ",", ",\n")
+	pretty = strings.ReplaceAll(pretty, "{", "{\n\t")
+	pretty = strings.ReplaceAll(pretty, "}", "\t\n}")
+
+	return pretty
 }
