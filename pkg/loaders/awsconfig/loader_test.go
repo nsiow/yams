@@ -81,6 +81,37 @@ func TestLoad(t *testing.T) {
 				).
 				Build(),
 		},
+		{
+			Name:  "group_valid",
+			Input: `../../../testdata/config_loading/group_valid.json`,
+			Want: *entities.NewBuilder().
+				WithGroups(
+					entities.Group{
+						Type:      "AWS::IAM::Group",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:group/family",
+						InlinePolicies: []policy.Policy{
+							{
+								Version: "2012-10-17",
+								Id:      "",
+								Statement: policy.StatementBlock{
+									policy.Statement{
+										Sid:    "",
+										Effect: "Allow",
+										Action: policy.Value{
+											"s3:*",
+										},
+										Resource: policy.Value{
+											"*",
+										},
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
 
 		// ---------------------------------------------------------------------------------------------
 		// Invalid
@@ -104,6 +135,11 @@ func TestLoad(t *testing.T) {
 		{
 			Name:      "scp_invalid_syntax",
 			Input:     `../../../testdata/config_loading/scp_invalid_syntax.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "scp_invalid_syntax_2",
+			Input:     `../../../testdata/config_loading/scp_invalid_syntax_2.json`,
 			ShouldErr: true,
 		},
 		{
