@@ -817,19 +817,21 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 										Statement: []policy.Statement{
 											{
 												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"ec2:*"},
+												Action:   []string{"*"},
 												Resource: []string{"*"},
 											},
 										},
 									},
 								},
-								{}, // empty layter
+							},
+							{}, // empty layer
+							{
 								{
 									Policy: policy.Policy{
 										Statement: []policy.Statement{
 											{
 												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"ec2:*"},
+												Action:   []string{"*"},
 												Resource: []string{"*"},
 											},
 										},

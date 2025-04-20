@@ -23,7 +23,13 @@ type Universe struct {
 
 // NewUniverse creates and returns a new, empty universe
 func NewUniverse() *Universe {
-	return &Universe{}
+	return &Universe{
+		accounts:   make(map[string]Account),
+		groups:     make(map[Arn]Group),
+		policies:   make(map[Arn]ManagedPolicy),
+		principals: make(map[Arn]Principal),
+		resources:  make(map[Arn]Resource),
+	}
 }
 
 // -------------------------------------------------------------------------------------------------

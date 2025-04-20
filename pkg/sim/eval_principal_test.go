@@ -99,7 +99,7 @@ func TestPrincipalAccess(t *testing.T) {
 							{
 								Statement: []policy.Statement{
 									{
-										Effect:   policy.EFFECT_ALLOW,
+										Effect:   policy.EFFECT_DENY,
 										Action:   []string{"s3:listbucket"},
 										Resource: []string{"arn:aws:s3:::mybucket"},
 									},

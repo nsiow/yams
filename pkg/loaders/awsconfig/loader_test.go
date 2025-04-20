@@ -19,7 +19,7 @@ func TestLoadJson(t *testing.T) {
 		{
 			Name:  "valid_empty_json",
 			Input: `../../../testdata/universes/valid_empty.json`,
-			Want:  entities.Universe{},
+			Want:  *entities.NewUniverse(),
 		},
 
 		// ---------------------------------------------------------------------------------------------

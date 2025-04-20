@@ -88,6 +88,7 @@ func TestPermissionsBoundary(t *testing.T) {
 			Want: []policy.Effect(nil),
 		},
 		{
+			Name: "allow_specific",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					FrozenPermissionBoundary: entities.ManagedPolicy{
@@ -161,7 +162,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					Resource: entities.Resource{
 						Arn: "arn:aws:s3:::mybucket"},
 				},
-				Action: sar.MustLookupString("s3:ListBucket"),
+				Action: sar.MustLookupString("iam:ListRoles"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -187,7 +188,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					Resource: entities.Resource{
 						Arn: "arn:aws:s3:::mybucket"},
 				},
-				Action: sar.MustLookupString("s3:ListBucket"),
+				Action: sar.MustLookupString("iam:ListRoles"),
 			},
 			Want: []policy.Effect(nil),
 		},

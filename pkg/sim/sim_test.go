@@ -37,12 +37,12 @@ func TestNewSimulator(t *testing.T) {
 func TestSimulatorUniverse(t *testing.T) {
 
 	// Define our universe
-	universe := entities.Universe{}
+	universe := entities.NewUniverse()
 	universe.PutAccount(entities.Account{Id: "55555"})
 
 	// Create a simulator and set Universe
 	sim, _ := NewSimulator()
-	sim.SetUniverse(&universe)
+	sim.SetUniverse(universe)
 
 	// Compare retrieved universe to ours
 	got := sim.Universe()
@@ -182,7 +182,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "test_empty_universe",
 			Input: input{
-				universe:     &entities.Universe{},
+				universe:     entities.NewUniverse(),
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::bucket1",
@@ -283,7 +283,7 @@ func TestComputeAccessSummary(t *testing.T) {
 		{
 			Name: "empty_universe",
 			Input: input{
-				universe: &entities.Universe{},
+				universe: entities.NewUniverse(),
 			},
 			Want: map[string]int{},
 		},
