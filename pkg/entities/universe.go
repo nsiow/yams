@@ -110,7 +110,7 @@ func (u *Universe) Policies() iter.Seq[ManagedPolicy] {
 
 // HasPolicy returns whether or not the specified policy exists in the universe
 func (u *Universe) HasPolicy(arn Arn) bool {
-	_, ok := u.Principal(arn)
+	_, ok := u.Policy(arn)
 	return ok
 }
 

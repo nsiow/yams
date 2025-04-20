@@ -51,6 +51,7 @@ func RunTestSuite[I, O any](
 				t.Logf("test saw expected error: %v", err)
 				return
 			case err == nil && !tc.ShouldErr:
+				// IDEA(nsiow) make the comparison function configurable
 				if !reflect.DeepEqual(tc.Want, got) {
 					msg := generateFailureOutput(tc, got)
 					t.Fatal(msg)
