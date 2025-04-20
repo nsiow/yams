@@ -105,7 +105,7 @@ func generateFailureOutput[I, O any](tc TestCase[I, O], got any) string {
 		strings.Join([]string{header, "|\tgot (pretty)", header}, "\n"),
 		fmt.Sprint(gotMessage),
 		strings.Join([]string{header, "|\tdiff command", header}, "\n"),
-		fmt.Sprintf("diff %s %s", wantedFile, gotFile),
+		fmt.Sprintf("diff -U5 %s %s", gotFile, wantedFile),
 	}, "\n")
 }
 

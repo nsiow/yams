@@ -132,7 +132,7 @@ func (p *Principal) Freeze() (FrozenPrincipal, error) {
 	}
 
 	if len(f.Groups) > 0 {
-		f.FrozenGroups, err = freezeGroups(f.Groups, f.uv)
+		f.FrozenGroups, err = freezeGroupsByArn(f.Groups, f.uv)
 		if err != nil {
 			return FrozenPrincipal{}, err
 		}
@@ -209,7 +209,7 @@ func freezePolicies(arns []Arn, uv *Universe) ([]ManagedPolicy, error) {
 	return policies, nil
 }
 
-func freezeGroup(arn Arn, uv *Universe) (FrozenGroup, error) {
+func freezeGroupByArn(arn Arn, uv *Universe) (FrozenGroup, error) {
 	grp, ok := uv.Group(arn)
 	if !ok {
 		return FrozenGroup{}, fmt.Errorf("cannot find group with arn: %s", arn.String())
@@ -217,24 +217,21 @@ func freezeGroup(arn Arn, uv *Universe) (FrozenGroup, error) {
 
 	frozen, err := grp.Freeze()
 	if err != nil {
-		return FrozenGroup{}, nil
+		return FrozenGroup{}, err
 	}
 	return frozen, nil
 }
 
-func freezeGroups(arns []Arn, uv *Universe) ([]FrozenGroup, error) {
+func freezeGroupsByArn(arns []Arn, uv *Universe) ([]FrozenGroup, error) {
 	groups := make([]FrozenGroup, len(arns))
 
 	for i, arn := range arns {
-		grp, err := freezeGroup(arn, uv)
+		grp, err := freezeGroupByArn(arn, uv)
 		if err != nil {
 			return nil, err
 		}
 
-		groups[i], err = grp.Freeze()
-		if err != nil {
-			return nil, err
-		}
+		groups[i] = grp
 	}
 
 	return groups, nil
