@@ -8,74 +8,26 @@ import (
 )
 
 // evalPrincipalAccess calculates the Principal-side access to the specified Resource
-func evalPrincipalAccess(s *subject) Decision {
-
+func evalPrincipalAccess(s *subject) (decision Decision) {
 	s.trc.Push("evaluating principal policies")
 	defer s.trc.Pop()
 
-	decision := Decision{}
+	s.trc.Push("evaluating inline principal policies")
+	decision.Merge(evalPrincipalHelperInline(s, s.ac.Principal.InlinePolicies))
+	s.trc.Pop()
 
-	decision.Merge(
-		evalPrincipalInlinePolicies(s, s.ac.Principal.InlinePolicies),
-		evalPrincipalAttachedPolicies(s, s.ac.Principal.FrozenAttachedPolicies),
-		evalPrincipalGroupPolicies(s, s.ac.Principal.FrozenGroups),
-	)
+	s.trc.Push("evaluating attached principal policies")
+	decision.Merge(evalPrincipalHelperAttached(s, s.ac.Principal.FrozenAttachedPolicies))
+	s.trc.Pop()
 
-	return decision
-}
-
-// evalPrincipalInlinePolicies calculates the Principal-side access based on inline policies
-func evalPrincipalInlinePolicies(s *subject, policies []policy.Policy) Decision {
-	s.trc.Push("evaluating principal inline policies")
-	defer s.trc.Pop()
-
-	decision := Decision{}
-	for i, policy := range policies {
-		var pid string
-		if len(policy.Id) > 0 {
-			pid = policy.Id
-		} else {
-			pid = fmt.Sprintf("inline(%d)", i)
-		}
-
-		s.trc.Push("evaluating principal inline policy: %s", pid)
-		decision.Merge(
-			evalPolicy(
-				s,
-				policy,
-				evalStatementMatchesAction,
-				evalStatementMatchesResource,
-				evalStatementMatchesCondition,
-			),
-		)
-		s.trc.Pop()
-	}
+	s.trc.Push("evaluating group-based principal policies")
+	decision.Merge(evalPrincipalGroupPolicies(s, s.ac.Principal.FrozenGroups))
+	s.trc.Pop()
 
 	return decision
 }
 
-// evalPrincipalAttachedPolicies calculates the Principal-side access based on attached policies
-func evalPrincipalAttachedPolicies(s *subject, policies []entities.ManagedPolicy) Decision {
-	s.trc.Push("evaluating principal attached policies")
-	defer s.trc.Pop()
-
-	decision := Decision{}
-	for _, policy := range policies {
-		s.trc.Push("evaluating principal attached policy: %s", policy.Arn)
-		decision.Merge(
-			evalPolicy(
-				s,
-				policy.Policy,
-				evalStatementMatchesAction,
-				evalStatementMatchesResource,
-				evalStatementMatchesCondition,
-			),
-		)
-		s.trc.Pop()
-	}
-
-	return decision
-}
+// FIXME(nsiow) move trc.Push(fmt.Sprintf(...)) to use new args format
 
 // evalPrincipalGroupPolicies calculates the Principal-side access based on group policies
 func evalPrincipalGroupPolicies(s *subject, groups []entities.FrozenGroup) Decision {
@@ -84,21 +36,51 @@ func evalPrincipalGroupPolicies(s *subject, groups []entities.FrozenGroup) Decis
 
 	decision := Decision{}
 	for _, group := range groups {
-		// FIXME(nsiow) move trc.Push(fmt.Sprintf(...)) to use new args format
-		s.trc.Push("evaluating group principal policies for group: %s", group.Arn)
-		for _, policy := range group.FrozenPolicies {
-			s.trc.Push("evaluating group principal policy: %s", policy.Arn)
-			decision.Merge(
-				evalPolicy(
-					s,
-					policy.Policy,
-					evalStatementMatchesAction,
-					evalStatementMatchesResource,
-					evalStatementMatchesCondition,
-				),
-			)
-			s.trc.Pop()
+		s.trc.Push("evaluating inline group principal policies for group: %s", group.Arn)
+		decision.Merge(evalPrincipalHelperInline(s, group.InlinePolicies))
+		s.trc.Pop()
+
+		s.trc.Push("evaluating attached group principal policies for group: %s", group.Arn)
+		decision.Merge(evalPrincipalHelperAttached(s, group.FrozenAttachedPolicies))
+		s.trc.Pop()
+	}
+
+	return decision
+}
+
+// evalPrincipalHelperInline is a helper function for easier evaluation of inline policies
+func evalPrincipalHelperInline(s *subject, inline []policy.Policy) (decision Decision) {
+	for i, policy := range inline {
+		var pid string
+		if len(policy.Id) > 0 {
+			pid = policy.Id
+		} else {
+			pid = fmt.Sprintf("inline(%d)", i)
 		}
+
+		s.trc.Push("evaluating inline policy: %s", pid)
+		decision.Merge(
+			evalPolicy(s,
+				policy,
+				evalStatementMatchesAction,
+				evalStatementMatchesResource,
+				evalStatementMatchesCondition))
+		s.trc.Pop()
+	}
+
+	return decision
+}
+
+// evalPrincipalInlinePolicies is a helper function for easier evaluation of inline policies
+func evalPrincipalHelperAttached(s *subject, attached []entities.ManagedPolicy) (decision Decision) {
+	for _, policy := range attached {
+		s.trc.Push("evaluating inline policy: %s", policy.Arn)
+		decision.Merge(
+			evalPolicy(s,
+				policy.Policy,
+				evalStatementMatchesAction,
+				evalStatementMatchesResource,
+				evalStatementMatchesCondition))
 		s.trc.Pop()
 	}
 

@@ -21,11 +21,21 @@ func TestLoadJson(t *testing.T) {
 			Input: `../../../testdata/universes/valid_empty.json`,
 			Want:  *entities.NewUniverse(),
 		},
+		{
+			Name:  "valid_empty_json_l",
+			Input: `../../../testdata/universes/valid_empty.jsonl`,
+			Want:  *entities.NewUniverse(),
+		},
 
 		// ---------------------------------------------------------------------------------------------
 		// Invalid
 		// ---------------------------------------------------------------------------------------------
 
+		{
+			Name:      "invalid_group_bad_shape",
+			Input:     `../../../testdata/universes/invalid_group_bad_shape.json`,
+			ShouldErr: true,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(fp string) (entities.Universe, error) {

@@ -10,8 +10,7 @@
       "groupId": "AGPAGGGGGGGGGG",
       "arn": "arn:aws:iam::000000000000:group/family",
       "groupPolicyList": [
-        [
-        ]
+        ["foo", "bar"]
       ],
       "createDate": "2019-03-31T01:52:20.000Z"
     },

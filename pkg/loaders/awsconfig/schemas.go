@@ -158,7 +158,8 @@ func (c *configIamManagedPolicy) asPolicy() (entities.ManagedPolicy, error) {
 type configGroup struct {
 	ConfigItem
 	Configuration struct {
-		AttachedManagedPolicies []policyRef `json:"attachedManagedPolicies"`
+		AttachedManagedPolicies []policyRef    `json:"attachedManagedPolicies"`
+		GroupPolicies           []inlinePolicy `json:"groupPolicyList"`
 	} `json:"configuration"`
 }
 
@@ -167,16 +168,20 @@ func (c *configGroup) asGroup() entities.Group {
 		Type:      c.Type,
 		AccountId: c.AccountId,
 		Arn:       c.Arn,
-		Policies: common.Map(c.Configuration.AttachedManagedPolicies,
+		InlinePolicies: common.Map(c.Configuration.GroupPolicies,
+			func(x inlinePolicy) policy.Policy {
+				return policy.Policy(x.Document)
+			}),
+		AttachedPolicies: common.Map(c.Configuration.AttachedManagedPolicies,
 			func(x policyRef) entities.Arn {
 				return entities.Arn(x.Arn)
 			}),
 	}
 }
 
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 // Generic resource
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 type genericResource struct {
 	ConfigItem

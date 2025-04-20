@@ -1,5 +1,7 @@
 package entities
 
+import "github.com/nsiow/yams/pkg/policy"
+
 // Group defines the general shape of an AWS IAM group
 type Group struct {
 	// uv is a reverse pointer back to the containing universe
@@ -14,6 +16,9 @@ type Group struct {
 	// Arn refers to the Amazon Resource Name of the Resource
 	Arn Arn
 
-	// Policy refers to the resource policy associated with the Resource
-	Policies []Arn
+	// InlinePolicies refers to the inline (unattached) policies associated with the Group
+	InlinePolicies []policy.Policy
+
+	// AttachedPolicies refers to the managed policies associated with the Group
+	AttachedPolicies []Arn
 }

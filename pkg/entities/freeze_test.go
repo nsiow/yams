@@ -110,7 +110,7 @@ func TestFreeze(t *testing.T) {
 				WithGroups(
 					Group{
 						Arn: "arn:aws:iam::55555:group/group-1",
-						Policies: []Arn{
+						AttachedPolicies: []Arn{
 							Arn("arn:aws:iam::55555:policy/p-123"),
 						},
 					},
@@ -241,7 +241,7 @@ func TestFreeze(t *testing.T) {
 				WithGroups(
 					Group{
 						Arn: "arn:aws:iam::55555:group/group-1",
-						Policies: []Arn{
+						AttachedPolicies: []Arn{
 							Arn("arn:aws:iam::55555:policy/p-123"),
 						},
 					},
@@ -273,11 +273,11 @@ func TestFreeze(t *testing.T) {
 							{
 								Group: Group{
 									Arn: "arn:aws:iam::55555:group/group-1",
-									Policies: []Arn{
+									AttachedPolicies: []Arn{
 										Arn("arn:aws:iam::55555:policy/p-123"),
 									},
 								},
-								FrozenPolicies: []ManagedPolicy{
+								FrozenAttachedPolicies: []ManagedPolicy{
 									{
 										Arn: "arn:aws:iam::55555:policy/p-123",
 										Policy: policy.Policy{
@@ -318,8 +318,8 @@ func TestFreeze(t *testing.T) {
 			out.fp[i].FrozenAccount.uv = nil
 			for j := range out.fp[i].FrozenGroups {
 				out.fp[i].FrozenGroups[j].uv = nil
-				for k := range out.fp[i].FrozenGroups[j].FrozenPolicies {
-					out.fp[i].FrozenGroups[j].FrozenPolicies[k].uv = nil
+				for k := range out.fp[i].FrozenGroups[j].FrozenAttachedPolicies {
+					out.fp[i].FrozenGroups[j].FrozenAttachedPolicies[k].uv = nil
 				}
 			}
 			for j := range out.fp[i].FrozenAccount.FrozenSCPs {

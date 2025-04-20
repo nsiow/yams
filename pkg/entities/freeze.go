@@ -71,7 +71,7 @@ func (a *Account) Freeze() (FrozenAccount, error) {
 
 type FrozenGroup struct {
 	Group
-	FrozenPolicies []ManagedPolicy
+	FrozenAttachedPolicies []ManagedPolicy
 }
 
 func (g *Group) Freeze() (FrozenGroup, error) {
@@ -85,7 +85,7 @@ func (g *Group) Freeze() (FrozenGroup, error) {
 
 	var err error
 
-	f.FrozenPolicies, err = freezePolicies(f.Policies, g.uv)
+	f.FrozenAttachedPolicies, err = freezePolicies(f.AttachedPolicies, g.uv)
 	if err != nil {
 		return FrozenGroup{}, err
 	}
