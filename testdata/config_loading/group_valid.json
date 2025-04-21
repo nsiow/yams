@@ -6,7 +6,12 @@
     "configuration": {
       "path": "/",
       "groupName": "family",
-      "attachedManagedPolicies": [],
+      "attachedManagedPolicies": [
+        {
+          "policyArn": "arn:aws:iam::000000000000:policy/Common",
+          "policyName": "Common"
+        }
+      ],
       "groupId": "AGPAGGGGGGGGGG",
       "arn": "arn:aws:iam::000000000000:group/family",
       "groupPolicyList": [

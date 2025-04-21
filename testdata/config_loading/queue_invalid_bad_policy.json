@@ -1,0 +1,24 @@
+[
+  {
+    "arn": "arn:aws:sqs:us-west-2:000000000000:ExampleQueue",
+    "resourceType": "AWS::SQS::Queue",
+    "awsRegion": "us-west-2",
+    "accountId": "000000000000",
+    "configuration": {
+      "Policy": "\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AllowReceiveMe",
+      "ReceiveMessageWaitTimeSeconds": 0,
+      "SqsManagedSseEnabled": "false",
+      "CreatedTimestamp": "2222222222",
+      "DelaySeconds": 0,
+      "MessageRetentionPeriod": 345600,
+      "MaximumMessageSize": 262144,
+      "VisibilityTimeout": 30,
+      "LastModifiedTimestamp": "2222222222",
+      "QueueArn": "arn:aws:sqs:us-west-2:000000000000:ExampleQueue"
+    },
+    "supplementaryConfiguration": {
+      "Tags": {}
+    },
+    "tags": []
+  }
+]

@@ -30,6 +30,15 @@ func TestMap_String(t *testing.T) {
 				"baz0",
 			},
 		},
+		{
+			Input: input{
+				in: []string{},
+				function: func(s string) string {
+					return s + "0"
+				},
+			},
+			Want: nil,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) ([]string, error) {

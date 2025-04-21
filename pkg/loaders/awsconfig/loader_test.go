@@ -11,7 +11,7 @@ import (
 )
 
 func TestLoad(t *testing.T) {
-	tests := []testlib.TestCase[string, entities.Universe]{
+	tests := []testlib.TestCase[string, *entities.Universe]{
 
 		// ---------------------------------------------------------------------------------------------
 		// Valid
@@ -20,17 +20,32 @@ func TestLoad(t *testing.T) {
 		{
 			Name:  "base_valid_empty",
 			Input: `../../../testdata/config_loading/base_valid_empty.json`,
-			Want:  *entities.NewUniverse(),
+			Want:  entities.NewUniverse(),
 		},
 		{
 			Name:  "base_valid_empty_json_l",
 			Input: `../../../testdata/config_loading/base_valid_empty.jsonl`,
-			Want:  *entities.NewUniverse(),
+			Want:  entities.NewUniverse(),
+		},
+		{
+			Name:  "generic_resource_valid.json",
+			Input: `../../../testdata/config_loading/generic_resource_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::Lambda::Function",
+						AccountId: "123456789012",
+						Region:    "us-west-2",
+						Arn:       "arn:aws:lambda:us-west-2:123456789012:function:my-function",
+						Tags:      []entities.Tag{},
+					},
+				).
+				Build(),
 		},
 		{
 			Name:  "account_valid",
 			Input: `../../../testdata/config_loading/account_valid.json`,
-			Want: *entities.NewBuilder().
+			Want: entities.NewBuilder().
 				WithAccounts(
 					entities.Account{
 						Id:    "000000000000",
@@ -55,7 +70,7 @@ func TestLoad(t *testing.T) {
 		{
 			Name:  "account_valid_jsonl",
 			Input: `../../../testdata/config_loading/account_valid.jsonl`,
-			Want: *entities.NewBuilder().
+			Want: entities.NewBuilder().
 				WithAccounts(
 					entities.Account{
 						Id:    "000000000000",
@@ -80,7 +95,7 @@ func TestLoad(t *testing.T) {
 		{
 			Name:  "scp_valid",
 			Input: `../../../testdata/config_loading/scp_valid.json`,
-			Want: *entities.NewBuilder().
+			Want: entities.NewBuilder().
 				WithPolicies(
 					entities.ManagedPolicy{
 						Type:      "Yams::Organizations::ServiceControlPolicy",
@@ -114,12 +129,15 @@ func TestLoad(t *testing.T) {
 		{
 			Name:  "group_valid",
 			Input: `../../../testdata/config_loading/group_valid.json`,
-			Want: *entities.NewBuilder().
+			Want: entities.NewBuilder().
 				WithGroups(
 					entities.Group{
 						Type:      "AWS::IAM::Group",
 						AccountId: "000000000000",
 						Arn:       "arn:aws:iam::000000000000:group/family",
+						AttachedPolicies: []entities.Arn{
+							"arn:aws:iam::000000000000:policy/Common",
+						},
 						InlinePolicies: []policy.Policy{
 							{
 								Version: "2012-10-17",
@@ -151,7 +169,7 @@ func TestLoad(t *testing.T) {
 		{
 			Name:  "policy_valid",
 			Input: `../../../testdata/config_loading/policy_valid.json`,
-			Want: *entities.NewBuilder().
+			Want: entities.NewBuilder().
 				WithPolicies(
 					entities.ManagedPolicy{
 						Type:      "AWS::IAM::Policy",
@@ -186,7 +204,7 @@ func TestLoad(t *testing.T) {
 		{
 			Name:  "role_valid",
 			Input: `../../../testdata/config_loading/role_valid.json`,
-			Want: *entities.NewBuilder().
+			Want: entities.NewBuilder().
 				WithPrincipals(
 					entities.Principal{
 						Type:      "AWS::IAM::Role",
@@ -261,7 +279,7 @@ func TestLoad(t *testing.T) {
 		{
 			Name:  "user_valid",
 			Input: `../../../testdata/config_loading/user_valid.json`,
-			Want: *entities.NewBuilder().
+			Want: entities.NewBuilder().
 				WithPrincipals(
 					entities.Principal{
 						Type:      "AWS::IAM::User",
@@ -303,6 +321,146 @@ func TestLoad(t *testing.T) {
 				).
 				Build(),
 		},
+		{
+			Name:  "bucket_valid",
+			Input: `../../../testdata/config_loading/bucket_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::S3::Bucket",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:s3:::somebucket",
+						Tags: []entities.Tag{
+							{
+								Key:   "this-bucket-tag",
+								Value: "is-cool",
+							},
+						},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "AllowGetObject",
+									Effect: "Allow",
+									Principal: policy.Principal{
+										AWS: policy.Value{
+											"arn:aws:iam::000000000000:role/nsiow",
+										},
+									},
+									Action: policy.Value{
+										"s3:GetObject",
+									},
+									Resource: policy.Value{
+										"arn:aws:s3:::somebucket/*",
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "table_valid",
+			Input: `../../../testdata/config_loading/table_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::DynamoDB::Table",
+						AccountId: "000000000000",
+						Region:    "us-east-1",
+						Arn:       "arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable",
+						Tags:      []entities.Tag{},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "topic_valid",
+			Input: `../../../testdata/config_loading/topic_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::SNS::Topic",
+						AccountId: "999999999999",
+						Region:    "us-west-2",
+						Arn:       "arn:aws:sns:us-west-2:999999999999:SimpleTopic",
+						Tags:      []entities.Tag{},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Id:      "__default_policy_ID",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "__default_statement_ID",
+									Effect: "Deny",
+									Principal: policy.Principal{
+										AWS: policy.Value{
+											"*",
+										},
+									},
+									Action: policy.Value{
+										"SNS:Subscribe",
+									},
+									Resource: policy.Value{
+										"arn:aws:sns:us-west-2:999999999999:SimpleTopic",
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "queue_valid",
+			Input: `../../../testdata/config_loading/queue_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::SQS::Queue",
+						AccountId: "000000000000",
+						Region:    "us-west-2",
+						Arn:       "arn:aws:sqs:us-west-2:000000000000:ExampleQueue",
+						Tags:      []entities.Tag{},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "AllowReceiveMessage",
+									Effect: "Allow",
+									Principal: policy.Principal{
+										AWS: policy.Value{
+											"arn:aws:iam::000000000000:role/nsiow",
+										},
+									},
+									Action: policy.Value{
+										"sqs:ReceiveMessage",
+									},
+									Resource: policy.Value{
+										"arn:aws:sqs:us-west-2:000000000000:ExampleQueue",
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "key_valid",
+			Input: `../../../testdata/config_loading/key_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::KMS::Key",
+						AccountId: "999999999999",
+						Region:    "us-west-2",
+						Arn:       "arn:aws:kms:us-west-2:999999999999:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+						Tags:      []entities.Tag{},
+					},
+				).
+				Build(),
+		},
 
 		// ---------------------------------------------------------------------------------------------
 		// Invalid
@@ -316,6 +474,11 @@ func TestLoad(t *testing.T) {
 		{
 			Name:      "base_invalid_jsonl",
 			Input:     `../../../testdata/config_loading/base_invalid.jsonl`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "generic_resource_invalid_bad_region",
+			Input:     `../../../testdata/config_loading/generic_resource_invalid_bad_region.json`,
 			ShouldErr: true,
 		},
 		{
@@ -353,9 +516,39 @@ func TestLoad(t *testing.T) {
 			Input:     `../../../testdata/config_loading/role_invalid_bad_policy.json`,
 			ShouldErr: true,
 		},
+		{
+			Name:      "user_invalid_bad_inline_policy",
+			Input:     `../../../testdata/config_loading/user_invalid_bad_inline_policy.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "bucket_invalid_bad_policy",
+			Input:     `../../../testdata/config_loading/bucket_invalid_bad_policy.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "table_invalid_bad_region",
+			Input:     `../../../testdata/config_loading/table_invalid_bad_region.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "topic_invalid_bad_policy",
+			Input:     `../../../testdata/config_loading/topic_invalid_bad_policy.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "queue_invalid_bad_policy",
+			Input:     `../../../testdata/config_loading/queue_invalid_bad_policy.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "key_invalid_bad_region",
+			Input:     `../../../testdata/config_loading/key_invalid_bad_region.json`,
+			ShouldErr: true,
+		},
 	}
 
-	testlib.RunTestSuite(t, tests, func(fp string) (entities.Universe, error) {
+	testlib.RunTestSuite(t, tests, func(fp string) (*entities.Universe, error) {
 		// Load test data
 		f, err := os.Open(fp)
 		if err != nil {
@@ -376,9 +569,9 @@ func TestLoad(t *testing.T) {
 
 		// Handle loading errors; these may be expected
 		if err != nil {
-			return entities.Universe{}, err
+			return nil, err
 		}
-		return *l.Universe(), nil
+		return l.Universe(), nil
 	})
 }
 

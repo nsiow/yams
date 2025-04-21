@@ -1,0 +1,42 @@
+[
+  {
+    "arn": "arn:aws:s3:::somebucket",
+    "resourceType": "AWS::S3::Bucket",
+    "awsRegion": null,
+    "accountId": "000000000000",
+    "configuration": {
+      "owner": {
+        "id": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+      },
+      "name": "somebucket",
+      "creationDate": "2021-11-01T20:06:37.000Z"
+    },
+    "supplementaryConfiguration": {
+      "PublicAccessBlockConfiguration": {
+        "blockPublicPolicy": true,
+        "restrictPublicBuckets": true,
+        "blockPublicAcls": true,
+        "ignorePublicAcls": true
+      },
+      "BucketPolicy": {
+        "policyText": "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Sid%22%3A%22AllowGetObject%22%2C%22Effect%22%3A%22Allow%22%2C%22Principal%22%3A%7B%22AWS%22%3A%22arn%3Aaws%3Aiam%3A%3A000000000000%3Arole%2Fnsiow%22%7D%2C%22Action%22%3A%22s3%3AGetObject%22%2C%22Resource%22%3A%22arn%3Aaws%3As3%3A%3A%3Asomebucket%2F*%22%7D%5D%7D"
+      },
+      "BucketTaggingConfiguration": {
+        "tagSets": [
+          {
+            "tags": {
+              "this-bucket-tag": "is-cool"
+            }
+          }
+        ]
+      }
+    },
+    "tags": [
+      {
+        "tag": "this-bucket-tag=is-cool",
+        "value": "is-cool",
+        "key": "this-bucket-tag"
+      }
+    ]
+  }
+]

@@ -1,0 +1,13 @@
+[
+  {
+    "arn": "arn:aws:kms:us-west-2:999999999999:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+    "resourceType": "AWS::KMS::Key",
+    "awsRegion": "us-west-2",
+    "accountId": "999999999999",
+    "configuration": {},
+    "supplementaryConfiguration": {
+      "Tags": []
+    },
+    "tags": []
+  }
+]

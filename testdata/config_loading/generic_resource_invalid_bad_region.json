@@ -1,0 +1,13 @@
+[
+  {
+    "arn": "arn:aws:lambda:us-west-2:123456789012:function:my-function",
+    "resourceType": "AWS::Lambda::Function",
+    "awsRegion": 2,
+    "accountId": "123456789012",
+    "configuration": {},
+    "supplementaryConfiguration": {
+      "Tags": []
+    },
+    "tags": []
+  }
+]
