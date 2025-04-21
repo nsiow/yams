@@ -7,13 +7,14 @@ import (
 
 // evalSCP assesses the service control policies of the Principal to determine whether or not it
 // allows the provided AuthContext
-func evalSCP(s *subject) (decision Decision) {
+func evalSCP(s *subject) Decision {
 	s.trc.Push("evaluating service control policies")
 	defer s.trc.Pop()
 
-	// Missing account or empty SCP = allowed; otherwise we have to evaluate
-	account := s.auth.Principal.Account
-	if len(account.SCPs) == 0 {
+	decision := Decision{}
+
+	// Empty SCP = allowed; otherwise we have to evaluate
+	if len(s.auth.Principal.Account.SCPs) == 0 {
 		// TODO(nsiow) add observation for missing SCPs
 		decision.Add(policy.EFFECT_ALLOW)
 		return decision
@@ -21,14 +22,15 @@ func evalSCP(s *subject) (decision Decision) {
 
 	// Iterate through layers of SCP, only continuing if we get an allow result through each layer
 	// TODO(nsiow) add better tracing here
-	for i, layer := range account.SCPs {
+	scps := s.auth.Principal.Account.SCPs
+	for i, layer := range scps {
 
 		// Calculate access for this layer
-		decision = evalControlPolicyLayer(s, layer)
+		decision = evalSCPLayer(s, layer)
 
 		// If not allowed at this layer, propagate result up; should be denied
 		if !decision.Allowed() {
-			s.trc.Observation("SCP access denied at layer %d of %d", i, len(account.SCPs)-1)
+			s.trc.Observation("SCP access denied at layer %d of %d", i, len(scps)-1)
 			return decision
 		}
 	}
@@ -36,11 +38,11 @@ func evalSCP(s *subject) (decision Decision) {
 	return decision
 }
 
-// evalControlPolicyLayer evaluates a single "layer" of control policies
+// evalSCPLayer evaluates a single "layer" of service control policies
 //
 // This is separated since each logical layer must result in an ALLOW decision in order to
 // continue
-func evalControlPolicyLayer(s *subject, layer []entities.ManagedPolicy) (decision Decision) {
+func evalSCPLayer(s *subject, layer []entities.ManagedPolicy) (decision Decision) {
 	for _, pol := range layer {
 		decision.Merge(
 			evalPolicy(s, pol.Policy,

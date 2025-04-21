@@ -29,7 +29,7 @@ func TestSCP(t *testing.T) {
 			},
 		},
 		{
-			Name: "allow_all",
+			Name: "scp_allow_all",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
@@ -60,7 +60,7 @@ func TestSCP(t *testing.T) {
 			},
 		},
 		{
-			Name: "deny_all",
+			Name: "scp_deny_all",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
@@ -91,7 +91,7 @@ func TestSCP(t *testing.T) {
 			},
 		},
 		{
-			Name: "allowed_service",
+			Name: "scp_allowed_service",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
@@ -122,7 +122,7 @@ func TestSCP(t *testing.T) {
 			},
 		},
 		{
-			Name: "not_allowed_service",
+			Name: "scp_not_allowed_service",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
@@ -151,7 +151,7 @@ func TestSCP(t *testing.T) {
 			Want: []policy.Effect(nil),
 		},
 		{
-			Name: "mid_layer_implicit_deny",
+			Name: "scp_mid_layer_implicit_deny",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
@@ -194,7 +194,7 @@ func TestSCP(t *testing.T) {
 			Want: []policy.Effect(nil),
 		},
 		{
-			Name: "mid_layer_explicit_deny",
+			Name: "scp_mid_layer_explicit_deny",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
