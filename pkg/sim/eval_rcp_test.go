@@ -18,7 +18,8 @@ func TestRCP(t *testing.T) {
 					Arn: "arn:aws:iam::55555:role/myrole",
 				},
 				Resource: &entities.FrozenResource{
-					Arn: "arn:aws:s3:::mybucket",
+					Type: "AWS::S3::Bucket",
+					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
 						RCPs: [][]entities.ManagedPolicy{},
 					},
@@ -48,7 +49,8 @@ func TestRCP(t *testing.T) {
 					Arn: "arn:aws:iam::55555:role/myrole",
 				},
 				Resource: &entities.FrozenResource{
-					Arn: "arn:aws:s3:::mybucket",
+					Type: "AWS::S3::Bucket",
+					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
 						RCPs: [][]entities.ManagedPolicy{
 							{
@@ -83,7 +85,8 @@ func TestRCP(t *testing.T) {
 					Arn: "arn:aws:iam::55555:role/myrole",
 				},
 				Resource: &entities.FrozenResource{
-					Arn: "arn:aws:s3:::mybucket",
+					Type: "AWS::S3::Bucket",
+					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
 						RCPs: [][]entities.ManagedPolicy{
 							{
@@ -118,7 +121,8 @@ func TestRCP(t *testing.T) {
 					Arn: "arn:aws:iam::55555:role/myrole",
 				},
 				Resource: &entities.FrozenResource{
-					Arn: "arn:aws:s3:::mybucket",
+					Type: "AWS::S3::Bucket",
+					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
 						RCPs: [][]entities.ManagedPolicy{
 							{
@@ -153,7 +157,8 @@ func TestRCP(t *testing.T) {
 					Arn: "arn:aws:iam::55555:role/myrole",
 				},
 				Resource: &entities.FrozenResource{
-					Arn: "arn:aws:s3:::mybucket",
+					Type: "AWS::S3::Bucket",
+					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
 						RCPs: [][]entities.ManagedPolicy{
 							{
@@ -186,7 +191,8 @@ func TestRCP(t *testing.T) {
 					Arn: "arn:aws:iam::55555:role/myrole",
 				},
 				Resource: &entities.FrozenResource{
-					Arn: "arn:aws:s3:::mybucket",
+					Type: "AWS::S3::Bucket",
+					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
 						RCPs: [][]entities.ManagedPolicy{
 							{
@@ -236,7 +242,8 @@ func TestRCP(t *testing.T) {
 					Arn: "arn:aws:iam::55555:role/myrole",
 				},
 				Resource: &entities.FrozenResource{
-					Arn: "arn:aws:s3:::mybucket",
+					Type: "AWS::S3::Bucket",
+					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
 						RCPs: [][]entities.ManagedPolicy{
 							{

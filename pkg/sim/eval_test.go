@@ -794,6 +794,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
+					Type:      "AWS::S3::Bucket",
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "88888",
 					Account: entities.FrozenAccount{
@@ -837,6 +838,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
+					Type:      "AWS::S3::Bucket",
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "88888",
 					Account: entities.FrozenAccount{
@@ -891,6 +893,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
+					Type:      "AWS::S3::Bucket",
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "88888",
 					Account: entities.FrozenAccount{
@@ -934,6 +937,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
+					Type:      "AWS::S3::Bucket",
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "88888",
 					Account: entities.FrozenAccount{

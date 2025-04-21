@@ -1,9 +1,28 @@
 package sim
 
 import (
+	"strings"
+
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
+
+// supportsRCPs determines whether or not the provided auth context has support for RCPs based on:
+// https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps.html#rcp-supported-services
+func supportsRCPs(s *subject) bool {
+	switch s.auth.Resource.Type {
+	case
+		"AWS::S3::Bucket",
+		"AWS::S3::Object",
+		"AWS::SQS::Queue",
+		"AWS::KMS::Key":
+		return true // support RCPs for all operations
+	case "AWS::IAM::Role":
+		return strings.EqualFold(s.auth.Action.ShortName(), "sts:assumerole") // depends on the API call
+	}
+
+	return false
+}
 
 // evalRCP assesses the resource control policies of the Resource to determine whether or not it
 // allows the provided AuthContext
@@ -15,7 +34,14 @@ func evalRCP(s *subject) Decision {
 
 	// Missing resource or empty RCP = allowed; otherwise we have to evaluate
 	if s.auth.Resource == nil || len(s.auth.Resource.Account.RCPs) == 0 {
-		// TODO(nsiow) add observation for missing SCPs
+		s.trc.Observation("no RCPs found")
+		decision.Add(policy.EFFECT_ALLOW)
+		return decision
+	}
+
+	// If service does not support RCPs, always allowed
+	if !supportsRCPs(s) {
+		s.trc.Observation("action/resource does not support RCPs")
 		decision.Add(policy.EFFECT_ALLOW)
 		return decision
 	}
