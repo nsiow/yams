@@ -14,6 +14,14 @@
         [
          "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access"
         ]
+      ],
+      "resourceControlPolicies": [
+        [
+          "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess"
+        ],
+        [
+         "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access"
+        ]
       ]
     }
   }

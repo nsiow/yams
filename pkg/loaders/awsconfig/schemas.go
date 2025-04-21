@@ -332,6 +332,7 @@ type configAccount struct {
 		OrgId    string           `json:"orgId"`
 		OrgPaths []string         `json:"orgPaths"`
 		SCPs     [][]entities.Arn `json:"serviceControlPolicies"`
+		RCPs     [][]entities.Arn `json:"resourceControlPolicies"`
 	}
 }
 
@@ -341,6 +342,7 @@ func (c *configAccount) asAccount() entities.Account {
 		OrgId:    c.Configuration.OrgId,
 		OrgPaths: c.Configuration.OrgPaths,
 		SCPs:     c.Configuration.SCPs,
+		RCPs:     c.Configuration.RCPs,
 	}
 }
 
@@ -365,6 +367,36 @@ func (c *configSCP) asPolicy() entities.ManagedPolicy {
 }
 
 func (c *configSCP) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+	}
+}
+
+// -------------------------------------------------------------------------------------------------
+// Yams::ResourceControlPolicy
+// -------------------------------------------------------------------------------------------------
+
+type configRCP struct {
+	ConfigItem
+	Configuration struct {
+		Document encodedPolicy `json:"document"`
+	}
+}
+
+func (c *configRCP) asPolicy() entities.ManagedPolicy {
+	return entities.ManagedPolicy{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Arn:       c.Arn,
+		Policy:    policy.Policy(c.Configuration.Document),
+	}
+}
+
+func (c *configRCP) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
 		AccountId: c.AccountId,

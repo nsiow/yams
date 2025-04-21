@@ -63,6 +63,14 @@ func TestLoad(t *testing.T) {
 								"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
 							},
 						},
+						RCPs: [][]entities.Arn{
+							{
+								"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+							},
+							{
+								"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+							},
+						},
 					},
 				).
 				Build(),
@@ -122,6 +130,40 @@ func TestLoad(t *testing.T) {
 						Type:      "Yams::Organizations::ServiceControlPolicy",
 						AccountId: "000000000000",
 						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "rcp_valid",
+			Input: `../../../testdata/config_loading/rcp_valid.json`,
+			Want: entities.NewBuilder().
+				WithPolicies(
+					entities.ManagedPolicy{
+						Type:      "Yams::Organizations::ResourceControlPolicy",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/resource_control_policy/p-aaa/FullS3Access",
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Effect: "Allow",
+									Action: policy.Value{
+										"s3:*",
+									},
+									Resource: policy.Value{
+										"*",
+									},
+								},
+							},
+						},
+					},
+				).
+				WithResources(
+					entities.Resource{
+						Type:      "Yams::Organizations::ResourceControlPolicy",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/resource_control_policy/p-aaa/FullS3Access",
 					},
 				).
 				Build(),
@@ -494,6 +536,16 @@ func TestLoad(t *testing.T) {
 		{
 			Name:      "scp_invalid_syntax_2",
 			Input:     `../../../testdata/config_loading/scp_invalid_syntax_2.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "rcp_invalid_syntax",
+			Input:     `../../../testdata/config_loading/rcp_invalid_syntax.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "rcp_invalid_syntax_2",
+			Input:     `../../../testdata/config_loading/rcp_invalid_syntax_2.json`,
 			ShouldErr: true,
 		},
 		{

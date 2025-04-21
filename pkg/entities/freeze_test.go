@@ -69,6 +69,27 @@ func TestFreeze(t *testing.T) {
 			ShouldErr: true,
 		},
 		{
+			Name: "invalid_single_principal_rcp",
+			Input: NewBuilder().
+				WithPrincipals(
+					Principal{
+						AccountId: "55555",
+					},
+				).
+				WithAccounts(
+					Account{
+						Id: "55555",
+						RCPs: [][]Arn{
+							{
+								Arn("arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456"),
+							},
+						},
+					},
+				).
+				Build(),
+			ShouldErr: true,
+		},
+		{
 			Name: "invalid_single_principal_managed_policy",
 			Input: NewBuilder().
 				WithPrincipals(
@@ -171,6 +192,11 @@ func TestFreeze(t *testing.T) {
 								Arn("arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"),
 							},
 						},
+						RCPs: [][]Arn{
+							{
+								Arn("arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456"),
+							},
+						},
 					},
 				).
 				WithPolicies(
@@ -180,6 +206,16 @@ func TestFreeze(t *testing.T) {
 							Statement: policy.StatementBlock{
 								{
 									Sid: "stmt0",
+								},
+							},
+						},
+					},
+					ManagedPolicy{
+						Arn: "arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456",
+						Policy: policy.Policy{
+							Statement: policy.StatementBlock{
+								{
+									Sid: "stmt1",
 								},
 							},
 						},
@@ -207,12 +243,25 @@ func TestFreeze(t *testing.T) {
 									},
 								},
 							},
+							RCPs: [][]ManagedPolicy{
+								{
+									ManagedPolicy{
+										Arn: "arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456",
+										Policy: policy.Policy{
+											Statement: policy.StatementBlock{
+												{
+													Sid: "stmt1",
+												},
+											},
+										},
+									},
+								},
+							},
 						},
 					},
 				},
 			},
 		},
-
 		{
 			Name: "valid_principal_and_group",
 			Input: NewBuilder().

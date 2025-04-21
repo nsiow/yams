@@ -19,4 +19,7 @@ type Account struct {
 	// TODO(nsiow) add more support for the niche cases described in:
 	// https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps_syntax.html
 	SCPs [][]Arn
+
+	// RCPs refers to the Resource Control Policies applied to the account
+	RCPs [][]Arn
 }
