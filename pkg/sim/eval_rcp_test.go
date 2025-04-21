@@ -43,6 +43,114 @@ func TestRCP(t *testing.T) {
 			},
 		},
 		{
+			Name: "rcp_unsupported_service",
+			Input: AuthContext{
+				Principal: &entities.FrozenPrincipal{
+					Arn: "arn:aws:iam::55555:role/myrole",
+				},
+				Resource: &entities.FrozenResource{
+					Type: "AWS::SNS::Topic",
+					Arn:  "arn:aws:sns:us-west-2:55555:mytopic",
+					Account: entities.FrozenAccount{
+						RCPs: [][]entities.ManagedPolicy{
+							{
+								{
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect: policy.EFFECT_DENY,
+												Action: []string{"*"},
+												Principal: policy.Principal{
+													AWS: []string{"*"},
+												},
+												Resource: []string{"*"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Action: sar.MustLookupString("sns:publish"),
+			},
+			Want: []policy.Effect{
+				policy.EFFECT_ALLOW,
+			},
+		},
+		{
+			Name: "rcp_role_unrelated_action",
+			Input: AuthContext{
+				Principal: &entities.FrozenPrincipal{
+					Arn: "arn:aws:iam::55555:role/myrole",
+				},
+				Resource: &entities.FrozenResource{
+					Type: "AWS::IAM::Role",
+					Arn:  "arn:aws:iam::55555:role/myrole-2",
+					Account: entities.FrozenAccount{
+						RCPs: [][]entities.ManagedPolicy{
+							{
+								{
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect: policy.EFFECT_DENY,
+												Action: []string{"*"},
+												Principal: policy.Principal{
+													AWS: []string{"*"},
+												},
+												Resource: []string{"*"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Action: sar.MustLookupString("iam:getrole"),
+			},
+			Want: []policy.Effect{
+				policy.EFFECT_ALLOW,
+			},
+		},
+		{
+			Name: "rcp_role_sts",
+			Input: AuthContext{
+				Principal: &entities.FrozenPrincipal{
+					Arn: "arn:aws:iam::55555:role/myrole",
+				},
+				Resource: &entities.FrozenResource{
+					Type: "AWS::IAM::Role",
+					Arn:  "arn:aws:iam::55555:role/myrole-2",
+					Account: entities.FrozenAccount{
+						RCPs: [][]entities.ManagedPolicy{
+							{
+								{
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect: policy.EFFECT_DENY,
+												Action: []string{"*"},
+												Principal: policy.Principal{
+													AWS: []string{"*"},
+												},
+												Resource: []string{"*"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Action: sar.MustLookupString("sts:assumerole"),
+			},
+			Want: []policy.Effect{
+				policy.EFFECT_DENY,
+			},
+		},
+		{
 			Name: "rcp_allow_all",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
