@@ -64,7 +64,10 @@ testcount:
 
 .PHONY: loc
 loc:
-	cloc --include-lang=Go --not-match-f '.*_test.go' .
+	@echo "\n-> Source code (tests excluded)"
+	@cloc --quiet --include-lang=Go --not-match-f '.*_test.go' . | grep -v cloc
+	@echo "\n-> Test files"
+	@cloc --quiet --include-lang=Go --match-f '.*_test.go' . | grep -v cloc
 
 .PHONY: cov
 cov: coverage.out
