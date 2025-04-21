@@ -7,8 +7,7 @@ func evalResourceAccess(s *subject) Decision {
 	defer s.trc.Pop()
 
 	// Iterate over resource policy statements to evaluate access
-	decision := evalPolicy(s,
-		s.ac.Resource.Policy,
+	decision := evalPolicy(s, s.ac.Resource.Policy,
 		evalStatementMatchesAction,
 		evalStatementMatchesPrincipal,
 		evalStatementMatchesCondition,

@@ -8,9 +8,11 @@ import (
 )
 
 // evalPrincipalAccess calculates the Principal-side access to the specified Resource
-func evalPrincipalAccess(s *subject) (decision Decision) {
+func evalPrincipalAccess(s *subject) Decision {
 	s.trc.Push("evaluating principal policies")
 	defer s.trc.Pop()
+
+	decision := Decision{}
 
 	s.trc.Push("evaluating inline principal policies")
 	decision.Merge(evalPrincipalHelperInline(s, s.ac.Principal.InlinePolicies))
@@ -26,8 +28,6 @@ func evalPrincipalAccess(s *subject) (decision Decision) {
 
 	return decision
 }
-
-// FIXME(nsiow) move trc.Push(fmt.Sprintf(...)) to use new args format
 
 // evalPrincipalGroupPolicies calculates the Principal-side access based on group policies
 func evalPrincipalGroupPolicies(s *subject, groups []entities.FrozenGroup) Decision {
@@ -59,19 +59,21 @@ func evalPrincipalHelperInline(s *subject, inline []policy.Policy) (decision Dec
 		}
 
 		s.trc.Push("evaluating inline policy: %s", pid)
-		decision.Merge(
-			evalPolicy(s, policy,
-				evalStatementMatchesAction,
-				evalStatementMatchesResource,
-				evalStatementMatchesCondition))
-		s.trc.Pop()
+		defer s.trc.Pop()
+
+		return evalPolicy(s, policy,
+			evalStatementMatchesAction,
+			evalStatementMatchesResource,
+			evalStatementMatchesCondition)
 	}
 
 	return decision
 }
 
 // evalPrincipalInlinePolicies is a helper function for easier evaluation of inline policies
-func evalPrincipalHelperAttached(s *subject, attached []entities.ManagedPolicy) (decision Decision) {
+func evalPrincipalHelperAttached(s *subject, attached []entities.ManagedPolicy) Decision {
+	decision := Decision{}
+
 	for _, policy := range attached {
 		s.trc.Push("evaluating inline policy: %s", policy.Arn)
 		decision.Merge(

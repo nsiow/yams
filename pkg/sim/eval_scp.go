@@ -7,7 +7,6 @@ import (
 
 // evalSCP assesses the service control policies of the Principal to determine whether or not it
 // allows the provided AuthContext
-// FIXME(nsiow) use all Decision-based functions to use default named argument
 func evalSCP(s *subject) (decision Decision) {
 	s.trc.Push("evaluating service control policies")
 	defer s.trc.Pop()
@@ -44,9 +43,7 @@ func evalSCP(s *subject) (decision Decision) {
 func evalControlPolicyLayer(s *subject, layer []entities.ManagedPolicy) (decision Decision) {
 	for _, pol := range layer {
 		decision.Merge(
-			evalPolicy(
-				s,
-				pol.Policy,
+			evalPolicy(s, pol.Policy,
 				evalStatementMatchesAction,
 				evalStatementMatchesResource,
 				evalStatementMatchesCondition,

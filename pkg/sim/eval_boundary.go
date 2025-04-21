@@ -19,9 +19,7 @@ func evalPermissionsBoundary(s *subject) Decision {
 		return decision
 	}
 
-	return evalPolicy(
-		s,
-		boundary,
+	return evalPolicy(s, boundary,
 		evalStatementMatchesAction,
 		evalStatementMatchesResource,
 		evalStatementMatchesCondition,
