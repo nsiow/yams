@@ -229,6 +229,26 @@ func TestSimulateByArn(t *testing.T) {
 			},
 			ShouldErr: true,
 		},
+		{
+			Name: "cannot_freeze_principal",
+			Input: input{
+				universe:     InvalidTestUniverse_1,
+				action:       "s3:listbucket",
+				principalArn: "arn:aws:iam::88888:role/role1",
+				resourceArn:  "arn:aws:s3:::bucket1",
+			},
+			ShouldErr: true,
+		},
+		{
+			Name: "cannot_freeze_resources",
+			Input: input{
+				universe:     InvalidTestUniverse_2,
+				action:       "s3:listbucket",
+				principalArn: "arn:aws:iam::88888:role/role1",
+				resourceArn:  "arn:aws:s3:::bucket1",
+			},
+			ShouldErr: true,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
@@ -238,6 +258,23 @@ func TestSimulateByArn(t *testing.T) {
 			i.action,
 			entities.Arn(i.principalArn),
 			entities.Arn(i.resourceArn),
+			nil,
+		)
+		if err != nil {
+			return false, err
+		}
+
+		t.Log(res.Trace.Log())
+		return res.IsAllowed, nil
+	})
+
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
+		sim, _ := NewSimulator()
+		sim.SetUniverse(i.universe)
+		res, err := sim.SimulateByArnString(
+			i.action,
+			i.principalArn,
+			i.resourceArn,
 			nil,
 		)
 		if err != nil {
@@ -286,6 +323,20 @@ func TestComputeAccessSummary(t *testing.T) {
 				universe: entities.NewUniverse(),
 			},
 			Want: map[string]int{},
+		},
+		{
+			Name: "cannot_freeze_principals",
+			Input: input{
+				universe: InvalidTestUniverse_1,
+			},
+			ShouldErr: true,
+		},
+		{
+			Name: "cannot_freeze_resources",
+			Input: input{
+				universe: InvalidTestUniverse_2,
+			},
+			ShouldErr: true,
 		},
 	}
 
@@ -363,6 +414,73 @@ var SimpleTestUniverse_1 = entities.NewBuilder().
 		entities.Resource{
 			Arn:       "arn:aws:s3:::bucket3",
 			AccountId: "11111",
+		},
+	).
+	Build()
+
+var InvalidTestUniverse_1 = entities.NewBuilder().
+	WithPrincipals(
+		entities.Principal{
+			Arn:       "arn:aws:iam::88888:role/role1",
+			AccountId: "88888",
+			InlinePolicies: []policy.Policy{
+				{
+					Statement: []policy.Statement{
+						{
+							Effect:   policy.EFFECT_ALLOW,
+							Action:   []string{"s3:listbucket"},
+							Resource: []string{"*"},
+						},
+					},
+				},
+			},
+		},
+	).
+	WithAccounts(
+		entities.Account{
+			Id:    "88888",
+			OrgId: "o-123",
+			OrgPaths: []string{
+				"o-123/",
+				"o-123/ou-level-1/",
+				"o-123/ou-level-1/ou-level-2/",
+			},
+			SCPs: [][]entities.Arn{
+				{
+					"arn:aws:organizations::00000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+				},
+			},
+		},
+	).
+	Build()
+
+var InvalidTestUniverse_2 = entities.NewBuilder().
+	WithPrincipals(
+		entities.Principal{
+			Arn:       "arn:aws:iam::88888:role/role1",
+			AccountId: "88888",
+		},
+	).
+	WithResources(
+		entities.Resource{
+			Arn:       "arn:aws:s3:::bucket1",
+			AccountId: "55555",
+		},
+	).
+	WithAccounts(
+		entities.Account{
+			Id:    "55555",
+			OrgId: "o-123",
+			OrgPaths: []string{
+				"o-123/",
+				"o-123/ou-level-1/",
+				"o-123/ou-level-1/ou-level-2/",
+			},
+			SCPs: [][]entities.Arn{
+				{
+					"arn:aws:organizations::00000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+				},
+			},
 		},
 	).
 	Build()

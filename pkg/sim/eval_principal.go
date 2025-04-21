@@ -60,8 +60,7 @@ func evalPrincipalHelperInline(s *subject, inline []policy.Policy) (decision Dec
 
 		s.trc.Push("evaluating inline policy: %s", pid)
 		decision.Merge(
-			evalPolicy(s,
-				policy,
+			evalPolicy(s, policy,
 				evalStatementMatchesAction,
 				evalStatementMatchesResource,
 				evalStatementMatchesCondition))
@@ -76,8 +75,7 @@ func evalPrincipalHelperAttached(s *subject, attached []entities.ManagedPolicy) 
 	for _, policy := range attached {
 		s.trc.Push("evaluating inline policy: %s", policy.Arn)
 		decision.Merge(
-			evalPolicy(s,
-				policy.Policy,
+			evalPolicy(s, policy.Policy,
 				evalStatementMatchesAction,
 				evalStatementMatchesResource,
 				evalStatementMatchesCondition))

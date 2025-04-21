@@ -79,7 +79,7 @@ func (s *Simulator) SimulateByArn(
 	}
 	fp, err := p.Freeze()
 	if err != nil {
-		return nil, fmt.Errorf("error attempting to resolve principal %s: %w", principalArn, err)
+		return nil, fmt.Errorf("error while freezing principal for simulation: %w", err)
 	}
 	ac.Principal = &fp
 
@@ -90,7 +90,7 @@ func (s *Simulator) SimulateByArn(
 	}
 	fr, err := r.Freeze()
 	if err != nil {
-		return nil, fmt.Errorf("error attempting to resolve resource %s: %w", resourceArn, err)
+		return nil, fmt.Errorf("error while freezing resource for simulation: %w", err)
 	}
 	ac.Resource = &fr
 
