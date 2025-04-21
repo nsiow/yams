@@ -536,7 +536,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						FrozenAccount: entities.FrozenAccount{
+						Account: entities.FrozenAccount{
 							OrgId: "o-123",
 						},
 					},
@@ -562,7 +562,7 @@ func TestAuthContextKeys(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Resource: &entities.FrozenResource{
-						FrozenAccount: entities.FrozenAccount{
+						Account: entities.FrozenAccount{
 							OrgId: "o-123",
 						},
 					},

@@ -107,9 +107,9 @@ func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 	case condkey.EpochTime:
 		return strconv.FormatInt(ac.now().Unix(), 10)
 	case condkey.PrincipalOrgId:
-		return ac.Principal.FrozenAccount.OrgId
+		return ac.Principal.Account.OrgId
 	case condkey.ResourceOrgId:
-		return ac.Resource.FrozenAccount.OrgId
+		return ac.Resource.Account.OrgId
 
 	// ---------------------------------------------------------------------------------------------
 	// Global key prefixes; special handling

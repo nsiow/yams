@@ -8,7 +8,7 @@ func evalResourceAccess(s *subject) Decision {
 
 	// Iterate over resource policy statements to evaluate access
 	// FIXME(nsiow) this also needs evalStatementMatchesResource
-	decision := evalPolicy(s, s.ac.Resource.FrozenPolicy,
+	decision := evalPolicy(s, s.auth.Resource.Policy,
 		evalStatementMatchesAction,
 		evalStatementMatchesResource,
 		evalStatementMatchesPrincipal,

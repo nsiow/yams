@@ -19,8 +19,8 @@ func TestResourceAccess(t *testing.T) {
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
 				Resource: &entities.FrozenResource{
-					Arn:          "arn:aws:s3:::mybucket",
-					FrozenPolicy: policy.Policy{},
+					Arn:    "arn:aws:s3:::mybucket",
+					Policy: policy.Policy{},
 				},
 			},
 			Want: []policy.Effect(nil),
@@ -34,7 +34,7 @@ func TestResourceAccess(t *testing.T) {
 				},
 				Resource: &entities.FrozenResource{
 					Arn: "arn:aws:s3:::mybucket",
-					FrozenPolicy: policy.Policy{
+					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
 								Effect:   policy.EFFECT_ALLOW,
@@ -59,7 +59,7 @@ func TestResourceAccess(t *testing.T) {
 				},
 				Resource: &entities.FrozenResource{
 					Arn: "arn:aws:s3:::mybucket",
-					FrozenPolicy: policy.Policy{
+					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
 								Effect:   policy.EFFECT_DENY,
@@ -84,7 +84,7 @@ func TestResourceAccess(t *testing.T) {
 				},
 				Resource: &entities.FrozenResource{
 					Arn: "arn:aws:s3:::mybucket",
-					FrozenPolicy: policy.Policy{
+					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
 								Effect:   policy.EFFECT_ALLOW,

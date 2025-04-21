@@ -59,15 +59,15 @@ func TestSimulate(t *testing.T) {
 				Action: sar.MustLookupString("s3:listbucket"),
 
 				Principal: &entities.FrozenPrincipal{
-					Arn:                    "arn:aws:iam::88888:role/myrole",
-					AccountId:              "88888",
-					FrozenInlinePolicies:   nil,
-					FrozenAttachedPolicies: nil,
+					Arn:              "arn:aws:iam::88888:role/myrole",
+					AccountId:        "88888",
+					InlinePolicies:   nil,
+					AttachedPolicies: nil,
 				},
 				Resource: &entities.FrozenResource{
-					Arn:          "arn:aws:s3:::mybucket",
-					AccountId:    "88888",
-					FrozenPolicy: policy.Policy{},
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+					Policy:    policy.Policy{},
 				},
 			},
 			Want: false,
@@ -79,7 +79,7 @@ func TestSimulate(t *testing.T) {
 				Principal: &entities.FrozenPrincipal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -105,7 +105,7 @@ func TestSimulate(t *testing.T) {
 				Principal: &entities.FrozenPrincipal{
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{

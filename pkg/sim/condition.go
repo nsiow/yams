@@ -318,7 +318,7 @@ func Mod_Not(f CondInner) CondInner {
 func Mod_ResolveVariables(f CondInner) CondInner {
 	return func(s *subject, left string, right policy.Value) bool {
 		for i := range right {
-			right[i] = s.ac.Substitute(right[i], s.opts)
+			right[i] = s.auth.Substitute(right[i], s.opts)
 		}
 		return f(s, left, right)
 	}
@@ -350,7 +350,7 @@ func Mod_IfExists(f CondInner) CondInner {
 // conditions
 func Mod_ForAllValues(f CondInner) CondOuter {
 	return func(s *subject, key string, right policy.Value) bool {
-		lefts := s.ac.MultiKey(key, s.opts)
+		lefts := s.auth.MultiKey(key, s.opts)
 		for _, left := range lefts {
 			if !f(s, left, right) {
 				return false
@@ -365,7 +365,7 @@ func Mod_ForAllValues(f CondInner) CondOuter {
 // conditions
 func Mod_ForAnyValues(f CondInner) CondOuter {
 	return func(s *subject, key string, right policy.Value) bool {
-		lefts := s.ac.MultiKey(key, s.opts)
+		lefts := s.auth.MultiKey(key, s.opts)
 		for _, left := range lefts {
 			if f(s, left, right) {
 				return true
@@ -380,7 +380,7 @@ func Mod_ForAnyValues(f CondInner) CondOuter {
 // conditions (the default)
 func Mod_ForSingleValue(f CondInner) CondOuter {
 	return func(s *subject, key string, right policy.Value) bool {
-		left := s.ac.ConditionKey(key, s.opts)
+		left := s.auth.ConditionKey(key, s.opts)
 		return f(s, left, right)
 	}
 }

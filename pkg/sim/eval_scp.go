@@ -12,8 +12,8 @@ func evalSCP(s *subject) (decision Decision) {
 	defer s.trc.Pop()
 
 	// Missing account or empty SCP = allowed; otherwise we have to evaluate
-	account := s.ac.Principal.FrozenAccount
-	if len(account.FrozenSCPs) == 0 {
+	account := s.auth.Principal.Account
+	if len(account.SCPs) == 0 {
 		// TODO(nsiow) add observation for missing SCPs
 		decision.Add(policy.EFFECT_ALLOW)
 		return decision
@@ -21,14 +21,14 @@ func evalSCP(s *subject) (decision Decision) {
 
 	// Iterate through layers of SCP, only continuing if we get an allow result through each layer
 	// TODO(nsiow) add better tracing here
-	for i, layer := range account.FrozenSCPs {
+	for i, layer := range account.SCPs {
 
 		// Calculate access for this layer
 		decision = evalControlPolicyLayer(s, layer)
 
 		// If not allowed at this layer, propagate result up; should be denied
 		if !decision.Allowed() {
-			s.trc.Observation("SCP access denied at layer %d of %d", i, len(account.FrozenSCPs)-1)
+			s.trc.Observation("SCP access denied at layer %d of %d", i, len(account.SCPs)-1)
 			return decision
 		}
 	}

@@ -15,8 +15,8 @@ func TestSCP(t *testing.T) {
 			Name: "no_scps",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					FrozenAccount: entities.FrozenAccount{
-						FrozenSCPs: [][]entities.ManagedPolicy{},
+					Account: entities.FrozenAccount{
+						SCPs: [][]entities.ManagedPolicy{},
 					},
 				},
 				Resource: &entities.FrozenResource{
@@ -32,8 +32,8 @@ func TestSCP(t *testing.T) {
 			Name: "allow_all",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					FrozenAccount: entities.FrozenAccount{
-						FrozenSCPs: [][]entities.ManagedPolicy{
+					Account: entities.FrozenAccount{
+						SCPs: [][]entities.ManagedPolicy{
 							{
 								{
 									Policy: policy.Policy{
@@ -63,8 +63,8 @@ func TestSCP(t *testing.T) {
 			Name: "deny_all",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					FrozenAccount: entities.FrozenAccount{
-						FrozenSCPs: [][]entities.ManagedPolicy{
+					Account: entities.FrozenAccount{
+						SCPs: [][]entities.ManagedPolicy{
 							{
 								{
 									Policy: policy.Policy{
@@ -94,8 +94,8 @@ func TestSCP(t *testing.T) {
 			Name: "allowed_service",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					FrozenAccount: entities.FrozenAccount{
-						FrozenSCPs: [][]entities.ManagedPolicy{
+					Account: entities.FrozenAccount{
+						SCPs: [][]entities.ManagedPolicy{
 							{
 								{
 									Policy: policy.Policy{
@@ -125,8 +125,8 @@ func TestSCP(t *testing.T) {
 			Name: "not_allowed_service",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					FrozenAccount: entities.FrozenAccount{
-						FrozenSCPs: [][]entities.ManagedPolicy{
+					Account: entities.FrozenAccount{
+						SCPs: [][]entities.ManagedPolicy{
 							{
 								{
 									Policy: policy.Policy{
@@ -154,8 +154,8 @@ func TestSCP(t *testing.T) {
 			Name: "mid_layer_implicit_deny",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					FrozenAccount: entities.FrozenAccount{
-						FrozenSCPs: [][]entities.ManagedPolicy{
+					Account: entities.FrozenAccount{
+						SCPs: [][]entities.ManagedPolicy{
 							{
 								{
 									Policy: policy.Policy{
@@ -197,8 +197,8 @@ func TestSCP(t *testing.T) {
 			Name: "mid_layer_explicit_deny",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					FrozenAccount: entities.FrozenAccount{
-						FrozenSCPs: [][]entities.ManagedPolicy{
+					Account: entities.FrozenAccount{
+						SCPs: [][]entities.ManagedPolicy{
 							{
 								{
 									Policy: policy.Policy{

@@ -49,15 +49,15 @@ func TestOverallAccess_XAccount(t *testing.T) {
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
 
-					Arn:                    "arn:aws:iam::88888:role/myrole",
-					AccountId:              "88888",
-					FrozenInlinePolicies:   nil,
-					FrozenAttachedPolicies: nil,
+					Arn:              "arn:aws:iam::88888:role/myrole",
+					AccountId:        "88888",
+					InlinePolicies:   nil,
+					AttachedPolicies: nil,
 				},
 				Resource: &entities.FrozenResource{
-					Arn:          "arn:aws:s3:::mybucket",
-					AccountId:    "11111",
-					FrozenPolicy: policy.Policy{},
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "11111",
+					Policy:    policy.Policy{},
 				},
 			},
 			Want: false,
@@ -70,7 +70,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -101,7 +101,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 				Resource: &entities.FrozenResource{
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "11111",
-					FrozenPolicy: policy.Policy{
+					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
 								Effect:   policy.EFFECT_ALLOW,
@@ -126,7 +126,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -157,7 +157,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 				Resource: &entities.FrozenResource{
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "11111",
-					FrozenPolicy: policy.Policy{
+					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
 								Effect:   policy.EFFECT_DENY,
@@ -178,7 +178,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -193,7 +193,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 				Resource: &entities.FrozenResource{
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "11111",
-					FrozenPolicy: policy.Policy{
+					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
 								Effect:   policy.EFFECT_ALLOW,
@@ -217,7 +217,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -256,7 +256,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 				Resource: &entities.FrozenResource{
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "11111",
-					FrozenPolicy: policy.Policy{
+					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
 								Effect:   policy.EFFECT_ALLOW,
@@ -302,15 +302,15 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
 
-					Arn:                    "arn:aws:iam::88888:role/myrole",
-					AccountId:              "88888",
-					FrozenInlinePolicies:   nil,
-					FrozenAttachedPolicies: nil,
+					Arn:              "arn:aws:iam::88888:role/myrole",
+					AccountId:        "88888",
+					InlinePolicies:   nil,
+					AttachedPolicies: nil,
 				},
 				Resource: &entities.FrozenResource{
-					Arn:          "arn:aws:s3:::mybucket",
-					AccountId:    "88888",
-					FrozenPolicy: policy.Policy{},
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+					Policy:    policy.Policy{},
 				},
 			},
 			Want: false,
@@ -323,7 +323,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -350,7 +350,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -377,7 +377,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -388,7 +388,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 							},
 						},
 					},
-					FrozenAttachedPolicies: []entities.ManagedPolicy{
+					AttachedPolicies: []entities.ManagedPolicy{
 						{
 							Policy: policy.Policy{
 								Statement: []policy.Statement{
@@ -417,7 +417,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -456,7 +456,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 				Resource: &entities.FrozenResource{
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "88888",
-					FrozenPolicy: policy.Policy{
+					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
 								Effect:   policy.EFFECT_ALLOW,
@@ -480,7 +480,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -491,7 +491,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 							},
 						},
 					},
-					FrozenPermissionBoundary: entities.ManagedPolicy{
+					PermissionBoundary: entities.ManagedPolicy{
 						Policy: policy.Policy{
 							Statement: []policy.Statement{
 								{
@@ -518,7 +518,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -529,7 +529,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 							},
 						},
 					},
-					FrozenPermissionBoundary: entities.ManagedPolicy{
+					PermissionBoundary: entities.ManagedPolicy{
 						Policy: policy.Policy{
 							Statement: []policy.Statement{
 								{
@@ -556,7 +556,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -567,7 +567,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 							},
 						},
 					},
-					FrozenPermissionBoundary: entities.ManagedPolicy{
+					PermissionBoundary: entities.ManagedPolicy{
 						Policy: policy.Policy{
 							Statement: []policy.Statement{
 								{
@@ -594,7 +594,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -605,8 +605,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 							},
 						},
 					},
-					FrozenAccount: entities.FrozenAccount{
-						FrozenSCPs: [][]entities.ManagedPolicy{
+					Account: entities.FrozenAccount{
+						SCPs: [][]entities.ManagedPolicy{
 							{
 								{
 									Policy: policy.Policy{
@@ -638,7 +638,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -649,8 +649,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 							},
 						},
 					},
-					FrozenAccount: entities.FrozenAccount{
-						FrozenSCPs: [][]entities.ManagedPolicy{
+					Account: entities.FrozenAccount{
+						SCPs: [][]entities.ManagedPolicy{
 							{
 								{
 									Policy: policy.Policy{
@@ -693,7 +693,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -704,8 +704,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 							},
 						},
 					},
-					FrozenAccount: entities.FrozenAccount{
-						FrozenSCPs: [][]entities.ManagedPolicy{
+					Account: entities.FrozenAccount{
+						SCPs: [][]entities.ManagedPolicy{
 							{
 								{
 									Policy: policy.Policy{
@@ -737,7 +737,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -748,8 +748,8 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 							},
 						},
 					},
-					FrozenAccount: entities.FrozenAccount{
-						FrozenSCPs: [][]entities.ManagedPolicy{
+					Account: entities.FrozenAccount{
+						SCPs: [][]entities.ManagedPolicy{
 							{
 								{
 									Policy: policy.Policy{

@@ -16,9 +16,9 @@ func TestPrincipalAccess(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Arn:                    "arn:aws:iam::88888:role/myrole",
-					FrozenInlinePolicies:   nil,
-					FrozenAttachedPolicies: nil,
+					Arn:              "arn:aws:iam::88888:role/myrole",
+					InlinePolicies:   nil,
+					AttachedPolicies: nil,
 				},
 				Resource: &entities.FrozenResource{
 					Arn: "arn:aws:s3:::mybucket",
@@ -32,7 +32,7 @@ func TestPrincipalAccess(t *testing.T) {
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
 					Arn: "arn:aws:iam::88888:role/myrole",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -56,7 +56,7 @@ func TestPrincipalAccess(t *testing.T) {
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
 					Arn: "arn:aws:iam::88888:role/myrole",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Id: "foo",
 							Statement: []policy.Statement{
@@ -81,7 +81,7 @@ func TestPrincipalAccess(t *testing.T) {
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
 					Arn: "arn:aws:iam::88888:role/myrole",
-					FrozenAttachedPolicies: []entities.ManagedPolicy{
+					AttachedPolicies: []entities.ManagedPolicy{
 						{
 							Policy: policy.Policy{
 								Statement: []policy.Statement{
@@ -107,9 +107,9 @@ func TestPrincipalAccess(t *testing.T) {
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
 					Arn: "arn:aws:iam::88888:role/myrole",
-					FrozenGroups: []entities.FrozenGroup{
+					Groups: []entities.FrozenGroup{
 						{
-							FrozenInlinePolicies: []policy.Policy{
+							InlinePolicies: []policy.Policy{
 								{
 									Statement: []policy.Statement{
 										{
@@ -120,7 +120,7 @@ func TestPrincipalAccess(t *testing.T) {
 									},
 								},
 							},
-							FrozenAttachedPolicies: []entities.ManagedPolicy{
+							AttachedPolicies: []entities.ManagedPolicy{
 								{
 									Policy: policy.Policy{
 										Statement: []policy.Statement{
@@ -135,7 +135,7 @@ func TestPrincipalAccess(t *testing.T) {
 							},
 						},
 					},
-					FrozenAttachedPolicies: []entities.ManagedPolicy{
+					AttachedPolicies: []entities.ManagedPolicy{
 						{
 							Policy: policy.Policy{
 								Statement: []policy.Statement{
@@ -161,7 +161,7 @@ func TestPrincipalAccess(t *testing.T) {
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
 					Arn: "arn:aws:iam::88888:role/myrole",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -185,7 +185,7 @@ func TestPrincipalAccess(t *testing.T) {
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
 					Arn: "arn:aws:iam::88888:role/myrole",
-					FrozenAttachedPolicies: []entities.ManagedPolicy{
+					AttachedPolicies: []entities.ManagedPolicy{
 						{
 							Policy: policy.Policy{
 								Statement: []policy.Statement{
@@ -211,7 +211,7 @@ func TestPrincipalAccess(t *testing.T) {
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
 					Arn: "arn:aws:iam::88888:role/myrole",
-					FrozenInlinePolicies: []policy.Policy{
+					InlinePolicies: []policy.Policy{
 						{
 							Statement: []policy.Statement{
 								{
@@ -222,7 +222,7 @@ func TestPrincipalAccess(t *testing.T) {
 							},
 						},
 					},
-					FrozenAttachedPolicies: []entities.ManagedPolicy{
+					AttachedPolicies: []entities.ManagedPolicy{
 						{
 							Policy: policy.Policy{
 								Statement: []policy.Statement{

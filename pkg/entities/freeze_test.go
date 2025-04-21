@@ -191,9 +191,9 @@ func TestFreeze(t *testing.T) {
 					{
 						AccountId: "55555",
 						Arn:       "arn:aws:iam::55555:role/role1",
-						FrozenAccount: FrozenAccount{
+						Account: FrozenAccount{
 							Id: "55555",
-							FrozenSCPs: [][]ManagedPolicy{
+							SCPs: [][]ManagedPolicy{
 								{
 									ManagedPolicy{
 										Arn: "arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123",
@@ -251,10 +251,10 @@ func TestFreeze(t *testing.T) {
 					{
 						AccountId: "55555",
 						Arn:       "arn:aws:iam::55555:role/role1",
-						FrozenGroups: []FrozenGroup{
+						Groups: []FrozenGroup{
 							{
 								Arn: "arn:aws:iam::55555:group/group-1",
-								FrozenAttachedPolicies: []ManagedPolicy{
+								AttachedPolicies: []ManagedPolicy{
 									{
 										Arn: "arn:aws:iam::55555:policy/p-123",
 										Policy: policy.Policy{

@@ -11,18 +11,18 @@ import (
 // TODO(nsiow) this should just be a method on Action or something
 func isStrictCall(s *subject) bool {
 	// strict calls always require involve both a Principal + Resource
-	if s.ac == nil || s.ac.Principal == nil || s.ac.Resource == nil {
+	if s.auth == nil || s.auth.Principal == nil || s.auth.Resource == nil {
 		return false
 	}
 
 	// sts assume-role case
-	if strings.EqualFold("sts:assumerole", s.ac.Action.ShortName()) {
+	if strings.EqualFold("sts:assumerole", s.auth.Action.ShortName()) {
 		return true
 	}
 
 	// kms case
-	if strings.EqualFold("kms", s.ac.Action.Service) &&
-		strings.EqualFold("AWS::KMS::Key", s.ac.Resource.Type) {
+	if strings.EqualFold("kms", s.auth.Action.Service) &&
+		strings.EqualFold("AWS::KMS::Key", s.auth.Resource.Type) {
 		return true
 	}
 
@@ -33,8 +33,8 @@ func isStrictCall(s *subject) bool {
 // evalResourceAccessAllowsExplicitPrincipal tests for the edge case where a same-account resource
 // allows a Principal by ARN specifically, which has an effect on evaluation logic
 func evalResourceAccessAllowsExplicitPrincipal(s *subject) bool {
-	if evalIsSameAccount(s) && !s.ac.Resource.FrozenPolicy.Empty() {
-		subDecision := evalPolicy(s, s.ac.Resource.FrozenPolicy,
+	if evalIsSameAccount(s) && !s.auth.Resource.Policy.Empty() {
+		subDecision := evalPolicy(s, s.auth.Resource.Policy,
 			evalStatementMatchesAction,
 			evalStatementMatchesPrincipalExact,
 			evalStatementMatchesCondition)

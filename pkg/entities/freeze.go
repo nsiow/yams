@@ -47,7 +47,7 @@ type FrozenAccount struct {
 	OrgId    string
 	OrgPaths []string
 
-	FrozenSCPs [][]ManagedPolicy
+	SCPs [][]ManagedPolicy
 }
 
 func (a *Account) Freeze() (FrozenAccount, error) {
@@ -66,7 +66,7 @@ func (a *Account) Freeze() (FrozenAccount, error) {
 		if err != nil {
 			return FrozenAccount{}, err
 		}
-		frozen.FrozenSCPs = append(frozen.FrozenSCPs, policies)
+		frozen.SCPs = append(frozen.SCPs, policies)
 	}
 
 	return frozen, nil
@@ -81,8 +81,8 @@ type FrozenGroup struct {
 	AccountId string
 	Arn       Arn
 
-	FrozenInlinePolicies   []policy.Policy
-	FrozenAttachedPolicies []ManagedPolicy
+	InlinePolicies   []policy.Policy
+	AttachedPolicies []ManagedPolicy
 }
 
 func (g *Group) Freeze() (FrozenGroup, error) {
@@ -91,15 +91,15 @@ func (g *Group) Freeze() (FrozenGroup, error) {
 	}
 
 	f := FrozenGroup{
-		Type:                 g.Type,
-		AccountId:            g.AccountId,
-		Arn:                  g.Arn,
-		FrozenInlinePolicies: g.InlinePolicies,
+		Type:           g.Type,
+		AccountId:      g.AccountId,
+		Arn:            g.Arn,
+		InlinePolicies: g.InlinePolicies,
 	}
 
 	var err error
 
-	f.FrozenAttachedPolicies, err = freezePolicies(g.AttachedPolicies, g.uv)
+	f.AttachedPolicies, err = freezePolicies(g.AttachedPolicies, g.uv)
 	if err != nil {
 		return FrozenGroup{}, err
 	}
@@ -117,11 +117,11 @@ type FrozenPrincipal struct {
 	Arn       Arn
 	Tags      []Tag
 
-	FrozenInlinePolicies     []policy.Policy
-	FrozenAccount            FrozenAccount
-	FrozenAttachedPolicies   []ManagedPolicy
-	FrozenGroups             []FrozenGroup
-	FrozenPermissionBoundary ManagedPolicy
+	InlinePolicies     []policy.Policy
+	Account            FrozenAccount
+	AttachedPolicies   []ManagedPolicy
+	Groups             []FrozenGroup
+	PermissionBoundary ManagedPolicy
 }
 
 func (p *Principal) Freeze() (FrozenPrincipal, error) {
@@ -131,38 +131,38 @@ func (p *Principal) Freeze() (FrozenPrincipal, error) {
 	}
 
 	f := FrozenPrincipal{
-		Type:                 p.Type,
-		AccountId:            p.AccountId,
-		Arn:                  p.Arn,
-		Tags:                 p.Tags,
-		FrozenInlinePolicies: p.InlinePolicies,
+		Type:           p.Type,
+		AccountId:      p.AccountId,
+		Arn:            p.Arn,
+		Tags:           p.Tags,
+		InlinePolicies: p.InlinePolicies,
 	}
 
 	var err error
 
 	if account, ok := p.uv.Account(f.AccountId); ok {
-		f.FrozenAccount, err = account.Freeze()
+		f.Account, err = account.Freeze()
 		if err != nil {
 			return FrozenPrincipal{}, err
 		}
 	}
 
 	if len(p.AttachedPolicies) > 0 {
-		f.FrozenAttachedPolicies, err = freezePolicies(p.AttachedPolicies, p.uv)
+		f.AttachedPolicies, err = freezePolicies(p.AttachedPolicies, p.uv)
 		if err != nil {
 			return FrozenPrincipal{}, err
 		}
 	}
 
 	if len(p.Groups) > 0 {
-		f.FrozenGroups, err = freezeGroupsByArn(p.Groups, p.uv)
+		f.Groups, err = freezeGroupsByArn(p.Groups, p.uv)
 		if err != nil {
 			return FrozenPrincipal{}, err
 		}
 	}
 
 	if !p.PermissionsBoundary.Empty() {
-		f.FrozenPermissionBoundary, err = freezePolicy(p.PermissionsBoundary, p.uv)
+		f.PermissionBoundary, err = freezePolicy(p.PermissionsBoundary, p.uv)
 		if err != nil {
 			return FrozenPrincipal{}, err
 		}
@@ -182,9 +182,9 @@ type FrozenResource struct {
 	Arn       Arn
 	Tags      []Tag `json:"omitzero"`
 
-	FrozenPolicy policy.Policy
+	Policy policy.Policy
 	// TODO(nsiow) RCPs go here
-	FrozenAccount FrozenAccount
+	Account FrozenAccount
 }
 
 func (r *Resource) Freeze() (FrozenResource, error) {
@@ -194,17 +194,17 @@ func (r *Resource) Freeze() (FrozenResource, error) {
 	}
 
 	f := FrozenResource{
-		Type:         r.Type,
-		AccountId:    r.AccountId,
-		Arn:          r.Arn,
-		Tags:         r.Tags,
-		FrozenPolicy: r.Policy,
+		Type:      r.Type,
+		AccountId: r.AccountId,
+		Arn:       r.Arn,
+		Tags:      r.Tags,
+		Policy:    r.Policy,
 	}
 
 	var err error
 
 	if account, ok := r.uv.Account(f.AccountId); ok {
-		f.FrozenAccount, err = account.Freeze()
+		f.Account, err = account.Freeze()
 		if err != nil {
 			return FrozenResource{}, err
 		}

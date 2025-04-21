@@ -15,15 +15,15 @@ func evalPrincipalAccess(s *subject) Decision {
 	decision := Decision{}
 
 	s.trc.Push("evaluating inline principal policies")
-	decision.Merge(evalPrincipalHelperInline(s, s.ac.Principal.FrozenInlinePolicies))
+	decision.Merge(evalPrincipalHelperInline(s, s.auth.Principal.InlinePolicies))
 	s.trc.Pop()
 
 	s.trc.Push("evaluating attached principal policies")
-	decision.Merge(evalPrincipalHelperAttached(s, s.ac.Principal.FrozenAttachedPolicies))
+	decision.Merge(evalPrincipalHelperAttached(s, s.auth.Principal.AttachedPolicies))
 	s.trc.Pop()
 
 	s.trc.Push("evaluating group-based principal policies")
-	decision.Merge(evalPrincipalGroupPolicies(s, s.ac.Principal.FrozenGroups))
+	decision.Merge(evalPrincipalGroupPolicies(s, s.auth.Principal.Groups))
 	s.trc.Pop()
 
 	return decision
@@ -37,11 +37,11 @@ func evalPrincipalGroupPolicies(s *subject, groups []entities.FrozenGroup) Decis
 	decision := Decision{}
 	for _, group := range groups {
 		s.trc.Push("evaluating inline group principal policies for group: %s", group.Arn)
-		decision.Merge(evalPrincipalHelperInline(s, group.FrozenInlinePolicies))
+		decision.Merge(evalPrincipalHelperInline(s, group.InlinePolicies))
 		s.trc.Pop()
 
 		s.trc.Push("evaluating attached group principal policies for group: %s", group.Arn)
-		decision.Merge(evalPrincipalHelperAttached(s, group.FrozenAttachedPolicies))
+		decision.Merge(evalPrincipalHelperAttached(s, group.AttachedPolicies))
 		s.trc.Pop()
 	}
 

@@ -82,7 +82,7 @@ func TestSameAccountExplicitPrincipalCase(t *testing.T) {
 				Resource: &entities.FrozenResource{
 					Arn:  "arn:aws:s3:::nsiow-test",
 					Type: "AWS::S3::Bucket",
-					FrozenPolicy: policy.Policy{
+					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
 								Sid: "test_statement",
@@ -110,7 +110,7 @@ func TestSameAccountExplicitPrincipalCase(t *testing.T) {
 				Resource: &entities.FrozenResource{
 					Arn:  "arn:aws:s3:::nsiow-test",
 					Type: "AWS::S3::Bucket",
-					FrozenPolicy: policy.Policy{
+					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
 								Sid: "test_statement",
@@ -138,7 +138,7 @@ func TestSameAccountExplicitPrincipalCase(t *testing.T) {
 				Resource: &entities.FrozenResource{
 					Arn:  "arn:aws:s3:::nsiow-test",
 					Type: "AWS::S3::Bucket",
-					FrozenPolicy: policy.Policy{
+					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
 								Sid: "test_statement",
