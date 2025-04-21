@@ -301,7 +301,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:              "arn:aws:iam::88888:role/myrole",
 					AccountId:        "88888",
 					InlinePolicies:   nil,
@@ -320,7 +319,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
@@ -347,7 +345,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
@@ -374,7 +371,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
@@ -414,7 +410,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
@@ -449,7 +444,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 				},
@@ -477,7 +471,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
@@ -515,7 +508,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
@@ -553,7 +545,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
@@ -591,7 +582,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
@@ -635,7 +625,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
@@ -690,7 +679,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
@@ -734,7 +722,6 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-
 					Arn:       "arn:aws:iam::88888:role/myrole",
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
@@ -783,6 +770,203 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 				Resource: &entities.FrozenResource{
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "88888",
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "rcp_allow",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+					Account: entities.FrozenAccount{
+						RCPs: [][]entities.ManagedPolicy{
+							{
+								{
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "rcp_explicit_deny",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+					Account: entities.FrozenAccount{
+						RCPs: [][]entities.ManagedPolicy{
+							{
+								{
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
+										},
+									},
+								},
+								{
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_DENY,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "rcp_implicit_deny",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+					Account: entities.FrozenAccount{
+						RCPs: [][]entities.ManagedPolicy{
+							{
+								{
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"ec2:*"},
+												Resource: []string{"*"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "rcp_layer_implicit_deny",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+					Account: entities.FrozenAccount{
+						RCPs: [][]entities.ManagedPolicy{
+							{
+								{
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
+										},
+									},
+								},
+							},
+							{}, // empty layer
+							{
+								{
+									Policy: policy.Policy{
+										Statement: []policy.Statement{
+											{
+												Effect:   policy.EFFECT_ALLOW,
+												Action:   []string{"*"},
+												Resource: []string{"*"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			Want: false,

@@ -48,6 +48,7 @@ type FrozenAccount struct {
 	OrgPaths []string
 
 	SCPs [][]ManagedPolicy
+	RCPs [][]ManagedPolicy
 }
 
 func (a *Account) Freeze() (FrozenAccount, error) {
@@ -67,6 +68,14 @@ func (a *Account) Freeze() (FrozenAccount, error) {
 			return FrozenAccount{}, err
 		}
 		frozen.SCPs = append(frozen.SCPs, policies)
+	}
+
+	for _, layer := range a.RCPs {
+		policies, err := freezePolicies(layer, a.uv)
+		if err != nil {
+			return FrozenAccount{}, err
+		}
+		frozen.RCPs = append(frozen.RCPs, policies)
 	}
 
 	return frozen, nil

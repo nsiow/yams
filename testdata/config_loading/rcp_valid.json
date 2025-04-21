@@ -1,0 +1,10 @@
+[
+  {
+    "resourceType": "Yams::Organizations::ResourceControlPolicy",
+    "accountId": "000000000000",
+    "arn": "arn:aws:organizations::000000000000:policy/o-aaa/resource_control_policy/p-aaa/FullS3Access",
+    "configuration": {
+      "document": "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Effect%22%3A%22Allow%22%2C%22Action%22%3A%22s3%3A%2A%22%2C%22Resource%22%3A%22%2A%22%7D%5D%7D%0A"
+    }
+  }
+]

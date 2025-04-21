@@ -29,6 +29,16 @@ func evalOverallAccess(s *subject) (*Result, error) {
 		s.trc.Decision("[implicit deny] based on service control policies")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
+	// Calculate RCP access, if present
+	rcpAccess := evalRCP(s)
+	if rcpAccess.Contains(policy.EFFECT_DENY) {
+		s.trc.Decision("[explicit deny] found in resource control policies")
+		return &Result{Trace: s.trc, IsAllowed: false}, nil
+	}
+	if !rcpAccess.Allowed() {
+		s.trc.Decision("[implicit deny] based on resource control policies")
+		return &Result{Trace: s.trc, IsAllowed: false}, nil
+	}
 
 	// Calculate permissions boundary access, if present
 	pbAccess := evalPermissionsBoundary(s)

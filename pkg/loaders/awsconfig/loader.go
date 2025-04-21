@@ -99,6 +99,8 @@ func (l *Loader) loadItem(blob configBlob) error {
 		return l.loadAccount(blob)
 	case CONST_TYPE_YAMS_ORGANIZATIONS_SCP:
 		return l.loadSCP(blob)
+	case CONST_TYPE_YAMS_ORGANIZATIONS_RCP:
+		return l.loadRCP(blob)
 	case CONST_TYPE_AWS_IAM_GROUP:
 		return l.loadGroup(blob)
 	case CONST_TYPE_AWS_IAM_POLICY:
@@ -136,6 +138,19 @@ func (l *Loader) loadAccount(blob configBlob) error {
 
 func (l *Loader) loadSCP(blob configBlob) error {
 	var target configSCP
+
+	err := json.Unmarshal(blob.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.uv.PutPolicy(target.asPolicy())
+	l.uv.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadRCP(blob configBlob) error {
+	var target configRCP
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
