@@ -14,19 +14,23 @@ func TestPermissionsBoundary(t *testing.T) {
 		{
 			Name: "allow_all",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					PermissionsBoundary: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"*"},
-								Resource: []string{"*"},
+				Principal: &entities.FrozenPrincipal{
+					PermissionBoundary: entities.ManagedPolicy{
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"*"},
+									Resource: []string{"*"},
+								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   sar.MustLookupString("s3:ListBucket"),
+				Resource: &entities.FrozenResource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -35,19 +39,23 @@ func TestPermissionsBoundary(t *testing.T) {
 		{
 			Name: "deny_all",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					PermissionsBoundary: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_DENY,
-								Action:   []string{"*"},
-								Resource: []string{"*"},
+				Principal: &entities.FrozenPrincipal{
+					PermissionBoundary: entities.ManagedPolicy{
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_DENY,
+									Action:   []string{"*"},
+									Resource: []string{"*"},
+								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   sar.MustLookupString("s3:ListBucket"),
+				Resource: &entities.FrozenResource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_DENY,
@@ -56,38 +64,46 @@ func TestPermissionsBoundary(t *testing.T) {
 		{
 			Name: "allow_others_simple",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					PermissionsBoundary: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"ec2:DescribeInstances"},
-								Resource: []string{"*"},
+				Principal: &entities.FrozenPrincipal{
+					PermissionBoundary: entities.ManagedPolicy{
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"ec2:DescribeInstances"},
+									Resource: []string{"*"},
+								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   sar.MustLookupString("s3:ListBucket"),
+				Resource: &entities.FrozenResource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect(nil),
 		},
 		{
-			Name: "allow_this_specific",
+			Name: "allow_specific",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					PermissionsBoundary: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"s3:ListBucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
+				Principal: &entities.FrozenPrincipal{
+					PermissionBoundary: entities.ManagedPolicy{
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:ListBucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   sar.MustLookupString("s3:ListBucket"),
+				Resource: &entities.FrozenResource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -96,43 +112,51 @@ func TestPermissionsBoundary(t *testing.T) {
 		{
 			Name: "allow_others_specific",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					PermissionsBoundary: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"s3:ListBucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
-								Condition: map[string]map[string]policy.Value{
-									"StringEquals": {
-										"aws:UserAgent": []string{"some-random-ua"},
+				Principal: &entities.FrozenPrincipal{
+					PermissionBoundary: entities.ManagedPolicy{
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:ListBucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+									Condition: map[string]map[string]policy.Value{
+										"StringEquals": {
+											"aws:UserAgent": []string{"some-random-ua"},
+										},
 									},
 								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "arn:aws:s3:::mybucket"},
-				Action:   sar.MustLookupString("s3:ListBucket"),
+				Resource: &entities.FrozenResource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
 			},
 			Want: []policy.Effect(nil),
 		},
 		{
 			Name: "allow_only_iam",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					PermissionsBoundary: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"iam:*"},
-								Resource: []string{"*"},
+				Principal: &entities.FrozenPrincipal{
+					PermissionBoundary: entities.ManagedPolicy{
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"iam:*"},
+									Resource: []string{"*"},
+								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "*"},
-				Action:   sar.MustLookupString("iam:ListRoles"),
+				Resource: &entities.FrozenResource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+				Action: sar.MustLookupString("iam:ListRoles"),
 			},
 			Want: []policy.Effect{
 				policy.EFFECT_ALLOW,
@@ -141,19 +165,23 @@ func TestPermissionsBoundary(t *testing.T) {
 		{
 			Name: "deny_iam_by_omission",
 			Input: AuthContext{
-				Principal: &entities.Principal{
-					PermissionsBoundary: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:    policy.EFFECT_ALLOW,
-								NotAction: []string{"iam:*"},
-								Resource:  []string{"*"},
+				Principal: &entities.FrozenPrincipal{
+					PermissionBoundary: entities.ManagedPolicy{
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:    policy.EFFECT_ALLOW,
+									NotAction: []string{"iam:*"},
+									Resource:  []string{"*"},
+								},
 							},
 						},
 					},
 				},
-				Resource: &entities.Resource{Arn: "*"},
-				Action:   sar.MustLookupString("iam:ListRoles"),
+				Resource: &entities.FrozenResource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+				Action: sar.MustLookupString("iam:ListRoles"),
 			},
 			Want: []policy.Effect(nil),
 		},

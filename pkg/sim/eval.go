@@ -10,9 +10,9 @@ type evalFunction func(*subject, *policy.Statement) bool
 // evalIsSameAccount determines whether or not the provided Principal + Resource exist within the
 // same AWS account
 func evalIsSameAccount(s *subject) bool {
-	return s.ac.Principal != nil &&
-		s.ac.Resource != nil &&
-		s.ac.Principal.AccountId == s.ac.Resource.AccountId
+	return s.auth.Principal != nil &&
+		s.auth.Resource != nil &&
+		s.auth.Principal.AccountId == s.auth.Resource.AccountId
 }
 
 // evalOverallAccess calculates both Principal + Resource access same performs both same-account

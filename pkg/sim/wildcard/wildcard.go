@@ -163,6 +163,7 @@ func MatchAllOrNothing(pattern, value string) bool {
 }
 
 // matchViaRegex attempts to match the strings via a limited regex subset
+// TODO(nsiow) determine if we should cache this to avoid extensive RE recompilation
 func matchViaRegex(pattern, value string) bool {
 	pattern = strings.ReplaceAll(pattern, "*", `[^:]*`)
 	pattern = strings.ReplaceAll(pattern, "?", `[^:]`)

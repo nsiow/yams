@@ -79,7 +79,7 @@ func TestStringEquals(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{AccountId: "55555"},
+					Resource: &entities.FrozenResource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -95,7 +95,7 @@ func TestStringEquals(t *testing.T) {
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{AccountId: "55555"},
+					Resource: &entities.FrozenResource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -111,8 +111,8 @@ func TestStringEquals(t *testing.T) {
 			Name: "partial_match",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{AccountId: "12345"},
-					Resource:  &entities.Resource{AccountId: "55555"},
+					Principal: &entities.FrozenPrincipal{AccountId: "12345"},
+					Resource:  &entities.FrozenResource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -143,7 +143,9 @@ func TestStringEqualsIgnoreCase(t *testing.T) {
 			Name: "ignorecase_match",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{Arn: "arn:aws:iam::55555:role/myrole"},
+					Principal: &entities.FrozenPrincipal{
+						Arn: "arn:aws:iam::55555:role/myrole",
+					},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -159,7 +161,9 @@ func TestStringEqualsIgnoreCase(t *testing.T) {
 			Name: "ignorecase_no_match",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{Arn: "arn:aws:iam::55555:role/myrole"},
+					Principal: &entities.FrozenPrincipal{
+						Arn: "arn:aws:iam::55555:role/myrole",
+					},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -185,7 +189,7 @@ func TestStringNotEquals(t *testing.T) {
 			Name: "simple_inverted_match",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{AccountId: "55555"},
+					Resource: &entities.FrozenResource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -201,7 +205,7 @@ func TestStringNotEquals(t *testing.T) {
 			Name: "simple_inverted_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{AccountId: "55555"},
+					Resource: &entities.FrozenResource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -227,7 +231,9 @@ func TestStringNotEqualsIgnoreCase(t *testing.T) {
 			Name: "ignorecase_match",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{Arn: "arn:aws:iam::55555:role/myrole"},
+					Principal: &entities.FrozenPrincipal{
+						Arn: "arn:aws:iam::55555:role/myrole",
+					},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -243,7 +249,9 @@ func TestStringNotEqualsIgnoreCase(t *testing.T) {
 			Name: "ignorecase_no_match",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{Arn: "arn:aws:iam::55555:role/myrole"},
+					Principal: &entities.FrozenPrincipal{
+						Arn: "arn:aws:iam::55555:role/myrole",
+					},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -269,7 +277,7 @@ func TestStringLike(t *testing.T) {
 			Name: "simple_match",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{AccountId: "55555"},
+					Resource: &entities.FrozenResource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -285,8 +293,8 @@ func TestStringLike(t *testing.T) {
 			Name: "partial_match",
 			Input: input{
 				ac: AuthContext{
-					Principal: &entities.Principal{AccountId: "12345"},
-					Resource:  &entities.Resource{AccountId: "55555"},
+					Principal: &entities.FrozenPrincipal{AccountId: "12345"},
+					Resource:  &entities.FrozenResource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -313,7 +321,7 @@ func TestStringNotLike(t *testing.T) {
 			Name: "simple_inverted_match",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{AccountId: "55555"},
+					Resource: &entities.FrozenResource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
@@ -329,7 +337,7 @@ func TestStringNotLike(t *testing.T) {
 			Name: "simple_inverted_nomatch",
 			Input: input{
 				ac: AuthContext{
-					Resource: &entities.Resource{AccountId: "55555"},
+					Resource: &entities.FrozenResource{AccountId: "55555"},
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{

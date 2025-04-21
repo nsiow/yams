@@ -54,7 +54,7 @@ func TestTraceLog(t *testing.T) {
 	// Do some stuff
 	trc.Observation("test1")
 	trc.Push("down")
-	trc.Observation("test2")
+	trc.Observation("test%d", 2)
 	trc.Decision("test3")
 
 	// Validate the logging output

@@ -40,3 +40,6 @@ type Resource struct {
 type ResourcePointer struct {
 	Name string
 }
+
+// TODO(nsiow) helper function for whether or not the action is one that applies to 0 resources,
+// some resources, multi resources, etc

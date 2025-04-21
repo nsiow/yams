@@ -11,8 +11,8 @@ import (
 // Simulator provides the ability to simulate IAM policies and the interactions between
 // Principals + Resources
 type Simulator struct {
-	universe entities.Universe
-	options  Options
+	uv      *entities.Universe
+	options Options
 }
 
 // NewSimulator creates and returns a Simulator with the provided options
@@ -24,13 +24,13 @@ func NewSimulator(o ...OptionF) (*Simulator, error) {
 }
 
 // Universe returns a pointer to the current Universe being used by the Simulator
-func (s *Simulator) Universe() entities.Universe {
-	return s.universe
+func (s *Simulator) Universe() *entities.Universe {
+	return s.uv
 }
 
 // SetUniverse redefines the Universe used by the Simulator for access evaluations
-func (s *Simulator) SetUniverse(universe entities.Universe) {
-	s.universe = universe
+func (s *Simulator) SetUniverse(uv *entities.Universe) {
+	s.uv = uv
 }
 
 // Simulate determines whether the provided AuthContext would be allowed
@@ -44,9 +44,25 @@ func (s *Simulator) Simulate(ac AuthContext) (*Result, error) {
 	return evalOverallAccess(subj)
 }
 
-// SimulateByArn determines whether the operation would be allowed
-func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[string]string) (*Result, error) {
+// SimulateByArn determines whether the operation would be allowed between the Principal and
+// Resource specified by the provided ARN strings
+func (s *Simulator) SimulateByArnString(
+	action string,
+	principalString string,
+	resourceString string,
+	ctx map[string]string) (*Result, error) {
+	return s.SimulateByArn(action, entities.Arn(principalString), entities.Arn(resourceString), ctx)
+}
 
+// SimulateByArn determines whether the operation would be allowed between the Principal and
+// Resource specified by the provided ARNs
+func (s *Simulator) SimulateByArn(
+	action string,
+	principalArn entities.Arn,
+	resourceArn entities.Arn,
+	ctx map[string]string) (*Result, error) {
+
+	var err error
 	ac := AuthContext{}
 	ac.Properties = NewBagFromMap(ctx)
 
@@ -57,30 +73,26 @@ func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[st
 	}
 
 	// Locate Principal
-	found := false
-	for _, p := range s.universe.Principals {
-		if p.Arn == principal {
-			ac.Principal = &p
-			found = true
-			break
-		}
+	p, ok := s.uv.Principal(principalArn)
+	if !ok {
+		return nil, fmt.Errorf("no principal with arn: %s", principalArn)
 	}
-	if !found {
-		return nil, fmt.Errorf("simulator universe does not have Principal with Arn=%s", principal)
+	fp, err := p.Freeze()
+	if err != nil {
+		return nil, fmt.Errorf("error while freezing principal for simulation: %w", err)
 	}
+	ac.Principal = &fp
 
-	// Locate resource
-	found = false
-	for _, r := range s.universe.Resources {
-		if r.Arn == resource {
-			ac.Resource = &r
-			found = true
-			break
-		}
+	// Locate Resource
+	r, ok := s.uv.Resource(resourceArn)
+	if !ok {
+		return nil, fmt.Errorf("no resource with arn: %s", resourceArn)
 	}
-	if !found {
-		return nil, fmt.Errorf("simulator universe does not have Resource with Arn=%s", resource)
+	fr, err := r.Freeze()
+	if err != nil {
+		return nil, fmt.Errorf("error while freezing resource for simulation: %w", err)
 	}
+	ac.Resource = &fr
 
 	return s.Simulate(ac)
 }
@@ -90,14 +102,24 @@ func (s *Simulator) SimulateByArn(action, principal, resource string, ctx map[st
 // The summary is returned in a map of format map[<resource_arn>]: <# of principals with access>
 // where access is defined as any of the provided actions being allowed
 func (s *Simulator) ComputeAccessSummary(actions []*types.Action) (map[string]int, error) {
+	ps, err := s.uv.FrozenPrincipals()
+	if err != nil {
+		return nil, fmt.Errorf("error while freezing principals for simulation: %w", err)
+	}
+
+	rs, err := s.uv.FrozenResources()
+	if err != nil {
+		return nil, fmt.Errorf("error while freezing resources for simulation: %w", err)
+	}
+
 	// TODO(nsiow) this needs to be parallelized
 	// Iterate over the matrix of Resources x Principals x Actions
 	access := make(map[string]int)
-	for _, r := range s.universe.Resources {
+	for _, r := range rs {
 		// we do this because we always want resources to show up, even if nothing can access it
-		access[r.Arn] = 0
+		access[r.Arn.String()] = 0
 
-		for _, p := range s.universe.Principals {
+		for _, p := range ps {
 			for _, a := range actions {
 				ac := AuthContext{
 					Action:     a,
@@ -112,7 +134,7 @@ func (s *Simulator) ComputeAccessSummary(actions []*types.Action) (map[string]in
 				}
 
 				if result.IsAllowed {
-					access[r.Arn]++
+					access[r.Arn.String()]++
 					break
 				}
 			}

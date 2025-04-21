@@ -27,7 +27,7 @@ func evalStatementMatchesAction(s *subject, stmt *policy.Statement) bool {
 	defer s.trc.Pop()
 
 	// Handle empty Action
-	if s.ac.Action == nil {
+	if s.auth.Action == nil {
 		s.trc.Observation("AuthContext missing Action")
 		return false
 	}
@@ -44,7 +44,7 @@ func evalStatementMatchesAction(s *subject, stmt *policy.Statement) bool {
 		_gate.Invert()
 	}
 
-	shortName := s.ac.Action.ShortName()
+	shortName := s.auth.Action.ShortName()
 	for _, a := range action {
 		match := wildcard.MatchSegmentsIgnoreCase(a, shortName)
 		if match {
@@ -64,7 +64,7 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
 	s.trc.Push("evaluating Principal")
 	defer s.trc.Pop()
 
-	if s.ac.Principal == nil {
+	if s.auth.Principal == nil {
 		s.trc.Observation("AuthContext missing Principal")
 		return false
 	}
@@ -89,7 +89,7 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
 
 	// TODO(nsiow) validate that this is how Principals are evaluated - exact matches?
 	for _, p := range principals.AWS {
-		match := wildcard.MatchAllOrNothing(p, s.ac.Principal.Arn)
+		match := wildcard.MatchAllOrNothing(p, s.auth.Principal.Arn.String())
 		if match {
 			return _gate.Apply(true)
 		}
@@ -105,12 +105,12 @@ func evalStatementMatchesPrincipalExact(s *subject, stmt *policy.Statement) bool
 	s.trc.Push("evaluating Principal exact-match case")
 	defer s.trc.Pop()
 
-	if s.ac.Principal == nil {
+	if s.auth.Principal == nil {
 		s.trc.Observation("AuthContext missing Principal")
 		return false
 	}
 
-	return stmt.Principal.AWS.Contains(s.ac.Principal.Arn)
+	return stmt.Principal.AWS.Contains(s.auth.Principal.Arn.String())
 }
 
 // evalStatementMatchesResource computes whether the Statement matches the AuthContext's Resource
@@ -120,7 +120,7 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
 	defer s.trc.Pop()
 
 	// Handle empty Resource
-	if s.ac.Resource == nil {
+	if s.auth.Resource == nil {
 		s.trc.Observation("AuthContext missing Resource")
 		return false
 	}
@@ -140,7 +140,7 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
 	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
 	// TODO(nsiow) this needs to support variable expansion
 	for _, r := range resources {
-		match := wildcard.MatchSegments(r, s.ac.Resource.Arn)
+		match := wildcard.MatchSegments(r, s.auth.Resource.Arn.String())
 		if match {
 			return _gate.Apply(true)
 		}

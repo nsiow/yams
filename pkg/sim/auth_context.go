@@ -19,14 +19,15 @@ import (
 //             sufficient null checks
 
 // AuthContext defines the tertiary context of a request that can be used for authz decisions
+// TODO(nsiow) decide if this should be public or private type
 type AuthContext struct {
 	Action    *types.Action
-	Principal *entities.Principal
-	Resource  *entities.Resource
+	Principal *entities.FrozenPrincipal
+	Resource  *entities.FrozenResource
 
 	Time                 time.Time
-	Properties           PropertyBag[string]
-	MultiValueProperties PropertyBag[[]string]
+	Properties           Bag[string]
+	MultiValueProperties Bag[[]string]
 }
 
 // Static values
@@ -90,7 +91,7 @@ func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 	// ---------------------------------------------------------------------------------------------
 
 	case condkey.PrincipalArn:
-		return ac.Principal.Arn
+		return ac.Principal.Arn.String()
 	case condkey.PrincipalAccount:
 		return ac.Principal.AccountId
 	case condkey.PrincipalIsAwsService:
@@ -228,7 +229,7 @@ func (ac *AuthContext) Validate() error {
 		match := false
 		for _, allowedResource := range allowedResources {
 			for _, allowedFormat := range allowedResource.ARNFormats {
-				if wildcard.MatchSegments(allowedFormat, ac.Resource.Arn) {
+				if wildcard.MatchSegments(allowedFormat, ac.Resource.Arn.String()) {
 					match = true
 					break
 				}
@@ -321,7 +322,7 @@ func (ac *AuthContext) supportsKey(key string) bool {
 	// Otherwise check for each matched resource
 	for _, resource := range ac.Action.ResolvedResources {
 		for _, format := range resource.ARNFormats {
-			if ac.Resource != nil && wildcard.MatchSegments(format, ac.Resource.Arn) {
+			if ac.Resource != nil && wildcard.MatchSegments(format, ac.Resource.Arn.String()) {
 				if slices.Contains(resource.ConditionKeys, normalizedPrefix) {
 					return true
 				}

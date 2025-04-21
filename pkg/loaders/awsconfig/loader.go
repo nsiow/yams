@@ -2,70 +2,55 @@ package awsconfig
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 
-	"github.com/nsiow/yams/pkg/aws/managedpolicies"
 	"github.com/nsiow/yams/pkg/entities"
-	"github.com/nsiow/yams/pkg/policy"
 )
 
-// Loader provides the ability to load resources/principals from AWS Config data
+// Loader provides the ability to load entity definitions from AWS Config data
 type Loader struct {
-	// principals contains all cloud principals
-	principals []entities.Principal
-
-	// resources contains all cloud resources
-	resources []entities.Resource
+	uv *entities.Universe
 }
 
 // NewLoader provisions and returns a new `Loader` struct, ready to use
 func NewLoader() *Loader {
-	return &Loader{}
-}
-
-// Principals returns all principals loaded by the target loader
-func (l *Loader) Principals() []entities.Principal {
-	return l.principals
-}
-
-// Resources returns all resources loaded by the target loader
-func (l *Loader) Resources() []entities.Resource {
-	return l.resources
-}
-
-// Environment returns an Environment containing the loaded Principals + Resources
-func (l *Loader) Environment() entities.Universe {
-	return entities.Universe{
-		Principals: l.Principals(),
-		Resources:  l.Resources(),
+	return &Loader{
+		uv: entities.NewUniverse(),
 	}
+}
+
+// Universe returns an Universe containing the loaded Principals + Resources
+func (l *Loader) Universe() *entities.Universe {
+	return l.uv
 }
 
 // LoadJson loads data from a provided JSON array
-// TODO(nsiow) consider having this load from io.Reader instead
-func (a *Loader) LoadJson(data []byte) error {
-	var items []ConfigItem
-	err := json.Unmarshal(data, &items)
+func (l *Loader) LoadJson(reader io.Reader) error {
+	data, err := io.ReadAll(reader)
 	if err != nil {
-		return fmt.Errorf("unable to load data as JSON: %v", err)
+		return err
 	}
-	return a.loadItems(items)
+
+	var blobs []configBlob
+	err = json.Unmarshal(data, &blobs)
+	if err != nil {
+		return fmt.Errorf("unable to load data as JSON: %w", err)
+	}
+	return l.loadItems(blobs)
 }
 
 // LoadJson loads data from the provided newline-separate JSONL input
-// TODO(nsiow) consider having this load from io.Reader instead
-func (a *Loader) LoadJsonl(data []byte) error {
-	r := bytes.NewReader(data)
-	s := bufio.NewScanner(r)
+func (l *Loader) LoadJsonl(reader io.Reader) error {
+	s := bufio.NewScanner(reader)
 
 	// Some buffer customization, since these JSON blobs can get big
 	// TODO(nsiow) move these to constants
 	buf := make([]byte, 0, 64*1024)
 	s.Buffer(buf, 1024*1024)
 
-	var items []ConfigItem
+	var blobs []configBlob
 	for s.Scan() {
 		// Read the next line; skip empty lines
 		b := s.Bytes()
@@ -74,14 +59,14 @@ func (a *Loader) LoadJsonl(data []byte) error {
 		}
 
 		// Unmarshal into a single item
-		var i ConfigItem
+		var i configBlob
 		err := json.Unmarshal(b, &i)
 		if err != nil {
 			return err
 		}
 
 		// Add to running list of items
-		items = append(items, i)
+		blobs = append(blobs, i)
 	}
 
 	// If we encountered an error scanning, return it
@@ -90,42 +75,203 @@ func (a *Loader) LoadJsonl(data []byte) error {
 	}
 
 	// Proceed to load
-	return a.loadItems(items)
+	return l.loadItems(blobs)
 }
 
-// loadItems loads data from the provided AWS Config items
-func (a *Loader) loadItems(items []ConfigItem) error {
-	// Load accounts first
-	accounts, err := loadAccounts(items)
+func (l *Loader) loadItems(blobs []configBlob) error {
+	for _, blob := range blobs {
+		err := l.loadItem(blob)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// -------------------------------------------------------------------------------------------------
+// Load routing
+// -------------------------------------------------------------------------------------------------
+
+func (l *Loader) loadItem(blob configBlob) error {
+	switch blob.Type {
+	case CONST_TYPE_YAMS_ORGANIZATIONS_ACCOUNT:
+		return l.loadAccount(blob)
+	case CONST_TYPE_YAMS_ORGANIZATIONS_SCP:
+		return l.loadSCP(blob)
+	case CONST_TYPE_AWS_IAM_GROUP:
+		return l.loadGroup(blob)
+	case CONST_TYPE_AWS_IAM_POLICY:
+		return l.loadManagedPolicy(blob)
+	case CONST_TYPE_AWS_IAM_ROLE:
+		return l.loadRole(blob)
+	case CONST_TYPE_AWS_IAM_USER:
+		return l.loadUser(blob)
+	case CONST_TYPE_AWS_S3_BUCKET:
+		return l.loadBucket(blob)
+	case CONST_TYPE_AWS_DYNAMODB_TABLE:
+		return l.loadTable(blob)
+	case CONST_TYPE_AWS_SNS_TOPIC:
+		return l.loadTopic(blob)
+	case CONST_TYPE_AWS_SQS_QUEUE:
+		return l.loadQueue(blob)
+	case CONST_TYPE_AWS_KMS_KEY:
+		return l.loadKey(blob)
+	default:
+		return l.loadGenericResource(blob)
+	}
+}
+
+func (l *Loader) loadAccount(blob configBlob) error {
+	var target configAccount
+
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
-		return fmt.Errorf("error loading accounts: %v", err)
+		return err
 	}
 
-	// Load policies (required to load principals)
-	policies, err := loadPolicies(items)
+	l.uv.PutAccount(target.asAccount())
+	return nil
+}
+
+func (l *Loader) loadSCP(blob configBlob) error {
+	var target configSCP
+
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
-		return fmt.Errorf("error loading managed policies: %v", err)
+		return err
 	}
 
-	// Load AWS-managed policies into the managed policy map
-	// (required because AWS Config does not report on them)
-	for arn, pol := range managedpolicies.Map() {
-		policies.Add(CONST_TYPE_AWS_IAM_POLICY, arn, []policy.Policy{pol})
-	}
+	l.uv.PutPolicy(target.asPolicy())
+	l.uv.PutResource(target.asResource())
+	return nil
+}
 
-	// Load principals
-	principals, err := loadPrincipals(items, accounts, policies)
+func (l *Loader) loadGroup(blob configBlob) error {
+	var target configGroup
+
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
-		return fmt.Errorf("error loading principals: %v", err)
+		return err
 	}
-	a.principals = append(a.principals, principals...)
 
-	// Load resources
-	resources, err := loadResources(items, accounts)
+	l.uv.PutGroup(target.asGroup())
+	l.uv.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadManagedPolicy(blob configBlob) error {
+	var target configIamManagedPolicy
+
+	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
-		return fmt.Errorf("error loading resources: %v", err)
+		return err
 	}
-	a.resources = append(a.resources, resources...)
 
+	resolvedPolicy, err := target.asPolicy()
+	if err != nil {
+		return err
+	}
+
+	l.uv.PutPolicy(resolvedPolicy)
+	l.uv.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadRole(blob configBlob) error {
+	var target configIamRole
+
+	err := json.Unmarshal(blob.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.uv.PutPrincipal(target.asPrincipal())
+	l.uv.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadUser(blob configBlob) error {
+	var target configIamUser
+
+	err := json.Unmarshal(blob.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.uv.PutPrincipal(target.asPrincipal())
+	l.uv.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadBucket(blob configBlob) error {
+	var target configS3Bucket
+
+	err := json.Unmarshal(blob.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.uv.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadTable(blob configBlob) error {
+	var target configDynamodbTable
+
+	err := json.Unmarshal(blob.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.uv.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadTopic(blob configBlob) error {
+	var target configSnsTopic
+
+	err := json.Unmarshal(blob.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.uv.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadQueue(blob configBlob) error {
+	var target configSqsQueue
+
+	err := json.Unmarshal(blob.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.uv.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadKey(blob configBlob) error {
+	var target configKmsKey
+
+	err := json.Unmarshal(blob.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.uv.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadGenericResource(blob configBlob) error {
+	var target genericResource
+
+	err := json.Unmarshal(blob.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	l.uv.PutResource(target.asResource())
 	return nil
 }

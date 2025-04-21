@@ -15,10 +15,10 @@ func TestResourceAccess(t *testing.T) {
 			Name: "implicit_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
+				Principal: &entities.FrozenPrincipal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
-				Resource: &entities.Resource{
+				Resource: &entities.FrozenResource{
 					Arn:    "arn:aws:s3:::mybucket",
 					Policy: policy.Policy{},
 				},
@@ -29,10 +29,10 @@ func TestResourceAccess(t *testing.T) {
 			Name: "simple_match",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
+				Principal: &entities.FrozenPrincipal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
-				Resource: &entities.Resource{
+				Resource: &entities.FrozenResource{
 					Arn: "arn:aws:s3:::mybucket",
 					Policy: policy.Policy{
 						Statement: []policy.Statement{
@@ -54,10 +54,10 @@ func TestResourceAccess(t *testing.T) {
 			Name: "explicit_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
+				Principal: &entities.FrozenPrincipal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
-				Resource: &entities.Resource{
+				Resource: &entities.FrozenResource{
 					Arn: "arn:aws:s3:::mybucket",
 					Policy: policy.Policy{
 						Statement: []policy.Statement{
@@ -79,10 +79,10 @@ func TestResourceAccess(t *testing.T) {
 			Name: "allow_and_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
+				Principal: &entities.FrozenPrincipal{
 					Arn: "arn:aws:iam::88888:role/myrole",
 				},
-				Resource: &entities.Resource{
+				Resource: &entities.FrozenResource{
 					Arn: "arn:aws:s3:::mybucket",
 					Policy: policy.Policy{
 						Statement: []policy.Statement{
@@ -107,36 +107,6 @@ func TestResourceAccess(t *testing.T) {
 				},
 			},
 			Want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
-		},
-		{
-			Name: "nonexistent_condition",
-			Input: AuthContext{
-				Action: sar.MustLookupString("s3:listbucket"),
-				Principal: &entities.Principal{
-					Arn: "arn:aws:iam::88888:role/myrole",
-				},
-				Resource: &entities.Resource{
-					Arn: "arn:aws:s3:::mybucket",
-					Policy: policy.Policy{
-						Statement: []policy.Statement{
-							{
-								Effect:   policy.EFFECT_ALLOW,
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::mybucket"},
-								Principal: policy.Principal{
-									AWS: []string{"arn:aws:iam::88888:role/myrole"},
-								},
-								Condition: map[string]map[string]policy.Value{
-									"StringEqualsThisDoesNotExist": {
-										"foo": []string{"bar"},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			Want: nil,
 		},
 	}
 

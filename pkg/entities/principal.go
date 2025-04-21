@@ -4,8 +4,11 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// Principal defines the general shape of an AWS cloud principal
+// Principal defines the general shape of an AWS IAM principal
 type Principal struct {
+	// uv is a reverse pointer back to the containing universe
+	uv *Universe `json:"-"`
+
 	// Type refers to the AWS resource type of the Principal
 	Type string
 
@@ -13,7 +16,7 @@ type Principal struct {
 	AccountId string
 
 	// Arn refers to the Amazon Resource Name of the Principal
-	Arn string
+	Arn Arn
 
 	// Tags refers to the AWS metadata tags attached to the Principal
 	Tags []Tag
@@ -22,15 +25,12 @@ type Principal struct {
 	InlinePolicies []policy.Policy
 
 	// AttachedPolicies refers to the managed policies associated with the Principal
-	AttachedPolicies []policy.Policy
+	AttachedPolicies []Arn
 
-	// GroupPolicies refers to the group inline/unattached policies associated with the Principal
-	GroupPolicies []policy.Policy
+	// Groups refers to the AWS IAM groups to which the Principal belongs (only valid for
+	// AWS::IAM::User types)
+	Groups []Arn
 
 	// PermissionsBoundary refers to the policy set as the Principal's permissions boundary
-	PermissionsBoundary policy.Policy
-
-	// Account is the (optional) account reference for this Principal, providing additional policies
-	// and condition keys for evaluation
-	Account Account
+	PermissionsBoundary Arn
 }

@@ -47,7 +47,7 @@ func decodePolicyString(policyString string) (policy.Policy, error) {
 		var inner string
 		err := json.Unmarshal([]byte(policyString), &inner)
 		if err != nil || len(inner) == 0 {
-			return p, fmt.Errorf("error unwrapping nested JSON string: %v for input: %s", err, policyString)
+			return p, fmt.Errorf("error from nested JSON string: %v for input: %s", err, policyString)
 		}
 		policyString = inner
 	}
@@ -61,7 +61,7 @@ func decodePolicyString(policyString string) (policy.Policy, error) {
 	// Attempt JSON unmarshalling
 	err = json.Unmarshal([]byte(escaped), &p)
 	if err != nil {
-		return p, fmt.Errorf("error converting decoded policy into struct: %v for input: %s", err, policyString)
+		return p, fmt.Errorf("error decoding policy into struct: %v for input: %s", err, escaped)
 	}
 
 	return p, nil

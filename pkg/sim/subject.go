@@ -6,7 +6,7 @@ import "github.com/nsiow/yams/pkg/sim/trace"
 //
 // It contains both the data required for auth simulation as well as any accessory data
 type subject struct {
-	ac    *AuthContext
+	auth  *AuthContext
 	opts  *Options
 	trc   *trace.Trace
 	extra Extra
@@ -15,7 +15,7 @@ type subject struct {
 // newSubject creates a new `subject` struct with the provided authorization context and options
 func newSubject(ac *AuthContext, opts *Options) *subject {
 	return &subject{
-		ac:    ac,
+		auth:  ac,
 		opts:  opts,
 		trc:   trace.New(),
 		extra: Extra{},

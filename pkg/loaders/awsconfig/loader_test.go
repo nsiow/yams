@@ -10,187 +10,549 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-func TestLoadJson(t *testing.T) {
-	tests := []testlib.TestCase[string, entities.Universe]{
+func TestLoad(t *testing.T) {
+	tests := []testlib.TestCase[string, *entities.Universe]{
 
+		// ---------------------------------------------------------------------------------------------
 		// Valid
+		// ---------------------------------------------------------------------------------------------
 
 		{
-			Name:  "valid_empty_json",
-			Input: `../../../testdata/environments/valid_empty.json`,
-			Want: entities.Universe{
-				Principals: []entities.Principal(nil),
-				Resources:  []entities.Resource(nil),
-			},
+			Name:  "base_valid_empty",
+			Input: `../../../testdata/config_loading/base_valid_empty.json`,
+			Want:  entities.NewUniverse(),
 		},
 		{
-			Name:  "valid_empty_jsonl",
-			Input: `../../../testdata/environments/valid_empty.jsonl`,
-			Want: entities.Universe{
-				Principals: []entities.Principal(nil),
-				Resources:  []entities.Resource(nil),
-			},
+			Name:  "base_valid_empty_json_l",
+			Input: `../../../testdata/config_loading/base_valid_empty.jsonl`,
+			Want:  entities.NewUniverse(),
 		},
 		{
-			Name:  "valid_simple_1_json",
-			Input: `../../../testdata/environments/valid_simple_1.json`,
-			Want:  simple1Output,
+			Name:  "generic_resource_valid.json",
+			Input: `../../../testdata/config_loading/generic_resource_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::Lambda::Function",
+						AccountId: "123456789012",
+						Region:    "us-west-2",
+						Arn:       "arn:aws:lambda:us-west-2:123456789012:function:my-function",
+						Tags:      []entities.Tag{},
+					},
+				).
+				Build(),
 		},
 		{
-			Name:  "valid_simple_1_jsonl",
-			Input: `../../../testdata/environments/valid_simple_1.jsonl`,
-			Want:  simple1Output,
+			Name:  "account_valid",
+			Input: `../../../testdata/config_loading/account_valid.json`,
+			Want: entities.NewBuilder().
+				WithAccounts(
+					entities.Account{
+						Id:    "000000000000",
+						OrgId: "o-123",
+						OrgPaths: []string{
+							"o-123/",
+							"o-123/ou-level-1/",
+							"o-123/ou-level-1/ou-level-2/",
+						},
+						SCPs: [][]entities.Arn{
+							{
+								"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+							},
+							{
+								"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+							},
+						},
+					},
+				).
+				Build(),
 		},
 		{
-			Name:  "valid_user_1_json",
-			Input: `../../../testdata/environments/valid_user_1.json`,
-			Want:  user1Output,
+			Name:  "account_valid_jsonl",
+			Input: `../../../testdata/config_loading/account_valid.jsonl`,
+			Want: entities.NewBuilder().
+				WithAccounts(
+					entities.Account{
+						Id:    "000000000000",
+						OrgId: "o-123",
+						OrgPaths: []string{
+							"o-123/",
+							"o-123/ou-level-1/",
+							"o-123/ou-level-1/ou-level-2/",
+						},
+						SCPs: [][]entities.Arn{
+							{
+								"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+							},
+							{
+								"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+							},
+						},
+					},
+				).
+				Build(),
 		},
 		{
-			Name:  "valid_permissions_boundaries",
-			Input: `../../../testdata/environments/valid_permissions_boundaries.json`,
-			Want:  permissionsBoundaryOutput,
+			Name:  "scp_valid",
+			Input: `../../../testdata/config_loading/scp_valid.json`,
+			Want: entities.NewBuilder().
+				WithPolicies(
+					entities.ManagedPolicy{
+						Type:      "Yams::Organizations::ServiceControlPolicy",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Effect: "Allow",
+									Action: policy.Value{
+										"s3:*",
+									},
+									Resource: policy.Value{
+										"*",
+									},
+								},
+							},
+						},
+					},
+				).
+				WithResources(
+					entities.Resource{
+						Type:      "Yams::Organizations::ServiceControlPolicy",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+					},
+				).
+				Build(),
 		},
 		{
-			Name:  "valid_scp",
-			Input: `../../../testdata/environments/valid_scp.json`,
-			Want:  scpOutput,
+			Name:  "group_valid",
+			Input: `../../../testdata/config_loading/group_valid.json`,
+			Want: entities.NewBuilder().
+				WithGroups(
+					entities.Group{
+						Type:      "AWS::IAM::Group",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:group/family",
+						AttachedPolicies: []entities.Arn{
+							"arn:aws:iam::000000000000:policy/Common",
+						},
+						InlinePolicies: []policy.Policy{
+							{
+								Version: "2012-10-17",
+								Statement: policy.StatementBlock{
+									policy.Statement{
+										Effect: "Allow",
+										Action: policy.Value{
+											"s3:*",
+										},
+										Resource: policy.Value{
+											"*",
+										},
+									},
+								},
+							},
+						},
+					},
+				).
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::IAM::Group",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:group/family",
+						Tags:      []entities.Tag{},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "policy_valid",
+			Input: `../../../testdata/config_loading/policy_valid.json`,
+			Want: entities.NewBuilder().
+				WithPolicies(
+					entities.ManagedPolicy{
+						Type:      "AWS::IAM::Policy",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:policy/Common",
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Effect: "Allow",
+									Action: policy.Value{
+										"sqs:ReceiveMessage",
+									},
+									Resource: policy.Value{
+										"arn:aws:sqs:us-east-1:0000000000000:queue-2",
+									},
+								},
+							},
+						},
+					},
+				).
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::IAM::Policy",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:policy/Common",
+						Tags:      []entities.Tag{},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "role_valid",
+			Input: `../../../testdata/config_loading/role_valid.json`,
+			Want: entities.NewBuilder().
+				WithPrincipals(
+					entities.Principal{
+						Type:      "AWS::IAM::Role",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:role/SimpleRole1",
+						Tags: []entities.Tag{
+							{
+								Key:   "some-business-tag",
+								Value: "important-business-thing",
+							},
+							{
+								Key:   "some-technical-tag",
+								Value: "important-technical-thing",
+							},
+						},
+						InlinePolicies: []policy.Policy{
+							{
+								Version: "2012-10-17",
+								Statement: []policy.Statement{
+									{
+										Effect: "Allow",
+										Action: []string{"s3:GetObject", "s3:ListBucket"},
+										Resource: []string{
+											"arn:aws:s3:::simple-bucket",
+											"arn:aws:s3:::simple-bucket/*",
+										},
+									},
+								},
+							},
+						},
+						AttachedPolicies: []entities.Arn{
+							"arn:aws:iam::000000000000:policy/Common",
+						},
+					},
+				).
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::IAM::Role",
+						AccountId: "000000000000",
+
+						Arn: "arn:aws:iam::000000000000:role/SimpleRole1",
+						Tags: []entities.Tag{
+							{
+								Key:   "some-business-tag",
+								Value: "important-business-thing",
+							},
+							{
+								Key:   "some-technical-tag",
+								Value: "important-technical-thing",
+							},
+						},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Effect: "Allow",
+									Principal: policy.Principal{
+										Service: policy.Value{
+											"ec2.amazonaws.com",
+										},
+									},
+									Action: policy.Value{
+										"sts:AssumeRole",
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "user_valid",
+			Input: `../../../testdata/config_loading/user_valid.json`,
+			Want: entities.NewBuilder().
+				WithPrincipals(
+					entities.Principal{
+						Type:      "AWS::IAM::User",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:user/myuser",
+						Tags:      []entities.Tag{},
+						InlinePolicies: []policy.Policy{
+							{
+								Version: "2012-10-17",
+								Statement: policy.StatementBlock{
+									policy.Statement{
+										Sid:    "Statement1",
+										Effect: "Allow",
+										Action: policy.Value{
+											"s3:listbucket",
+										},
+										Resource: policy.Value{
+											"arn:aws:s3:::mybucket5",
+										},
+									},
+								},
+							},
+						},
+						AttachedPolicies: []entities.Arn{
+							"arn:aws:iam::000000000000:policy/Shared",
+						},
+						Groups: []entities.Arn{
+							"arn:aws:iam::000000000000:group/family",
+						},
+					},
+				).
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::IAM::User",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:user/myuser",
+						Tags:      []entities.Tag{},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "bucket_valid",
+			Input: `../../../testdata/config_loading/bucket_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::S3::Bucket",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:s3:::somebucket",
+						Tags: []entities.Tag{
+							{
+								Key:   "this-bucket-tag",
+								Value: "is-cool",
+							},
+						},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "AllowGetObject",
+									Effect: "Allow",
+									Principal: policy.Principal{
+										AWS: policy.Value{
+											"arn:aws:iam::000000000000:role/nsiow",
+										},
+									},
+									Action: policy.Value{
+										"s3:GetObject",
+									},
+									Resource: policy.Value{
+										"arn:aws:s3:::somebucket/*",
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "table_valid",
+			Input: `../../../testdata/config_loading/table_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::DynamoDB::Table",
+						AccountId: "000000000000",
+						Region:    "us-east-1",
+						Arn:       "arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable",
+						Tags:      []entities.Tag{},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "topic_valid",
+			Input: `../../../testdata/config_loading/topic_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::SNS::Topic",
+						AccountId: "999999999999",
+						Region:    "us-west-2",
+						Arn:       "arn:aws:sns:us-west-2:999999999999:SimpleTopic",
+						Tags:      []entities.Tag{},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Id:      "__default_policy_ID",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "__default_statement_ID",
+									Effect: "Deny",
+									Principal: policy.Principal{
+										AWS: policy.Value{
+											"*",
+										},
+									},
+									Action: policy.Value{
+										"SNS:Subscribe",
+									},
+									Resource: policy.Value{
+										"arn:aws:sns:us-west-2:999999999999:SimpleTopic",
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "queue_valid",
+			Input: `../../../testdata/config_loading/queue_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::SQS::Queue",
+						AccountId: "000000000000",
+						Region:    "us-west-2",
+						Arn:       "arn:aws:sqs:us-west-2:000000000000:ExampleQueue",
+						Tags:      []entities.Tag{},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "AllowReceiveMessage",
+									Effect: "Allow",
+									Principal: policy.Principal{
+										AWS: policy.Value{
+											"arn:aws:iam::000000000000:role/nsiow",
+										},
+									},
+									Action: policy.Value{
+										"sqs:ReceiveMessage",
+									},
+									Resource: policy.Value{
+										"arn:aws:sqs:us-west-2:000000000000:ExampleQueue",
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "key_valid",
+			Input: `../../../testdata/config_loading/key_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::KMS::Key",
+						AccountId: "999999999999",
+						Region:    "us-west-2",
+						Arn:       "arn:aws:kms:us-west-2:999999999999:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+						Tags:      []entities.Tag{},
+					},
+				).
+				Build(),
 		},
 
+		// ---------------------------------------------------------------------------------------------
 		// Invalid
+		// ---------------------------------------------------------------------------------------------
 
 		{
-			Name:      "invalid_json",
-			Input:     `../../../testdata/environments/invalid.json`,
+			Name:      "base_invalid",
+			Input:     `../../../testdata/config_loading/base_invalid.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_jsonl",
-			Input:     `../../../testdata/environments/invalid.jsonl`,
+			Name:      "base_invalid_jsonl",
+			Input:     `../../../testdata/config_loading/base_invalid.jsonl`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_lots_o_junk",
-			Input:     `../../../testdata/environments/invalid_lots_o_junk.jsonl`,
+			Name:      "generic_resource_invalid_bad_region",
+			Input:     `../../../testdata/config_loading/generic_resource_invalid_bad_region.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_policy_wrong_outer_type",
-			Input:     `../../../testdata/environments/invalid_policy_wrong_outer_type.json`,
+			Name:      "account_invalid_scp",
+			Input:     `../../../testdata/config_loading/account_invalid_scp.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_policy_no_default_version",
-			Input:     `../../../testdata/environments/invalid_policy_no_default_version.json`,
+			Name:      "scp_invalid_syntax",
+			Input:     `../../../testdata/config_loading/scp_invalid_syntax.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_policy_bad_document",
-			Input:     `../../../testdata/environments/invalid_policy_bad_document.json`,
+			Name:      "scp_invalid_syntax_2",
+			Input:     `../../../testdata/config_loading/scp_invalid_syntax_2.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_role_bad_inline",
-			Input:     `../../../testdata/environments/invalid_role_bad_inline.json`,
+			Name:      "group_invalid_bad_shape",
+			Input:     `../../../testdata/config_loading/group_invalid_bad_shape.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_role_bad_permissions_boundary",
-			Input:     `../../../testdata/environments/invalid_role_bad_permissions_boundary.json`,
+			Name:      "policy_invalid_json",
+			Input:     `../../../testdata/config_loading/policy_invalid_json.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_role_bad_inline_encoding",
-			Input:     `../../../testdata/environments/invalid_role_bad_inline_encoding.json`,
+			Name:      "policy_invalid_no_default_version",
+			Input:     `../../../testdata/config_loading/policy_invalid_no_default_version.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_role_bad_managed",
-			Input:     `../../../testdata/environments/invalid_role_bad_managed.json`,
+			Name:      "role_invalid_bad_policy",
+			Input:     `../../../testdata/config_loading/role_invalid_bad_policy.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_role_missing_managed",
-			Input:     `../../../testdata/environments/invalid_role_missing_managed.json`,
+			Name:      "user_invalid_bad_inline_policy",
+			Input:     `../../../testdata/config_loading/user_invalid_bad_inline_policy.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_role_missing_permissions_boundary",
-			Input:     `../../../testdata/environments/invalid_role_missing_permissions_boundary.json`,
+			Name:      "bucket_invalid_bad_policy",
+			Input:     `../../../testdata/config_loading/bucket_invalid_bad_policy.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_user_bad_inline",
-			Input:     `../../../testdata/environments/invalid_user_bad_inline.json`,
+			Name:      "table_invalid_bad_region",
+			Input:     `../../../testdata/config_loading/table_invalid_bad_region.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_user_bad_inline_encoding",
-			Input:     `../../../testdata/environments/invalid_user_bad_inline_encoding.json`,
+			Name:      "topic_invalid_bad_policy",
+			Input:     `../../../testdata/config_loading/topic_invalid_bad_policy.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_user_bad_managed",
-			Input:     `../../../testdata/environments/invalid_user_bad_managed.json`,
+			Name:      "queue_invalid_bad_policy",
+			Input:     `../../../testdata/config_loading/queue_invalid_bad_policy.json`,
 			ShouldErr: true,
 		},
 		{
-			Name:      "invalid_user_bad_permissions_boundary",
-			Input:     `../../../testdata/environments/invalid_user_bad_permissions_boundary.json`,
-			ShouldErr: true,
-		},
-		{
-			Name:      "invalid_user_missing_managed",
-			Input:     `../../../testdata/environments/invalid_user_missing_managed.json`,
-			ShouldErr: true,
-		},
-		{
-			Name:      "invalid_user_missing_permissions_boundary",
-			Input:     `../../../testdata/environments/invalid_user_missing_permissions_boundary.json`,
-			ShouldErr: true,
-		},
-		{
-			Name:      "invalid_resource_bad_policy",
-			Input:     `../../../testdata/environments/invalid_resource_bad_policy.json`,
-			ShouldErr: true,
-		},
-		{
-			Name:      "invalid_resource_bad_policy_type",
-			Input:     `../../../testdata/environments/invalid_resource_bad_policy_type.json`,
-			ShouldErr: true,
-		},
-		{
-			Name:      "invalid_user_bad_group",
-			Input:     `../../../testdata/environments/invalid_user_bad_group.json`,
-			ShouldErr: true,
-		},
-		{
-			Name:      "invalid_user_missing_group",
-			Input:     `../../../testdata/environments/invalid_user_missing_group.json`,
-			ShouldErr: true,
-		},
-		{
-			Name:      "invalid_group_bad_shape",
-			Input:     `../../../testdata/environments/invalid_group_bad_shape.json`,
-			ShouldErr: true,
-		},
-		{
-			Name:      "invalid_group_missing_policy",
-			Input:     `../../../testdata/environments/invalid_group_missing_policy.json`,
-			ShouldErr: true,
-		},
-		{
-			Name:      "invalid_scp",
-			Input:     `../../../testdata/environments/invalid_scp.json`,
+			Name:      "key_invalid_bad_region",
+			Input:     `../../../testdata/config_loading/key_invalid_bad_region.json`,
 			ShouldErr: true,
 		},
 	}
 
-	testlib.RunTestSuite(t, tests, func(fp string) (entities.Universe, error) {
+	testlib.RunTestSuite(t, tests, func(fp string) (*entities.Universe, error) {
 		// Load test data
-		data, err := os.ReadFile(fp)
+		f, err := os.Open(fp)
 		if err != nil {
-			t.Fatalf("error while attempting to read test file '%s': %v", fp, err)
+			t.Fatalf("error while attempting to open test file '%s': %v", fp, err)
 		}
 
 		// Call the correct loader based on input type
@@ -198,389 +560,32 @@ func TestLoadJson(t *testing.T) {
 		ext := path.Ext(fp)
 		switch ext {
 		case ".json":
-			err = l.LoadJson(data)
+			err = l.LoadJson(f)
 		case ".jsonl":
-			err = l.LoadJsonl(data)
+			err = l.LoadJsonl(f)
 		default:
 			t.Fatalf("unsure how to handle ext '%s'", ext)
 		}
 
 		// Handle loading errors; these may be expected
 		if err != nil {
-			return entities.Universe{}, err
+			return nil, err
 		}
-		return l.Environment(), nil
+		return l.Universe(), nil
 	})
 }
 
-// Define some common test variables here, which we'll use across multiple tests
-var simple1Output entities.Universe = entities.Universe{
-	Principals: []entities.Principal{
-		{
-			Type:      "AWS::IAM::Role",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:role/SimpleRole1",
-			Tags: []entities.Tag{
-				{
-					Key:   "some-business-tag",
-					Value: "important-business-thing",
-				},
-				{
-					Key:   "some-technical-tag",
-					Value: "important-technical-thing",
-				},
-			},
-			InlinePolicies: []policy.Policy{
-				{
-					Version: "2012-10-17",
-					Statement: []policy.Statement{
-						{
-							Effect:   "Allow",
-							Action:   []string{"s3:GetObject", "s3:ListBucket"},
-							Resource: []string{"arn:aws:s3:::simple-bucket", "arn:aws:s3:::simple-bucket/*"},
-						},
-					},
-				},
-			},
-			AttachedPolicies: []policy.Policy{
-				{
-					Version: "2012-10-17",
-					Statement: []policy.Statement{
-						{
-							Effect:   "Allow",
-							Action:   []string{"sqs:ReceiveMessage"},
-							Resource: []string{"arn:aws:sqs:us-east-1:0000000000000:queue-2"},
-						},
-					},
-				},
-			},
-		},
-	},
-	Resources: []entities.Resource{
-		{
-			Type:      "AWS::IAM::Role",
-			AccountId: "000000000000",
-			Region:    "",
-			Arn:       "arn:aws:iam::000000000000:role/SimpleRole1",
-			Policy: policy.Policy{
-				Version: "2012-10-17",
-				Statement: []policy.Statement{
-					{
-						Principal: policy.Principal{
-							Service: policy.Value{"ec2.amazonaws.com"},
-						},
-						Effect: "Allow",
-						Action: []string{"sts:AssumeRole"},
-					},
-				},
-			},
-			Tags: []entities.Tag{
-				{
-					Key:   "some-business-tag",
-					Value: "important-business-thing",
-				},
-				{
-					Key:   "some-technical-tag",
-					Value: "important-technical-thing",
-				},
-			},
-		},
-		{
-			Type:      "AWS::IAM::Policy",
-			AccountId: "000000000000",
-			Region:    "",
-			Arn:       "arn:aws:iam::000000000000:policy/Common",
-			Policy:    policy.Policy{},
-			Tags:      []entities.Tag{},
-		},
-		{
-			Type:      "AWS::DynamoDB::Table",
-			AccountId: "000000000000",
-			Region:    "",
-			Arn:       "arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable",
-			Policy:    policy.Policy{},
-			Tags:      []entities.Tag{},
-		},
-		{
-			Type:      "AWS::S3::Bucket",
-			AccountId: "000000000000",
-			Region:    "",
-			Arn:       "arn:aws:s3:::somebucket",
-			Policy: policy.Policy{
-				Version: "2012-10-17",
-				Statement: []policy.Statement{
-					{
-						Sid: "AllowGetObject",
-						Principal: policy.Principal{
-							AWS: policy.Value{"arn:aws:iam::000000000000:role/nsiow"},
-						},
-						Effect:   "Allow",
-						Action:   []string{"s3:GetObject"},
-						Resource: []string{"arn:aws:s3:::somebucket/*"},
-					},
-				},
-			},
-			Tags: []entities.Tag{
-				{
-					Key:   "this-bucket-tag",
-					Value: "is-cool",
-				},
-			},
-		},
-		{
-			Type:      "AWS::SQS::Queue",
-			AccountId: "000000000000",
-			Region:    "",
-			Arn:       "arn:aws:sqs:us-west-2:000000000000:ExampleQueue",
-			Policy: policy.Policy{
-				Version: "2012-10-17",
-				Statement: []policy.Statement{
-					{
-						Sid: "AllowReceiveMessage",
-						Principal: policy.Principal{
-							AWS: policy.Value{"arn:aws:iam::000000000000:role/nsiow"},
-						},
-						Effect:   "Allow",
-						Action:   []string{"sqs:ReceiveMessage"},
-						Resource: []string{"arn:aws:sqs:us-west-2:000000000000:ExampleQueue"},
-					},
-				},
-			},
-			Tags: []entities.Tag{},
-		},
-		{
-			Type:      "AWS::SQS::Queue",
-			AccountId: "000000000000",
-			Region:    "",
-			Arn:       "arn:aws:sqs:us-west-2:000000000000:SimpleQueue",
-			Policy:    policy.Policy{},
-			Tags:      []entities.Tag{},
-		},
-		{
-			Type:      "AWS::SNS::Topic",
-			AccountId: "999999999999",
-			Region:    "us-west-2",
-			Arn:       "arn:aws:sns:us-west-2:999999999999:SimpleTopic",
-			Policy: policy.Policy{
-				Version: "2012-10-17",
-				Id:      "__default_policy_ID",
-				Statement: []policy.Statement{
-					{
-						Sid:    "__default_statement_ID",
-						Effect: "Deny",
-						Principal: policy.Principal{
-							AWS: []string{"*"},
-						},
-						Action:   []string{"SNS:Subscribe"},
-						Resource: []string{"arn:aws:sns:us-west-2:999999999999:SimpleTopic"},
-					},
-				},
-			},
-			Tags: []entities.Tag{},
-		},
-	},
-}
+func TestLoad_EdgeCases(t *testing.T) {
+	reader := &testlib.FailReader{}
+	l := NewLoader()
 
-var user1Output entities.Universe = entities.Universe{
-	Principals: []entities.Principal{
-		{
-			Type:      "AWS::IAM::User",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:user/myuser",
-			Tags:      []entities.Tag{},
-			InlinePolicies: []policy.Policy{
-				{
-					Version: "2012-10-17",
-					Statement: []policy.Statement{
-						{
-							Sid:      "Statement1",
-							Effect:   "Allow",
-							Action:   []string{"s3:listbucket"},
-							Resource: []string{"arn:aws:s3:::mybucket5"},
-						},
-					},
-				},
-			},
-			AttachedPolicies: []policy.Policy{
-				{
-					Version: "2012-10-17",
-					Statement: []policy.Statement{
-						{
-							Effect:   "Allow",
-							Action:   []string{"sqs:ReceiveMessage"},
-							Resource: []string{"arn:aws:sqs:us-east-1:0000000000000:queue-5"},
-						},
-					},
-				},
-			},
-			GroupPolicies: []policy.Policy{
-				{
-					Version: "2012-10-17",
-					Statement: []policy.Statement{
-						{
-							Effect:   "Allow",
-							Action:   []string{"sqs:ReceiveMessage"},
-							Resource: []string{"arn:aws:sqs:us-east-1:0000000000000:queue-2"},
-						},
-					},
-				},
-				{
-					Version: "2012-10-17",
-					Statement: []policy.Statement{
-						{
-							Sid:      "Statement1",
-							Effect:   "Allow",
-							Action:   []string{"s3:listbucket"},
-							Resource: []string{"arn:aws:s3:::mybucket"},
-						},
-					},
-				},
-			},
-		},
-	},
-	Resources: []entities.Resource{
-		{
-			Type:      "AWS::IAM::Policy",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:policy/Common",
-			Policy:    policy.Policy{},
-			Tags:      []entities.Tag{},
-		},
-		{
-			Type:      "AWS::IAM::Policy",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:policy/Shared",
-			Policy:    policy.Policy{},
-			Tags:      []entities.Tag{},
-		},
-		{
-			Type:      "AWS::IAM::Group",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:group/family",
-			Policy:    policy.Policy{},
-			Tags:      []entities.Tag{},
-		},
-		{
-			Type:      "AWS::IAM::User",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:user/myuser",
-			Policy:    policy.Policy{},
-			Tags:      []entities.Tag{},
-		},
-	},
-}
+	err := l.LoadJson(reader)
+	if err == nil {
+		t.Fatalf("LoadJson should have failed, but succeeded")
+	}
 
-var permissionsBoundaryOutput entities.Universe = entities.Universe{
-	Principals: []entities.Principal{
-		{
-			Type:      "AWS::IAM::User",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:user/myuser",
-			Tags:      []entities.Tag{},
-			PermissionsBoundary: policy.Policy{
-				Version: "2012-10-17",
-				Statement: []policy.Statement{
-					{
-						Sid:       "Statement1",
-						Effect:    "Allow",
-						NotAction: []string{"iam:*"},
-						Resource:  []string{"*"},
-					},
-				},
-			},
-		},
-		{
-			Type:      "AWS::IAM::Role",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:role/myrole",
-			Tags:      []entities.Tag{},
-			PermissionsBoundary: policy.Policy{
-				Version: "2012-10-17",
-				Statement: []policy.Statement{
-					{
-						Sid:       "Statement1",
-						Effect:    "Allow",
-						NotAction: []string{"iam:*"},
-						Resource:  []string{"*"},
-					},
-				},
-			},
-		},
-	},
-	Resources: []entities.Resource{
-		{
-			Type:      "AWS::IAM::Policy",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:policy/Common",
-			Policy:    policy.Policy{},
-			Tags:      []entities.Tag{},
-		},
-		{
-			Type:      "AWS::IAM::User",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:user/myuser",
-			Policy:    policy.Policy{},
-			Tags:      []entities.Tag{},
-		},
-		{
-			Type:      "AWS::IAM::Role",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:role/myrole",
-			Policy:    policy.Policy{},
-			Tags:      []entities.Tag{},
-		},
-	},
-}
-
-var scpOutput entities.Universe = entities.Universe{
-	Principals: []entities.Principal{
-		{
-			Type:      "AWS::IAM::Role",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:role/myrole",
-			Tags:      []entities.Tag{},
-			Account: entities.Account{
-				Id:       "000000000000",
-				OrgId:    "o-123",
-				OrgPaths: []string{"o-123/", "o-123/ou-level-1/", "o-123/ou-level-1/ou-level-2/"},
-				SCPs: [][]policy.Policy{
-					{
-						policy.Policy{
-							Id:      "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-							Version: "2012-10-17",
-							Statement: []policy.Statement{
-								{
-									Effect:   "Allow",
-									Action:   []string{"*"},
-									Resource: []string{"*"},
-								},
-							},
-						},
-					},
-					{
-						policy.Policy{
-							Id:      "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
-							Version: "2012-10-17",
-							Statement: []policy.Statement{
-								{
-									Effect:   "Allow",
-									Action:   []string{"s3:*"},
-									Resource: []string{"*"},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	},
-	Resources: []entities.Resource{
-		{
-			Type:      "AWS::IAM::Role",
-			AccountId: "000000000000",
-			Arn:       "arn:aws:iam::000000000000:role/myrole",
-			Policy:    policy.Policy{},
-			Tags:      []entities.Tag{},
-		},
-	},
+	err = l.LoadJsonl(reader)
+	if err == nil {
+		t.Fatalf("LoadJson; should have failed, but succeeded")
+	}
 }

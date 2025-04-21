@@ -171,8 +171,8 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	type alias *Principal
-	a := alias(p)
+	type alias Principal
+	a := alias(*p)
 	err := json.Unmarshal(data, &a)
 	if err != nil {
 		return fmt.Errorf("unable to parse:\nprincipal = %s\nerror = %v", data, err)

@@ -9,30 +9,26 @@ import (
 
 // Resource defines the general shape of an AWS cloud resource
 type Resource struct {
+	// uv is a reverse pointer back to the containing universe
+	uv *Universe `json:"-"`
+
 	// Type refers to the AWS resource type of the Resource
 	Type string
 
 	// AccountId refers to the 12-digit AWS account ID where the Resource resides
 	AccountId string
 
-	// OrgId refers to the ID of the AWS Organizations org where the Resource resides
-	OrgId string
-
 	// Region refers to the AWS region ID where the Resource resides
 	Region string
 
 	// Arn refers to the Amazon Resource Name of the Resource
-	Arn string
+	Arn Arn
 
 	// Tags refers to the AWS metadata tags attached to the Resource
-	Tags []Tag
+	Tags []Tag `json:"omitzero"`
 
 	// Policy refers to the resource policy associated with the Resource
 	Policy policy.Policy
-
-	// Account is the (optional) account reference for this Resource, providing additional policies
-	// and condition keys for evaluation
-	Account Account
 }
 
 // Service derives the AWS service name from the resource type in form AWS::<Service>::<Type>
@@ -47,5 +43,5 @@ func (r *Resource) Service() (string, error) {
 
 // SubresourceArn returns the ARN of the specified subresource
 func (r *Resource) SubresourceArn(subpath string) string {
-	return strings.TrimRight(r.Arn, "/") + "/" + strings.TrimLeft(subpath, "/")
+	return strings.TrimRight(r.Arn.String(), "/") + "/" + strings.TrimLeft(subpath, "/")
 }
