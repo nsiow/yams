@@ -16,16 +16,12 @@ func TestPrincipalAccess(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{
-						Arn:              "arn:aws:iam::88888:role/myrole",
-						InlinePolicies:   nil,
-						AttachedPolicies: nil,
-					},
+					Arn:                    "arn:aws:iam::88888:role/myrole",
+					FrozenInlinePolicies:   nil,
+					FrozenAttachedPolicies: nil,
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
 			Want: []policy.Effect(nil),
@@ -35,25 +31,21 @@ func TestPrincipalAccess(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{
-						Arn: "arn:aws:iam::88888:role/myrole",
-						InlinePolicies: []policy.Policy{
-							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"s3:listbucket"},
-										Resource: []string{"arn:aws:s3:::mybucket"},
-									},
+					Arn: "arn:aws:iam::88888:role/myrole",
+					FrozenInlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
 								},
 							},
 						},
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
 			Want: []policy.Effect{policy.EFFECT_ALLOW},
@@ -63,26 +55,22 @@ func TestPrincipalAccess(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{
-						Arn: "arn:aws:iam::88888:role/myrole",
-						InlinePolicies: []policy.Policy{
-							{
-								Id: "foo",
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"s3:listbucket"},
-										Resource: []string{"arn:aws:s3:::mybucket"},
-									},
+					Arn: "arn:aws:iam::88888:role/myrole",
+					FrozenInlinePolicies: []policy.Policy{
+						{
+							Id: "foo",
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
 								},
 							},
 						},
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
 			Want: []policy.Effect{policy.EFFECT_ALLOW},
@@ -92,9 +80,7 @@ func TestPrincipalAccess(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{
-						Arn: "arn:aws:iam::88888:role/myrole",
-					},
+					Arn: "arn:aws:iam::88888:role/myrole",
 					FrozenAttachedPolicies: []entities.ManagedPolicy{
 						{
 							Policy: policy.Policy{
@@ -110,9 +96,7 @@ func TestPrincipalAccess(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
 			Want: []policy.Effect{policy.EFFECT_ALLOW},
@@ -122,20 +106,16 @@ func TestPrincipalAccess(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{
-						Arn: "arn:aws:iam::88888:role/myrole",
-					},
+					Arn: "arn:aws:iam::88888:role/myrole",
 					FrozenGroups: []entities.FrozenGroup{
 						{
-							Group: entities.Group{
-								InlinePolicies: []policy.Policy{
-									{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"s3:listbucket"},
-												Resource: []string{"arn:aws:s3:::mybucket"},
-											},
+							FrozenInlinePolicies: []policy.Policy{
+								{
+									Statement: []policy.Statement{
+										{
+											Effect:   policy.EFFECT_ALLOW,
+											Action:   []string{"s3:listbucket"},
+											Resource: []string{"arn:aws:s3:::mybucket"},
 										},
 									},
 								},
@@ -170,9 +150,7 @@ func TestPrincipalAccess(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
 			Want: []policy.Effect{policy.EFFECT_ALLOW},
@@ -182,25 +160,21 @@ func TestPrincipalAccess(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{
-						Arn: "arn:aws:iam::88888:role/myrole",
-						InlinePolicies: []policy.Policy{
-							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_DENY,
-										Action:   []string{"s3:listbucket"},
-										Resource: []string{"arn:aws:s3:::mybucket"},
-									},
+					Arn: "arn:aws:iam::88888:role/myrole",
+					FrozenInlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_DENY,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
 								},
 							},
 						},
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
 			Want: []policy.Effect{policy.EFFECT_DENY},
@@ -210,9 +184,7 @@ func TestPrincipalAccess(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{
-						Arn: "arn:aws:iam::88888:role/myrole",
-					},
+					Arn: "arn:aws:iam::88888:role/myrole",
 					FrozenAttachedPolicies: []entities.ManagedPolicy{
 						{
 							Policy: policy.Policy{
@@ -228,9 +200,7 @@ func TestPrincipalAccess(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
 			Want: []policy.Effect{policy.EFFECT_DENY},
@@ -240,16 +210,14 @@ func TestPrincipalAccess(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{
-						Arn: "arn:aws:iam::88888:role/myrole",
-						InlinePolicies: []policy.Policy{
-							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"s3:listbucket"},
-										Resource: []string{"arn:aws:s3:::mybucket"},
-									},
+					Arn: "arn:aws:iam::88888:role/myrole",
+					FrozenInlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
 								},
 							},
 						},
@@ -269,9 +237,7 @@ func TestPrincipalAccess(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
 			Want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},

@@ -15,15 +15,12 @@ func TestSCP(t *testing.T) {
 			Name: "no_scps",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{},
 					FrozenAccount: entities.FrozenAccount{
 						FrozenSCPs: [][]entities.ManagedPolicy{},
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
@@ -35,7 +32,6 @@ func TestSCP(t *testing.T) {
 			Name: "allow_all",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{},
 					FrozenAccount: entities.FrozenAccount{
 						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
@@ -55,9 +51,7 @@ func TestSCP(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
@@ -69,7 +63,6 @@ func TestSCP(t *testing.T) {
 			Name: "deny_all",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{},
 					FrozenAccount: entities.FrozenAccount{
 						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
@@ -89,9 +82,7 @@ func TestSCP(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
@@ -103,7 +94,6 @@ func TestSCP(t *testing.T) {
 			Name: "allowed_service",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{},
 					FrozenAccount: entities.FrozenAccount{
 						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
@@ -123,9 +113,7 @@ func TestSCP(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
@@ -137,7 +125,6 @@ func TestSCP(t *testing.T) {
 			Name: "not_allowed_service",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{},
 					FrozenAccount: entities.FrozenAccount{
 						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
@@ -157,9 +144,7 @@ func TestSCP(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
@@ -169,7 +154,6 @@ func TestSCP(t *testing.T) {
 			Name: "mid_layer_implicit_deny",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{},
 					FrozenAccount: entities.FrozenAccount{
 						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
@@ -203,9 +187,7 @@ func TestSCP(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
@@ -215,7 +197,6 @@ func TestSCP(t *testing.T) {
 			Name: "mid_layer_explicit_deny",
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{},
 					FrozenAccount: entities.FrozenAccount{
 						FrozenSCPs: [][]entities.ManagedPolicy{
 							{
@@ -261,9 +242,7 @@ func TestSCP(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket",
-					},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},

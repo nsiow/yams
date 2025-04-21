@@ -28,7 +28,7 @@ func evalSCP(s *subject) (decision Decision) {
 
 		// If not allowed at this layer, propagate result up; should be denied
 		if !decision.Allowed() {
-			s.trc.Observation("SCP access denied at layer %d of %d", i, len(account.SCPs)-1)
+			s.trc.Observation("SCP access denied at layer %d of %d", i, len(account.FrozenSCPs)-1)
 			return decision
 		}
 	}

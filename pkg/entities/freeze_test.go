@@ -31,9 +31,7 @@ func TestFreeze(t *testing.T) {
 			Want: output{
 				fp: []FrozenPrincipal{
 					{
-						Principal: Principal{
-							Arn: "arn:aws:iam::88888:role/role1",
-						},
+						Arn: "arn:aws:iam::88888:role/role1",
 					},
 				},
 			},
@@ -130,9 +128,7 @@ func TestFreeze(t *testing.T) {
 			Want: output{
 				fr: []FrozenResource{
 					{
-						Resource: Resource{
-							Arn: "arn:aws:s3:::some-bucket",
-						},
+						Arn: "arn:aws:s3:::some-bucket",
 					},
 				},
 			},
@@ -193,19 +189,10 @@ func TestFreeze(t *testing.T) {
 			Want: output{
 				fp: []FrozenPrincipal{
 					{
-						Principal: Principal{
-							AccountId: "55555",
-							Arn:       "arn:aws:iam::55555:role/role1",
-						},
+						AccountId: "55555",
+						Arn:       "arn:aws:iam::55555:role/role1",
 						FrozenAccount: FrozenAccount{
-							Account: Account{
-								Id: "55555",
-								SCPs: [][]Arn{
-									{
-										Arn("arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"),
-									},
-								},
-							},
+							Id: "55555",
 							FrozenSCPs: [][]ManagedPolicy{
 								{
 									ManagedPolicy{
@@ -262,21 +249,11 @@ func TestFreeze(t *testing.T) {
 			Want: output{
 				fp: []FrozenPrincipal{
 					{
-						Principal: Principal{
-							AccountId: "55555",
-							Arn:       "arn:aws:iam::55555:role/role1",
-							Groups: []Arn{
-								Arn("arn:aws:iam::55555:group/group-1"),
-							},
-						},
+						AccountId: "55555",
+						Arn:       "arn:aws:iam::55555:role/role1",
 						FrozenGroups: []FrozenGroup{
 							{
-								Group: Group{
-									Arn: "arn:aws:iam::55555:group/group-1",
-									AttachedPolicies: []Arn{
-										Arn("arn:aws:iam::55555:policy/p-123"),
-									},
-								},
+								Arn: "arn:aws:iam::55555:group/group-1",
 								FrozenAttachedPolicies: []ManagedPolicy{
 									{
 										Arn: "arn:aws:iam::55555:policy/p-123",
@@ -310,32 +287,6 @@ func TestFreeze(t *testing.T) {
 		out.fr, err = input.FrozenResources()
 		if err != nil {
 			return output{}, err
-		}
-
-		// remove universe association; no way to specify this in tests, so gross hack for now
-		for i := range out.fp {
-			out.fp[i].uv = nil
-			out.fp[i].FrozenAccount.uv = nil
-			for j := range out.fp[i].FrozenGroups {
-				out.fp[i].FrozenGroups[j].uv = nil
-				for k := range out.fp[i].FrozenGroups[j].FrozenAttachedPolicies {
-					out.fp[i].FrozenGroups[j].FrozenAttachedPolicies[k].uv = nil
-				}
-			}
-			for j := range out.fp[i].FrozenAccount.FrozenSCPs {
-				for k := range out.fp[i].FrozenAccount.FrozenSCPs[j] {
-					out.fp[i].FrozenAccount.FrozenSCPs[j][k].uv = nil
-				}
-			}
-		}
-		for i := range out.fr {
-			out.fr[i].uv = nil
-			out.fr[i].FrozenAccount.uv = nil
-			for j := range out.fr[i].FrozenAccount.FrozenSCPs {
-				for k := range out.fr[i].FrozenAccount.FrozenSCPs[j] {
-					out.fr[i].FrozenAccount.FrozenSCPs[j][k].uv = nil
-				}
-			}
 		}
 
 		return out, nil

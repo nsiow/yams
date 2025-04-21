@@ -2,6 +2,8 @@ package entities
 
 import (
 	"fmt"
+
+	"github.com/nsiow/yams/pkg/policy"
 )
 
 // -------------------------------------------------------------------------------------------------
@@ -41,7 +43,10 @@ func (u *Universe) FrozenResources() ([]FrozenResource, error) {
 // -------------------------------------------------------------------------------------------------
 
 type FrozenAccount struct {
-	Account
+	Id       string
+	OrgId    string
+	OrgPaths []string
+
 	FrozenSCPs [][]ManagedPolicy
 }
 
@@ -51,7 +56,9 @@ func (a *Account) Freeze() (FrozenAccount, error) {
 	}
 
 	frozen := FrozenAccount{
-		Account: *a,
+		Id:       a.Id,
+		OrgId:    a.OrgId,
+		OrgPaths: a.OrgPaths,
 	}
 
 	for _, layer := range a.SCPs {
@@ -70,7 +77,11 @@ func (a *Account) Freeze() (FrozenAccount, error) {
 // -------------------------------------------------------------------------------------------------
 
 type FrozenGroup struct {
-	Group
+	Type      string
+	AccountId string
+	Arn       Arn
+
+	FrozenInlinePolicies   []policy.Policy
 	FrozenAttachedPolicies []ManagedPolicy
 }
 
@@ -80,12 +91,15 @@ func (g *Group) Freeze() (FrozenGroup, error) {
 	}
 
 	f := FrozenGroup{
-		Group: *g,
+		Type:                 g.Type,
+		AccountId:            g.AccountId,
+		Arn:                  g.Arn,
+		FrozenInlinePolicies: g.InlinePolicies,
 	}
 
 	var err error
 
-	f.FrozenAttachedPolicies, err = freezePolicies(f.AttachedPolicies, g.uv)
+	f.FrozenAttachedPolicies, err = freezePolicies(g.AttachedPolicies, g.uv)
 	if err != nil {
 		return FrozenGroup{}, err
 	}
@@ -98,7 +112,12 @@ func (g *Group) Freeze() (FrozenGroup, error) {
 // -------------------------------------------------------------------------------------------------
 
 type FrozenPrincipal struct {
-	Principal
+	Type      string
+	AccountId string
+	Arn       Arn
+	Tags      []Tag
+
+	FrozenInlinePolicies     []policy.Policy
 	FrozenAccount            FrozenAccount
 	FrozenAttachedPolicies   []ManagedPolicy
 	FrozenGroups             []FrozenGroup
@@ -112,34 +131,38 @@ func (p *Principal) Freeze() (FrozenPrincipal, error) {
 	}
 
 	f := FrozenPrincipal{
-		Principal: *p,
+		Type:                 p.Type,
+		AccountId:            p.AccountId,
+		Arn:                  p.Arn,
+		Tags:                 p.Tags,
+		FrozenInlinePolicies: p.InlinePolicies,
 	}
 
 	var err error
 
-	if account, ok := f.uv.Account(f.AccountId); ok {
+	if account, ok := p.uv.Account(f.AccountId); ok {
 		f.FrozenAccount, err = account.Freeze()
 		if err != nil {
 			return FrozenPrincipal{}, err
 		}
 	}
 
-	if len(f.AttachedPolicies) > 0 {
-		f.FrozenAttachedPolicies, err = freezePolicies(f.AttachedPolicies, f.uv)
+	if len(p.AttachedPolicies) > 0 {
+		f.FrozenAttachedPolicies, err = freezePolicies(p.AttachedPolicies, p.uv)
 		if err != nil {
 			return FrozenPrincipal{}, err
 		}
 	}
 
-	if len(f.Groups) > 0 {
-		f.FrozenGroups, err = freezeGroupsByArn(f.Groups, f.uv)
+	if len(p.Groups) > 0 {
+		f.FrozenGroups, err = freezeGroupsByArn(p.Groups, p.uv)
 		if err != nil {
 			return FrozenPrincipal{}, err
 		}
 	}
 
-	if !f.PermissionsBoundary.Empty() {
-		f.FrozenPermissionBoundary, err = freezePolicy(f.PermissionsBoundary, f.uv)
+	if !p.PermissionsBoundary.Empty() {
+		f.FrozenPermissionBoundary, err = freezePolicy(p.PermissionsBoundary, p.uv)
 		if err != nil {
 			return FrozenPrincipal{}, err
 		}
@@ -153,7 +176,13 @@ func (p *Principal) Freeze() (FrozenPrincipal, error) {
 // -------------------------------------------------------------------------------------------------
 
 type FrozenResource struct {
-	Resource
+	Type      string
+	AccountId string
+	Region    string
+	Arn       Arn
+	Tags      []Tag `json:"omitzero"`
+
+	FrozenPolicy policy.Policy
 	// TODO(nsiow) RCPs go here
 	FrozenAccount FrozenAccount
 }
@@ -165,12 +194,16 @@ func (r *Resource) Freeze() (FrozenResource, error) {
 	}
 
 	f := FrozenResource{
-		Resource: *r,
+		Type:         r.Type,
+		AccountId:    r.AccountId,
+		Arn:          r.Arn,
+		Tags:         r.Tags,
+		FrozenPolicy: r.Policy,
 	}
 
 	var err error
 
-	if account, ok := f.uv.Account(f.AccountId); ok {
+	if account, ok := r.uv.Account(f.AccountId); ok {
 		f.FrozenAccount, err = account.Freeze()
 		if err != nil {
 			return FrozenResource{}, err

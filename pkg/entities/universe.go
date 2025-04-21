@@ -122,7 +122,6 @@ func (u *Universe) Policy(arn Arn) (*ManagedPolicy, bool) {
 
 // PutPolicy saves the provided policy into the universe, updating the definition if needed
 func (u *Universe) PutPolicy(p ManagedPolicy) {
-	p.uv = u
 	u.policies[p.Arn] = p
 }
 

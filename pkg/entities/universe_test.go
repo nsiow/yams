@@ -133,7 +133,7 @@ func TestUniverse_Policies(t *testing.T) {
 	uv := NewUniverse()
 
 	// define policy
-	policy := ManagedPolicy{uv: uv, Arn: "arn:aws:iam::55555:policy/policy-1"}
+	policy := ManagedPolicy{Arn: "arn:aws:iam::55555:policy/policy-1"}
 
 	// check before adding policy
 	if uv.HasPolicy(policy.Arn) {

@@ -15,7 +15,7 @@ func evalPrincipalAccess(s *subject) Decision {
 	decision := Decision{}
 
 	s.trc.Push("evaluating inline principal policies")
-	decision.Merge(evalPrincipalHelperInline(s, s.ac.Principal.InlinePolicies))
+	decision.Merge(evalPrincipalHelperInline(s, s.ac.Principal.FrozenInlinePolicies))
 	s.trc.Pop()
 
 	s.trc.Push("evaluating attached principal policies")
@@ -37,7 +37,7 @@ func evalPrincipalGroupPolicies(s *subject, groups []entities.FrozenGroup) Decis
 	decision := Decision{}
 	for _, group := range groups {
 		s.trc.Push("evaluating inline group principal policies for group: %s", group.Arn)
-		decision.Merge(evalPrincipalHelperInline(s, group.InlinePolicies))
+		decision.Merge(evalPrincipalHelperInline(s, group.FrozenInlinePolicies))
 		s.trc.Pop()
 
 		s.trc.Push("evaluating attached group principal policies for group: %s", group.Arn)
@@ -49,7 +49,8 @@ func evalPrincipalGroupPolicies(s *subject, groups []entities.FrozenGroup) Decis
 }
 
 // evalPrincipalHelperInline is a helper function for easier evaluation of inline policies
-func evalPrincipalHelperInline(s *subject, inline []policy.Policy) (decision Decision) {
+func evalPrincipalHelperInline(s *subject, inline []policy.Policy) Decision {
+	decision := Decision{}
 	for i, policy := range inline {
 		var pid string
 		if len(policy.Id) > 0 {
@@ -61,10 +62,11 @@ func evalPrincipalHelperInline(s *subject, inline []policy.Policy) (decision Dec
 		s.trc.Push("evaluating inline policy: %s", pid)
 		defer s.trc.Pop()
 
-		return evalPolicy(s, policy,
-			evalStatementMatchesAction,
-			evalStatementMatchesResource,
-			evalStatementMatchesCondition)
+		decision.Merge(
+			evalPolicy(s, policy,
+				evalStatementMatchesAction,
+				evalStatementMatchesResource,
+				evalStatementMatchesCondition))
 	}
 
 	return decision

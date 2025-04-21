@@ -59,19 +59,15 @@ func TestSimulate(t *testing.T) {
 				Action: sar.MustLookupString("s3:listbucket"),
 
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{
-						Arn:              "arn:aws:iam::88888:role/myrole",
-						AccountId:        "88888",
-						InlinePolicies:   nil,
-						AttachedPolicies: nil,
-					},
+					Arn:                    "arn:aws:iam::88888:role/myrole",
+					AccountId:              "88888",
+					FrozenInlinePolicies:   nil,
+					FrozenAttachedPolicies: nil,
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn:       "arn:aws:s3:::mybucket",
-						AccountId: "88888",
-						Policy:    policy.Policy{},
-					},
+					Arn:          "arn:aws:s3:::mybucket",
+					AccountId:    "88888",
+					FrozenPolicy: policy.Policy{},
 				},
 			},
 			Want: false,
@@ -81,27 +77,23 @@ func TestSimulate(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{
-						Arn:       "arn:aws:iam::88888:role/myrole",
-						AccountId: "88888",
-						InlinePolicies: []policy.Policy{
-							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"s3:listbucket"},
-										Resource: []string{"arn:aws:s3:::mybucket"},
-									},
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					FrozenInlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
 								},
 							},
 						},
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn:       "arn:aws:s3:::mybucket",
-						AccountId: "88888",
-					},
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
 				},
 			},
 			Want: true,
@@ -111,27 +103,23 @@ func TestSimulate(t *testing.T) {
 			Input: AuthContext{
 				Action: sar.MustLookupString("sqs:getqueueurl"),
 				Principal: &entities.FrozenPrincipal{
-					Principal: entities.Principal{
-						Arn:       "arn:aws:iam::88888:role/myrole",
-						AccountId: "88888",
-						InlinePolicies: []policy.Policy{
-							{
-								Statement: []policy.Statement{
-									{
-										Effect:   policy.EFFECT_ALLOW,
-										Action:   []string{"s3:listbucket"},
-										Resource: []string{"arn:aws:s3:::mybucket"},
-									},
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					FrozenInlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
 								},
 							},
 						},
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn:       "arn:aws:s3:::mybucket",
-						AccountId: "88888",
-					},
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
 				},
 			},
 			ShouldErr: true,
@@ -403,7 +391,7 @@ var SimpleTestUniverse_1 = entities.NewBuilder().
 					{
 						Effect:   policy.EFFECT_ALLOW,
 						Action:   []string{"s3:listbucket"},
-						Resource: []string{"arn:aws:s3:::mybucket"},
+						Resource: []string{"arn:aws:s3:::bucket2"},
 						Principal: policy.Principal{
 							AWS: []string{"arn:aws:iam::88888:role/role2"},
 						},

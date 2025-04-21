@@ -28,8 +28,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket"},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
@@ -54,8 +53,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket"},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
@@ -80,8 +78,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket"},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
@@ -104,8 +101,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket"},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
@@ -135,8 +131,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket"},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
@@ -159,8 +154,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket"},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("iam:ListRoles"),
 			},
@@ -185,8 +179,7 @@ func TestPermissionsBoundary(t *testing.T) {
 					},
 				},
 				Resource: &entities.FrozenResource{
-					Resource: entities.Resource{
-						Arn: "arn:aws:s3:::mybucket"},
+					Arn: "arn:aws:s3:::mybucket",
 				},
 				Action: sar.MustLookupString("iam:ListRoles"),
 			},

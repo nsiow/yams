@@ -138,9 +138,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -153,9 +151,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -168,9 +164,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -183,9 +177,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/secondrole",
-						},
+						Arn: "arn:aws:iam::88888:role/secondrole",
 					},
 				},
 
@@ -199,9 +191,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -214,9 +204,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -231,9 +219,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -246,9 +232,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -261,9 +245,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -276,9 +258,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/secondrole",
-						},
+						Arn: "arn:aws:iam::88888:role/secondrole",
 					},
 				},
 
@@ -292,9 +272,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -307,9 +285,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -347,9 +323,7 @@ func TestStatementMatchesPrincipalExact(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -362,9 +336,7 @@ func TestStatementMatchesPrincipalExact(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -377,9 +349,7 @@ func TestStatementMatchesPrincipalExact(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/secondrole",
-						},
+						Arn: "arn:aws:iam::88888:role/secondrole",
 					},
 				},
 
@@ -393,9 +363,7 @@ func TestStatementMatchesPrincipalExact(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -410,9 +378,7 @@ func TestStatementMatchesPrincipalExact(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -425,9 +391,7 @@ func TestStatementMatchesPrincipalExact(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -440,9 +404,7 @@ func TestStatementMatchesPrincipalExact(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/somerole",
-						},
+						Arn: "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -455,9 +417,7 @@ func TestStatementMatchesPrincipalExact(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Principal: entities.Principal{
-							Arn: "arn:aws:iam::88888:role/secondrole",
-						},
+						Arn: "arn:aws:iam::88888:role/secondrole",
 					},
 				},
 
@@ -496,9 +456,7 @@ func TestStatementMatchesResource(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Resource: &entities.FrozenResource{
-						Resource: entities.Resource{
-							Arn: "arn:aws:s3:::somebucket",
-						},
+						Arn: "arn:aws:s3:::somebucket",
 					},
 				},
 
@@ -511,9 +469,7 @@ func TestStatementMatchesResource(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Resource: &entities.FrozenResource{
-						Resource: entities.Resource{
-							Arn: "arn:aws:s3:::somebucket",
-						},
+						Arn: "arn:aws:s3:::somebucket",
 					},
 				},
 
@@ -526,9 +482,7 @@ func TestStatementMatchesResource(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Resource: &entities.FrozenResource{
-						Resource: entities.Resource{
-							Arn: "arn:aws:s3:::somebucket",
-						},
+						Arn: "arn:aws:s3:::somebucket",
 					},
 				},
 
@@ -541,9 +495,7 @@ func TestStatementMatchesResource(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Resource: &entities.FrozenResource{
-						Resource: entities.Resource{
-							Arn: "arn:aws:s3:::secondbucket",
-						},
+						Arn: "arn:aws:s3:::secondbucket",
 					},
 				},
 
@@ -560,9 +512,7 @@ func TestStatementMatchesResource(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Resource: &entities.FrozenResource{
-						Resource: entities.Resource{
-							Arn: "arn:aws:s3:::somebucket",
-						},
+						Arn: "arn:aws:s3:::somebucket",
 					},
 				},
 
@@ -575,9 +525,7 @@ func TestStatementMatchesResource(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Resource: &entities.FrozenResource{
-						Resource: entities.Resource{
-							Arn: "arn:aws:s3:::somebucket",
-						},
+						Arn: "arn:aws:s3:::somebucket",
 					},
 				},
 
@@ -590,9 +538,7 @@ func TestStatementMatchesResource(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Resource: &entities.FrozenResource{
-						Resource: entities.Resource{
-							Arn: "arn:aws:s3:::somebucket",
-						},
+						Arn: "arn:aws:s3:::somebucket",
 					},
 				},
 
@@ -605,9 +551,7 @@ func TestStatementMatchesResource(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Resource: &entities.FrozenResource{
-						Resource: entities.Resource{
-							Arn: "arn:aws:s3:::secondbucket",
-						},
+						Arn: "arn:aws:s3:::secondbucket",
 					},
 				},
 

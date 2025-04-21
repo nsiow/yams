@@ -31,14 +31,14 @@ func Lookup(service, action string) (*types.Action, bool) {
 		}
 	}
 
-	return &types.Action{}, false
+	return nil, false
 }
 
 // LookupString allows for querying a specific api call based on the "service:action" shorthand
 func LookupString(serviceAction string) (*types.Action, bool) {
 	components := strings.Split(serviceAction, ":")
 	if len(components) != 2 {
-		return &types.Action{}, false
+		return nil, false
 	}
 
 	return Lookup(components[0], components[1])
