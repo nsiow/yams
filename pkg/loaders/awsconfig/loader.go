@@ -11,19 +11,19 @@ import (
 
 // Loader provides the ability to load entity definitions from AWS Config data
 type Loader struct {
-	universe *entities.Universe
+	uv *entities.Universe
 }
 
 // NewLoader provisions and returns a new `Loader` struct, ready to use
 func NewLoader() *Loader {
 	return &Loader{
-		universe: entities.NewUniverse(),
+		uv: entities.NewUniverse(),
 	}
 }
 
 // Universe returns an Universe containing the loaded Principals + Resources
 func (l *Loader) Universe() *entities.Universe {
-	return l.universe
+	return l.uv
 }
 
 // LoadJson loads data from a provided JSON array
@@ -130,7 +130,7 @@ func (l *Loader) loadAccount(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutAccount(target.asAccount())
+	l.uv.PutAccount(target.asAccount())
 	return nil
 }
 
@@ -142,8 +142,8 @@ func (l *Loader) loadSCP(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutPolicy(target.asPolicy())
-	l.universe.PutResource(target.asResource())
+	l.uv.PutPolicy(target.asPolicy())
+	l.uv.PutResource(target.asResource())
 	return nil
 }
 
@@ -155,8 +155,8 @@ func (l *Loader) loadGroup(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutGroup(target.asGroup())
-	l.universe.PutResource(target.asResource())
+	l.uv.PutGroup(target.asGroup())
+	l.uv.PutResource(target.asResource())
 	return nil
 }
 
@@ -173,8 +173,8 @@ func (l *Loader) loadManagedPolicy(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutPolicy(resolvedPolicy)
-	l.universe.PutResource(target.asResource())
+	l.uv.PutPolicy(resolvedPolicy)
+	l.uv.PutResource(target.asResource())
 	return nil
 }
 
@@ -186,8 +186,8 @@ func (l *Loader) loadRole(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutPrincipal(target.asPrincipal())
-	l.universe.PutResource(target.asResource())
+	l.uv.PutPrincipal(target.asPrincipal())
+	l.uv.PutResource(target.asResource())
 	return nil
 }
 
@@ -199,8 +199,8 @@ func (l *Loader) loadUser(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutPrincipal(target.asPrincipal())
-	l.universe.PutResource(target.asResource())
+	l.uv.PutPrincipal(target.asPrincipal())
+	l.uv.PutResource(target.asResource())
 	return nil
 }
 
@@ -212,7 +212,7 @@ func (l *Loader) loadBucket(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutResource(target.asResource())
+	l.uv.PutResource(target.asResource())
 	return nil
 }
 
@@ -224,7 +224,7 @@ func (l *Loader) loadTable(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutResource(target.asResource())
+	l.uv.PutResource(target.asResource())
 	return nil
 }
 
@@ -236,7 +236,7 @@ func (l *Loader) loadTopic(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutResource(target.asResource())
+	l.uv.PutResource(target.asResource())
 	return nil
 }
 
@@ -248,7 +248,7 @@ func (l *Loader) loadQueue(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutResource(target.asResource())
+	l.uv.PutResource(target.asResource())
 	return nil
 }
 
@@ -260,7 +260,7 @@ func (l *Loader) loadKey(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutResource(target.asResource())
+	l.uv.PutResource(target.asResource())
 	return nil
 }
 
@@ -272,6 +272,6 @@ func (l *Loader) loadGenericResource(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutResource(target.asResource())
+	l.uv.PutResource(target.asResource())
 	return nil
 }

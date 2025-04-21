@@ -11,8 +11,8 @@ import (
 // Simulator provides the ability to simulate IAM policies and the interactions between
 // Principals + Resources
 type Simulator struct {
-	universe *entities.Universe
-	options  Options
+	uv      *entities.Universe
+	options Options
 }
 
 // NewSimulator creates and returns a Simulator with the provided options
@@ -25,12 +25,12 @@ func NewSimulator(o ...OptionF) (*Simulator, error) {
 
 // Universe returns a pointer to the current Universe being used by the Simulator
 func (s *Simulator) Universe() *entities.Universe {
-	return s.universe
+	return s.uv
 }
 
 // SetUniverse redefines the Universe used by the Simulator for access evaluations
-func (s *Simulator) SetUniverse(universe *entities.Universe) {
-	s.universe = universe
+func (s *Simulator) SetUniverse(uv *entities.Universe) {
+	s.uv = uv
 }
 
 // Simulate determines whether the provided AuthContext would be allowed
@@ -73,7 +73,7 @@ func (s *Simulator) SimulateByArn(
 	}
 
 	// Locate Principal
-	p, ok := s.universe.Principal(principalArn)
+	p, ok := s.uv.Principal(principalArn)
 	if !ok {
 		return nil, fmt.Errorf("no principal with arn: %s", principalArn)
 	}
@@ -84,7 +84,7 @@ func (s *Simulator) SimulateByArn(
 	ac.Principal = &fp
 
 	// Locate Resource
-	r, ok := s.universe.Resource(resourceArn)
+	r, ok := s.uv.Resource(resourceArn)
 	if !ok {
 		return nil, fmt.Errorf("no resource with arn: %s", resourceArn)
 	}
@@ -102,12 +102,12 @@ func (s *Simulator) SimulateByArn(
 // The summary is returned in a map of format map[<resource_arn>]: <# of principals with access>
 // where access is defined as any of the provided actions being allowed
 func (s *Simulator) ComputeAccessSummary(actions []*types.Action) (map[string]int, error) {
-	ps, err := s.universe.FrozenPrincipals()
+	ps, err := s.uv.FrozenPrincipals()
 	if err != nil {
 		return nil, fmt.Errorf("error while freezing principals for simulation: %w", err)
 	}
 
-	rs, err := s.universe.FrozenResources()
+	rs, err := s.uv.FrozenResources()
 	if err != nil {
 		return nil, fmt.Errorf("error while freezing resources for simulation: %w", err)
 	}

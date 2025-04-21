@@ -47,7 +47,7 @@ type FrozenAccount struct {
 
 func (a *Account) Freeze() (FrozenAccount, error) {
 	if a.uv == nil {
-		return FrozenAccount{}, fmt.Errorf("cannot freeze; account is missing universe: %s", a.Id)
+		return FrozenAccount{}, fmt.Errorf("cannot freeze; account is missing uv: %s", a.Id)
 	}
 
 	frozen := FrozenAccount{
@@ -76,7 +76,7 @@ type FrozenGroup struct {
 
 func (g *Group) Freeze() (FrozenGroup, error) {
 	if g.uv == nil {
-		return FrozenGroup{}, fmt.Errorf("cannot freeze; group is missing universe: %s", g.Arn.String())
+		return FrozenGroup{}, fmt.Errorf("cannot freeze; group is missing uv: %s", g.Arn.String())
 	}
 
 	f := FrozenGroup{
@@ -108,7 +108,7 @@ type FrozenPrincipal struct {
 func (p *Principal) Freeze() (FrozenPrincipal, error) {
 	if p.uv == nil {
 		return FrozenPrincipal{},
-			fmt.Errorf("cannot freeze; principal is missing universe: %s", p.Arn.String())
+			fmt.Errorf("cannot freeze; principal is missing uv: %s", p.Arn.String())
 	}
 
 	f := FrozenPrincipal{
@@ -161,7 +161,7 @@ type FrozenResource struct {
 func (r *Resource) Freeze() (FrozenResource, error) {
 	if r.uv == nil {
 		return FrozenResource{},
-			fmt.Errorf("cannot freeze; resource is missing universe: %s", r.Arn.String())
+			fmt.Errorf("cannot freeze; resource is missing uv: %s", r.Arn.String())
 	}
 
 	f := FrozenResource{
@@ -193,7 +193,6 @@ func freezePolicy(arn Arn, uv *Universe) (ManagedPolicy, error) {
 	return *pol, nil
 }
 
-// FIXME(nsiow) change all mentions of "universe" to "uv" for conciseness
 func freezePolicies(arns []Arn, uv *Universe) ([]ManagedPolicy, error) {
 	policies := make([]ManagedPolicy, len(arns))
 

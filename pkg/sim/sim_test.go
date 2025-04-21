@@ -36,18 +36,18 @@ func TestNewSimulator(t *testing.T) {
 
 func TestSimulatorUniverse(t *testing.T) {
 
-	// Define our universe
-	universe := entities.NewUniverse()
-	universe.PutAccount(entities.Account{Id: "55555"})
+	// Define our uv
+	uv := entities.NewUniverse()
+	uv.PutAccount(entities.Account{Id: "55555"})
 
 	// Create a simulator and set Universe
 	sim, _ := NewSimulator()
-	sim.SetUniverse(universe)
+	sim.SetUniverse(uv)
 
-	// Compare retrieved universe to ours
+	// Compare retrieved uv to ours
 	got := sim.Universe()
-	if !reflect.DeepEqual(universe, got) {
-		t.Fatalf("retrieved universe %+v does not match ours: %+v", got, universe)
+	if !reflect.DeepEqual(uv, got) {
+		t.Fatalf("retrieved uv %+v does not match ours: %+v", got, uv)
 	}
 }
 
@@ -152,7 +152,7 @@ func TestSimulate(t *testing.T) {
 
 func TestSimulateByArn(t *testing.T) {
 	type input struct {
-		universe     *entities.Universe
+		uv           *entities.Universe
 		action       string
 		principalArn string
 		resourceArn  string
@@ -162,7 +162,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "test_allow",
 			Input: input{
-				universe:     SimpleTestUniverse_1,
+				uv:           SimpleTestUniverse_1,
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::bucket1",
@@ -172,7 +172,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "test_deny",
 			Input: input{
-				universe:     SimpleTestUniverse_1,
+				uv:           SimpleTestUniverse_1,
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::bucket3",
@@ -180,9 +180,9 @@ func TestSimulateByArn(t *testing.T) {
 			Want: false,
 		},
 		{
-			Name: "test_empty_universe",
+			Name: "test_empty_uv",
 			Input: input{
-				universe:     entities.NewUniverse(),
+				uv:           entities.NewUniverse(),
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::bucket1",
@@ -192,7 +192,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "both_missing",
 			Input: input{
-				universe:     SimpleTestUniverse_1,
+				uv:           SimpleTestUniverse_1,
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/doesnotexist",
 				resourceArn:  "arn:aws:s3:::doesnotexist",
@@ -202,7 +202,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "principal_missing",
 			Input: input{
-				universe:     SimpleTestUniverse_1,
+				uv:           SimpleTestUniverse_1,
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/doesnotexist",
 				resourceArn:  "arn:aws:s3:::bucket1",
@@ -212,7 +212,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "resource_missing",
 			Input: input{
-				universe:     SimpleTestUniverse_1,
+				uv:           SimpleTestUniverse_1,
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::doesnotexist",
@@ -222,7 +222,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "invalid_action",
 			Input: input{
-				universe:     SimpleTestUniverse_1,
+				uv:           SimpleTestUniverse_1,
 				action:       "s3:doesnotexist",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::doesnotexist",
@@ -232,7 +232,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "cannot_freeze_principal",
 			Input: input{
-				universe:     InvalidTestUniverse_1,
+				uv:           InvalidTestUniverse_1,
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::bucket1",
@@ -242,7 +242,7 @@ func TestSimulateByArn(t *testing.T) {
 		{
 			Name: "cannot_freeze_resources",
 			Input: input{
-				universe:     InvalidTestUniverse_2,
+				uv:           InvalidTestUniverse_2,
 				action:       "s3:listbucket",
 				principalArn: "arn:aws:iam::88888:role/role1",
 				resourceArn:  "arn:aws:s3:::bucket1",
@@ -253,7 +253,7 @@ func TestSimulateByArn(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		sim, _ := NewSimulator()
-		sim.SetUniverse(i.universe)
+		sim.SetUniverse(i.uv)
 		res, err := sim.SimulateByArn(
 			i.action,
 			entities.Arn(i.principalArn),
@@ -270,7 +270,7 @@ func TestSimulateByArn(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		sim, _ := NewSimulator()
-		sim.SetUniverse(i.universe)
+		sim.SetUniverse(i.uv)
 		res, err := sim.SimulateByArnString(
 			i.action,
 			i.principalArn,
@@ -288,16 +288,16 @@ func TestSimulateByArn(t *testing.T) {
 
 func TestComputeAccessSummary(t *testing.T) {
 	type input struct {
-		universe *entities.Universe
-		actions  []*types.Action
+		uv      *entities.Universe
+		actions []*types.Action
 	}
 
 	tests := []testlib.TestCase[input, map[string]int]{
 		{
-			Name: "simple_universe_1",
+			Name: "simple_uv_1",
 			Input: input{
-				universe: SimpleTestUniverse_1,
-				actions:  []*types.Action{sar.MustLookupString("s3:listbucket")},
+				uv:      SimpleTestUniverse_1,
+				actions: []*types.Action{sar.MustLookupString("s3:listbucket")},
 			},
 			Want: map[string]int{
 				"arn:aws:s3:::bucket1": 1,
@@ -308,8 +308,8 @@ func TestComputeAccessSummary(t *testing.T) {
 		{
 			Name: "unrelated_actions",
 			Input: input{
-				universe: SimpleTestUniverse_1,
-				actions:  []*types.Action{sar.MustLookupString("sns:publish")},
+				uv:      SimpleTestUniverse_1,
+				actions: []*types.Action{sar.MustLookupString("sns:publish")},
 			},
 			Want: map[string]int{
 				"arn:aws:s3:::bucket1": 0,
@@ -318,23 +318,23 @@ func TestComputeAccessSummary(t *testing.T) {
 			},
 		},
 		{
-			Name: "empty_universe",
+			Name: "empty_uv",
 			Input: input{
-				universe: entities.NewUniverse(),
+				uv: entities.NewUniverse(),
 			},
 			Want: map[string]int{},
 		},
 		{
 			Name: "cannot_freeze_principals",
 			Input: input{
-				universe: InvalidTestUniverse_1,
+				uv: InvalidTestUniverse_1,
 			},
 			ShouldErr: true,
 		},
 		{
 			Name: "cannot_freeze_resources",
 			Input: input{
-				universe: InvalidTestUniverse_2,
+				uv: InvalidTestUniverse_2,
 			},
 			ShouldErr: true,
 		},
@@ -343,7 +343,7 @@ func TestComputeAccessSummary(t *testing.T) {
 	testlib.RunTestSuite(t, tests, func(i input) (map[string]int, error) {
 		sim, _ := NewSimulator()
 		sim.options = *TestingSimulationOptions
-		sim.SetUniverse(i.universe)
+		sim.SetUniverse(i.uv)
 		summary, err := sim.ComputeAccessSummary(i.actions)
 		if err != nil {
 			return nil, err
