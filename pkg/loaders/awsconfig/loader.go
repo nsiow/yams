@@ -143,6 +143,7 @@ func (l *Loader) loadSCP(blob configBlob) error {
 	}
 
 	l.universe.PutPolicy(target.asPolicy())
+	l.universe.PutResource(target.asResource())
 	return nil
 }
 
@@ -155,6 +156,7 @@ func (l *Loader) loadGroup(blob configBlob) error {
 	}
 
 	l.universe.PutGroup(target.asGroup())
+	l.universe.PutResource(target.asResource())
 	return nil
 }
 
@@ -172,6 +174,7 @@ func (l *Loader) loadManagedPolicy(blob configBlob) error {
 	}
 
 	l.universe.PutPolicy(resolvedPolicy)
+	l.universe.PutResource(target.asResource())
 	return nil
 }
 
@@ -183,8 +186,8 @@ func (l *Loader) loadRole(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutResource(target.asResource())
 	l.universe.PutPrincipal(target.asPrincipal())
+	l.universe.PutResource(target.asResource())
 	return nil
 }
 
@@ -196,8 +199,8 @@ func (l *Loader) loadUser(blob configBlob) error {
 		return err
 	}
 
-	l.universe.PutResource(target.asResource())
 	l.universe.PutPrincipal(target.asPrincipal())
+	l.universe.PutResource(target.asResource())
 	return nil
 }
 

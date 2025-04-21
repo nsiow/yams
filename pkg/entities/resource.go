@@ -25,7 +25,7 @@ type Resource struct {
 	Arn Arn
 
 	// Tags refers to the AWS metadata tags attached to the Resource
-	Tags []Tag
+	Tags []Tag `json:"omitzero"`
 
 	// Policy refers to the resource policy associated with the Resource
 	Policy policy.Policy

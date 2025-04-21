@@ -53,6 +53,31 @@ func TestLoad(t *testing.T) {
 				Build(),
 		},
 		{
+			Name:  "account_valid_jsonl",
+			Input: `../../../testdata/config_loading/account_valid.jsonl`,
+			Want: *entities.NewBuilder().
+				WithAccounts(
+					entities.Account{
+						Id:    "000000000000",
+						OrgId: "o-123",
+						OrgPaths: []string{
+							"o-123/",
+							"o-123/ou-level-1/",
+							"o-123/ou-level-1/ou-level-2/",
+						},
+						SCPs: [][]entities.Arn{
+							{
+								"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+							},
+							{
+								"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
 			Name:  "scp_valid",
 			Input: `../../../testdata/config_loading/scp_valid.json`,
 			Want: *entities.NewBuilder().
@@ -63,10 +88,8 @@ func TestLoad(t *testing.T) {
 						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
 						Policy: policy.Policy{
 							Version: "2012-10-17",
-							Id:      "",
 							Statement: policy.StatementBlock{
 								policy.Statement{
-									Sid:    "",
 									Effect: "Allow",
 									Action: policy.Value{
 										"s3:*",
@@ -77,6 +100,13 @@ func TestLoad(t *testing.T) {
 								},
 							},
 						},
+					},
+				).
+				WithResources(
+					entities.Resource{
+						Type:      "Yams::Organizations::ServiceControlPolicy",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
 					},
 				).
 				Build(),
@@ -93,10 +123,8 @@ func TestLoad(t *testing.T) {
 						InlinePolicies: []policy.Policy{
 							{
 								Version: "2012-10-17",
-								Id:      "",
 								Statement: policy.StatementBlock{
 									policy.Statement{
-										Sid:    "",
 										Effect: "Allow",
 										Action: policy.Value{
 											"s3:*",
@@ -108,6 +136,169 @@ func TestLoad(t *testing.T) {
 								},
 							},
 						},
+					},
+				).
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::IAM::Group",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:group/family",
+						Tags:      []entities.Tag{},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "policy_valid",
+			Input: `../../../testdata/config_loading/policy_valid.json`,
+			Want: *entities.NewBuilder().
+				WithPolicies(
+					entities.ManagedPolicy{
+						Type:      "AWS::IAM::Policy",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:policy/Common",
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Effect: "Allow",
+									Action: policy.Value{
+										"sqs:ReceiveMessage",
+									},
+									Resource: policy.Value{
+										"arn:aws:sqs:us-east-1:0000000000000:queue-2",
+									},
+								},
+							},
+						},
+					},
+				).
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::IAM::Policy",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:policy/Common",
+						Tags:      []entities.Tag{},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "role_valid",
+			Input: `../../../testdata/config_loading/role_valid.json`,
+			Want: *entities.NewBuilder().
+				WithPrincipals(
+					entities.Principal{
+						Type:      "AWS::IAM::Role",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:role/SimpleRole1",
+						Tags: []entities.Tag{
+							{
+								Key:   "some-business-tag",
+								Value: "important-business-thing",
+							},
+							{
+								Key:   "some-technical-tag",
+								Value: "important-technical-thing",
+							},
+						},
+						InlinePolicies: []policy.Policy{
+							{
+								Version: "2012-10-17",
+								Statement: []policy.Statement{
+									{
+										Effect: "Allow",
+										Action: []string{"s3:GetObject", "s3:ListBucket"},
+										Resource: []string{
+											"arn:aws:s3:::simple-bucket",
+											"arn:aws:s3:::simple-bucket/*",
+										},
+									},
+								},
+							},
+						},
+						AttachedPolicies: []entities.Arn{
+							"arn:aws:iam::000000000000:policy/Common",
+						},
+					},
+				).
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::IAM::Role",
+						AccountId: "000000000000",
+
+						Arn: "arn:aws:iam::000000000000:role/SimpleRole1",
+						Tags: []entities.Tag{
+							{
+								Key:   "some-business-tag",
+								Value: "important-business-thing",
+							},
+							{
+								Key:   "some-technical-tag",
+								Value: "important-technical-thing",
+							},
+						},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Effect: "Allow",
+									Principal: policy.Principal{
+										Service: policy.Value{
+											"ec2.amazonaws.com",
+										},
+									},
+									Action: policy.Value{
+										"sts:AssumeRole",
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "user_valid",
+			Input: `../../../testdata/config_loading/user_valid.json`,
+			Want: *entities.NewBuilder().
+				WithPrincipals(
+					entities.Principal{
+						Type:      "AWS::IAM::User",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:user/myuser",
+						Tags:      []entities.Tag{},
+						InlinePolicies: []policy.Policy{
+							{
+								Version: "2012-10-17",
+								Statement: policy.StatementBlock{
+									policy.Statement{
+										Sid:    "Statement1",
+										Effect: "Allow",
+										Action: policy.Value{
+											"s3:listbucket",
+										},
+										Resource: policy.Value{
+											"arn:aws:s3:::mybucket5",
+										},
+									},
+								},
+							},
+						},
+						AttachedPolicies: []entities.Arn{
+							"arn:aws:iam::000000000000:policy/Shared",
+						},
+						Groups: []entities.Arn{
+							"arn:aws:iam::000000000000:group/family",
+						},
+					},
+				).
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::IAM::User",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:iam::000000000000:user/myuser",
+						Tags:      []entities.Tag{},
 					},
 				).
 				Build(),
@@ -145,6 +336,21 @@ func TestLoad(t *testing.T) {
 		{
 			Name:      "group_invalid_bad_shape",
 			Input:     `../../../testdata/config_loading/group_invalid_bad_shape.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "policy_invalid_json",
+			Input:     `../../../testdata/config_loading/policy_invalid_json.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "policy_invalid_no_default_version",
+			Input:     `../../../testdata/config_loading/policy_invalid_no_default_version.json`,
+			ShouldErr: true,
+		},
+		{
+			Name:      "role_invalid_bad_policy",
+			Input:     `../../../testdata/config_loading/role_invalid_bad_policy.json`,
 			ShouldErr: true,
 		},
 	}

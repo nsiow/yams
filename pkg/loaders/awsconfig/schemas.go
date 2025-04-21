@@ -74,7 +74,6 @@ func (c *configIamUser) asResource() entities.Resource {
 		Region:    c.Region,
 		Arn:       c.Arn,
 		Tags:      c.Tags,
-		Policy:    policy.Policy{},
 	}
 }
 
@@ -151,6 +150,16 @@ func (c *configIamManagedPolicy) asPolicy() (entities.ManagedPolicy, error) {
 	return entities.ManagedPolicy{}, fmt.Errorf("unable to find default policy version for: %s", c.Arn)
 }
 
+func (c *configIamManagedPolicy) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+	}
+}
+
 // -------------------------------------------------------------------------------------------------
 // AWS::IAM::Group
 // -------------------------------------------------------------------------------------------------
@@ -179,6 +188,16 @@ func (c *configGroup) asGroup() entities.Group {
 	}
 }
 
+func (c *configGroup) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+	}
+}
+
 // -------------------------------------------------------------------------------------------------
 // Generic resource
 // -------------------------------------------------------------------------------------------------
@@ -194,7 +213,6 @@ func (c *genericResource) asResource() entities.Resource {
 		Region:    c.Region,
 		Arn:       c.Arn,
 		Tags:      c.Tags,
-		Policy:    policy.Policy{},
 	}
 }
 
@@ -343,5 +361,15 @@ func (c *configSCP) asPolicy() entities.ManagedPolicy {
 		AccountId: c.AccountId,
 		Arn:       c.Arn,
 		Policy:    policy.Policy(c.Configuration.Document),
+	}
+}
+
+func (c *configSCP) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
 	}
 }
