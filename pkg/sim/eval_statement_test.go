@@ -138,7 +138,8 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -151,7 +152,8 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -160,11 +162,82 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Want: true,
 		},
 		{
+			Name: "account_root_match_syntax_1",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.FrozenPrincipal{
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
+					},
+				},
+
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"88888"}}},
+			},
+			Want: true,
+		},
+		{
+			Name: "account_root_nomatch_syntax_1",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.FrozenPrincipal{
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
+					},
+				},
+
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"55555"}}},
+			},
+			Want: false,
+		},
+		{
+			Name: "account_root_match_syntax_2",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.FrozenPrincipal{
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
+					},
+				},
+
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:root"}}},
+			},
+			Want: true,
+		},
+		{
+			Name: "account_root_nomatch_syntax_2",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.FrozenPrincipal{
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
+					},
+				},
+
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::55555:root"}}},
+			},
+			Want: false,
+		},
+		{
+			Name: "account_root_nomatch_syntax_3",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.FrozenPrincipal{
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
+					},
+				},
+
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::55555:root/test"}}},
+			},
+			Want: false,
+		},
+		{
 			Name: "other_principal",
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -177,7 +250,8 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/secondrole",
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/secondrole",
 					},
 				},
 
@@ -191,7 +265,8 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -204,7 +279,8 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -219,7 +295,8 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -232,7 +309,8 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -245,7 +323,8 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -258,7 +337,8 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/secondrole",
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/secondrole",
 					},
 				},
 
@@ -272,7 +352,8 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
 					},
 				},
 
@@ -285,7 +366,8 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+						Arn:       "arn:aws:iam::88888:role/somerole",
 					},
 				},
 

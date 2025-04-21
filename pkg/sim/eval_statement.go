@@ -1,6 +1,8 @@
 package sim
 
 import (
+	"fmt"
+
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim/gate"
 	"github.com/nsiow/yams/pkg/sim/wildcard"
@@ -87,10 +89,10 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
 		_gate.Invert()
 	}
 
-	// TODO(nsiow) validate that this is how Principals are evaluated - exact matches?
 	for _, p := range principals.AWS {
-		match := wildcard.MatchAllOrNothing(p, s.auth.Principal.Arn.String())
-		if match {
+		// Handle account-root syntax
+		if isAccountRootMatch(p, s.auth.Principal.AccountId) ||
+			wildcard.MatchAllOrNothing(p, s.auth.Principal.Arn.String()) {
 			return _gate.Apply(true)
 		}
 	}
@@ -165,4 +167,10 @@ func evalStatementMatchesCondition(s *subject, stmt *policy.Statement) bool {
 
 	s.trc.Observation("condition evaluated to true")
 	return true
+}
+
+// isAccountRootMatch handles the unique delegation for account roots in IAM policies
+func isAccountRootMatch(pattern string, principalAccountId string) bool {
+	return pattern == principalAccountId ||
+		pattern == fmt.Sprintf("arn:aws:iam::%s:root", principalAccountId)
 }
