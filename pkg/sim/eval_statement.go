@@ -50,7 +50,6 @@ func evalStatementMatchesAction(s *subject, stmt *policy.Statement) bool {
 	for _, a := range action {
 		match := wildcard.MatchSegmentsIgnoreCase(a, shortName)
 		if match {
-			s.trc.Attr("action", a)
 			s.trc.Observation("action matched")
 			return _gate.Apply(true)
 		}

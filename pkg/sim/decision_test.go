@@ -104,25 +104,20 @@ func TestEffectSet(t *testing.T) {
 			decision.Add(x)
 		}
 
-		// Ensure size of data never surpasses 2
-		if len(decision.Effects()) > 2 {
-			t.Fatalf("EffectSet size should never be >2, but saw %d", len(decision.effects))
-		}
-
 		return output{
 			Allowed:          decision.Allowed(),
 			Denied:           decision.Denied(),
-			ExplicitlyDenied: decision.ExplicitlyDenied(),
+			ExplicitlyDenied: decision.DeniedExplicit(),
 		}, nil
 	})
 }
 
 func TestMerge(t *testing.T) {
-	tests := []testlib.TestCase[[]Decision, []policy.Effect]{
+	tests := []testlib.TestCase[[]Decision, Decision]{
 		{
 			Name:  "empty",
 			Input: []Decision{},
-			Want:  []policy.Effect(nil),
+			Want:  Decision{},
 		},
 		{
 			Name: "empties",
@@ -131,39 +126,39 @@ func TestMerge(t *testing.T) {
 				{},
 				{},
 			},
-			Want: []policy.Effect(nil),
+			Want: Decision{},
 		},
 		{
 			Name: "multiple_allows",
 			Input: []Decision{
-				{effects: []policy.Effect{policy.EFFECT_ALLOW}},
-				{effects: []policy.Effect{policy.EFFECT_ALLOW}},
-				{effects: []policy.Effect{policy.EFFECT_ALLOW}},
+				Decision{Allow: true},
+				Decision{Allow: true},
+				Decision{Allow: true},
 			},
-			Want: []policy.Effect{policy.EFFECT_ALLOW},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "multiple_denies",
 			Input: []Decision{
-				{effects: []policy.Effect{policy.EFFECT_DENY}},
-				{effects: []policy.Effect{policy.EFFECT_DENY}},
-				{effects: []policy.Effect{policy.EFFECT_DENY}},
+				Decision{Deny: true},
+				Decision{Deny: true},
+				Decision{Deny: true},
 			},
-			Want: []policy.Effect{policy.EFFECT_DENY},
+			Want: Decision{Deny: true},
 		},
 		{
 			Name: "mix_n_match",
 			Input: []Decision{
-				{effects: []policy.Effect{policy.EFFECT_ALLOW}},
-				{effects: []policy.Effect{policy.EFFECT_DENY}},
-				{effects: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY}},
-				{effects: []policy.Effect{policy.EFFECT_DENY, policy.EFFECT_ALLOW}},
+				Decision{Allow: true},
+				Decision{Deny: true},
+				Decision{Allow: true, Deny: true},
+				Decision{Deny: true},
 			},
-			Want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
+			Want: Decision{Allow: true, Deny: true},
 		},
 	}
 
-	testlib.RunTestSuite(t, tests, func(d []Decision) ([]policy.Effect, error) {
+	testlib.RunTestSuite(t, tests, func(d []Decision) (Decision, error) {
 		// Create empty decision
 		decision := Decision{}
 
@@ -172,11 +167,6 @@ func TestMerge(t *testing.T) {
 			decision.Merge(x)
 		}
 
-		// Ensure size of data never surpasses 2
-		if len(decision.Effects()) > 2 {
-			t.Fatalf("EffectSet size should never be >2, but saw %d", len(decision.effects))
-		}
-
-		return decision.Effects(), nil
+		return decision, nil
 	})
 }

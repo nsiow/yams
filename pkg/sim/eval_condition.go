@@ -10,7 +10,6 @@ func evalCheckCondition(s *subject, op string, cond policy.ConditionValues) bool
 
 	// TODO(nsiow) implement PushWithAttr so that `op` is in a more appropriate context?
 	s.trc.Push("evaluating Operation")
-	s.trc.Attr("op", op)
 	defer s.trc.Pop()
 
 	// An empty condition should actually evaluate to false

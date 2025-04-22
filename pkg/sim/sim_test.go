@@ -133,7 +133,6 @@ func TestSimulate(t *testing.T) {
 			return false, err
 		}
 
-		t.Log(res.Trace.Log())
 		return res.IsAllowed, nil
 	})
 }
@@ -252,7 +251,6 @@ func TestSimulateByArn(t *testing.T) {
 			return false, err
 		}
 
-		t.Log(res.Trace.Log())
 		return res.IsAllowed, nil
 	})
 
@@ -269,7 +267,6 @@ func TestSimulateByArn(t *testing.T) {
 			return false, err
 		}
 
-		t.Log(res.Trace.Log())
 		return res.IsAllowed, nil
 	})
 }
