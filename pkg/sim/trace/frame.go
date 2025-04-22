@@ -1,27 +1,51 @@
 package trace
 
-// Frame represents a logical span of evaluation logic, i.e. "evaluating resource policies"
-type Frame struct {
-	depth   int
-	header  string
-	records []string
+// -------------------------------------------------------------------------------------------------
+// Frames
+// -------------------------------------------------------------------------------------------------
+
+// frame represents a logical span of evaluation logic, i.e. "evaluating resource policies"
+type frame struct {
+	header string
+	hist   []event
 }
 
-// NewFrame initializes and returns a new frame pointer
-func NewFrame(depth int, header string, args ...any) *Frame {
-	return &Frame{
-		depth:   depth,
-		header:  format(header, args...),
-		records: nil,
+func (f *frame) emit(msg string, args ...any) {
+	next := event{
+		eventType: eventTypeMessage,
+		message:   format(msg, args...),
 	}
+	f.hist = append(f.hist, next)
 }
 
-// record saves a new message to this frame
-func (f *Frame) record(message string) {
-	f.records = append(f.records, message)
+func (f *frame) subframe(header string, args ...any) *frame {
+	subframe := frame{
+		header: format(header, args...),
+	}
+	next := event{
+		eventType: eventTypeSubframe,
+		child:     &subframe,
+	}
+	f.hist = append(f.hist, next)
+	return &subframe
 }
 
-// Records returns all saved messages visible to this frame
-func (f *Frame) Records() []string {
-	return f.records
+// -------------------------------------------------------------------------------------------------
+// Events
+// -------------------------------------------------------------------------------------------------
+
+// eventType is an enum representing the different type of events we may emit
+type eventType string
+
+const (
+	eventTypeMessage  eventType = "message"
+	eventTypeSubframe eventType = "subframe"
+)
+
+// event represents an emitted event
+type event struct {
+	eventType eventType // always present
+
+	message string // only present when eventType == eventTypeMessage
+	child   *frame // only present when eventType == eventTypeSubframe
 }

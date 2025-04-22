@@ -4,15 +4,13 @@ package trace
 type Trace struct {
 	enabled bool
 
-	depth int
-	stack []*Frame
-	hist  []*Frame
+	stack []*frame
 }
 
-// curr returns the current operating frame for this trace
-func (t *Trace) curr() *Frame {
-	if len(t.stack) == 0 {
-		panic("somehow reached empty stack")
+// curr returns a pointer to the current (topmost) frame
+func (t *Trace) curr() *frame {
+	if len(t.stack) <= 0 {
+		panic("attempt to look up current frame for empty stack")
 	}
 
 	return t.stack[len(t.stack)-1]
@@ -20,8 +18,12 @@ func (t *Trace) curr() *Frame {
 
 // New creates and returns a new Trace with a root frame initialized
 func New() *Trace {
-	t := Trace{}
-	t.Push("root")
+	root := frame{header: "root"}
+	t := Trace{
+		stack: []*frame{
+			&root,
+		},
+	}
 	return &t
 }
 
@@ -36,13 +38,13 @@ func (t *Trace) Disable() {
 }
 
 // Push creates a new frame and adds it to the top of the stack
-func (t *Trace) Push(frame string, args ...any) {
+func (t *Trace) Push(header string, args ...any) {
 	if !t.enabled {
 		return
 	}
 
-	t.stack = append(t.stack, NewFrame(t.depth, frame, args...))
-	t.depth += 1
+	subframe := t.curr().subframe(header, args...)
+	t.stack = append(t.stack, subframe)
 }
 
 // Pop removes the topmost frame from the trace and saves it
@@ -51,11 +53,10 @@ func (t *Trace) Pop() {
 		return
 	}
 
-	if t.depth -= 1; t.depth < 0 {
-		panic("stack underflow for trace")
+	if len(t.stack) <= 1 {
+		panic("attempt to pop root frame from trace stack")
 	}
 
-	t.hist = append(t.hist, t.stack[len(t.stack)-1])
 	t.stack = t.stack[:len(t.stack)-1]
 }
 
@@ -65,7 +66,7 @@ func (t *Trace) Observation(msg string, args ...any) {
 		return
 	}
 
-	t.curr().record(format(msg, args...))
+	t.curr().emit(msg, args...)
 }
 
 // Decision records a single record about an access decision (e.g. "This resulted in Effect=Allow")
@@ -74,10 +75,5 @@ func (t *Trace) Decision(msg string, args ...any) {
 		return
 	}
 
-	t.curr().record(format(msg, args...))
-}
-
-// History returns all frames saved by the trace, in sequential order
-func (t *Trace) History() []*Frame {
-	return t.hist
+	t.curr().emit(msg, args...)
 }

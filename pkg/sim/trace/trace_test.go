@@ -7,18 +7,31 @@ import (
 )
 
 func TestTrace(t *testing.T) {
-	tests := []testlib.TestCase[func(*Trace), []*Frame]{
+	tests := []testlib.TestCase[func(*Trace), []*frame]{
 		{
-			Input: func(t *Trace) {
-
+			Name:  "empty_trace",
+			Input: func(t *Trace) {},
+			Want: []*frame{
+				{header: "root"},
 			},
-			Want: []*Frame{},
 		},
+		// {
+		// 	Name: "single_message",
+		// 	Input: func(t *Trace) {
+		// 		t.Observation("foo")
+		// 	},
+		// 	Want: []*frame{
+		// 		{
+		// 			header: "root",
+		// 			hist:   []event{},
+		// 		},
+		// 	},
+		// },
 	}
 
-	testlib.RunTestSuite(t, tests, func(f func(*Trace)) ([]*Frame, error) {
+	testlib.RunTestSuite(t, tests, func(f func(*Trace)) ([]*frame, error) {
 		trc := New()
 		f(trc)
-		return trc.History(), nil
+		return trc.stack, nil
 	})
 }
