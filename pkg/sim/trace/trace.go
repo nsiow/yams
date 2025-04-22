@@ -79,5 +79,5 @@ func (t *Trace) Decision(msg string, args ...any) {
 
 // History returns all frames saved by the trace, in sequential order
 func (t *Trace) History() []*Frame {
-	return t.stack
+	return t.hist
 }

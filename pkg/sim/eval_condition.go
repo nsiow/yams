@@ -8,7 +8,6 @@ import (
 // the provided AuthContext
 func evalCheckCondition(s *subject, op string, cond policy.ConditionValues) bool {
 
-	// TODO(nsiow) implement PushWithAttr so that `op` is in a more appropriate context?
 	s.trc.Push("evaluating Operation")
 	defer s.trc.Pop()
 

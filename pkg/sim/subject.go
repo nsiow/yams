@@ -5,6 +5,7 @@ import "github.com/nsiow/yams/pkg/sim/trace"
 // subject is a type representing the smallest simulatable structure.
 //
 // It contains both the data required for auth simulation as well as any accessory data
+// TODO(nsiow) figure out if these should just be values since we always use subject pointers
 type subject struct {
 	auth  *AuthContext
 	opts  *Options
