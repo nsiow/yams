@@ -1,6 +1,8 @@
 package sim
 
 import (
+	"fmt"
+
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -18,7 +20,7 @@ func (d *Decision) Add(effect policy.Effect) {
 	case policy.EFFECT_DENY:
 		d.Deny = true
 	default:
-		panic("wtf is " + effect)
+		panic(fmt.Sprintf("wtf is %s", effect))
 	}
 }
 

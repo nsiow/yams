@@ -1,7 +1,6 @@
 package trace
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -26,6 +25,7 @@ func TestTrace(t *testing.T) {
 		{
 			Name: "single_message",
 			Input: func(t *Trace) {
+				t.Enable()
 				t.Observation("foo")
 			},
 			Want: []string{
@@ -35,19 +35,42 @@ func TestTrace(t *testing.T) {
 			},
 		},
 		{
+			Name: "enable_disable",
+			Input: func(t *Trace) {
+				t.Enable()
+				t.Observation("foo")
+				t.Disable()
+				t.Push("new thing")
+				t.Allowed("some decision evaluated to true")
+				t.Denied("some decision evaluated to false")
+				t.Pop()
+				t.Observation("bar")
+				t.Enable()
+				t.Observation("baz")
+			},
+			Want: []string{
+				"begin: root",
+				"  foo",
+				"  baz",
+				"end: root",
+			},
+		},
+		{
 			Name: "multiple_subframes",
 			Input: func(t *Trace) {
+				t.Enable()
 				t.Observation("foo")
 				t.Observation("bar")
 				t.Observation("baz")
 				t.Push("new thing")
 				t.Observation("the")
 				t.Observation("quick")
-				t.Observation("brown")
-				t.Observation("fox")
+				t.Observation("brown %s", "fox")
 				t.Push("and another thing")
+				t.Allowed("yes")
 				t.Observation("lemons")
 				t.Pop()
+				t.Denied("no")
 				t.Observation("jumped")
 				t.Observation("over")
 				t.Pop()
@@ -58,14 +81,15 @@ func TestTrace(t *testing.T) {
 				"  foo",
 				"  bar",
 				"  baz",
-				"  begin: new thing",
+				"  (deny) begin: new thing",
 				"    the",
 				"    quick",
-				"    brown",
-				"    fox",
-				"    begin: and another thing",
+				"    brown fox",
+				"    (allow) begin: and another thing",
+				"      yes",
 				"      lemons",
 				"    end: and another thing",
+				"    no",
 				"    jumped",
 				"    over",
 				"  end: new thing",
@@ -77,50 +101,54 @@ func TestTrace(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(f func(*Trace)) ([]string, error) {
 		trc := New()
-		trc.Enable()
 		f(trc)
 
-		pr := TestPrinter{}
-		trc.Walk(&pr)
-		lines := strings.Split(pr.Print(), "\n")
+		str := trc.String()
+		lines := strings.Split(str, "\n")
 
 		return lines, nil
 	})
 }
 
-// TestPrinter is a re-implementation of the [Printer] struct which allows us to more easily test
-// and confirm correct functionality without having to refactor tests if we decide to change the
-// user-facing formatting of the default [Printer]
-type TestPrinter struct {
-	messages []string
+func TestPanicNoStack(t *testing.T) {
+	defer testlib.AssertPanicWithText(t,
+		"attempt to look up current frame for empty stack")
+
+	trc := Trace{}
+	trc.Enable()
+	trc.curr()
 }
 
-func (p *TestPrinter) Add(s string) {
-	p.messages = append(p.messages, s)
+func TestPanicPopRoot(t *testing.T) {
+	defer testlib.AssertPanicWithText(t,
+		"attempt to pop root frame from trace stack")
+
+	trc := New()
+	trc.Enable()
+	trc.Pop()
 }
 
-func (p *TestPrinter) Print() string {
-	return strings.Join(p.messages, "\n")
+func TestPanicEmptyWalk(t *testing.T) {
+	defer testlib.AssertPanicWithText(t,
+		"trace somehow has empty stack")
+
+	pr := Printer{}
+	trc := Trace{}
+	trc.Enable()
+	trc.Walk(&pr)
 }
 
-func (p *TestPrinter) Indent(fr *Frame) string {
-	return strings.Repeat("  ", fr.Depth)
-}
+func TestPanicBadEventWalk(t *testing.T) {
+	defer testlib.AssertPanicWithText(t,
+		"unexpected event type: weird")
 
-func (p *TestPrinter) FrameStart(fr *Frame) {
-	p.Add(
-		fmt.Sprintf("%sbegin: %s", p.Indent(fr), fr.Header),
-	)
-}
+	pr := Printer{}
+	trc := New()
+	trc.Enable()
+	trc.Observation("foo")
 
-func (p *TestPrinter) Message(fr *Frame, msg string) {
-	p.Add(
-		fmt.Sprintf("%s  %s", p.Indent(fr), msg),
-	)
-}
+	// mess up the event type
+	trc.stack[len(trc.stack)-1].hist[0].eventType = "weird"
 
-func (p *TestPrinter) FrameEnd(fr *Frame) {
-	p.Add(
-		fmt.Sprintf("%send: %s", p.Indent(fr), fr.Header),
-	)
+	trc.Walk(&pr)
 }

@@ -19,7 +19,7 @@ type Trace struct {
 // curr returns a pointer to the current (topmost) Frame
 func (t *Trace) curr() *Frame {
 	if len(t.stack) <= 0 {
-		panic("attempt to look up current Frame for empty stack")
+		panic("attempt to look up current frame for empty stack")
 	}
 
 	return t.stack[len(t.stack)-1]
@@ -67,7 +67,7 @@ func (t *Trace) Pop() {
 	}
 
 	if len(t.stack) <= 1 {
-		panic("attempt to pop root Frame from trace stack")
+		panic("attempt to pop root frame from trace stack")
 	}
 
 	t.stack = t.stack[:len(t.stack)-1]
@@ -82,12 +82,23 @@ func (t *Trace) Observation(msg string, args ...any) {
 	t.curr().emit(msg, args...)
 }
 
-// Decision records a single record about an access decision (e.g. "This resulted in Effect=Allow")
-func (t *Trace) Decision(msg string, args ...any) {
+// Allowed marks the current frame as associated with an ALLOW-type decision
+func (t *Trace) Allowed(msg string, args ...any) {
 	if !t.enabled {
 		return
 	}
 
+	t.curr().set("allowed", "true")
+	t.curr().emit(msg, args...)
+}
+
+// Denied marks the current frame as associated with an DENY-type decision
+func (t *Trace) Denied(msg string, args ...any) {
+	if !t.enabled {
+		return
+	}
+
+	t.curr().set("denied", "true")
 	t.curr().emit(msg, args...)
 }
 
@@ -113,7 +124,7 @@ func walk(w Walker, fr *Frame) {
 		case eventTypeSubFrame:
 			walk(w, evt.subFrame)
 		default:
-			panic("unexpected event type: " + evt.eventType)
+			panic(fmt.Sprintf("unexpected event type: %s", evt.eventType))
 		}
 	}
 }
@@ -154,13 +165,25 @@ func (p *Printer) Print() string {
 	return strings.Join(p.messages, "\n")
 }
 
+func (p *Printer) Annotate(fr *Frame) string {
+	if fr.Attributes["allowed"] == "true" {
+		return "(allow) "
+	}
+
+	if fr.Attributes["denied"] == "true" {
+		return "(deny) "
+	}
+
+	return ""
+}
+
 func (p *Printer) Indent(fr *Frame) string {
 	return strings.Repeat("  ", fr.Depth)
 }
 
 func (p *Printer) FrameStart(fr *Frame) {
 	p.Add(
-		fmt.Sprintf("%s[%s]", p.Indent(fr), fr.Header),
+		fmt.Sprintf("%s%sbegin: %s", p.Indent(fr), p.Annotate(fr), fr.Header),
 	)
 }
 
@@ -172,7 +195,7 @@ func (p *Printer) Message(fr *Frame, msg string) {
 
 func (p *Printer) FrameEnd(fr *Frame) {
 	p.Add(
-		fmt.Sprintf("%send", p.Indent(fr)),
+		fmt.Sprintf("%send: %s", p.Indent(fr), fr.Header),
 	)
 }
 
@@ -182,9 +205,18 @@ func (p *Printer) FrameEnd(fr *Frame) {
 
 // Frame represents a logical span of evaluation logic, i.e. "evaluating resource policies"
 type Frame struct {
-	Header string
-	Depth  int
-	hist   []event
+	Header     string
+	Depth      int
+	Attributes map[string]string
+	hist       []event
+}
+
+func (f *Frame) set(key, value string) {
+	if f.Attributes == nil {
+		f.Attributes = make(map[string]string)
+	}
+
+	f.Attributes[key] = value
 }
 
 func (f *Frame) emit(msg string, args ...any) {

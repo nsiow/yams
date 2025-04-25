@@ -7,7 +7,7 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-func TestEffectSet(t *testing.T) {
+func TestDecision(t *testing.T) {
 	type output struct {
 		Allowed          bool
 		Denied           bool
@@ -131,28 +131,28 @@ func TestMerge(t *testing.T) {
 		{
 			Name: "multiple_allows",
 			Input: []Decision{
-				Decision{Allow: true},
-				Decision{Allow: true},
-				Decision{Allow: true},
+				{Allow: true},
+				{Allow: true},
+				{Allow: true},
 			},
 			Want: Decision{Allow: true},
 		},
 		{
 			Name: "multiple_denies",
 			Input: []Decision{
-				Decision{Deny: true},
-				Decision{Deny: true},
-				Decision{Deny: true},
+				{Deny: true},
+				{Deny: true},
+				{Deny: true},
 			},
 			Want: Decision{Deny: true},
 		},
 		{
 			Name: "mix_n_match",
 			Input: []Decision{
-				Decision{Allow: true},
-				Decision{Deny: true},
-				Decision{Allow: true, Deny: true},
-				Decision{Deny: true},
+				{Allow: true},
+				{Deny: true},
+				{Allow: true, Deny: true},
+				{Deny: true},
 			},
 			Want: Decision{Allow: true, Deny: true},
 		},
@@ -169,4 +169,11 @@ func TestMerge(t *testing.T) {
 
 		return decision, nil
 	})
+}
+
+func TestPanicOnWeirdEffect(t *testing.T) {
+	defer testlib.AssertPanicWithText(t, "wtf is horse")
+
+	d := Decision{}
+	d.Add("horse")
 }

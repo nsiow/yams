@@ -22,32 +22,32 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	// Calculate SCP access, if present
 	scpAccess := evalSCP(s)
 	if scpAccess.DeniedExplicit() {
-		s.trc.Decision("[explicit deny] found in service control policies")
+		s.trc.Denied("[explicit deny] found in service control policies")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 	if !scpAccess.Allowed() {
-		s.trc.Decision("[implicit deny] based on service control policies")
+		s.trc.Denied("[implicit deny] based on service control policies")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 	// Calculate RCP access, if present
 	rcpAccess := evalRCP(s)
 	if rcpAccess.DeniedExplicit() {
-		s.trc.Decision("[explicit deny] found in resource control policies")
+		s.trc.Denied("[explicit deny] found in resource control policies")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 	if !rcpAccess.Allowed() {
-		s.trc.Decision("[implicit deny] based on resource control policies")
+		s.trc.Denied("[implicit deny] based on resource control policies")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 
 	// Calculate permissions boundary access, if present
 	pbAccess := evalPermissionsBoundary(s)
 	if pbAccess.DeniedExplicit() {
-		s.trc.Decision("[explicit deny] found in permissions boundary")
+		s.trc.Denied("[explicit deny] found in permissions boundary")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 	if !pbAccess.Allowed() {
-		s.trc.Decision("[implicit deny] based on permissions boundary")
+		s.trc.Denied("[implicit deny] based on permissions boundary")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 
@@ -55,7 +55,7 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	pAccess := evalPrincipalAccess(s)
 	// ... check for explicit Deny results
 	if pAccess.DeniedExplicit() {
-		s.trc.Decision("[explicit deny] found in identity policy")
+		s.trc.Denied("[explicit deny] found in identity policy")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 
@@ -63,42 +63,42 @@ func evalOverallAccess(s *subject) (*Result, error) {
 	rAccess := evalResourceAccess(s)
 	// ... check for explicit Deny results
 	if rAccess.DeniedExplicit() {
-		s.trc.Decision("[explicit deny] found in resource policy")
+		s.trc.Denied("[explicit deny] found in resource policy")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 
 	// If same account, access is granted if the Principal has access
 	if evalIsSameAccount(s) {
 		if pAccess.Allow && !isStrictCall(s) {
-			s.trc.Decision("[allow] access granted via same-account identity policy")
+			s.trc.Allowed("[allow] access granted via same-account identity policy")
 			return &Result{Trace: s.trc, IsAllowed: true}, nil
 		}
 
 		// Same-account-explicit-principal edge case
 		if s.extra.ResourceAllowsExplicitPrincipal {
-			s.trc.Decision("[allow] access granted via same-account explicit-principal case")
+			s.trc.Allowed("[allow] access granted via same-account explicit-principal case")
 			return &Result{Trace: s.trc, IsAllowed: true}, nil
 		}
 
-		s.trc.Decision("[implicit deny] no identity-based policy allows this action")
+		s.trc.Denied("[implicit deny] no identity-based policy allows this action")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 
 	// Access is granted if the Principal has access and the Resource permits that access
 	if pAccess.Allow && rAccess.Allow {
-		s.trc.Decision("[allow] access granted via x-account identity + resource policies")
+		s.trc.Allowed("[allow] access granted via x-account identity + resource policies")
 		return &Result{Trace: s.trc, IsAllowed: true}, nil
 	}
 	if pAccess.Allow && !rAccess.Allow {
-		s.trc.Decision("[implicit deny] x-account, missing resource policy access")
+		s.trc.Denied("[implicit deny] x-account, missing resource policy access")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 	if !pAccess.Allow && rAccess.Allow {
-		s.trc.Decision("[implicit deny] x-account, missing identity policy access")
+		s.trc.Denied("[implicit deny] x-account, missing identity policy access")
 		return &Result{Trace: s.trc, IsAllowed: false}, nil
 	}
 
 	// We fell through and no access was granted from either side
-	s.trc.Decision("[implicit deny] x-account, missing both identity + resource access")
+	s.trc.Denied("[implicit deny] x-account, missing both identity + resource access")
 	return &Result{Trace: s.trc, IsAllowed: false}, nil
 }
