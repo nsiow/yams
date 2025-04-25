@@ -13,7 +13,7 @@ import (
 type Trace struct {
 	enabled bool
 
-	stack []Frame
+	stack []*Frame
 }
 
 // curr returns a pointer to the current (topmost) Frame
@@ -22,17 +22,19 @@ func (t *Trace) curr() *Frame {
 		panic("attempt to look up current Frame for empty stack")
 	}
 
-	return &t.stack[len(t.stack)-1]
+	return t.stack[len(t.stack)-1]
 }
 
 // New creates and returns a new Trace with a root Frame initialized
 func New() *Trace {
+	root := Frame{
+		Header: "root",
+		Depth:  0,
+	}
+
 	t := Trace{
-		stack: []Frame{
-			Frame{
-				Header: "root",
-				Depth:  0,
-			},
+		stack: []*Frame{
+			&root,
 		},
 	}
 	return &t
@@ -100,7 +102,7 @@ func (t *Trace) Walk(w Walker) {
 }
 
 // walk is the internal helper function for [Trace.Walk]
-func walk(w Walker, fr Frame) {
+func walk(w Walker, fr *Frame) {
 	w.FrameStart(fr)
 	defer w.FrameEnd(fr)
 
@@ -129,9 +131,9 @@ func (t *Trace) String() string {
 
 // Walker defines the interface for a type that is able to recursively walk a [Trace] execution
 type Walker interface {
-	FrameStart(Frame)
-	Message(Frame Frame, message string)
-	FrameEnd(Frame)
+	FrameStart(*Frame)
+	Message(Frame *Frame, message string)
+	FrameEnd(*Frame)
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -152,23 +154,23 @@ func (p *Printer) Print() string {
 	return strings.Join(p.messages, "\n")
 }
 
-func (p *Printer) Indent(fr Frame) string {
+func (p *Printer) Indent(fr *Frame) string {
 	return strings.Repeat("  ", fr.Depth)
 }
 
-func (p *Printer) FrameStart(fr Frame) {
+func (p *Printer) FrameStart(fr *Frame) {
 	p.Add(
 		fmt.Sprintf("%s[%s]", p.Indent(fr), fr.Header),
 	)
 }
 
-func (p *Printer) Message(fr Frame, msg string) {
+func (p *Printer) Message(fr *Frame, msg string) {
 	p.Add(
 		fmt.Sprintf("%s  %s", p.Indent(fr), msg),
 	)
 }
 
-func (p *Printer) FrameEnd(fr Frame) {
+func (p *Printer) FrameEnd(fr *Frame) {
 	p.Add(
 		fmt.Sprintf("%send", p.Indent(fr)),
 	)
@@ -193,17 +195,17 @@ func (f *Frame) emit(msg string, args ...any) {
 	f.hist = append(f.hist, next)
 }
 
-func (f *Frame) subFrame(header string, args ...any) Frame {
+func (f *Frame) subFrame(header string, args ...any) *Frame {
 	subFrame := Frame{
 		Header: format(header, args...),
 		Depth:  f.Depth + 1,
 	}
 	next := event{
 		eventType: eventTypeSubFrame,
-		subFrame:  subFrame,
+		subFrame:  &subFrame,
 	}
 	f.hist = append(f.hist, next)
-	return subFrame
+	return &subFrame
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -223,7 +225,7 @@ type event struct {
 	eventType eventType // always present
 
 	message  string // only present when eventType == eventTypeMessage
-	subFrame Frame  // only present when eventType == eventTypeSubFrame
+	subFrame *Frame // only present when eventType == eventTypeSubFrame
 }
 
 // -------------------------------------------------------------------------------------------------
