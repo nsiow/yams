@@ -73,8 +73,8 @@ func (t *Trace) Pop() {
 	t.stack = t.stack[:len(t.stack)-1]
 }
 
-// Observation records a single record about comparison (e.g. "I compared these two things")
-func (t *Trace) Observation(msg string, args ...any) {
+// Log records a single record about comparison (e.g. "I compared these two things")
+func (t *Trace) Log(msg string, args ...any) {
 	if !t.enabled {
 		return
 	}

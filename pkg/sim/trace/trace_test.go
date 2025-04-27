@@ -8,11 +8,6 @@ import (
 )
 
 func TestTrace(t *testing.T) {
-	type output struct {
-		frames []*Frame
-		string []string
-	}
-
 	tests := []testlib.TestCase[func(*Trace), []string]{
 		{
 			Name:  "empty_trace",
@@ -26,7 +21,7 @@ func TestTrace(t *testing.T) {
 			Name: "single_message",
 			Input: func(t *Trace) {
 				t.Enable()
-				t.Observation("foo")
+				t.Log("foo")
 			},
 			Want: []string{
 				"begin: root",
@@ -38,15 +33,15 @@ func TestTrace(t *testing.T) {
 			Name: "enable_disable",
 			Input: func(t *Trace) {
 				t.Enable()
-				t.Observation("foo")
+				t.Log("foo")
 				t.Disable()
 				t.Push("new thing")
 				t.Allowed("some decision evaluated to true")
 				t.Denied("some decision evaluated to false")
 				t.Pop()
-				t.Observation("bar")
+				t.Log("bar")
 				t.Enable()
-				t.Observation("baz")
+				t.Log("baz")
 			},
 			Want: []string{
 				"begin: root",
@@ -59,22 +54,22 @@ func TestTrace(t *testing.T) {
 			Name: "multiple_subframes",
 			Input: func(t *Trace) {
 				t.Enable()
-				t.Observation("foo")
-				t.Observation("bar")
-				t.Observation("baz")
+				t.Log("foo")
+				t.Log("bar")
+				t.Log("baz")
 				t.Push("new thing")
-				t.Observation("the")
-				t.Observation("quick")
-				t.Observation("brown %s", "fox")
+				t.Log("the")
+				t.Log("quick")
+				t.Log("brown %s", "fox")
 				t.Push("and another thing")
 				t.Allowed("yes")
-				t.Observation("lemons")
+				t.Log("lemons")
 				t.Pop()
 				t.Denied("no")
-				t.Observation("jumped")
-				t.Observation("over")
+				t.Log("jumped")
+				t.Log("over")
 				t.Pop()
-				t.Observation("bao")
+				t.Log("bao")
 			},
 			Want: []string{
 				"begin: root",
@@ -145,7 +140,7 @@ func TestPanicBadEventWalk(t *testing.T) {
 	pr := Printer{}
 	trc := New()
 	trc.Enable()
-	trc.Observation("foo")
+	trc.Log("foo")
 
 	// mess up the event type
 	trc.stack[len(trc.stack)-1].hist[0].eventType = "weird"

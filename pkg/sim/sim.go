@@ -34,7 +34,7 @@ func (s *Simulator) SetUniverse(uv *entities.Universe) {
 }
 
 // Simulate determines whether the provided AuthContext would be allowed
-func (s *Simulator) Simulate(ac AuthContext) (*Result, error) {
+func (s *Simulator) Simulate(ac AuthContext) (*SimResult, error) {
 	err := ac.Validate()
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (s *Simulator) SimulateByArnString(
 	action string,
 	principalString string,
 	resourceString string,
-	ctx map[string]string) (*Result, error) {
+	ctx map[string]string) (*SimResult, error) {
 	return s.SimulateByArn(action, entities.Arn(principalString), entities.Arn(resourceString), ctx)
 }
 
@@ -60,7 +60,7 @@ func (s *Simulator) SimulateByArn(
 	action string,
 	principalArn entities.Arn,
 	resourceArn entities.Arn,
-	ctx map[string]string) (*Result, error) {
+	ctx map[string]string) (*SimResult, error) {
 
 	var err error
 	ac := AuthContext{}

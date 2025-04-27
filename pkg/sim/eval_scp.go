@@ -15,24 +15,27 @@ func evalSCP(s *subject) Decision {
 
 	// Empty SCP = allowed; otherwise we have to evaluate
 	if len(s.auth.Principal.Account.SCPs) == 0 {
-		// TODO(nsiow) add observation for missing SCPs
+		s.trc.Log("no SCPs found")
 		decision.Add(policy.EFFECT_ALLOW)
 		return decision
 	}
 
 	// Iterate through layers of SCP, only continuing if we get an allow result through each layer
-	// TODO(nsiow) add better tracing here
 	scps := s.auth.Principal.Account.SCPs
 	for i, layer := range scps {
+
+		s.trc.Push("evaluating SCP layer %d of %d", i, len(scps)-1)
 
 		// Calculate access for this layer
 		decision = evalSCPLayer(s, layer)
 
 		// If not allowed at this layer, propagate result up; should be denied
 		if !decision.Allowed() {
-			s.trc.Observation("SCP access denied at layer %d of %d", i, len(scps)-1)
+			s.trc.Pop()
 			return decision
 		}
+
+		s.trc.Pop()
 	}
 
 	return decision
@@ -44,6 +47,7 @@ func evalSCP(s *subject) Decision {
 // continue
 func evalSCPLayer(s *subject, layer []entities.ManagedPolicy) (decision Decision) {
 	for _, pol := range layer {
+		s.trc.Push("evaluating SCP: %s", pol.Arn)
 		decision.Merge(
 			evalPolicy(s, pol.Policy,
 				evalStatementMatchesAction,
@@ -51,6 +55,7 @@ func evalSCPLayer(s *subject, layer []entities.ManagedPolicy) (decision Decision
 				evalStatementMatchesCondition,
 			),
 		)
+		s.trc.Pop()
 	}
 
 	return decision

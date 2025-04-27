@@ -2,12 +2,10 @@ package sim
 
 // evalResourceAccess calculates the Resource-side access with regard to the specified Principal
 func evalResourceAccess(s *subject) Decision {
-
 	s.trc.Push("evaluating resource policies")
 	defer s.trc.Pop()
 
 	// Iterate over resource policy statements to evaluate access
-	// FIXME(nsiow) this also needs evalStatementMatchesResource
 	decision := evalPolicy(s, s.auth.Resource.Policy,
 		evalStatementMatchesAction,
 		evalStatementMatchesResource,

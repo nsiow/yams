@@ -1,8 +1,6 @@
 package sim
 
 import (
-	"fmt"
-
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
@@ -52,21 +50,13 @@ func evalPrincipalGroupPolicies(s *subject, groups []entities.FrozenGroup) Decis
 func evalPrincipalHelperInline(s *subject, inline []policy.Policy) Decision {
 	decision := Decision{}
 	for i, policy := range inline {
-		var pid string
-		if len(policy.Id) > 0 {
-			pid = policy.Id
-		} else {
-			pid = fmt.Sprintf("inline(%d)", i)
-		}
-
-		s.trc.Push("evaluating inline policy: %s", pid)
-		defer s.trc.Pop()
-
+		s.trc.Push("evaluating inline policy: %s", Id(policy.Id, i))
 		decision.Merge(
 			evalPolicy(s, policy,
 				evalStatementMatchesAction,
 				evalStatementMatchesResource,
 				evalStatementMatchesCondition))
+		s.trc.Pop()
 	}
 
 	return decision
@@ -75,7 +65,6 @@ func evalPrincipalHelperInline(s *subject, inline []policy.Policy) Decision {
 // evalPrincipalInlinePolicies is a helper function for easier evaluation of inline policies
 func evalPrincipalHelperAttached(s *subject, attached []entities.ManagedPolicy) Decision {
 	decision := Decision{}
-
 	for _, policy := range attached {
 		s.trc.Push("evaluating inline policy: %s", policy.Arn)
 		decision.Merge(
