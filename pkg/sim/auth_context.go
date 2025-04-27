@@ -91,7 +91,7 @@ func (ac *AuthContext) ConditionKey(key string, opts *Options) string {
 	// ---------------------------------------------------------------------------------------------
 
 	case condkey.PrincipalArn:
-		return ac.Principal.Arn.String()
+		return ac.Principal.Arn
 	case condkey.PrincipalAccount:
 		return ac.Principal.AccountId
 	case condkey.PrincipalIsAwsService:
@@ -229,7 +229,7 @@ func (ac *AuthContext) Validate() error {
 		match := false
 		for _, allowedResource := range allowedResources {
 			for _, allowedFormat := range allowedResource.ARNFormats {
-				if wildcard.MatchSegments(allowedFormat, ac.Resource.Arn.String()) {
+				if wildcard.MatchSegments(allowedFormat, ac.Resource.Arn) {
 					match = true
 					break
 				}
@@ -322,7 +322,7 @@ func (ac *AuthContext) supportsKey(key string) bool {
 	// Otherwise check for each matched resource
 	for _, resource := range ac.Action.ResolvedResources {
 		for _, format := range resource.ARNFormats {
-			if ac.Resource != nil && wildcard.MatchSegments(format, ac.Resource.Arn.String()) {
+			if ac.Resource != nil && wildcard.MatchSegments(format, ac.Resource.Arn) {
 				if slices.Contains(resource.ConditionKeys, normalizedPrefix) {
 					return true
 				}

@@ -7,15 +7,12 @@ const (
 	arnSegmentSeparator = ":"
 )
 
-// Arn represents an AWS Resource Name, a unique identifier for a cloud resource in AWS
-type Arn string
-
-func (a Arn) components() []string {
-	return strings.SplitN(a.String(), arnSegmentSeparator, arnSegmentCount)
+func arnComponents(arn string) []string {
+	return strings.SplitN(arn, arnSegmentSeparator, arnSegmentCount)
 }
 
-func (a Arn) component(idx int) string {
-	components := a.components()
+func arnComponent(arn string, idx int) string {
+	components := arnComponents(arn)
 	if len(components) <= idx {
 		return ""
 	}
@@ -23,42 +20,34 @@ func (a Arn) component(idx int) string {
 	return components[idx]
 }
 
-func (a Arn) Empty() bool {
-	return len(a) == 0
+func arnPartition(arn string) string {
+	return arnComponent(arn, 1)
 }
 
-func (a Arn) String() string {
-	return string(a)
+func arnService(arn string) string {
+	return arnComponent(arn, 2)
 }
 
-func (a *Arn) Partition() string {
-	return a.component(1)
+func arnRegion(arn string) string {
+	return arnComponent(arn, 3)
 }
 
-func (a *Arn) Service() string {
-	return a.component(2)
+func arnAccountId(arn string) string {
+	return arnComponent(arn, 4)
 }
 
-func (a *Arn) Region() string {
-	return a.component(3)
-}
-
-func (a *Arn) AccountId() string {
-	return a.component(4)
-}
-
-func (a *Arn) ResourceSegment() string {
-	return a.component(5)
+func arnResourceSegment(arn string) string {
+	return arnComponent(arn, 5)
 }
 
 // TODO(nsiow) this is very incomplete
-func (a *Arn) ResourceType() string {
-	seg := a.ResourceSegment()
+func arnResourceType(arn string) string {
+	seg := arnResourceSegment(arn)
 
 	switch {
-	case a.Service() == "s3" && len(a.Region()) == 0 && strings.Contains(a.ResourceId(), "/"):
+	case arnService(arn) == "s3" && strings.Contains(arnResourceId(arn), "/"):
 		return "object"
-	case a.Service() == "s3" && len(a.Region()) == 0 && !strings.Contains(a.ResourceId(), "/"):
+	case arnService(arn) == "s3" && !strings.Contains(arnResourceId(arn), "/"):
 		return "bucket"
 	case strings.Contains(seg, ":"):
 		return strings.SplitN(seg, ":", 2)[0]
@@ -70,10 +59,11 @@ func (a *Arn) ResourceType() string {
 }
 
 // TODO(nsiow) this is very incomplete
-func (a *Arn) ResourceId() string {
-	seg := a.ResourceSegment()
+func arnResourceId(arn string) string {
+	seg := arnResourceSegment(arn)
+
 	switch {
-	case a.Service() == "s3" && len(a.Region()) == 0:
+	case arnService(arn) == "s3" && len(arnRegion(arn)) == 0:
 		return seg
 	case strings.Contains(seg, "/"):
 		return strings.SplitN(seg, "/", 2)[1]

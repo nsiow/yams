@@ -9,6 +9,8 @@ import (
 // Universe
 // -------------------------------------------------------------------------------------------------
 
+type Arn = string
+
 // Universe contains the definition of all accounts/policies/principals/resources used for
 // simulation.
 //

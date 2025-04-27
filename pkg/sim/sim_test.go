@@ -253,22 +253,6 @@ func TestSimulateByArn(t *testing.T) {
 
 		return res.IsAllowed, nil
 	})
-
-	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		sim, _ := NewSimulator()
-		sim.SetUniverse(i.uv)
-		res, err := sim.SimulateByArnString(
-			i.action,
-			i.principalArn,
-			i.resourceArn,
-			nil,
-		)
-		if err != nil {
-			return false, err
-		}
-
-		return res.IsAllowed, nil
-	})
 }
 
 func TestComputeAccessSummary(t *testing.T) {

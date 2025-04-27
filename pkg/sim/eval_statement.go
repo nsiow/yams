@@ -91,7 +91,7 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
 	for _, p := range principals.AWS {
 		// Handle account-root syntax
 		if isAccountRootMatch(p, s.auth.Principal.AccountId) ||
-			wildcard.MatchAllOrNothing(p, s.auth.Principal.Arn.String()) {
+			wildcard.MatchAllOrNothing(p, s.auth.Principal.Arn) {
 			s.trc.Log("match: %s and %s", p, s.auth.Principal.Arn)
 			return _gate.Apply(true)
 		}
@@ -113,7 +113,7 @@ func evalStatementMatchesPrincipalExact(s *subject, stmt *policy.Statement) bool
 		return false
 	}
 
-	result := stmt.Principal.AWS.Contains(s.auth.Principal.Arn.String())
+	result := stmt.Principal.AWS.Contains(s.auth.Principal.Arn)
 	s.trc.Log("result: %v", result)
 	return result
 }
@@ -145,7 +145,7 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
 	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
 	// TODO(nsiow) this needs to support variable expansion
 	for _, r := range resources {
-		match := wildcard.MatchSegments(r, s.auth.Resource.Arn.String())
+		match := wildcard.MatchSegments(r, s.auth.Resource.Arn)
 		if match {
 			s.trc.Log("match: %s and %s", r, s.auth.Resource.Arn)
 			return _gate.Apply(true)

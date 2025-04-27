@@ -45,21 +45,9 @@ func (s *Simulator) Simulate(ac AuthContext) (*SimResult, error) {
 }
 
 // SimulateByArn determines whether the operation would be allowed between the Principal and
-// Resource specified by the provided ARN strings
-func (s *Simulator) SimulateByArnString(
-	action string,
-	principalString string,
-	resourceString string,
-	ctx map[string]string) (*SimResult, error) {
-	return s.SimulateByArn(action, entities.Arn(principalString), entities.Arn(resourceString), ctx)
-}
-
-// SimulateByArn determines whether the operation would be allowed between the Principal and
 // Resource specified by the provided ARNs
 func (s *Simulator) SimulateByArn(
-	action string,
-	principalArn entities.Arn,
-	resourceArn entities.Arn,
+	action, principalArn, resourceArn string,
 	ctx map[string]string) (*SimResult, error) {
 
 	var err error
@@ -117,7 +105,7 @@ func (s *Simulator) ComputeAccessSummary(actions []*types.Action) (map[string]in
 	access := make(map[string]int)
 	for _, r := range rs {
 		// we do this because we always want resources to show up, even if nothing can access it
-		access[r.Arn.String()] = 0
+		access[r.Arn] = 0
 
 		for _, p := range ps {
 			for _, a := range actions {
@@ -134,7 +122,7 @@ func (s *Simulator) ComputeAccessSummary(actions []*types.Action) (map[string]in
 				}
 
 				if result.IsAllowed {
-					access[r.Arn.String()]++
+					access[r.Arn]++
 					break
 				}
 			}

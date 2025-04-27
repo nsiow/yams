@@ -96,7 +96,7 @@ type FrozenGroup struct {
 
 func (g *Group) Freeze() (FrozenGroup, error) {
 	if g.uv == nil {
-		return FrozenGroup{}, fmt.Errorf("cannot freeze; group is missing uv: %s", g.Arn.String())
+		return FrozenGroup{}, fmt.Errorf("cannot freeze; group is missing uv: %s", g.Arn)
 	}
 
 	f := FrozenGroup{
@@ -136,7 +136,7 @@ type FrozenPrincipal struct {
 func (p *Principal) Freeze() (FrozenPrincipal, error) {
 	if p.uv == nil {
 		return FrozenPrincipal{},
-			fmt.Errorf("cannot freeze; principal is missing uv: %s", p.Arn.String())
+			fmt.Errorf("cannot freeze; principal is missing uv: %s", p.Arn)
 	}
 
 	f := FrozenPrincipal{
@@ -170,7 +170,7 @@ func (p *Principal) Freeze() (FrozenPrincipal, error) {
 		}
 	}
 
-	if !p.PermissionsBoundary.Empty() {
+	if len(p.PermissionsBoundary) > 0 {
 		f.PermissionBoundary, err = freezePolicy(p.PermissionsBoundary, p.uv)
 		if err != nil {
 			return FrozenPrincipal{}, err
@@ -199,7 +199,7 @@ type FrozenResource struct {
 func (r *Resource) Freeze() (FrozenResource, error) {
 	if r.uv == nil {
 		return FrozenResource{},
-			fmt.Errorf("cannot freeze; resource is missing uv: %s", r.Arn.String())
+			fmt.Errorf("cannot freeze; resource is missing uv: %s", r.Arn)
 	}
 
 	f := FrozenResource{
@@ -229,7 +229,7 @@ func (r *Resource) Freeze() (FrozenResource, error) {
 func freezePolicy(arn Arn, uv *Universe) (ManagedPolicy, error) {
 	pol, ok := uv.Policy(arn)
 	if !ok {
-		return ManagedPolicy{}, fmt.Errorf("cannot find policy with arn: %s", arn.String())
+		return ManagedPolicy{}, fmt.Errorf("cannot find policy with arn: %s", arn)
 	}
 
 	return *pol, nil
@@ -253,7 +253,7 @@ func freezePolicies(arns []Arn, uv *Universe) ([]ManagedPolicy, error) {
 func freezeGroupByArn(arn Arn, uv *Universe) (FrozenGroup, error) {
 	grp, ok := uv.Group(arn)
 	if !ok {
-		return FrozenGroup{}, fmt.Errorf("cannot find group with arn: %s", arn.String())
+		return FrozenGroup{}, fmt.Errorf("cannot find group with arn: %s", arn)
 	}
 
 	frozen, err := grp.Freeze()

@@ -43,5 +43,5 @@ func (r *Resource) Service() (string, error) {
 
 // SubresourceArn returns the ARN of the specified subresource
 func (r *Resource) SubresourceArn(subpath string) string {
-	return strings.TrimRight(r.Arn.String(), "/") + "/" + strings.TrimLeft(subpath, "/")
+	return strings.TrimRight(r.Arn, "/") + "/" + strings.TrimLeft(subpath, "/")
 }
