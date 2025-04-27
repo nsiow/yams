@@ -35,7 +35,7 @@ ifdef run
 	GO_TEST_FLAGS += "-run=$(run)"
 endif
 
-# Track coverage of library; not helpers or codegen files
+# Track coverage of library; not test helpers
 COVERAGE_OMIT ?= '(yams/cmd|yams/internal/testlib)'
 
 .PHONY: format

@@ -14,10 +14,14 @@ func evalPermissionsBoundary(s *subject) Decision {
 	// Empty permissions boundary = allowed; otherwise we have to evaluate
 	boundary := s.auth.Principal.PermissionBoundary.Policy
 	if boundary.Empty() {
+		s.trc.Log("no permission boundary found")
 		decision := Decision{}
 		decision.Add(policy.EFFECT_ALLOW)
 		return decision
 	}
+
+	s.trc.Push("evaluating permission boundary: %s", s.auth.Principal.PermissionBoundary.Arn)
+	defer s.trc.Pop()
 
 	return evalPolicy(s, boundary,
 		evalStatementMatchesAction,

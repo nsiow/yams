@@ -34,31 +34,34 @@ func evalRCP(s *subject) Decision {
 
 	// Missing resource or empty RCP = allowed; otherwise we have to evaluate
 	if s.auth.Resource == nil || len(s.auth.Resource.Account.RCPs) == 0 {
-		s.trc.Observation("no RCPs found")
+		s.trc.Log("no RCPs found")
 		decision.Add(policy.EFFECT_ALLOW)
 		return decision
 	}
 
 	// If service does not support RCPs, always allowed
 	if !supportsRCPs(s) {
-		s.trc.Observation("action/resource does not support RCPs")
+		s.trc.Log("action/resource does not support RCPs")
 		decision.Add(policy.EFFECT_ALLOW)
 		return decision
 	}
 
 	// Iterate through layers of RCP, only continuing if we get an allow result through each layer
-	// TODO(nsiow) add better tracing here
 	rcps := s.auth.Resource.Account.RCPs
 	for i, layer := range rcps {
+
+		s.trc.Push("evaluating SCP layer %d of %d", i, len(rcps)-1)
 
 		// Calculate access for this layer
 		decision = evalRCPLayer(s, layer)
 
 		// If not allowed at this layer, propagate result up; should be denied
 		if !decision.Allowed() {
-			s.trc.Observation("RCP access denied at layer %d of %d", i, len(rcps)-1)
+			s.trc.Pop()
 			return decision
 		}
+
+		s.trc.Pop()
 	}
 
 	return decision
@@ -70,6 +73,7 @@ func evalRCP(s *subject) Decision {
 // continue
 func evalRCPLayer(s *subject, layer []entities.ManagedPolicy) (decision Decision) {
 	for _, pol := range layer {
+		s.trc.Push("evaluating RCP: %s", pol.Arn)
 		decision.Merge(
 			evalPolicy(s, pol.Policy,
 				evalStatementMatchesAction,

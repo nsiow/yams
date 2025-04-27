@@ -10,7 +10,7 @@ import (
 )
 
 func TestPrincipalAccess(t *testing.T) {
-	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
+	tests := []testlib.TestCase[AuthContext, Decision]{
 		{
 			Name: "implicit_deny",
 			Input: AuthContext{
@@ -24,7 +24,7 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			Want: []policy.Effect(nil),
+			Want: Decision{},
 		},
 		{
 			Name: "simple_inline_policy",
@@ -48,7 +48,7 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			Want: []policy.Effect{policy.EFFECT_ALLOW},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "simple_named_policy",
@@ -73,7 +73,7 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			Want: []policy.Effect{policy.EFFECT_ALLOW},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "simple_attached_policy",
@@ -99,7 +99,7 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			Want: []policy.Effect{policy.EFFECT_ALLOW},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "simple_group_policy",
@@ -153,7 +153,7 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			Want: []policy.Effect{policy.EFFECT_ALLOW},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "simple_inline_deny",
@@ -177,7 +177,7 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			Want: []policy.Effect{policy.EFFECT_DENY},
+			Want: Decision{Deny: true},
 		},
 		{
 			Name: "simple_attached_deny",
@@ -203,7 +203,7 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			Want: []policy.Effect{policy.EFFECT_DENY},
+			Want: Decision{Deny: true},
 		},
 		{
 			Name: "allow_and_deny",
@@ -240,13 +240,13 @@ func TestPrincipalAccess(t *testing.T) {
 					Arn: "arn:aws:s3:::mybucket",
 				},
 			},
-			Want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
+			Want: Decision{Allow: true, Deny: true},
 		},
 	}
 
-	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
+	testlib.RunTestSuite(t, tests, func(ac AuthContext) (Decision, error) {
 		subj := newSubject(&ac, TestingSimulationOptions)
 		decision := evalPrincipalAccess(subj)
-		return decision.Effects(), nil
+		return decision, nil
 	})
 }

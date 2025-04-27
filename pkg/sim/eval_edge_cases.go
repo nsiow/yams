@@ -33,6 +33,9 @@ func isStrictCall(s *subject) bool {
 // evalResourceAccessAllowsExplicitPrincipal tests for the edge case where a same-account resource
 // allows a Principal by ARN specifically, which has an effect on evaluation logic
 func evalResourceAccessAllowsExplicitPrincipal(s *subject) bool {
+	s.trc.Push("evaluating whether the resource allows the principal explicitly")
+	defer s.trc.Pop()
+
 	if evalIsSameAccount(s) && !s.auth.Resource.Policy.Empty() {
 		subDecision := evalPolicy(s, s.auth.Resource.Policy,
 			evalStatementMatchesAction,

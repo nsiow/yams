@@ -10,7 +10,7 @@ import (
 )
 
 func TestPermissionsBoundary(t *testing.T) {
-	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
+	tests := []testlib.TestCase[AuthContext, Decision]{
 		{
 			Name: "allow_all",
 			Input: AuthContext{
@@ -32,9 +32,7 @@ func TestPermissionsBoundary(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_ALLOW,
-			},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "deny_all",
@@ -57,9 +55,7 @@ func TestPermissionsBoundary(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_DENY,
-			},
+			Want: Decision{Deny: true},
 		},
 		{
 			Name: "allow_others_simple",
@@ -82,7 +78,7 @@ func TestPermissionsBoundary(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect(nil),
+			Want: Decision{},
 		},
 		{
 			Name: "allow_specific",
@@ -105,9 +101,7 @@ func TestPermissionsBoundary(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_ALLOW,
-			},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "allow_others_specific",
@@ -135,7 +129,7 @@ func TestPermissionsBoundary(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect(nil),
+			Want: Decision{},
 		},
 		{
 			Name: "allow_only_iam",
@@ -158,9 +152,7 @@ func TestPermissionsBoundary(t *testing.T) {
 				},
 				Action: sar.MustLookupString("iam:ListRoles"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_ALLOW,
-			},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "deny_iam_by_omission",
@@ -183,13 +175,13 @@ func TestPermissionsBoundary(t *testing.T) {
 				},
 				Action: sar.MustLookupString("iam:ListRoles"),
 			},
-			Want: []policy.Effect(nil),
+			Want: Decision{},
 		},
 	}
 
-	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
+	testlib.RunTestSuite(t, tests, func(ac AuthContext) (Decision, error) {
 		subj := newSubject(&ac, TestingSimulationOptions)
 		decision := evalPermissionsBoundary(subj)
-		return decision.Effects(), nil
+		return decision, nil
 	})
 }

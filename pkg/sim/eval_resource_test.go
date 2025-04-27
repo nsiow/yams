@@ -10,7 +10,7 @@ import (
 )
 
 func TestResourceAccess(t *testing.T) {
-	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
+	tests := []testlib.TestCase[AuthContext, Decision]{
 		{
 			Name: "implicit_deny",
 			Input: AuthContext{
@@ -23,7 +23,7 @@ func TestResourceAccess(t *testing.T) {
 					Policy: policy.Policy{},
 				},
 			},
-			Want: []policy.Effect(nil),
+			Want: Decision{},
 		},
 		{
 			Name: "simple_match",
@@ -48,7 +48,7 @@ func TestResourceAccess(t *testing.T) {
 					},
 				},
 			},
-			Want: []policy.Effect{policy.EFFECT_ALLOW},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "explicit_deny",
@@ -73,7 +73,7 @@ func TestResourceAccess(t *testing.T) {
 					},
 				},
 			},
-			Want: []policy.Effect{policy.EFFECT_DENY},
+			Want: Decision{Deny: true},
 		},
 		{
 			Name: "allow_and_deny",
@@ -106,13 +106,13 @@ func TestResourceAccess(t *testing.T) {
 					},
 				},
 			},
-			Want: []policy.Effect{policy.EFFECT_ALLOW, policy.EFFECT_DENY},
+			Want: Decision{Allow: true, Deny: true},
 		},
 	}
 
-	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
+	testlib.RunTestSuite(t, tests, func(ac AuthContext) (Decision, error) {
 		subj := newSubject(&ac, TestingSimulationOptions)
 		decision := evalResourceAccess(subj)
-		return decision.Effects(), nil
+		return decision, nil
 	})
 }

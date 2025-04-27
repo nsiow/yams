@@ -10,7 +10,7 @@ import (
 )
 
 func TestRCP(t *testing.T) {
-	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
+	tests := []testlib.TestCase[AuthContext, Decision]{
 		{
 			Name: "no_rcps",
 			Input: AuthContext{
@@ -26,9 +26,7 @@ func TestRCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_ALLOW,
-			},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "no_resource",
@@ -38,9 +36,7 @@ func TestRCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:listallmybuckets"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_ALLOW,
-			},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "rcp_unsupported_service",
@@ -74,9 +70,7 @@ func TestRCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("sns:publish"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_ALLOW,
-			},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "rcp_role_unrelated_action",
@@ -110,9 +104,7 @@ func TestRCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("iam:getrole"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_ALLOW,
-			},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "rcp_role_sts",
@@ -146,9 +138,7 @@ func TestRCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("sts:assumerole"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_DENY,
-			},
+			Want: Decision{Deny: true},
 		},
 		{
 			Name: "rcp_allow_all",
@@ -182,9 +172,7 @@ func TestRCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_ALLOW,
-			},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "rcp_deny_all",
@@ -218,9 +206,7 @@ func TestRCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_DENY,
-			},
+			Want: Decision{Deny: true},
 		},
 		{
 			Name: "rcp_allowed_service",
@@ -254,9 +240,7 @@ func TestRCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_ALLOW,
-			},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "rcp_not_allowed_service",
@@ -290,7 +274,7 @@ func TestRCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect(nil),
+			Want: Decision{},
 		},
 		{
 			Name: "rcp_mid_layer_implicit_deny",
@@ -341,7 +325,7 @@ func TestRCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect(nil),
+			Want: Decision{},
 		},
 		{
 			Name: "rcp_mid_layer_explicit_deny",
@@ -407,15 +391,13 @@ func TestRCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_DENY,
-			},
+			Want: Decision{Deny: true},
 		},
 	}
 
-	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
+	testlib.RunTestSuite(t, tests, func(ac AuthContext) (Decision, error) {
 		subj := newSubject(&ac, TestingSimulationOptions)
 		decision := evalRCP(subj)
-		return decision.Effects(), nil
+		return decision, nil
 	})
 }

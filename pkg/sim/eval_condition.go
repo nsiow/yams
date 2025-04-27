@@ -8,21 +8,19 @@ import (
 // the provided AuthContext
 func evalCheckCondition(s *subject, op string, cond policy.ConditionValues) bool {
 
-	// TODO(nsiow) implement PushWithAttr so that `op` is in a more appropriate context?
-	s.trc.Push("evaluating Operation")
-	s.trc.Attr("op", op)
+	s.trc.Push("evaluating operation: %s", op)
 	defer s.trc.Pop()
 
 	// An empty condition should actually evaluate to false
 	if len(cond) == 0 {
-		s.trc.Observation("no match; empty condition")
+		s.trc.Log("no match; empty condition")
 		return false
 	}
 
 	// Check to see if the condition operator is supported
 	f, exists := ResolveConditionEvaluator(op)
 	if !exists {
-		s.trc.Observation("no match; unknown condition operator: ")
+		s.trc.Log("no match; unknown condition operator: %s", op)
 		return false
 	}
 
@@ -30,11 +28,11 @@ func evalCheckCondition(s *subject, op string, cond policy.ConditionValues) bool
 	for k, v := range cond {
 		match := f(s, k, v)
 		if !match {
-			s.trc.Observation("no match; condition evaluated to false")
+			s.trc.Log("no match; condition evaluated to false")
 			return false
 		}
 	}
 
-	s.trc.Observation("match!")
+	s.trc.Log("all condition pairs matched for op: %s", op)
 	return true
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func TestSCP(t *testing.T) {
-	tests := []testlib.TestCase[AuthContext, []policy.Effect]{
+	tests := []testlib.TestCase[AuthContext, Decision]{
 		{
 			Name: "no_scps",
 			Input: AuthContext{
@@ -24,9 +24,7 @@ func TestSCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_ALLOW,
-			},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "scp_allow_all",
@@ -55,9 +53,7 @@ func TestSCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_ALLOW,
-			},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "scp_deny_all",
@@ -86,9 +82,7 @@ func TestSCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_DENY,
-			},
+			Want: Decision{Deny: true},
 		},
 		{
 			Name: "scp_allowed_service",
@@ -117,9 +111,7 @@ func TestSCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_ALLOW,
-			},
+			Want: Decision{Allow: true},
 		},
 		{
 			Name: "scp_not_allowed_service",
@@ -148,7 +140,7 @@ func TestSCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect(nil),
+			Want: Decision{},
 		},
 		{
 			Name: "scp_mid_layer_implicit_deny",
@@ -191,7 +183,7 @@ func TestSCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect(nil),
+			Want: Decision{},
 		},
 		{
 			Name: "scp_mid_layer_explicit_deny",
@@ -246,15 +238,13 @@ func TestSCP(t *testing.T) {
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
 			},
-			Want: []policy.Effect{
-				policy.EFFECT_DENY,
-			},
+			Want: Decision{Deny: true},
 		},
 	}
 
-	testlib.RunTestSuite(t, tests, func(ac AuthContext) ([]policy.Effect, error) {
+	testlib.RunTestSuite(t, tests, func(ac AuthContext) (Decision, error) {
 		subj := newSubject(&ac, TestingSimulationOptions)
 		decision := evalSCP(subj)
-		return decision.Effects(), nil
+		return decision, nil
 	})
 }

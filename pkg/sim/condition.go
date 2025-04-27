@@ -13,9 +13,9 @@ import (
 	"github.com/nsiow/yams/pkg/sim/wildcard"
 )
 
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 // Setup
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 // Compare defines a function used to compare a value to a single other value
 //
@@ -40,16 +40,16 @@ type CondLift = func(CondInner) CondOuter
 // CondMod defines a function which wraps a ConditionOperator to change its behavior
 type CondMod = func(CondInner) CondInner
 
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 // Mappings
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 // ConditionOperatorMap defines the mapping between operator names and functions
 var ConditionOperatorMap = map[string]CondInner{
 
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 	// String Functions
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 
 	condition.StringEquals: Mod_ResolveVariables(
 		Cond_MatchAny(
@@ -92,9 +92,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 	// Numeric Functions
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 
 	condition.NumericEquals: Cond_MatchAny(
 		Mod_Number(
@@ -129,9 +129,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 	// Date Functions
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 
 	condition.DateEquals: Cond_MatchAny(
 		Mod_Date(
@@ -166,9 +166,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 	// Bool Functions
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 
 	condition.Bool: Mod_ResolveVariables(
 		Cond_MatchAny(
@@ -180,9 +180,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 	// Binary Functions
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 
 	condition.BinaryEquals: Cond_MatchAny(
 		Mod_Binary(
@@ -190,9 +190,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 	// IP Address Functions
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 
 	condition.IpAddress: Cond_MatchAny(
 		Mod_Network(
@@ -207,9 +207,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 	// ARN Functions
-	// ------------------------------------------------------------------------------
+	// -----------------------------------------------------------------------------------------------
 
 	condition.ArnEquals: Mod_ResolveVariables(
 		Cond_MatchAny(
@@ -237,9 +237,9 @@ var ConditionOperatorMap = map[string]CondInner{
 	),
 }
 
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 // Condition evaluation functions
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 func Cond_MatchAny(f Compare) CondInner {
 	return func(s *subject, left string, right policy.Value) bool {
@@ -253,9 +253,9 @@ func Cond_MatchAny(f Compare) CondInner {
 	}
 }
 
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 // Condition comparison functions
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 // Cond_StringEquals defines the `StringEquals` condition function
 func Cond_StringEquals(s *subject, left, right string) bool {
@@ -264,7 +264,6 @@ func Cond_StringEquals(s *subject, left, right string) bool {
 
 // Cond_StringLike defines the `StringLike` condition function
 func Cond_StringLike(s *subject, left, right string) bool {
-	// TODO(nsiow) maybe swap ordering of arguments in matchWildcard to better match go stdlib
 	return wildcard.MatchString(right, left)
 }
 
@@ -303,9 +302,9 @@ func Cond_ArnLike(s *subject, left, right string) bool {
 	return wildcard.MatchArn(right, left)
 }
 
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 // Condition modifiers
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 // Mod_Not inverts the provided ConditionOperator
 func Mod_Not(f CondInner) CondInner {
@@ -397,13 +396,13 @@ func Mod_Number(f func(*subject, int, int) bool) Compare {
 	return func(s *subject, left, right string) bool {
 		nLeft, err := strconv.Atoi(left)
 		if err != nil {
-			// TODO(nsiow) find a good place to log errors
+			s.trc.Log("error converting %s to number: %v", left, err)
 			return false
 		}
 
 		nRight, err := strconv.Atoi(right)
 		if err != nil {
-			// TODO(nsiow) find a good place to log errors
+			s.trc.Log("error converting %s to number: %v", right, err)
 			return false
 		}
 
@@ -432,13 +431,13 @@ func Mod_Date(f func(*subject, int, int) bool) Compare {
 	return func(s *subject, left, right string) bool {
 		nLeft, err := parseEpochFromString(left)
 		if err != nil {
-			// TODO(nsiow) find a good place to log errors
+			s.trc.Log("error converting %s to epoch: %v", right, err)
 			return false
 		}
 
 		nRight, err := parseEpochFromString(right)
 		if err != nil {
-			// TODO(nsiow) find a good place to log errors
+			s.trc.Log("error converting %s to epoch: %v", right, err)
 			return false
 		}
 
@@ -472,13 +471,13 @@ func Mod_Binary(f func(*subject, string, string) bool) Compare {
 	return func(s *subject, left, right string) bool {
 		_, err := base64.StdEncoding.DecodeString(left)
 		if err != nil {
-			// TODO(nsiow) add to Trace
+			s.trc.Log("error decoding base64 %s: %v", left, err)
 			return false
 		}
 
 		_, err = base64.StdEncoding.DecodeString(right)
 		if err != nil {
-			// TODO(nsiow) add to Trace
+			s.trc.Log("error decoding base64 %s: %v", right, err)
 			return false
 		}
 
@@ -491,13 +490,13 @@ func Mod_Network(f func(*subject, netip.Addr, netip.Prefix) bool) Compare {
 	return func(s *subject, left, right string) bool {
 		addr, err := netip.ParseAddr(left)
 		if err != nil {
-			// TODO(nsiow) add to Trace
+			s.trc.Log("error converting %s to IP: %v", left, err)
 			return false
 		}
 
 		network, err := netip.ParsePrefix(right)
 		if err != nil {
-			// TODO(nsiow) add to Trace
+			s.trc.Log("error converting %s to IP: %v", right, err)
 			return false
 		}
 
@@ -505,9 +504,9 @@ func Mod_Network(f func(*subject, netip.Addr, netip.Prefix) bool) Compare {
 	}
 }
 
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 // Externally facing functions
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 // ResolveConditionEvaluator takes in an operator name and resolves it to a function
 //
