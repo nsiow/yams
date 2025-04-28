@@ -133,7 +133,9 @@ clean-data:
 	rm -rf $(BUILD_DATA_DIR)/*.json.gz
 
 # --------------------------------------------------------------------------------
-# CloudFormation
+# AWS CloudFormation
+#
+# Most of this relates to testing infrastructure
 # --------------------------------------------------------------------------------
 
 CF_STACK_NAME ?= yams-test-infra
@@ -151,3 +153,18 @@ cf-account-0: misc/cf-templates/account-0.template.yaml
 		--capabilities CAPABILITY_NAMED_IAM \
 		--no-fail-on-empty-changeset \
 		--disable-rollback
+
+# --------------------------------------------------------------------------------
+# AWS Config
+#
+# Most of this relates to testing infrastructure
+# --------------------------------------------------------------------------------
+
+AWS_CONFIG_AGGREGATOR_NAME ?= boringcloud-awsconfig-aggregator 
+
+.PHONY: awsconfig-select
+awsconfig-select:
+	aws configservice select-aggregate-resource-config \
+		--profile boringcloud \
+		--configuration-aggregator-name $(AWS_CONFIG_AGGREGATOR_NAME) \
+		--expression 'SELECT COUNT(*)'
