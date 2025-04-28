@@ -16,8 +16,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "cli error: %v", err)
 		os.Exit(1)
 	}
-	IS_DEBUG_ENABLED = rc.Debug
-	debug("running %v with flags: %+v", os.Args[0], rc)
 
 	// Read the provided cache file
 	file, err := os.Open(rc.Cache)
