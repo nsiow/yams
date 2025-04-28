@@ -143,7 +143,7 @@ func (t *Trace) String() string {
 // Walker defines the interface for a type that is able to recursively walk a [Trace] execution
 type Walker interface {
 	FrameStart(*Frame)
-	Message(Frame *Frame, message string)
+	Message(*Frame, string)
 	FrameEnd(*Frame)
 }
 

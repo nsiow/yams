@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+const (
+	RUN_MODE_SERVER = iota
+)
+
 // RunConfig is a struct containing all flags/options related to CLI behavior
 type RunConfig struct {
 	Cache       string
