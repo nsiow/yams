@@ -1,0 +1,193 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for Account 0'
+
+Resources:
+  RedRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'RedRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole"
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'S3AccessPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                  - 's3:DeleteObject'
+                  - 's3:ListBucket'
+                Resource:
+                  - 'arn:aws:s3:::yams-cyan'
+                  - 'arn:aws:s3:::yams-cyan/*'
+                  - 'arn:aws:s3:::yams-magenta'
+                  - 'arn:aws:s3:::yams-magenta/*'
+      Tags:
+        - Key: Color
+          Value: Red
+
+  BlueRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'BlueRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole"
+            Action:
+              - 'sts:AssumeRole'
+      Policies: []
+      ManagedPolicyArns:
+        - !Ref BloodOrangePolicy
+      Tags:
+        - Key: Color
+          Value: Blue
+
+  GreenRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'GreenRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole"
+            Action:
+              - 'sts:AssumeRole'
+      Policies: []
+      Tags:
+        - Key: Color
+          Value: Green
+
+  MustardRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'MustardRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole"
+                - !GetAtt GreenRole.Arn
+            Action:
+              - 'sts:AssumeRole'
+      Policies: []
+      PermissionsBoundary: !Ref MustardBoundary
+      Tags:
+        - Key: Color
+          Value: Mustard
+
+  YellowQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: 'YellowQueue'
+      Tags:
+        - Key: Color
+          Value: Yellow
+
+  PurpleTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: 'PurpleTopic'
+      Tags:
+        - Key: Color
+          Value: Purple
+
+  OrangeTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: 'OrangeTable'
+      AttributeDefinitions:
+        - AttributeName: 'id'
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: 'id'
+          KeyType: 'HASH'
+      BillingMode: 'PAY_PER_REQUEST'
+      Tags:
+        - Key: Color
+          Value: Orange
+
+  TurquoiseKey:
+    Type: 'AWS::KMS::Key'
+    Properties:
+      Description: 'Turquoise KMS Key'
+      Tags:
+        - Key: Color
+          Value: Turquoise
+
+  MagentaBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: 'yams-magenta'
+      Tags:
+        - Key: Color
+          Value: Magenta
+
+  CyanBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: 'yams-cyan'
+      Tags:
+        - Key: Color
+          Value: Cyan
+
+  CyanBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref CyanBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Deny'
+            NotPrincipal:
+              AWS: 
+                - !Sub "arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole"
+            Action: 's3:*'
+            Resource:
+              - !Sub 'arn:aws:s3:::${CyanBucket}'
+              - !Sub 'arn:aws:s3:::${CyanBucket}/*'
+            Condition:
+              StringNotEquals:
+                aws:PrincipalTag/Color: 'Blue'
+
+  BloodOrangePolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      Description: 'Grants full access to PurpleTopic and YellowQueue'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Action: 'sns:*'
+            Resource: !GetAtt PurpleTopic.TopicArn
+          - Effect: 'Allow'
+            Action: 'sqs:*'
+            Resource: !GetAtt YellowQueue.Arn
+
+  MustardBoundary:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      Description: 'Permission boundary with S3 full access'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Action: 's3:*'
+            Resource: '*'

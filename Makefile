@@ -131,3 +131,23 @@ $(BUILD_DATA_DIR)/mp.json.gz: ./misc/mp.py
 .PHONY: clean-data
 clean-data:
 	rm -rf $(BUILD_DATA_DIR)/*.json.gz
+
+# --------------------------------------------------------------------------------
+# CloudFormation
+# --------------------------------------------------------------------------------
+
+CF_STACK_NAME ?= yams-test-infra
+
+.PHONY: cf
+cf: cf-account-0 cf-account-1 cf-account-2
+
+.PHONY: cf-account-0
+cf-account-0: misc/cf-templates/account-0.template.yaml
+	aws cloudformation deploy \
+		--profile yams0 \
+		--region us-east-1 \
+		--template-file $< \
+		--stack-name $(CF_STACK_NAME) \
+		--capabilities CAPABILITY_NAMED_IAM \
+		--no-fail-on-empty-changeset \
+		--disable-rollback
