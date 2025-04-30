@@ -2,6 +2,9 @@
 # Project files
 # --------------------------------------------------------------------------------
 
+# Local environment parameters
+.env
+
 # Output binary
 /yams
 
