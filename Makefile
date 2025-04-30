@@ -138,21 +138,31 @@ clean-data:
 # Most of this relates to testing infrastructure
 # --------------------------------------------------------------------------------
 
-CF_STACK_NAME ?= yams-test-infra
+CF_STACK_NAME    ?= yams-test-infra
+CF_STACK_REGION  ?= us-east-1
+CF_STACK_OPTIONS += --disable-rollback
+
+CF_DEPLOY = aws cloudformation deploy \
+		--region $(CF_STACK_REGION) \
+		--stack-name $(CF_STACK_NAME) \
+		--capabilities CAPABILITY_NAMED_IAM \
+		--no-fail-on-empty-changeset \
+		$(CF_STACK_OPTIONS)
 
 .PHONY: cf
 cf: cf-account-0 cf-account-1 cf-account-2
 
 .PHONY: cf-account-0
 cf-account-0: misc/cf-templates/account-0.template.yaml
-	aws cloudformation deploy \
-		--profile yams0 \
-		--region us-east-1 \
-		--template-file $< \
-		--stack-name $(CF_STACK_NAME) \
-		--capabilities CAPABILITY_NAMED_IAM \
-		--no-fail-on-empty-changeset \
-		--disable-rollback
+	$(CF_DEPLOY) --template-file $< --profile yams0
+
+.PHONY: cf-account-1
+cf-account-1: misc/cf-templates/account-1.template.yaml
+	$(CF_DEPLOY) --template-file $< --profile yams1
+
+.PHONY: cf-account-2
+cf-account-2: misc/cf-templates/account-2.template.yaml
+	$(CF_DEPLOY) --template-file $< --profile yams2
 
 # --------------------------------------------------------------------------------
 # AWS Config
