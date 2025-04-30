@@ -1,20 +1,18 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Resources for test account 0'
+Description: 'CloudFormation template for Account 1'
+Parameters:
+  AccountId0:
+    Type: String
+  AccountId1:
+    Type: String
+  AccountId2:
+    Type: String
 
 Resources:
-  Role:
-    Type: 'AWS::IAM::Role'
+  CatUser:
+    Type: 'AWS::IAM::User'
     Properties:
-      RoleName: 'Role'
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: 'Allow'
-            Principal:
-              AWS:
-                - !Sub 'arn:aws:iam::${AWS::AccountId}:user/admin'
-            Action:
-              - 'sts:AssumeRole'
+      UserName: 'CatUser'
       Policies:
         - PolicyName: 'S3AccessPolicy'
           PolicyDocument:
@@ -23,11 +21,72 @@ Resources:
               - Effect: 'Allow'
                 Action:
                   - 's3:GetObject'
-                  - 's3:PutObject'
-                  - 's3:DeleteObject'
-                  - 's3:ListBucket'
                 Resource:
-                  - 'arn:aws:s3:::Cyan'
-                  - 'arn:aws:s3:::Cyan/*'
-                  - 'arn:aws:s3:::Magenta'
-                  - 'arn:aws:s3:::Magenta/*'
+                  - '*'
+      Tags:
+        - Key: Animal
+          Value: Cat
+
+  DogUser:
+    Type: 'AWS::IAM::User'
+    Properties:
+      UserName: 'DogUser'
+      ManagedPolicyArns:
+        - !Ref DogPolicy
+      Tags:
+        - Key: Animal
+          Value: Dog
+
+  DogPolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      Description: 'Grants admin access'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Action: '*'
+            Resource: '*'
+
+  FishUser:
+    Type: 'AWS::IAM::User'
+    Properties:
+      UserName: 'FishUser'
+      Policies:
+        - PolicyName: 'FullSNSPermissions'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'sns:*'
+                Resource:
+                  - '*'
+      Tags:
+        - Key: Animal
+          Value: Fish
+
+  LemurTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: 'LemurTopic'
+      Tags:
+        - Key: Animal
+          Value: Lemur
+
+  LemurTopicPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      Topics:
+        - !Ref LemurTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: 'AllowBlueRole'
+            Effect: 'Allow'
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AccountId0}:role/BlueRole'
+            Action:
+              - 'sns:Publish'
+            Resource: !GetAtt LemurTopic.TopicArn
+

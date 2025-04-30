@@ -1,5 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'CloudFormation template for Account 0'
+Parameters:
+  AccountId0:
+    Type: String
+  AccountId1:
+    Type: String
+  AccountId2:
+    Type: String
 
 Resources:
   RedRole:
@@ -12,7 +19,7 @@ Resources:
           - Effect: 'Allow'
             Principal:
               AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole"
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
             Action:
               - 'sts:AssumeRole'
       Policies:
@@ -45,10 +52,9 @@ Resources:
           - Effect: 'Allow'
             Principal:
               AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole"
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
             Action:
               - 'sts:AssumeRole'
-      Policies: []
       ManagedPolicyArns:
         - !Ref BloodOrangePolicy
       Tags:
@@ -65,10 +71,22 @@ Resources:
           - Effect: 'Allow'
             Principal:
               AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole"
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
             Action:
               - 'sts:AssumeRole'
-      Policies: []
+      Policies:
+        - PolicyName: 'WeirdNotActionPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                NotAction:
+                  - 'sns:*'
+                Resource:
+                  - '*'
+                Condition:
+                  StringNotEquals:
+                    aws:ResourceAccount: !Ref 'AWS::AccountId'
       Tags:
         - Key: Color
           Value: Green
@@ -83,7 +101,7 @@ Resources:
           - Effect: 'Allow'
             Principal:
               AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole"
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
                 - !GetAtt GreenRole.Arn
             Action:
               - 'sts:AssumeRole'
@@ -100,6 +118,35 @@ Resources:
       Tags:
         - Key: Color
           Value: Yellow
+
+  YellowQueuePolicy:
+    Type: 'AWS::SQS::QueuePolicy'
+    Properties:
+      Queues:
+        - !Ref YellowQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: 'AllowSameAccountRedPrincipals'
+            Effect: 'Allow'
+            Principal:
+              AWS: '*'
+            Action:
+              - 'sqs:*'
+            Resource: !GetAtt YellowQueue.Arn
+            Condition:
+              StringLike:
+                aws:PrincipalArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/Red*'
+          - Sid: 'DenyExternalAccounts'
+            Effect: 'Deny'
+            Principal:
+              AWS: '*'
+            Condition:
+              StringNotEquals:
+                aws:PrincipalAccount: '${aws:ResourceAccount}'
+            Action:
+              - 'sqs:*'
+            Resource: !GetAtt YellowQueue.Arn
 
   PurpleTopic:
     Type: 'AWS::SNS::Topic'
@@ -158,7 +205,7 @@ Resources:
           - Effect: 'Deny'
             NotPrincipal:
               AWS: 
-                - !Sub "arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole"
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
             Action: 's3:*'
             Resource:
               - !Sub 'arn:aws:s3:::${CyanBucket}'
