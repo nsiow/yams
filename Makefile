@@ -143,6 +143,10 @@ CF_STACK_REGION  ?= us-east-1
 CF_STACK_OPTIONS += --disable-rollback
 
 CF_DEPLOY = aws cloudformation deploy \
+		--parameter-overrides \
+		    AccountId0=$(YAMS_TEST_ACCOUNT_ID_0) \
+		    AccountId1=$(YAMS_TEST_ACCOUNT_ID_1) \
+		    AccountId2=$(YAMS_TEST_ACCOUNT_ID_2) \
 		--region $(CF_STACK_REGION) \
 		--stack-name $(CF_STACK_NAME) \
 		--capabilities CAPABILITY_NAMED_IAM \
