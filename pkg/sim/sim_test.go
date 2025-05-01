@@ -242,9 +242,9 @@ func TestSimulateByArn(t *testing.T) {
 		sim, _ := NewSimulator()
 		sim.SetUniverse(i.uv)
 		res, err := sim.SimulateByArn(
+			i.principalArn,
 			i.action,
-			entities.Arn(i.principalArn),
-			entities.Arn(i.resourceArn),
+			i.resourceArn,
 			nil,
 		)
 		if err != nil {

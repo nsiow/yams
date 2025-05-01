@@ -19,17 +19,17 @@ func TestLoad(t *testing.T) {
 
 		{
 			Name:  "base_valid_empty",
-			Input: `../../../testdata/config_loading/base_valid_empty.json`,
+			Input: `../../../testdata/config-loading/base_valid_empty.json`,
 			Want:  entities.NewUniverse(),
 		},
 		{
 			Name:  "base_valid_empty_json_l",
-			Input: `../../../testdata/config_loading/base_valid_empty.jsonl`,
+			Input: `../../../testdata/config-loading/base_valid_empty.jsonl`,
 			Want:  entities.NewUniverse(),
 		},
 		{
 			Name:  "generic_resource_valid.json",
-			Input: `../../../testdata/config_loading/generic_resource_valid.json`,
+			Input: `../../../testdata/config-loading/generic_resource_valid.json`,
 			Want: entities.NewBuilder().
 				WithResources(
 					entities.Resource{
@@ -44,7 +44,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "account_valid",
-			Input: `../../../testdata/config_loading/account_valid.json`,
+			Input: `../../../testdata/config-loading/account_valid.json`,
 			Want: entities.NewBuilder().
 				WithAccounts(
 					entities.Account{
@@ -77,7 +77,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "account_valid_jsonl",
-			Input: `../../../testdata/config_loading/account_valid.jsonl`,
+			Input: `../../../testdata/config-loading/account_valid.jsonl`,
 			Want: entities.NewBuilder().
 				WithAccounts(
 					entities.Account{
@@ -102,7 +102,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "scp_valid",
-			Input: `../../../testdata/config_loading/scp_valid.json`,
+			Input: `../../../testdata/config-loading/scp_valid.json`,
 			Want: entities.NewBuilder().
 				WithPolicies(
 					entities.ManagedPolicy{
@@ -136,7 +136,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "rcp_valid",
-			Input: `../../../testdata/config_loading/rcp_valid.json`,
+			Input: `../../../testdata/config-loading/rcp_valid.json`,
 			Want: entities.NewBuilder().
 				WithPolicies(
 					entities.ManagedPolicy{
@@ -170,7 +170,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "group_valid",
-			Input: `../../../testdata/config_loading/group_valid.json`,
+			Input: `../../../testdata/config-loading/group_valid.json`,
 			Want: entities.NewBuilder().
 				WithGroups(
 					entities.Group{
@@ -210,7 +210,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "policy_valid",
-			Input: `../../../testdata/config_loading/policy_valid.json`,
+			Input: `../../../testdata/config-loading/policy_valid.json`,
 			Want: entities.NewBuilder().
 				WithPolicies(
 					entities.ManagedPolicy{
@@ -245,7 +245,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "role_valid",
-			Input: `../../../testdata/config_loading/role_valid.json`,
+			Input: `../../../testdata/config-loading/role_valid.json`,
 			Want: entities.NewBuilder().
 				WithPrincipals(
 					entities.Principal{
@@ -320,7 +320,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "user_valid",
-			Input: `../../../testdata/config_loading/user_valid.json`,
+			Input: `../../../testdata/config-loading/user_valid.json`,
 			Want: entities.NewBuilder().
 				WithPrincipals(
 					entities.Principal{
@@ -365,7 +365,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "bucket_valid",
-			Input: `../../../testdata/config_loading/bucket_valid.json`,
+			Input: `../../../testdata/config-loading/bucket_valid.json`,
 			Want: entities.NewBuilder().
 				WithResources(
 					entities.Resource{
@@ -404,7 +404,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "table_valid",
-			Input: `../../../testdata/config_loading/table_valid.json`,
+			Input: `../../../testdata/config-loading/table_valid.json`,
 			Want: entities.NewBuilder().
 				WithResources(
 					entities.Resource{
@@ -419,7 +419,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "topic_valid",
-			Input: `../../../testdata/config_loading/topic_valid.json`,
+			Input: `../../../testdata/config-loading/topic_valid.json`,
 			Want: entities.NewBuilder().
 				WithResources(
 					entities.Resource{
@@ -455,7 +455,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "queue_valid",
-			Input: `../../../testdata/config_loading/queue_valid.json`,
+			Input: `../../../testdata/config-loading/queue_valid.json`,
 			Want: entities.NewBuilder().
 				WithResources(
 					entities.Resource{
@@ -490,7 +490,7 @@ func TestLoad(t *testing.T) {
 		},
 		{
 			Name:  "key_valid",
-			Input: `../../../testdata/config_loading/key_valid.json`,
+			Input: `../../../testdata/config-loading/key_valid.json`,
 			Want: entities.NewBuilder().
 				WithResources(
 					entities.Resource{
@@ -510,92 +510,92 @@ func TestLoad(t *testing.T) {
 
 		{
 			Name:      "base_invalid",
-			Input:     `../../../testdata/config_loading/base_invalid.json`,
+			Input:     `../../../testdata/config-loading/base_invalid.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "base_invalid_jsonl",
-			Input:     `../../../testdata/config_loading/base_invalid.jsonl`,
+			Input:     `../../../testdata/config-loading/base_invalid.jsonl`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "generic_resource_invalid_bad_region",
-			Input:     `../../../testdata/config_loading/generic_resource_invalid_bad_region.json`,
+			Input:     `../../../testdata/config-loading/generic_resource_invalid_bad_region.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "account_invalid_scp",
-			Input:     `../../../testdata/config_loading/account_invalid_scp.json`,
+			Input:     `../../../testdata/config-loading/account_invalid_scp.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "scp_invalid_syntax",
-			Input:     `../../../testdata/config_loading/scp_invalid_syntax.json`,
+			Input:     `../../../testdata/config-loading/scp_invalid_syntax.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "scp_invalid_syntax_2",
-			Input:     `../../../testdata/config_loading/scp_invalid_syntax_2.json`,
+			Input:     `../../../testdata/config-loading/scp_invalid_syntax_2.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "rcp_invalid_syntax",
-			Input:     `../../../testdata/config_loading/rcp_invalid_syntax.json`,
+			Input:     `../../../testdata/config-loading/rcp_invalid_syntax.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "rcp_invalid_syntax_2",
-			Input:     `../../../testdata/config_loading/rcp_invalid_syntax_2.json`,
+			Input:     `../../../testdata/config-loading/rcp_invalid_syntax_2.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "group_invalid_bad_shape",
-			Input:     `../../../testdata/config_loading/group_invalid_bad_shape.json`,
+			Input:     `../../../testdata/config-loading/group_invalid_bad_shape.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "policy_invalid_json",
-			Input:     `../../../testdata/config_loading/policy_invalid_json.json`,
+			Input:     `../../../testdata/config-loading/policy_invalid_json.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "policy_invalid_no_default_version",
-			Input:     `../../../testdata/config_loading/policy_invalid_no_default_version.json`,
+			Input:     `../../../testdata/config-loading/policy_invalid_no_default_version.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "role_invalid_bad_policy",
-			Input:     `../../../testdata/config_loading/role_invalid_bad_policy.json`,
+			Input:     `../../../testdata/config-loading/role_invalid_bad_policy.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "user_invalid_bad_inline_policy",
-			Input:     `../../../testdata/config_loading/user_invalid_bad_inline_policy.json`,
+			Input:     `../../../testdata/config-loading/user_invalid_bad_inline_policy.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "bucket_invalid_bad_policy",
-			Input:     `../../../testdata/config_loading/bucket_invalid_bad_policy.json`,
+			Input:     `../../../testdata/config-loading/bucket_invalid_bad_policy.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "table_invalid_bad_region",
-			Input:     `../../../testdata/config_loading/table_invalid_bad_region.json`,
+			Input:     `../../../testdata/config-loading/table_invalid_bad_region.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "topic_invalid_bad_policy",
-			Input:     `../../../testdata/config_loading/topic_invalid_bad_policy.json`,
+			Input:     `../../../testdata/config-loading/topic_invalid_bad_policy.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "queue_invalid_bad_policy",
-			Input:     `../../../testdata/config_loading/queue_invalid_bad_policy.json`,
+			Input:     `../../../testdata/config-loading/queue_invalid_bad_policy.json`,
 			ShouldErr: true,
 		},
 		{
 			Name:      "key_invalid_bad_region",
-			Input:     `../../../testdata/config_loading/key_invalid_bad_region.json`,
+			Input:     `../../../testdata/config-loading/key_invalid_bad_region.json`,
 			ShouldErr: true,
 		},
 	}

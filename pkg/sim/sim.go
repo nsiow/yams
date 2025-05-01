@@ -47,7 +47,7 @@ func (s *Simulator) Simulate(ac AuthContext) (*SimResult, error) {
 // SimulateByArn determines whether the operation would be allowed between the Principal and
 // Resource specified by the provided ARNs
 func (s *Simulator) SimulateByArn(
-	action, principalArn, resourceArn string,
+	principalArn, action, resourceArn string,
 	ctx map[string]string) (*SimResult, error) {
 
 	var err error

@@ -7,7 +7,6 @@ Parameters:
     Type: String
   AccountId2:
     Type: String
-
 Resources:
   RedRole:
     Type: 'AWS::IAM::Role'

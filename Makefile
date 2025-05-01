@@ -133,14 +133,11 @@ clean-data:
 	rm -rf $(BUILD_DATA_DIR)/*.json.gz
 
 # --------------------------------------------------------------------------------
-# AWS CloudFormation
-#
-# Most of this relates to testing infrastructure
+# Testing Infrastructure (CloudFormation)
 # --------------------------------------------------------------------------------
 
-CF_STACK_NAME    ?= yams-test-infra
-CF_STACK_REGION  ?= us-east-1
-CF_STACK_OPTIONS += --disable-rollback
+CF_STACK_NAME   ?= yams-test-infra
+CF_STACK_REGION ?= us-east-1
 
 CF_DEPLOY = aws cloudformation deploy \
 		--parameter-overrides \
@@ -151,34 +148,39 @@ CF_DEPLOY = aws cloudformation deploy \
 		--stack-name $(CF_STACK_NAME) \
 		--capabilities CAPABILITY_NAMED_IAM \
 		--no-fail-on-empty-changeset \
-		$(CF_STACK_OPTIONS)
+		--disable-rollback \
+		--tags is-yams-test-resource=true
 
 .PHONY: cf
 cf: cf-account-0 cf-account-1 cf-account-2
 
 .PHONY: cf-account-0
 cf-account-0: misc/cf-templates/account-0.template.yaml
-	$(CF_DEPLOY) --template-file $< --profile yams0
+	$(CF_DEPLOY) --profile yams0 --template-file $<
 
 .PHONY: cf-account-1
 cf-account-1: misc/cf-templates/account-1.template.yaml
-	$(CF_DEPLOY) --template-file $< --profile yams1
+	$(CF_DEPLOY) --profile yams1 --template-file $<
 
 .PHONY: cf-account-2
 cf-account-2: misc/cf-templates/account-2.template.yaml
-	$(CF_DEPLOY) --template-file $< --profile yams2
+	$(CF_DEPLOY) --profile yams2 --template-file $<
 
 # --------------------------------------------------------------------------------
-# AWS Config
-#
-# Most of this relates to testing infrastructure
+# Testing Infrastructure (Config)
 # --------------------------------------------------------------------------------
 
-AWS_CONFIG_AGGREGATOR_NAME ?= boringcloud-awsconfig-aggregator 
+AWS_CONFIG_AGGREGATOR ?= boringcloud-awsconfig-aggregator 
+AWS_CONFIG_FIELDS     ?= *, configuration, supplementaryConfiguration, tags
+AWS_CONFIG_FILTER     ?= tags.tag='is-yams-test-resource=true'
 
-.PHONY: awsconfig-select
-awsconfig-select:
+.PHONY: real-world-data
+real-world-data:
+	mkdir -p testdata/real-world/
 	aws configservice select-aggregate-resource-config \
+		--region us-east-1 \
 		--profile boringcloud \
-		--configuration-aggregator-name $(AWS_CONFIG_AGGREGATOR_NAME) \
-		--expression 'SELECT COUNT(*)'
+		--configuration-aggregator-name $(AWS_CONFIG_AGGREGATOR) \
+		--expression "SELECT $(AWS_CONFIG_FIELDS) WHERE $(AWS_CONFIG_FILTER)" \
+	| jq -c '.Results[] | fromjson' \
+	> testdata/real-world/awsconfig.jsonl

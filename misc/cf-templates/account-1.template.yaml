@@ -90,3 +90,27 @@ Resources:
               - 'sns:Publish'
             Resource: !GetAtt LemurTopic.TopicArn
 
+  TurtleQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: 'TurtleQueue'
+      Tags:
+        - Key: Animal
+          Value: Turtle
+
+  TurtleQueuePolicy:
+    Type: 'AWS::SQS::QueuePolicy'
+    Properties:
+      Queues:
+        - !Ref TurtleQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: 'AllowBlueRole'
+            Effect: 'Allow'
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AccountId2}:root'
+            Action:
+              - 'sqs:SendMessage'
+            Resource: !GetAtt TurtleQueue.Arn
+
