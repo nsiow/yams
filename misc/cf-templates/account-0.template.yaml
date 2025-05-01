@@ -193,6 +193,8 @@ Resources:
       Tags:
         - Key: Color
           Value: Cyan
+        - Key: Foo
+          Value: Bar
 
   CyanBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
@@ -205,7 +207,9 @@ Resources:
             NotPrincipal:
               AWS: 
                 - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
-            Action: 's3:*'
+            Action:
+              - 's3:listbucket'
+              - 's3:getobject'
             Resource:
               - !Sub 'arn:aws:s3:::${CyanBucket}'
               - !Sub 'arn:aws:s3:::${CyanBucket}/*'

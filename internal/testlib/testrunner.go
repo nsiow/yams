@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -37,7 +38,13 @@ func RunTestSuite[I, O any](
 	f func(I) (O, error)) {
 
 	t.Helper()
-	for _, tc := range testCases {
+	for i, tc := range testCases {
+
+		// If a name isn't provided, use the index instead
+		if len(tc.Name) == 0 {
+			tc.Name = strconv.Itoa(i)
+		}
+
 		tc := tc // local variable in case we need to use pointer to loop var
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Helper()

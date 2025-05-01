@@ -41,7 +41,20 @@ func (r *Resource) Service() (string, error) {
 	return strings.ToLower(components[1]), nil
 }
 
-// SubresourceArn returns the ARN of the specified subresource
-func (r *Resource) SubresourceArn(subpath string) string {
-	return strings.TrimRight(r.Arn, "/") + "/" + strings.TrimLeft(subpath, "/")
+// SubResource returns the ARN of the specified subresource
+func (r *Resource) SubResource(subpath string) (*Resource, error) {
+	switch r.Type {
+	case "AWS::S3::Bucket":
+		return &Resource{
+			uv:        r.uv,
+			Arn:       strings.TrimRight(r.Arn, "/") + "/" + strings.TrimLeft(subpath, "/"),
+			Type:      "AWS::S3::Bucket::Object",
+			AccountId: r.AccountId,
+			Region:    r.Region,
+			Policy:    r.Policy,
+			Tags:      nil, // tags do not propagate automatically
+		}, nil
+	default:
+		return nil, fmt.Errorf("do not know how to create sub-resource for: %s", r.Type)
+	}
 }

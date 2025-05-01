@@ -41,42 +41,77 @@ func TestSubresourceArn(t *testing.T) {
 		subpath  string
 	}
 
-	tests := []testlib.TestCase[input, string]{
+	tests := []testlib.TestCase[input, *Resource]{
 		{
 			Name: "valid_object_no_leading_no_trailing",
 			Input: input{
-				resource: Resource{Arn: "arn:aws:s3:::bucket1"},
-				subpath:  "foo",
+				resource: Resource{
+					Type: "AWS::S3::Bucket",
+					Arn:  "arn:aws:s3:::bucket1",
+				},
+				subpath: "foo",
 			},
-			Want: "arn:aws:s3:::bucket1/foo",
+			Want: &Resource{
+				Type: "AWS::S3::Bucket::Object",
+				Arn:  "arn:aws:s3:::bucket1/foo",
+			},
 		},
 		{
 			Name: "valid_object_leading",
 			Input: input{
-				resource: Resource{Arn: "arn:aws:s3:::bucket1"},
-				subpath:  "/foo",
+				resource: Resource{
+					Type: "AWS::S3::Bucket",
+					Arn:  "arn:aws:s3:::bucket1",
+				},
+				subpath: "/foo",
 			},
-			Want: "arn:aws:s3:::bucket1/foo",
+			Want: &Resource{
+				Type: "AWS::S3::Bucket::Object",
+				Arn:  "arn:aws:s3:::bucket1/foo",
+			},
 		},
 		{
 			Name: "valid_object_trailing",
 			Input: input{
-				resource: Resource{Arn: "arn:aws:s3:::bucket1/"},
-				subpath:  "foo",
+				resource: Resource{
+					Type: "AWS::S3::Bucket",
+					Arn:  "arn:aws:s3:::bucket1",
+				},
+				subpath: "foo",
 			},
-			Want: "arn:aws:s3:::bucket1/foo",
+			Want: &Resource{
+				Type: "AWS::S3::Bucket::Object",
+				Arn:  "arn:aws:s3:::bucket1/foo",
+			},
 		},
 		{
 			Name: "valid_object_leading_trailing",
 			Input: input{
-				resource: Resource{Arn: "arn:aws:s3:::bucket1/"},
-				subpath:  "/foo",
+				resource: Resource{
+					Type: "AWS::S3::Bucket",
+					Arn:  "arn:aws:s3:::bucket1",
+				},
+				subpath: "/foo",
 			},
-			Want: "arn:aws:s3:::bucket1/foo",
+			Want: &Resource{
+				Type: "AWS::S3::Bucket::Object",
+				Arn:  "arn:aws:s3:::bucket1/foo",
+			},
+		},
+		{
+			Name: "invalid_resource_type",
+			Input: input{
+				resource: Resource{
+					Type: "AWS::IAM::Role",
+					Arn:  "arn:aws:iam::55555:role/some-role",
+				},
+				subpath: "/foo",
+			},
+			ShouldErr: true,
 		},
 	}
 
-	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
-		return i.resource.SubresourceArn(i.subpath), nil
+	testlib.RunTestSuite(t, tests, func(i input) (*Resource, error) {
+		return i.resource.SubResource(i.subpath)
 	})
 }

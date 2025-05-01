@@ -41,21 +41,46 @@ func buildTestSimulator() (*Simulator, error) {
 }
 
 func TestRealWorldData(t *testing.T) {
-	type input struct {
-		principalArn string
-		resourceArn  string
-		action       string
+	type in struct {
+		p string
+		a string
+		r string
 	}
 
-	tests := []testlib.TestCase[input, bool]{}
+	tests := []testlib.TestCase[in, bool]{
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/RedRole",
+				a: "s3:listbucket",
+				r: "arn:aws:s3:::yams-magenta",
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/RedRole",
+				a: "s3:getobject",
+				r: "arn:aws:s3:::yams-magenta/object.txt",
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/RedRole",
+				a: "s3:listbucket",
+				r: "arn:aws:s3:::yams-cyan",
+			},
+			Want: false,
+		},
+	}
 
 	sim, err := buildTestSimulator()
 	if err != nil {
 		t.Fatalf("error creating simulator for testing: %v", err)
 	}
 
-	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
-		result, err := sim.SimulateByArn(i.principalArn, i.action, i.resourceArn, nil)
+	testlib.RunTestSuite(t, tests, func(i in) (bool, error) {
+		result, err := sim.SimulateByArn(i.p, i.a, i.r, nil)
 		if err != nil {
 			return false, err
 		}

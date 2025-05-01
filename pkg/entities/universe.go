@@ -3,6 +3,7 @@ package entities
 import (
 	"iter"
 	"maps"
+	"strings"
 )
 
 // -------------------------------------------------------------------------------------------------
@@ -169,6 +170,16 @@ func (u *Universe) RemovePrincipal(arn Arn) {
 // Resources
 // -------------------------------------------------------------------------------------------------
 
+func (u *Universe) subresource(arn Arn) (string, string) {
+	// handle S3 objects
+	if strings.HasPrefix(arn, "arn:aws:s3:::") && strings.Contains(arn, "/") {
+		components := strings.SplitN(arn, "/", 2)
+		return components[0], components[1]
+	}
+
+	return arn, ""
+}
+
 // Resources returns an iterator over all the Resource entities known to the universe
 func (u *Universe) Resources() iter.Seq[Resource] {
 	return maps.Values(u.resources)
@@ -182,7 +193,18 @@ func (u *Universe) HasResource(arn Arn) bool {
 
 // Resource attempts to retrieve the resource based on its ARN
 func (u *Universe) Resource(arn Arn) (*Resource, bool) {
+	arn, path := u.subresource(arn)
+
 	r, ok := u.resources[arn]
+	if !ok {
+		return nil, ok
+	}
+
+	if len(path) > 0 {
+		subResource, err := r.SubResource(path)
+		return subResource, err == nil
+	}
+
 	return &r, ok
 }
 
