@@ -10,7 +10,7 @@ import (
 )
 
 func buildTestUniverse() (*entities.Universe, error) {
-	file, err := os.Open("testdata/real-world/awsconfig.jsonl")
+	file, err := os.Open("../../testdata/real-world/awsconfig.jsonl")
 	if err != nil {
 		return nil, err
 	}

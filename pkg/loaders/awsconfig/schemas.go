@@ -57,13 +57,13 @@ func (c *configIamUser) asPrincipal() entities.Principal {
 			}),
 		AttachedPolicies: common.Map(c.Configuration.AttachedManagedPolicies,
 			func(x policyRef) entities.Arn {
-				return entities.Arn(x.Arn)
+				return x.Arn
 			}),
 		Groups: common.Map(c.Configuration.GroupList,
 			func(x string) entities.Arn {
-				return entities.Arn(c.groupToArn(x))
+				return c.groupToArn(x)
 			}),
-		PermissionsBoundary: entities.Arn(c.Configuration.PermissionsBoundary.Arn),
+		PermissionsBoundary: c.Configuration.PermissionsBoundary.Arn,
 	}
 }
 
@@ -103,9 +103,9 @@ func (c *configIamRole) asPrincipal() entities.Principal {
 			}),
 		AttachedPolicies: common.Map(c.Configuration.AttachedManagedPolicies,
 			func(x policyRef) entities.Arn {
-				return entities.Arn(x.Arn)
+				return x.Arn
 			}),
-		PermissionsBoundary: entities.Arn(c.Configuration.PermissionsBoundary.Arn),
+		PermissionsBoundary: c.Configuration.PermissionsBoundary.Arn,
 	}
 }
 
@@ -183,7 +183,7 @@ func (c *configGroup) asGroup() entities.Group {
 			}),
 		AttachedPolicies: common.Map(c.Configuration.AttachedManagedPolicies,
 			func(x policyRef) entities.Arn {
-				return entities.Arn(x.Arn)
+				return x.Arn
 			}),
 	}
 }
