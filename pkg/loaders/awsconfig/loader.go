@@ -125,7 +125,7 @@ func (l *Loader) loadItem(blob configBlob) error {
 }
 
 func (l *Loader) loadAccount(blob configBlob) error {
-	var target configAccount
+	var target Account
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
@@ -137,7 +137,7 @@ func (l *Loader) loadAccount(blob configBlob) error {
 }
 
 func (l *Loader) loadSCP(blob configBlob) error {
-	var target configSCP
+	var target SCP
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
@@ -150,7 +150,7 @@ func (l *Loader) loadSCP(blob configBlob) error {
 }
 
 func (l *Loader) loadRCP(blob configBlob) error {
-	var target configRCP
+	var target RCP
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
@@ -163,7 +163,7 @@ func (l *Loader) loadRCP(blob configBlob) error {
 }
 
 func (l *Loader) loadGroup(blob configBlob) error {
-	var target configGroup
+	var target IamGroup
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
@@ -176,7 +176,7 @@ func (l *Loader) loadGroup(blob configBlob) error {
 }
 
 func (l *Loader) loadManagedPolicy(blob configBlob) error {
-	var target configIamManagedPolicy
+	var target IamPolicy
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
@@ -194,7 +194,7 @@ func (l *Loader) loadManagedPolicy(blob configBlob) error {
 }
 
 func (l *Loader) loadRole(blob configBlob) error {
-	var target configIamRole
+	var target IamRole
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
@@ -207,7 +207,7 @@ func (l *Loader) loadRole(blob configBlob) error {
 }
 
 func (l *Loader) loadUser(blob configBlob) error {
-	var target configIamUser
+	var target IamUser
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
@@ -220,7 +220,7 @@ func (l *Loader) loadUser(blob configBlob) error {
 }
 
 func (l *Loader) loadBucket(blob configBlob) error {
-	var target configS3Bucket
+	var target S3Bucket
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
@@ -232,7 +232,7 @@ func (l *Loader) loadBucket(blob configBlob) error {
 }
 
 func (l *Loader) loadTable(blob configBlob) error {
-	var target configDynamodbTable
+	var target DynamodbTable
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
@@ -244,7 +244,7 @@ func (l *Loader) loadTable(blob configBlob) error {
 }
 
 func (l *Loader) loadTopic(blob configBlob) error {
-	var target configSnsTopic
+	var target SnsTopic
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
@@ -256,7 +256,7 @@ func (l *Loader) loadTopic(blob configBlob) error {
 }
 
 func (l *Loader) loadQueue(blob configBlob) error {
-	var target configSqsQueue
+	var target SqsQueue
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {
@@ -268,7 +268,7 @@ func (l *Loader) loadQueue(blob configBlob) error {
 }
 
 func (l *Loader) loadKey(blob configBlob) error {
-	var target configKmsKey
+	var target KmsKey
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {

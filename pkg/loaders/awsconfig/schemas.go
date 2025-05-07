@@ -28,10 +28,28 @@ type inlinePolicy struct {
 }
 
 // -------------------------------------------------------------------------------------------------
+// Generic resource
+// -------------------------------------------------------------------------------------------------
+
+type genericResource struct {
+	ConfigItem
+}
+
+func (c *genericResource) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+	}
+}
+
+// -------------------------------------------------------------------------------------------------
 // AWS::IAM::User
 // -------------------------------------------------------------------------------------------------
 
-type configIamUser struct {
+type IamUser struct {
 	ConfigItem
 	Configuration struct {
 		AttachedManagedPolicies []policyRef    `json:"attachedManagedPolicies"`
@@ -41,11 +59,11 @@ type configIamUser struct {
 	} `json:"configuration"`
 }
 
-func (c *configIamUser) groupToArn(groupName string) string {
+func (c *IamUser) groupToArn(groupName string) string {
 	return fmt.Sprintf("arn:aws:iam::%s:group/%s", c.AccountId, groupName)
 }
 
-func (c *configIamUser) asPrincipal() entities.Principal {
+func (c *IamUser) asPrincipal() entities.Principal {
 	return entities.Principal{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -67,7 +85,7 @@ func (c *configIamUser) asPrincipal() entities.Principal {
 	}
 }
 
-func (c *configIamUser) asResource() entities.Resource {
+func (c *IamUser) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -81,7 +99,7 @@ func (c *configIamUser) asResource() entities.Resource {
 // AWS::IAM::Role
 // -------------------------------------------------------------------------------------------------
 
-type configIamRole struct {
+type IamRole struct {
 	ConfigItem
 	Configuration struct {
 		AssumeRolePolicyDocument encodedPolicy  `json:"assumeRolePolicyDocument"`
@@ -91,7 +109,7 @@ type configIamRole struct {
 	} `json:"configuration"`
 }
 
-func (c *configIamRole) asPrincipal() entities.Principal {
+func (c *IamRole) asPrincipal() entities.Principal {
 	return entities.Principal{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -109,7 +127,7 @@ func (c *configIamRole) asPrincipal() entities.Principal {
 	}
 }
 
-func (c *configIamRole) asResource() entities.Resource {
+func (c *IamRole) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -124,7 +142,7 @@ func (c *configIamRole) asResource() entities.Resource {
 // AWS::IAM::Policy
 // -------------------------------------------------------------------------------------------------
 
-type configIamManagedPolicy struct {
+type IamPolicy struct {
 	ConfigItem
 	Configuration struct {
 		PolicyVersionList []struct {
@@ -135,7 +153,7 @@ type configIamManagedPolicy struct {
 	} `json:"configuration"`
 }
 
-func (c *configIamManagedPolicy) asPolicy() (entities.ManagedPolicy, error) {
+func (c *IamPolicy) asPolicy() (entities.ManagedPolicy, error) {
 	for _, pv := range c.Configuration.PolicyVersionList {
 		if pv.IsDefaultVersion {
 			return entities.ManagedPolicy{
@@ -150,7 +168,7 @@ func (c *configIamManagedPolicy) asPolicy() (entities.ManagedPolicy, error) {
 	return entities.ManagedPolicy{}, fmt.Errorf("unable to find default policy version for: %s", c.Arn)
 }
 
-func (c *configIamManagedPolicy) asResource() entities.Resource {
+func (c *IamPolicy) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -164,7 +182,7 @@ func (c *configIamManagedPolicy) asResource() entities.Resource {
 // AWS::IAM::Group
 // -------------------------------------------------------------------------------------------------
 
-type configGroup struct {
+type IamGroup struct {
 	ConfigItem
 	Configuration struct {
 		AttachedManagedPolicies []policyRef    `json:"attachedManagedPolicies"`
@@ -172,7 +190,7 @@ type configGroup struct {
 	} `json:"configuration"`
 }
 
-func (c *configGroup) asGroup() entities.Group {
+func (c *IamGroup) asGroup() entities.Group {
 	return entities.Group{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -188,25 +206,7 @@ func (c *configGroup) asGroup() entities.Group {
 	}
 }
 
-func (c *configGroup) asResource() entities.Resource {
-	return entities.Resource{
-		Type:      c.Type,
-		AccountId: c.AccountId,
-		Region:    c.Region,
-		Arn:       c.Arn,
-		Tags:      c.Tags,
-	}
-}
-
-// -------------------------------------------------------------------------------------------------
-// Generic resource
-// -------------------------------------------------------------------------------------------------
-
-type genericResource struct {
-	ConfigItem
-}
-
-func (c *genericResource) asResource() entities.Resource {
+func (c *IamGroup) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -220,7 +220,7 @@ func (c *genericResource) asResource() entities.Resource {
 // AWS::S3::Bucket
 // -------------------------------------------------------------------------------------------------
 
-type configS3Bucket struct {
+type S3Bucket struct {
 	ConfigItem
 	SupplementaryConfiguration struct {
 		BucketPolicy struct {
@@ -229,7 +229,7 @@ type configS3Bucket struct {
 	} `json:"supplementaryConfiguration"`
 }
 
-func (c *configS3Bucket) asResource() entities.Resource {
+func (c *S3Bucket) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -244,11 +244,11 @@ func (c *configS3Bucket) asResource() entities.Resource {
 // AWS::DynamoDB::Table
 // -------------------------------------------------------------------------------------------------
 
-type configDynamodbTable struct {
+type DynamodbTable struct {
 	ConfigItem
 }
 
-func (c *configDynamodbTable) asResource() entities.Resource {
+func (c *DynamodbTable) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -263,11 +263,11 @@ func (c *configDynamodbTable) asResource() entities.Resource {
 // AWS::KMS::Key
 // -------------------------------------------------------------------------------------------------
 
-type configKmsKey struct {
+type KmsKey struct {
 	ConfigItem
 }
 
-func (c *configKmsKey) asResource() entities.Resource {
+func (c *KmsKey) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -282,14 +282,14 @@ func (c *configKmsKey) asResource() entities.Resource {
 // AWS::SNS::Topic
 // -------------------------------------------------------------------------------------------------
 
-type configSnsTopic struct {
+type SnsTopic struct {
 	ConfigItem
 	Configuration struct {
 		Policy encodedPolicy
 	} `json:"configuration"`
 }
 
-func (c *configSnsTopic) asResource() entities.Resource {
+func (c *SnsTopic) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -304,14 +304,14 @@ func (c *configSnsTopic) asResource() entities.Resource {
 // AWS::SQS::Queue
 // -------------------------------------------------------------------------------------------------
 
-type configSqsQueue struct {
+type SqsQueue struct {
 	ConfigItem
 	Configuration struct {
 		Policy encodedPolicy
 	} `json:"configuration"`
 }
 
-func (c *configSqsQueue) asResource() entities.Resource {
+func (c *SqsQueue) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -326,17 +326,19 @@ func (c *configSqsQueue) asResource() entities.Resource {
 // Yams::Account
 // -------------------------------------------------------------------------------------------------
 
-type configAccount struct {
+type Account struct {
 	ConfigItem
-	Configuration struct {
-		OrgId    string           `json:"orgId"`
-		OrgPaths []string         `json:"orgPaths"`
-		SCPs     [][]entities.Arn `json:"serviceControlPolicies"`
-		RCPs     [][]entities.Arn `json:"resourceControlPolicies"`
-	}
+	Configuration AccountConfiguration `json:"configuration"`
 }
 
-func (c *configAccount) asAccount() entities.Account {
+type AccountConfiguration struct {
+	OrgId    string           `json:"orgId"`
+	OrgPaths []string         `json:"orgPaths"`
+	SCPs     [][]entities.Arn `json:"serviceControlPolicies"`
+	RCPs     [][]entities.Arn `json:"resourceControlPolicies"`
+}
+
+func (c *Account) asAccount() entities.Account {
 	return entities.Account{
 		Id:       c.AccountId,
 		OrgId:    c.Configuration.OrgId,
@@ -350,14 +352,16 @@ func (c *configAccount) asAccount() entities.Account {
 // Yams::ServiceControlPolicy
 // -------------------------------------------------------------------------------------------------
 
-type configSCP struct {
+type SCP struct {
 	ConfigItem
-	Configuration struct {
-		Document encodedPolicy `json:"document"`
-	}
+	Configuration SCPConfiguration `json:"configuration"`
 }
 
-func (c *configSCP) asPolicy() entities.ManagedPolicy {
+type SCPConfiguration struct {
+	Document encodedPolicy `json:"document"`
+}
+
+func (c *SCP) asPolicy() entities.ManagedPolicy {
 	return entities.ManagedPolicy{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -366,7 +370,7 @@ func (c *configSCP) asPolicy() entities.ManagedPolicy {
 	}
 }
 
-func (c *configSCP) asResource() entities.Resource {
+func (c *SCP) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -380,14 +384,16 @@ func (c *configSCP) asResource() entities.Resource {
 // Yams::ResourceControlPolicy
 // -------------------------------------------------------------------------------------------------
 
-type configRCP struct {
+type RCP struct {
 	ConfigItem
-	Configuration struct {
-		Document encodedPolicy `json:"document"`
-	}
+	Configuration RCPConfiguration `json:"configuration"`
 }
 
-func (c *configRCP) asPolicy() entities.ManagedPolicy {
+type RCPConfiguration struct {
+	Document encodedPolicy `json:"document"`
+}
+
+func (c *RCP) asPolicy() entities.ManagedPolicy {
 	return entities.ManagedPolicy{
 		Type:      c.Type,
 		AccountId: c.AccountId,
@@ -396,7 +402,7 @@ func (c *configRCP) asPolicy() entities.ManagedPolicy {
 	}
 }
 
-func (c *configRCP) asResource() entities.Resource {
+func (c *RCP) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
 		AccountId: c.AccountId,

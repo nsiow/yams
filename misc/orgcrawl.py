@@ -95,15 +95,23 @@ def get_policy_structure(org_structure: dict) -> dict:
     to that entity, e.g.
 
     {
-      "r-123": [
-        "p-12345",
-      ],
+      "r-123": {
+        "SCPs": [
+            "p-12345",
+        ],
+      },
       "111111111111": [
-        "p-11111",
+        "SCPs": [
+            "p-11111",
+        ],
       ],
       "ou-123": [
-        "p-22222",
-        "p-33333",
+        "SCPs": [
+            "p-22222",
+        ],
+        "RCPs": [
+            "p-33333",
+        ],
       ],
       ...
     }
@@ -113,9 +121,12 @@ def get_policy_structure(org_structure: dict) -> dict:
     for target_list in org_structure.values():
         for target_id in target_list:
             if target_id not in structure:
-                resp = orgclient.list_policies_for_target(TargetId=target_id,
-                                                          Filter='SERVICE_CONTROL_POLICY')
-                structure[target_id] = [p['Id'] for p in resp['Policies']]
+                structure[target_id] = {
+                    'SCPs': [p['Id'] for p in orgclient.list_policies_for_target(
+                        TargetId=target_id, Filter='SERVICE_CONTROL_POLICY')],
+                    'RCPs': [p['Id'] for p in orgclient.list_policies_for_target(
+                        TargetId=target_id, Filter='RESOURCE_CONTROL_POLICY')],
+                }
 
     return structure
 
@@ -142,11 +153,12 @@ def get_policies(policy_structure: dict) -> dict:
     """
     policies = {}
 
-    for policy_list in policy_structure.values():
-        for policy_id in policy_list:
-            if policy_id not in policies:
-                resp = orgclient.describe_policy(PolicyId=policy_id)
-                policies[policy_id] = resp['Policy']
+    for policy_dict in policy_structure.values():
+        for policy_list in policy_dict.values():
+            for policy_id in policy_list:
+                if policy_id not in policies:
+                    resp = orgclient.describe_policy(PolicyId=policy_id)
+                    policies[policy_id] = resp['Policy']
 
     return policies
 
@@ -166,7 +178,8 @@ def generate_org_paths(org_id: str, ou_path: list[str]) -> list[str]:
 
 def as_config_blobs(org_id: str,
                     org_structure: dict,
-                    policy_structure: dict, policy_data: dict) -> list[dict]:
+                    policy_structure: dict,
+                    policy_data: dict) -> list[dict]:
     """Combine the org + policy structure into a parsable format."""
     data = []
 
@@ -179,16 +192,27 @@ def as_config_blobs(org_id: str,
                 node_policies.append(policy)
             policies.append(node_policies)
 
-        parsed_policies = []
+        parsed_scps = []
         for policy_level in policies:
             parsed_policy_level = []
-            for policy_obj in policy_level:
+            for policy_obj in policy_level['SCPs']:
                 policy_summary = policy_obj['PolicySummary']
                 policy_content = policy_obj['Content']
                 policy = json.loads(policy_content)
                 policy['Id'] = get_policy_id(policy_summary)
                 parsed_policy_level.append(policy)
-            parsed_policies.append(parsed_policy_level)
+            parsed_scps.append(parsed_policy_level)
+
+        parsed_rcps = []
+        for policy_level in policies:
+            parsed_policy_level = []
+            for policy_obj in policy_level['RCPs']:
+                policy_summary = policy_obj['PolicySummary']
+                policy_content = policy_obj['Content']
+                policy = json.loads(policy_content)
+                policy['Id'] = get_policy_id(policy_summary)
+                parsed_policy_level.append(policy)
+            parsed_rcps.append(parsed_policy_level)
 
         account_config_blob = {
             'arn': f'arn:yams:::account/{account}',
@@ -197,7 +221,8 @@ def as_config_blobs(org_id: str,
             'configuration': {
               'orgId': org_id,
               'orgPaths': generate_org_paths(org_id, ou_path),
-              'serviceControlPolicies': parsed_policies,
+              'serviceControlPolicies': parsed_scps,
+              'resourceControlPolicies': parsed_scps,
             },
         }
         data.append(account_config_blob)
