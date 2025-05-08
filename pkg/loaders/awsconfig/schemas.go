@@ -24,7 +24,7 @@ type boundaryRef struct {
 
 type inlinePolicy struct {
 	Name     string        `json:"policyName"`
-	Document encodedPolicy `json:"policyDocument"`
+	Document EncodedPolicy `json:"policyDocument"`
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -102,7 +102,7 @@ func (c *IamUser) asResource() entities.Resource {
 type IamRole struct {
 	ConfigItem
 	Configuration struct {
-		AssumeRolePolicyDocument encodedPolicy  `json:"assumeRolePolicyDocument"`
+		AssumeRolePolicyDocument EncodedPolicy  `json:"assumeRolePolicyDocument"`
 		AttachedManagedPolicies  []policyRef    `json:"attachedManagedPolicies"`
 		PermissionsBoundary      boundaryRef    `json:"permissionsBoundary"`
 		RolePolicies             []inlinePolicy `json:"rolePolicyList"`
@@ -148,7 +148,7 @@ type IamPolicy struct {
 		PolicyVersionList []struct {
 			VersionId        string        `json:"versionId"`
 			IsDefaultVersion bool          `json:"isDefaultVersion"`
-			Document         encodedPolicy `json:"document"`
+			Document         EncodedPolicy `json:"document"`
 		} `json:"policyVersionList"`
 	} `json:"configuration"`
 }
@@ -224,7 +224,7 @@ type S3Bucket struct {
 	ConfigItem
 	SupplementaryConfiguration struct {
 		BucketPolicy struct {
-			PolicyText encodedPolicy `json:"policyText"`
+			PolicyText EncodedPolicy `json:"policyText"`
 		}
 	} `json:"supplementaryConfiguration"`
 }
@@ -285,7 +285,7 @@ func (c *KmsKey) asResource() entities.Resource {
 type SnsTopic struct {
 	ConfigItem
 	Configuration struct {
-		Policy encodedPolicy
+		Policy EncodedPolicy
 	} `json:"configuration"`
 }
 
@@ -307,7 +307,7 @@ func (c *SnsTopic) asResource() entities.Resource {
 type SqsQueue struct {
 	ConfigItem
 	Configuration struct {
-		Policy encodedPolicy
+		Policy EncodedPolicy
 	} `json:"configuration"`
 }
 
@@ -358,7 +358,7 @@ type SCP struct {
 }
 
 type SCPConfiguration struct {
-	Document encodedPolicy `json:"document"`
+	Document EncodedPolicy `json:"document"`
 }
 
 func (c *SCP) asPolicy() entities.ManagedPolicy {
@@ -390,7 +390,7 @@ type RCP struct {
 }
 
 type RCPConfiguration struct {
-	Document encodedPolicy `json:"document"`
+	Document EncodedPolicy `json:"document"`
 }
 
 func (c *RCP) asPolicy() entities.ManagedPolicy {

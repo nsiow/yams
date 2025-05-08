@@ -152,7 +152,7 @@ func TestDecodePolicyString(t *testing.T) {
 	}
 
 	testlib.RunTestSuite(t, tests, func(s string) (policy.Policy, error) {
-		var e encodedPolicy
+		var e EncodedPolicy
 		err := json.Unmarshal([]byte(s), &e)
 		if err != nil {
 			return policy.Policy{}, err

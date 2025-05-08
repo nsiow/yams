@@ -9,11 +9,11 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// encodedPolicy is a (maybe URL encoded, maybe nested) string containing a policy document
-type encodedPolicy policy.Policy
+// EncodedPolicy is a (maybe URL encoded, maybe nested) string containing a policy document
+type EncodedPolicy policy.Policy
 
 // UnmarshalJSON instructs how to create EncodedPolicy fields from raw bytes
-func (p *encodedPolicy) UnmarshalJSON(data []byte) error {
+func (p *EncodedPolicy) UnmarshalJSON(data []byte) error {
 	// Perform first unwrapping of string
 	var policyString string
 	err := json.Unmarshal(data, &policyString)
@@ -23,7 +23,7 @@ func (p *encodedPolicy) UnmarshalJSON(data []byte) error {
 
 	// Empty string == empty policy
 	if len(policyString) == 0 {
-		*p = encodedPolicy(policy.Policy{})
+		*p = EncodedPolicy(policy.Policy{})
 		return nil
 	}
 
@@ -34,7 +34,7 @@ func (p *encodedPolicy) UnmarshalJSON(data []byte) error {
 	}
 
 	// Save to our policy
-	*p = encodedPolicy(policy)
+	*p = EncodedPolicy(policy)
 	return nil
 }
 

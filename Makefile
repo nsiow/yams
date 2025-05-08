@@ -13,8 +13,8 @@ GO_BUILDER ?= go build
 build:
 	go build ./...
 
-.PHONY: build-cli
-build-cli: $(CLI)
+.PHONY: cli
+cli: $(CLI)
 
 $(CLI): $(GO_FILES)
 	go build ./cmd/...

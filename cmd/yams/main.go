@@ -1,20 +1,20 @@
 package main
 
-import (
-	"fmt"
-	"os"
-)
+import "log/slog"
 
 func main() {
+	// Set up CLI logging
+	initLogging()
+
 	// Parse CLI arguments
 	flags, err := ParseFlags()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v", err)
-		os.Exit(2)
+		exit("error: %v", err)
 	}
+	slog.Debug("cli flags", "flags", flags)
 
 	// Run the requested command logic
-	switch flags.mode {
+	switch flags.Mode {
 	case RUN_MODE_DUMP:
 		runDump(flags)
 	}

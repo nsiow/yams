@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"slices"
 )
@@ -19,44 +20,43 @@ var VALID_RUN_MODES = []string{
 
 // Flags is a struct containing all flags/options related to CLI behavior
 type Flags struct {
-	mode string
+	Mode string
 
 	// dump
-	Target string
+	DumpTarget string
 
 	// server
-	Cache       string
-	CacheFormat string
-	Debug       bool
+	Cache string
+	Debug bool
 }
 
 func ParseFlags() (*Flags, error) {
 	// Define empty run command; we'll aim to mostly use flag.*Var
-	opts := Flags{}
+	opts := &Flags{}
 
 	// Check for subcommand
 	if len(os.Args) < 2 || !slices.Contains(VALID_RUN_MODES, os.Args[1]) {
 		return nil, fmt.Errorf(
 			"invalid command for %s: must provide one of %v\n", os.Args[0], VALID_RUN_MODES)
 	}
-	opts.mode = os.Args[1]
+	opts.Mode = os.Args[1]
+	slog.Debug("parsed mode", "mode", opts.Mode)
 
 	// Parse options specific to subcommand
-	switch opts.mode {
+	switch opts.Mode {
+
+	// mode=dump
 	case RUN_MODE_DUMP:
-		initFlagsForDump(&opts)
+		fs := flag.NewFlagSet("dump", flag.ExitOnError)
+		fs.StringVar(&opts.DumpTarget, "target", opts.DumpTarget,
+			fmt.Sprintf("which target to dump, one of: %v", DUMP_TARGETS))
+		fs.Parse(os.Args[2:])
+
+	// should never get here
+	default:
+		panic("invalid unreachable mode somehow?")
 	}
+	slog.Debug("opts after flag parsing", "opts", opts)
 
-	// Populate + validate flags, then return runconfig
-	flag.Parse()
-	return &opts, ValidateFlags(opts)
-}
-
-func ValidateFlags(rc Flags) error {
-	// Make sure a cache file was provided
-	// if rc.Cache == "" {
-	// 	return fmt.Errorf("no resource cache found; provide one with '-cache'")
-	// }
-
-	return nil
+	return opts, nil
 }
