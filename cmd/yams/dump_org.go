@@ -27,17 +27,19 @@ func dumpOrg() (string, error) {
 		return "", fmt.Errorf("error creating org client: %w", err)
 	}
 
-	accounts, err := walk(ctx, client)
+	cache := make(map[string]any)
+
+	accounts, err := walk(ctx, client, cache)
 	if err != nil {
 		return "", fmt.Errorf("error walking accounts: %w", err)
 	}
 
-	scps, err := describeScps(ctx, client)
+	scps, err := describeScps(ctx, client, cache)
 	if err != nil {
 		return "", fmt.Errorf("error walking SCPs: %w", err)
 	}
 
-	rcps, err := describeRcps(ctx, client)
+	rcps, err := describeRcps(ctx, client, cache)
 	if err != nil {
 		return "", fmt.Errorf("error walking RCPs: %w", err)
 	}
@@ -65,9 +67,10 @@ func dumpOrg() (string, error) {
 // Org walking
 // -------------------------------------------------------------------------------------------------
 
-func walk(ctx context.Context, client *organizations.Client) ([]awsconfig.Account, error) {
-	cache := make(map[string]any)
-
+func walk(
+	ctx context.Context,
+	client *organizations.Client,
+	cache map[string]any) ([]awsconfig.Account, error) {
 	org, err := describeOrg(ctx, client, cache)
 	if err != nil {
 		return nil, err
@@ -499,7 +502,10 @@ func makeAccount(
 	}, nil
 }
 
-func describeScps(ctx context.Context, client *organizations.Client) ([]awsconfig.SCP, error) {
+func describeScps(
+	ctx context.Context,
+	client *organizations.Client,
+	cache map[string]any) ([]awsconfig.SCP, error) {
 	raw, err := describePolicies(ctx, client, types.PolicyTypeServiceControlPolicy)
 	if err != nil {
 		return nil, err
@@ -512,11 +518,17 @@ func describeScps(ctx context.Context, client *organizations.Client) ([]awsconfi
 			return nil, err
 		}
 
+		org, err := describeOrg(ctx, client, cache)
+		if err != nil {
+			return nil, err
+		}
+
 		s := awsconfig.SCP{
 			ConfigItem: awsconfig.ConfigItem{
-				Type:   "Yams::Organizations::ServiceControlPolicy",
-				Arn:    *rawPolicy.Policy.PolicySummary.Arn,
-				Region: "global",
+				Type:      "Yams::Organizations::ServiceControlPolicy",
+				Arn:       *rawPolicy.Policy.PolicySummary.Arn,
+				Region:    "global",
+				AccountId: *org.MasterAccountId,
 			},
 			Configuration: awsconfig.SCPConfiguration{
 				Document: awsconfig.EncodedPolicy(policyDocument),
@@ -528,7 +540,10 @@ func describeScps(ctx context.Context, client *organizations.Client) ([]awsconfi
 	return structured, nil
 }
 
-func describeRcps(ctx context.Context, client *organizations.Client) ([]awsconfig.SCP, error) {
+func describeRcps(
+	ctx context.Context,
+	client *organizations.Client,
+	cache map[string]any) ([]awsconfig.SCP, error) {
 	raw, err := describePolicies(ctx, client, types.PolicyTypeResourceControlPolicy)
 	if err != nil {
 		return nil, err
@@ -541,11 +556,17 @@ func describeRcps(ctx context.Context, client *organizations.Client) ([]awsconfi
 			return nil, err
 		}
 
+		org, err := describeOrg(ctx, client, cache)
+		if err != nil {
+			return nil, err
+		}
+
 		s := awsconfig.SCP{
 			ConfigItem: awsconfig.ConfigItem{
-				Type:   "Yams::Organizations::ResourceControlPolicy",
-				Arn:    *rawPolicy.Policy.PolicySummary.Arn,
-				Region: "global",
+				Type:      "Yams::Organizations::ResourceControlPolicy",
+				Arn:       *rawPolicy.Policy.PolicySummary.Arn,
+				Region:    "global",
+				AccountId: *org.MasterAccountId,
 			},
 			Configuration: awsconfig.SCPConfiguration{
 				Document: awsconfig.EncodedPolicy(policyDocument),

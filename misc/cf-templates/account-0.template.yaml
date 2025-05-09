@@ -186,6 +186,14 @@ Resources:
         - Key: Color
           Value: Magenta
 
+  GreenBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: 'yams-green'
+      Tags:
+        - Key: Color
+          Value: Green
+
   CyanBucket:
     Type: 'AWS::S3::Bucket'
     Properties:
