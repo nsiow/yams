@@ -1,7 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"slices"
+
+	"github.com/nsiow/yams/internal/smartrw"
 )
 
 const (
@@ -18,15 +20,30 @@ func runDump(opts *Flags) {
 	var output string
 	var err error
 
-	switch opts.DumpTarget {
-	case DUMP_TARGET_ORG:
-		output, err = dumpOrg()
-		if err != nil {
-			exit("error attempt to dump org data: %v", err.Error())
-		}
-	default:
-		exit("unknown dump target '%s', must be one of: %s", opts.DumpTarget, DUMP_TARGETS)
+	writer, err := smartrw.NewWriter(opts.OutFile)
+	if err != nil {
+		fail("error opening destination '%s' for writing: %w", opts.OutFile, err)
 	}
 
-	fmt.Println(output)
+	if !slices.Contains(DUMP_TARGETS, opts.DumpTarget) {
+		fail("unknown dump target '%s', must be one of: %s", opts.DumpTarget, DUMP_TARGETS)
+	}
+
+	if opts.DumpTarget == DUMP_TARGET_ORG {
+		output, err = dumpOrg()
+	}
+
+	if err != nil {
+		fail("error attempting to dump '%s': %w", opts.DumpTarget, err)
+	}
+
+	_, err = writer.Write([]byte(output))
+	if err != nil {
+		fail("error writing to destination '%s': %w", opts.OutFile, err)
+	}
+
+	err = writer.Close()
+	if err != nil {
+		fail("error closing/flushing to destination '%s': %w", opts.OutFile, err)
+	}
 }

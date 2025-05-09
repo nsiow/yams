@@ -24,6 +24,7 @@ type Flags struct {
 
 	// dump
 	DumpTarget string
+	OutFile    string
 
 	// server
 	Cache string
@@ -50,6 +51,8 @@ func ParseFlags() (*Flags, error) {
 		fs := flag.NewFlagSet("dump", flag.ExitOnError)
 		fs.StringVar(&opts.DumpTarget, "target", opts.DumpTarget,
 			fmt.Sprintf("which target to dump, one of: %v", DUMP_TARGETS))
+		fs.StringVar(&opts.OutFile, "out", opts.OutFile,
+			fmt.Sprintf("destination file for writing"))
 		fs.Parse(os.Args[2:])
 
 	// should never get here

@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func exit(format string, a ...any) {
+func fail(format string, a ...any) {
 	if !strings.HasSuffix(format, "\n") {
 		format += "\n"
 	}

@@ -9,7 +9,7 @@ func main() {
 	// Parse CLI arguments
 	flags, err := ParseFlags()
 	if err != nil {
-		exit("error: %v", err)
+		fail("error: %v", err)
 	}
 	slog.Debug("cli flags", "flags", flags)
 
