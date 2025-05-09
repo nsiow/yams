@@ -17,6 +17,9 @@ type ManagedPolicy struct {
 	// Arn refers to the Amazon Resource Name of the Policy
 	Arn Arn
 
+	// Name refers to the friendly name of the Policy
+	Name string
+
 	// Policy contains the actual Policy data
 	Policy policy.Policy
 }

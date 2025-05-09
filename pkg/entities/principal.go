@@ -15,6 +15,9 @@ type Principal struct {
 	// AccountId refers to the 12-digit AWS account ID where the Principal resides
 	AccountId string
 
+	// Name refers to the friendly name of the Principal
+	Name string
+
 	// Arn refers to the Amazon Resource Name of the Principal
 	Arn Arn
 

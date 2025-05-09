@@ -21,6 +21,9 @@ type Resource struct {
 	// Region refers to the AWS region ID where the Resource resides
 	Region string
 
+	// Name refers to the friendly name of the Resource
+	Name string
+
 	// Arn refers to the Amazon Resource Name of the Resource
 	Arn Arn
 

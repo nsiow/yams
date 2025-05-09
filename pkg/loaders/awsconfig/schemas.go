@@ -38,6 +38,7 @@ type genericResource struct {
 func (c *genericResource) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Region:    c.Region,
 		Arn:       c.Arn,
@@ -66,6 +67,7 @@ func (c *IamUser) groupToArn(groupName string) string {
 func (c *IamUser) asPrincipal() entities.Principal {
 	return entities.Principal{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Arn:       c.Arn,
 		Tags:      c.Tags,
@@ -88,6 +90,7 @@ func (c *IamUser) asPrincipal() entities.Principal {
 func (c *IamUser) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Region:    c.Region,
 		Arn:       c.Arn,
@@ -112,6 +115,7 @@ type IamRole struct {
 func (c *IamRole) asPrincipal() entities.Principal {
 	return entities.Principal{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Arn:       c.Arn,
 		Tags:      c.Tags,
@@ -130,6 +134,7 @@ func (c *IamRole) asPrincipal() entities.Principal {
 func (c *IamRole) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Region:    c.Region,
 		Arn:       c.Arn,
@@ -158,6 +163,7 @@ func (c *IamPolicy) asPolicy() (entities.ManagedPolicy, error) {
 		if pv.IsDefaultVersion {
 			return entities.ManagedPolicy{
 				Type:      c.Type,
+				Name:      c.Name,
 				AccountId: c.AccountId,
 				Arn:       c.Arn,
 				Policy:    policy.Policy(pv.Document),
@@ -171,6 +177,7 @@ func (c *IamPolicy) asPolicy() (entities.ManagedPolicy, error) {
 func (c *IamPolicy) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Region:    c.Region,
 		Arn:       c.Arn,
@@ -193,6 +200,7 @@ type IamGroup struct {
 func (c *IamGroup) asGroup() entities.Group {
 	return entities.Group{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Arn:       c.Arn,
 		InlinePolicies: common.Map(c.Configuration.GroupPolicies,
@@ -209,6 +217,7 @@ func (c *IamGroup) asGroup() entities.Group {
 func (c *IamGroup) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Region:    c.Region,
 		Arn:       c.Arn,
@@ -232,6 +241,7 @@ type S3Bucket struct {
 func (c *S3Bucket) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Region:    c.Region,
 		Arn:       c.Arn,
@@ -251,6 +261,7 @@ type DynamodbTable struct {
 func (c *DynamodbTable) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Region:    c.Region,
 		Arn:       c.Arn,
@@ -270,6 +281,7 @@ type KmsKey struct {
 func (c *KmsKey) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Region:    c.Region,
 		Arn:       c.Arn,
@@ -292,6 +304,7 @@ type SnsTopic struct {
 func (c *SnsTopic) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Region:    c.Region,
 		Arn:       c.Arn,
@@ -314,6 +327,7 @@ type SqsQueue struct {
 func (c *SqsQueue) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Region:    c.Region,
 		Arn:       c.Arn,
@@ -382,6 +396,7 @@ type SCPConfiguration struct {
 func (c *SCP) asPolicy() entities.ManagedPolicy {
 	return entities.ManagedPolicy{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Arn:       c.Arn,
 		Policy:    policy.Policy(c.Configuration.Document),
@@ -391,6 +406,7 @@ func (c *SCP) asPolicy() entities.ManagedPolicy {
 func (c *SCP) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Region:    c.Region,
 		Arn:       c.Arn,
@@ -414,6 +430,7 @@ type RCPConfiguration struct {
 func (c *RCP) asPolicy() entities.ManagedPolicy {
 	return entities.ManagedPolicy{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Arn:       c.Arn,
 		Policy:    policy.Policy(c.Configuration.Document),
@@ -423,6 +440,7 @@ func (c *RCP) asPolicy() entities.ManagedPolicy {
 func (c *RCP) asResource() entities.Resource {
 	return entities.Resource{
 		Type:      c.Type,
+		Name:      c.Name,
 		AccountId: c.AccountId,
 		Region:    c.Region,
 		Arn:       c.Arn,

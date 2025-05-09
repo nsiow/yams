@@ -183,6 +183,7 @@ func TestLoad(t *testing.T) {
 				WithGroups(
 					entities.Group{
 						Type:      "AWS::IAM::Group",
+						Name:      "family",
 						AccountId: "000000000000",
 						Arn:       "arn:aws:iam::000000000000:group/family",
 						AttachedPolicies: []entities.Arn{
@@ -209,6 +210,7 @@ func TestLoad(t *testing.T) {
 				WithResources(
 					entities.Resource{
 						Type:      "AWS::IAM::Group",
+						Name:      "family",
 						AccountId: "000000000000",
 						Arn:       "arn:aws:iam::000000000000:group/family",
 						Tags:      []entities.Tag{},
@@ -333,6 +335,7 @@ func TestLoad(t *testing.T) {
 				WithPrincipals(
 					entities.Principal{
 						Type:      "AWS::IAM::User",
+						Name:      "myuser",
 						AccountId: "000000000000",
 						Arn:       "arn:aws:iam::000000000000:user/myuser",
 						Tags:      []entities.Tag{},
@@ -364,6 +367,7 @@ func TestLoad(t *testing.T) {
 				WithResources(
 					entities.Resource{
 						Type:      "AWS::IAM::User",
+						Name:      "myuser",
 						AccountId: "000000000000",
 						Arn:       "arn:aws:iam::000000000000:user/myuser",
 						Tags:      []entities.Tag{},

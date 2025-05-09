@@ -9,6 +9,7 @@ import (
 // ConfigItem defines the structure of a generic CI from AWS Config
 type ConfigItem struct {
 	Type      string         `json:"resourceType"`
+	Name      string         `json:"resourceName"`
 	AccountId string         `json:"accountId"`
 	Region    string         `json:"awsRegion"`
 	Arn       entities.Arn   `json:"arn"`

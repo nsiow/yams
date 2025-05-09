@@ -97,6 +97,7 @@ func _walk(
 	cache map[string]any,
 	orgId string,
 	path []string) ([]awsconfig.Account, error) {
+
 	node := path[len(path)-1]
 
 	if isAccount(node) {

@@ -1,6 +1,5 @@
 package condition
 
-// This const block holds string constants corresponding to AWS condition operators
 const (
 	// ---------------------------------------------------------------------------------------------
 	// String Functions
