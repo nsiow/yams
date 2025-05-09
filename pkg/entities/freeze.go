@@ -53,7 +53,7 @@ type FrozenAccount struct {
 
 func (a *Account) Freeze() (FrozenAccount, error) {
 	if a.uv == nil {
-		return FrozenAccount{}, fmt.Errorf("cannot freeze; account is missing uv: %s", a.Id)
+		return FrozenAccount{}, fmt.Errorf("cannot freeze; account is missing universe: %s", a.Id)
 	}
 
 	frozen := FrozenAccount{
@@ -96,7 +96,7 @@ type FrozenGroup struct {
 
 func (g *Group) Freeze() (FrozenGroup, error) {
 	if g.uv == nil {
-		return FrozenGroup{}, fmt.Errorf("cannot freeze; group is missing uv: %s", g.Arn)
+		return FrozenGroup{}, fmt.Errorf("cannot freeze; group is missing universe: %s", g.Arn)
 	}
 
 	f := FrozenGroup{
@@ -136,7 +136,7 @@ type FrozenPrincipal struct {
 func (p *Principal) Freeze() (FrozenPrincipal, error) {
 	if p.uv == nil {
 		return FrozenPrincipal{},
-			fmt.Errorf("cannot freeze; principal is missing uv: %s", p.Arn)
+			fmt.Errorf("cannot freeze; principal is missing universe: %s", p.Arn)
 	}
 
 	f := FrozenPrincipal{
@@ -199,7 +199,7 @@ type FrozenResource struct {
 func (r *Resource) Freeze() (FrozenResource, error) {
 	if r.uv == nil {
 		return FrozenResource{},
-			fmt.Errorf("cannot freeze; resource is missing uv: %s", r.Arn)
+			fmt.Errorf("cannot freeze; resource is missing universe: %s", r.Arn)
 	}
 
 	f := FrozenResource{
