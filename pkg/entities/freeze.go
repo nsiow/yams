@@ -46,9 +46,7 @@ type FrozenAccount struct {
 	Id       string
 	OrgId    string
 	OrgPaths []string
-
-	SCPs [][]ManagedPolicy
-	RCPs [][]ManagedPolicy
+	OrgNodes []FrozenOrgNode
 }
 
 func (a *Account) Freeze() (FrozenAccount, error) {
@@ -62,18 +60,52 @@ func (a *Account) Freeze() (FrozenAccount, error) {
 		OrgPaths: a.OrgPaths,
 	}
 
-	for _, layer := range a.SCPs {
-		policies, err := freezePolicies(layer, a.uv)
+	for _, node := range a.OrgNodes {
+		frozenNode, err := freezeOrgNode(&node, a.uv)
 		if err != nil {
 			return FrozenAccount{}, err
+		}
+
+		frozen.OrgNodes = append(frozen.OrgNodes, frozenNode)
+	}
+
+	return frozen, nil
+}
+
+// -------------------------------------------------------------------------------------------------
+// OrgNode
+// -------------------------------------------------------------------------------------------------
+
+type FrozenOrgNode struct {
+	Id   string
+	Type string
+	Arn  string
+	Name string
+
+	SCPs []ManagedPolicy
+	RCPs []ManagedPolicy
+}
+
+func freezeOrgNode(node *OrgNode, uv *Universe) (FrozenOrgNode, error) {
+	frozen := FrozenOrgNode{
+		Id:   node.Id,
+		Type: node.Type,
+		Arn:  node.Arn,
+		Name: node.Name,
+	}
+
+	for _, arn := range node.SCPs {
+		policies, err := freezePolicy(arn, uv)
+		if err != nil {
+			return FrozenOrgNode{}, err
 		}
 		frozen.SCPs = append(frozen.SCPs, policies)
 	}
 
-	for _, layer := range a.RCPs {
-		policies, err := freezePolicies(layer, a.uv)
+	for _, arn := range node.RCPs {
+		policies, err := freezePolicy(arn, uv)
 		if err != nil {
-			return FrozenAccount{}, err
+			return FrozenOrgNode{}, err
 		}
 		frozen.RCPs = append(frozen.RCPs, policies)
 	}

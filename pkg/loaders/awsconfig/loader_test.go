@@ -55,20 +55,20 @@ func TestLoad(t *testing.T) {
 							"o-123/ou-level-1/",
 							"o-123/ou-level-1/ou-level-2/",
 						},
-						SCPs: [][]entities.Arn{
+						OrgNodes: []entities.OrgNode{
 							{
-								"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-							},
-							{
-								"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
-							},
-						},
-						RCPs: [][]entities.Arn{
-							{
-								"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-							},
-							{
-								"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								Id:   "123",
+								Type: "ACCOUNT",
+								Name: "myaccount",
+								Arn:  "arn:aws:organizations::111:account/o-123/123",
+								SCPs: []entities.Arn{
+									"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+									"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								},
+								RCPs: []entities.Arn{
+									"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+									"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								},
 							},
 						},
 					},
@@ -88,12 +88,20 @@ func TestLoad(t *testing.T) {
 							"o-123/ou-level-1/",
 							"o-123/ou-level-1/ou-level-2/",
 						},
-						SCPs: [][]entities.Arn{
+						OrgNodes: []entities.OrgNode{
 							{
-								"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-							},
-							{
-								"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								Id:   "123",
+								Type: "ACCOUNT",
+								Name: "myaccount",
+								Arn:  "arn:aws:organizations::111:account/o-123/123",
+								SCPs: []entities.Arn{
+									"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+									"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								},
+								RCPs: []entities.Arn{
+									"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+									"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								},
 							},
 						},
 					},

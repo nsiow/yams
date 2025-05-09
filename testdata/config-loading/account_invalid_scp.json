@@ -7,7 +7,11 @@
       "accountId": "000000000000",
       "orgId": "o-123",
 			"orgPaths": ["o-123/", "o-123/ou-level-1/", "o-123/ou-level-1/ou-level-2/"],
-      "serviceControlPolicies": "foo"
+      "orgNodes": [
+        {
+          "serviceControlPolicies": "foo"
+        }
+      ]
     }
   }
 ]

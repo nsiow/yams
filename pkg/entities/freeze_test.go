@@ -58,9 +58,11 @@ func TestFreeze(t *testing.T) {
 				WithAccounts(
 					Account{
 						Id: "55555",
-						SCPs: [][]Arn{
+						OrgNodes: []OrgNode{
 							{
-								Arn("arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"),
+								SCPs: []Arn{
+									Arn("arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"),
+								},
 							},
 						},
 					},
@@ -79,9 +81,11 @@ func TestFreeze(t *testing.T) {
 				WithAccounts(
 					Account{
 						Id: "55555",
-						RCPs: [][]Arn{
+						OrgNodes: []OrgNode{
 							{
-								Arn("arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456"),
+								RCPs: []Arn{
+									Arn("arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456"),
+								},
 							},
 						},
 					},
@@ -165,9 +169,11 @@ func TestFreeze(t *testing.T) {
 				WithAccounts(
 					Account{
 						Id: "55555",
-						SCPs: [][]Arn{
+						OrgNodes: []OrgNode{
 							{
-								Arn("arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"),
+								SCPs: []Arn{
+									Arn("arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"),
+								},
 							},
 						},
 					},
@@ -187,14 +193,14 @@ func TestFreeze(t *testing.T) {
 				WithAccounts(
 					Account{
 						Id: "55555",
-						SCPs: [][]Arn{
+						OrgNodes: []OrgNode{
 							{
-								Arn("arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"),
-							},
-						},
-						RCPs: [][]Arn{
-							{
-								Arn("arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456"),
+								SCPs: []Arn{
+									Arn("arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"),
+								},
+								RCPs: []Arn{
+									Arn("arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456"),
+								},
 							},
 						},
 					},
@@ -229,28 +235,28 @@ func TestFreeze(t *testing.T) {
 						Arn:       "arn:aws:iam::55555:role/role1",
 						Account: FrozenAccount{
 							Id: "55555",
-							SCPs: [][]ManagedPolicy{
+							OrgNodes: []FrozenOrgNode{
 								{
-									ManagedPolicy{
-										Arn: "arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123",
-										Policy: policy.Policy{
-											Statement: policy.StatementBlock{
-												{
-													Sid: "stmt0",
+									SCPs: []ManagedPolicy{
+										ManagedPolicy{
+											Arn: "arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123",
+											Policy: policy.Policy{
+												Statement: policy.StatementBlock{
+													{
+														Sid: "stmt0",
+													},
 												},
 											},
 										},
 									},
-								},
-							},
-							RCPs: [][]ManagedPolicy{
-								{
-									ManagedPolicy{
-										Arn: "arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456",
-										Policy: policy.Policy{
-											Statement: policy.StatementBlock{
-												{
-													Sid: "stmt1",
+									RCPs: []ManagedPolicy{
+										ManagedPolicy{
+											Arn: "arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456",
+											Policy: policy.Policy{
+												Statement: policy.StatementBlock{
+													{
+														Sid: "stmt1",
+													},
 												},
 											},
 										},

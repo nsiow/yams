@@ -15,13 +15,9 @@ type Account struct {
 	// TODO(nsiow) implement this in the org crawler
 	OrgPaths []string
 
-	// FIXME(nsiow) implement these as OrgNodes so that we have node information on where SCPs live
-
-	// SCPs refers to the Service Control Policies applied to the account
-	// TODO(nsiow) add more support for the niche cases described in:
-	// https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps_syntax.html
-	SCPs [][]Arn
-
-	// RCPs refers to the Resource Control Policies applied to the account
-	RCPs [][]Arn
+	// OrgNodes refers to the path from the organizations root to the account itself
+	//
+	// It is INCLUSIVE of the account itself, which is to say that [OrgNodes] will include an OrgNode
+	// with Type=ACCOUNT and Id=Account.id
+	OrgNodes []OrgNode
 }

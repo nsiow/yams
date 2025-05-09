@@ -323,7 +323,7 @@ func (c *SqsQueue) asResource() entities.Resource {
 }
 
 // -------------------------------------------------------------------------------------------------
-// Yams::Account
+// Yams::Organizations::Account
 // -------------------------------------------------------------------------------------------------
 
 type Account struct {
@@ -332,10 +332,18 @@ type Account struct {
 }
 
 type AccountConfiguration struct {
-	OrgId    string           `json:"orgId"`
-	OrgPaths []string         `json:"orgPaths"`
-	SCPs     [][]entities.Arn `json:"serviceControlPolicies"`
-	RCPs     [][]entities.Arn `json:"resourceControlPolicies"`
+	OrgId    string    `json:"orgId"`
+	OrgPaths []string  `json:"orgPaths"`
+	OrgNodes []OrgNode `json:"orgNodes"`
+}
+
+type OrgNode struct {
+	Id   string         `json:"id"`
+	Type string         `json:"type"`
+	Arn  string         `json:"arn"`
+	Name string         `json:"name"`
+	SCPs []entities.Arn `json:"serviceControlPolicies"`
+	RCPs []entities.Arn `json:"resourceControlPolicies"`
 }
 
 func (c *Account) asAccount() entities.Account {
@@ -343,13 +351,21 @@ func (c *Account) asAccount() entities.Account {
 		Id:       c.AccountId,
 		OrgId:    c.Configuration.OrgId,
 		OrgPaths: c.Configuration.OrgPaths,
-		SCPs:     c.Configuration.SCPs,
-		RCPs:     c.Configuration.RCPs,
+		OrgNodes: common.Map(c.Configuration.OrgNodes, func(in OrgNode) entities.OrgNode {
+			return entities.OrgNode{
+				Id:   in.Id,
+				Type: in.Type,
+				Arn:  in.Arn,
+				Name: in.Name,
+				SCPs: in.SCPs,
+				RCPs: in.RCPs,
+			}
+		}),
 	}
 }
 
 // -------------------------------------------------------------------------------------------------
-// Yams::ServiceControlPolicy
+// Yams::Organizations::ServiceControlPolicy
 // -------------------------------------------------------------------------------------------------
 
 type SCP struct {
@@ -381,7 +397,7 @@ func (c *SCP) asResource() entities.Resource {
 }
 
 // -------------------------------------------------------------------------------------------------
-// Yams::ResourceControlPolicy
+// Yams::Organizations::ResourceControlPolicy
 // -------------------------------------------------------------------------------------------------
 
 type RCP struct {

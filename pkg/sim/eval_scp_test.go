@@ -16,7 +16,11 @@ func TestSCP(t *testing.T) {
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
-						SCPs: [][]entities.ManagedPolicy{},
+						OrgNodes: []entities.FrozenOrgNode{
+							{
+								SCPs: []entities.ManagedPolicy{},
+							},
+						},
 					},
 				},
 				Resource: &entities.FrozenResource{
@@ -31,15 +35,17 @@ func TestSCP(t *testing.T) {
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
-						SCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_ALLOW,
+													Action:   []string{"*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
@@ -60,15 +66,17 @@ func TestSCP(t *testing.T) {
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
-						SCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_DENY,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_DENY,
+													Action:   []string{"*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
@@ -89,15 +97,17 @@ func TestSCP(t *testing.T) {
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
-						SCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"s3:*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_ALLOW,
+													Action:   []string{"s3:*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
@@ -118,15 +128,17 @@ func TestSCP(t *testing.T) {
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
-						SCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"ec2:*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_ALLOW,
+													Action:   []string{"ec2:*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
@@ -147,29 +159,41 @@ func TestSCP(t *testing.T) {
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
-						SCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
 								},
 							},
-							{}, // should cause a deny
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{},
+							},
+							{
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
@@ -190,41 +214,56 @@ func TestSCP(t *testing.T) {
 			Input: AuthContext{
 				Principal: &entities.FrozenPrincipal{
 					Account: entities.FrozenAccount{
-						SCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
 								},
 							},
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_DENY,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_DENY,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
 								},
 							},
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},

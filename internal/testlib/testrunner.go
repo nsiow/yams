@@ -92,7 +92,7 @@ func generateFailureOutput[I, O any](tc TestCase[I, O], got any) string {
 	}
 
 	gotMessage := "unable to generate for output for `got`"
-	gotFile := path.Join(tmpdir, fmt.Sprintf("yams.%s.got.json", tc.Name))
+	gotFile := path.Join(tmpdir, fmt.Sprintf("yams.%s.got.debug", tc.Name))
 	err = os.WriteFile(gotFile, []byte(prettyGot), 0644)
 	if err == nil {
 		gotMessage = fmt.Sprintf("observed output available @ %s", gotFile)

@@ -596,15 +596,17 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 						},
 					},
 					Account: entities.FrozenAccount{
-						SCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_ALLOW,
+													Action:   []string{"*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
@@ -639,26 +641,28 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 						},
 					},
 					Account: entities.FrozenAccount{
-						SCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_ALLOW,
+													Action:   []string{"*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
-								},
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_DENY,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_DENY,
+													Action:   []string{"*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
@@ -693,15 +697,17 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 						},
 					},
 					Account: entities.FrozenAccount{
-						SCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"ec2:*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_ALLOW,
+													Action:   []string{"ec2:*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
@@ -736,29 +742,41 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 						},
 					},
 					Account: entities.FrozenAccount{
-						SCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
 								},
 							},
-							{}, // empty layer
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								SCPs: []entities.ManagedPolicy{},
+							},
+							{
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
@@ -798,15 +816,20 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "88888",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
@@ -842,26 +865,28 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "88888",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_ALLOW,
+													Action:   []string{"*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
-								},
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_DENY,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_DENY,
+													Action:   []string{"*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
@@ -897,15 +922,17 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "88888",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"ec2:*"},
-												Resource: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_ALLOW,
+													Action:   []string{"ec2:*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
@@ -941,29 +968,35 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					Arn:       "arn:aws:s3:::mybucket",
 					AccountId: "88888",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_ALLOW,
+													Action:   []string{"*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},
 								},
 							},
-							{}, // empty layer
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect:   policy.EFFECT_ALLOW,
-												Action:   []string{"*"},
-												Resource: []string{"*"},
+								RCPs: []entities.ManagedPolicy{},
+							},
+							{
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_ALLOW,
+													Action:   []string{"*"},
+													Resource: []string{"*"},
+												},
 											},
 										},
 									},

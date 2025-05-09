@@ -21,7 +21,11 @@ func TestRCP(t *testing.T) {
 					Type: "AWS::S3::Bucket",
 					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{},
+						OrgNodes: []entities.FrozenOrgNode{
+							{
+								RCPs: []entities.ManagedPolicy{},
+							},
+						},
 					},
 				},
 				Action: sar.MustLookupString("s3:ListBucket"),
@@ -48,18 +52,20 @@ func TestRCP(t *testing.T) {
 					Type: "AWS::SNS::Topic",
 					Arn:  "arn:aws:sns:us-west-2:55555:mytopic",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect: policy.EFFECT_DENY,
-												Action: []string{"*"},
-												Principal: policy.Principal{
-													AWS: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_DENY,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
 												},
-												Resource: []string{"*"},
 											},
 										},
 									},
@@ -82,18 +88,20 @@ func TestRCP(t *testing.T) {
 					Type: "AWS::IAM::Role",
 					Arn:  "arn:aws:iam::55555:role/myrole-2",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect: policy.EFFECT_DENY,
-												Action: []string{"*"},
-												Principal: policy.Principal{
-													AWS: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_DENY,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
 												},
-												Resource: []string{"*"},
 											},
 										},
 									},
@@ -116,18 +124,20 @@ func TestRCP(t *testing.T) {
 					Type: "AWS::IAM::Role",
 					Arn:  "arn:aws:iam::55555:role/myrole-2",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect: policy.EFFECT_DENY,
-												Action: []string{"*"},
-												Principal: policy.Principal{
-													AWS: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_DENY,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
 												},
-												Resource: []string{"*"},
 											},
 										},
 									},
@@ -150,18 +160,20 @@ func TestRCP(t *testing.T) {
 					Type: "AWS::S3::Bucket",
 					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect: policy.EFFECT_ALLOW,
-												Action: []string{"*"},
-												Principal: policy.Principal{
-													AWS: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
 												},
-												Resource: []string{"*"},
 											},
 										},
 									},
@@ -184,18 +196,20 @@ func TestRCP(t *testing.T) {
 					Type: "AWS::S3::Bucket",
 					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect: policy.EFFECT_DENY,
-												Action: []string{"*"},
-												Principal: policy.Principal{
-													AWS: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_DENY,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
 												},
-												Resource: []string{"*"},
 											},
 										},
 									},
@@ -218,18 +232,20 @@ func TestRCP(t *testing.T) {
 					Type: "AWS::S3::Bucket",
 					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect: policy.EFFECT_ALLOW,
-												Action: []string{"s3:*"},
-												Principal: policy.Principal{
-													AWS: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"s3:*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
 												},
-												Resource: []string{"*"},
 											},
 										},
 									},
@@ -252,18 +268,20 @@ func TestRCP(t *testing.T) {
 					Type: "AWS::S3::Bucket",
 					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect: policy.EFFECT_ALLOW,
-												Action: []string{"ec2:*"},
-												Principal: policy.Principal{
-													AWS: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"ec2:*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
 												},
-												Resource: []string{"*"},
 											},
 										},
 									},
@@ -286,35 +304,41 @@ func TestRCP(t *testing.T) {
 					Type: "AWS::S3::Bucket",
 					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect: policy.EFFECT_ALLOW,
-												Action: []string{"*"},
-												Principal: policy.Principal{
-													AWS: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
 												},
-												Resource: []string{"*"},
 											},
 										},
 									},
 								},
 							},
-							{}, // should cause a deny
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect: policy.EFFECT_ALLOW,
-												Action: []string{"*"},
-												Principal: policy.Principal{
-													AWS: []string{"*"},
+								RCPs: []entities.ManagedPolicy{},
+							},
+							{
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
 												},
-												Resource: []string{"*"},
 											},
 										},
 									},
@@ -337,50 +361,56 @@ func TestRCP(t *testing.T) {
 					Type: "AWS::S3::Bucket",
 					Arn:  "arn:aws:s3:::mybucket",
 					Account: entities.FrozenAccount{
-						RCPs: [][]entities.ManagedPolicy{
+						OrgNodes: []entities.FrozenOrgNode{
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect: policy.EFFECT_ALLOW,
-												Action: []string{"*"},
-												Principal: policy.Principal{
-													AWS: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
 												},
-												Resource: []string{"*"},
 											},
 										},
 									},
 								},
 							},
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect: policy.EFFECT_DENY,
-												Action: []string{"*"},
-												Principal: policy.Principal{
-													AWS: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_DENY,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
 												},
-												Resource: []string{"*"},
 											},
 										},
 									},
 								},
 							},
 							{
-								{
-									Policy: policy.Policy{
-										Statement: []policy.Statement{
-											{
-												Effect: policy.EFFECT_ALLOW,
-												Action: []string{"*"},
-												Principal: policy.Principal{
-													AWS: []string{"*"},
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_ALLOW,
+													Action: []string{"*"},
+													Principal: policy.Principal{
+														AWS: []string{"*"},
+													},
+													Resource: []string{"*"},
 												},
-												Resource: []string{"*"},
 											},
 										},
 									},

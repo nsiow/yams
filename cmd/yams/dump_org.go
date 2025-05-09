@@ -279,61 +279,148 @@ func describeRcps(ctx context.Context, client *organizations.Client) ([]awsconfi
 	return structured, nil
 }
 
-func listPoliciesForTargets(
+func listPoliciesForNodes(
 	ctx context.Context,
 	client *organizations.Client,
 	policyType types.PolicyType,
-	targets []string) ([][]string, error) {
+	nodeId string) ([]string, error) {
 
-	slog.Debug("fetching policies for targets", "targets", targets)
+	slog.Debug("fetching policies for node", "id", nodeId)
 
-	var policies [][]string
+	var policies []string
 	var nextToken *string
 
-	for _, target := range targets {
-		slog.Debug("looking at target", "target", target)
+	for {
+		resp, err := client.ListPoliciesForTarget(ctx, &organizations.ListPoliciesForTargetInput{
+			TargetId:  &nodeId,
+			Filter:    policyType,
+			NextToken: nextToken,
+		})
+		if err != nil {
+			return nil, err
+		}
+		slog.Debug("found policies for node", "id", nodeId, "numPolicies", len(resp.Policies))
 
-		layer := []string{}
-
-		for {
-			resp, err := client.ListPoliciesForTarget(ctx, &organizations.ListPoliciesForTargetInput{
-				TargetId:  &target,
-				Filter:    policyType,
-				NextToken: nextToken,
-			})
-			if err != nil {
-				return nil, err
-			}
-			slog.Debug("found policies for target", "target", target, "numPolicies", len(resp.Policies))
-
-			for _, policySummary := range resp.Policies {
-				layer = append(layer, *policySummary.Arn)
-			}
-
-			if resp.NextToken == nil {
-				break
-			}
-			nextToken = resp.NextToken
+		for _, policySummary := range resp.Policies {
+			policies = append(policies, *policySummary.Arn)
 		}
 
-		policies = append(policies, layer)
+		if resp.NextToken == nil {
+			break
+		}
+		nextToken = resp.NextToken
 	}
 
 	return policies, nil
 }
 
-func listScpsForTarget(
+func listScpsForNode(
 	ctx context.Context,
 	client *organizations.Client,
-	targets []string) ([][]string, error) {
-	return listPoliciesForTargets(ctx, client, types.PolicyTypeServiceControlPolicy, targets)
+	nodeId string) ([]string, error) {
+
+	return listPoliciesForNodes(ctx, client, types.PolicyTypeServiceControlPolicy, nodeId)
+
 }
 
-func listRcpsForTarget(
+func listRcpsForNode(
 	ctx context.Context,
 	client *organizations.Client,
-	targets []string) ([][]string, error) {
-	return listPoliciesForTargets(ctx, client, types.PolicyTypeResourceControlPolicy, targets)
+	nodeId string) ([]string, error) {
+
+	return listPoliciesForNodes(ctx, client, types.PolicyTypeResourceControlPolicy, nodeId)
+
+}
+
+func describeAccount(
+	ctx context.Context,
+	client *organizations.Client,
+	nodeId string) (*organizations.DescribeAccountOutput, error) {
+
+	return client.DescribeAccount(ctx, &organizations.DescribeAccountInput{
+		AccountId: &nodeId,
+	})
+
+}
+
+func describeOu(
+	ctx context.Context,
+	client *organizations.Client,
+	nodeId string) (*organizations.DescribeOrganizationalUnitOutput, error) {
+
+	return client.DescribeOrganizationalUnit(ctx, &organizations.DescribeOrganizationalUnitInput{
+		OrganizationalUnitId: &nodeId,
+	})
+
+}
+
+func orgNode(
+	ctx context.Context,
+	client *organizations.Client,
+	path []string,
+	nodeId string) (*awsconfig.OrgNode, error) {
+
+	var id, arn, name, nodeType string
+	if isAccount(nodeId) {
+		nodeType = "ACCOUNT"
+
+		summary, err := describeAccount(ctx, client, nodeId)
+		if err != nil {
+			return nil, err
+		}
+
+		id = *summary.Account.Id
+		arn = *summary.Account.Arn
+		name = *summary.Account.Name
+	} else {
+		nodeType = "ORGANIZATIONAL_UNIT"
+
+		summary, err := describeOu(ctx, client, nodeId)
+		if err != nil {
+			return nil, err
+		}
+
+		id = *summary.OrganizationalUnit.Id
+		arn = *summary.OrganizationalUnit.Arn
+		name = *summary.OrganizationalUnit.Name
+	}
+
+	scps, err := listScpsForNode(ctx, client, nodeId)
+	if err != nil {
+		return nil, err
+	}
+
+	rcps, err := listRcpsForNode(ctx, client, nodeId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &awsconfig.OrgNode{
+		Id:   id,
+		Type: nodeType,
+		Arn:  arn,
+		Name: name,
+		SCPs: scps,
+		RCPs: rcps,
+	}, nil
+}
+
+func orgNodes(
+	ctx context.Context,
+	client *organizations.Client,
+	path []string) ([]awsconfig.OrgNode, error) {
+
+	nodes := make([]awsconfig.OrgNode, len(path))
+	for i, nodeId := range path {
+		node, err := orgNode(ctx, client, path, nodeId)
+		if err != nil {
+			return nil, err
+		}
+
+		nodes[i] = *node
+	}
+
+	return nodes, nil
 }
 
 func makeAccount(
@@ -342,12 +429,8 @@ func makeAccount(
 	orgId string,
 	path []string,
 	node string) (*awsconfig.Account, error) {
-	scps, err := listScpsForTarget(ctx, client, append(path, node))
-	if err != nil {
-		return nil, err
-	}
 
-	rcps, err := listRcpsForTarget(ctx, client, append(path, node))
+	nodes, err := orgNodes(ctx, client, path)
 	if err != nil {
 		return nil, err
 	}
@@ -360,8 +443,7 @@ func makeAccount(
 		Configuration: awsconfig.AccountConfiguration{
 			OrgId:    orgId,
 			OrgPaths: orgPaths(orgId, path),
-			SCPs:     scps,
-			RCPs:     rcps,
+			OrgNodes: nodes,
 		},
 	}, nil
 }
