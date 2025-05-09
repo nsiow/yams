@@ -22,7 +22,7 @@ func runDump(opts *Flags) {
 
 	writer, err := smartrw.NewWriter(opts.OutFile)
 	if err != nil {
-		fail("error opening destination '%s' for writing: %w", opts.OutFile, err)
+		fail("error opening destination '%s' for writing: %v", opts.OutFile, err)
 	}
 
 	if !slices.Contains(DUMP_TARGETS, opts.DumpTarget) {
@@ -34,16 +34,16 @@ func runDump(opts *Flags) {
 	}
 
 	if err != nil {
-		fail("error attempting to dump '%s': %w", opts.DumpTarget, err)
+		fail("error attempting to dump '%s': %v", opts.DumpTarget, err)
 	}
 
 	_, err = writer.Write([]byte(output))
 	if err != nil {
-		fail("error writing to destination '%s': %w", opts.OutFile, err)
+		fail("error writing to destination '%s': %v", opts.OutFile, err)
 	}
 
 	err = writer.Close()
 	if err != nil {
-		fail("error closing/flushing to destination '%s': %w", opts.OutFile, err)
+		fail("error closing/flushing to destination '%s': %v", opts.OutFile, err)
 	}
 }

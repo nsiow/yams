@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
@@ -79,28 +81,28 @@ func orgClient(ctx context.Context) (*organizations.Client, error) {
 	return client, nil
 }
 
-func orgId(ctx context.Context, client *organizations.Client) (string, error) {
+func org(ctx context.Context, client *organizations.Client) (*types.Organization, error) {
 	resp, err := client.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	slog.Debug("found org id", "id", *resp.Organization.Id)
-	return *resp.Organization.Id, nil
+	return resp.Organization, nil
 }
 
-func orgRoot(ctx context.Context, client *organizations.Client) (string, error) {
+func orgRoot(ctx context.Context, client *organizations.Client) (*types.Root, error) {
 	resp, err := client.ListRoots(ctx, &organizations.ListRootsInput{})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if len(resp.Roots) != 1 {
-		return "", fmt.Errorf("unexpected number of roots: %d (%v)", len(resp.Roots), resp.Roots)
+		return nil, fmt.Errorf("unexpected number of roots: %d (%v)", len(resp.Roots), resp.Roots)
 	}
 
 	slog.Debug("found org root", "id", *resp.Roots[0].Id)
-	return *resp.Roots[0].Id, nil
+	return &resp.Roots[0], nil
 }
 
 func orgPaths(orgId string, path []string) []string {
@@ -120,7 +122,7 @@ func orgPaths(orgId string, path []string) []string {
 }
 
 func walk(ctx context.Context, client *organizations.Client) ([]awsconfig.Account, error) {
-	id, err := orgId(ctx, client)
+	org, err := org(ctx, client)
 	if err != nil {
 		return nil, err
 	}
@@ -130,32 +132,34 @@ func walk(ctx context.Context, client *organizations.Client) ([]awsconfig.Accoun
 		return nil, err
 	}
 
-	var accounts []awsconfig.Account
 	slog.Debug("preparing to walk org tree")
-	_walk(ctx, client, id, &accounts, []string{root})
-	slog.Debug("finished walking org tree")
+	accounts, err := _walk(ctx, client, *org.Id, []string{*root.Id})
+	if err != nil {
+		return nil, err
+	}
 
-	return accounts, nil
+	slog.Debug("finished walking org tree")
+	return accounts, err
 }
 
 func _walk(
 	ctx context.Context,
 	client *organizations.Client,
 	orgId string,
-	accounts *[]awsconfig.Account, path []string) error {
+	path []string) ([]awsconfig.Account, error) {
 	node := path[len(path)-1]
 
 	if isAccount(node) {
 		slog.Debug("found account", "id", node)
 		a, err := makeAccount(ctx, client, orgId, path, node)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		*accounts = append(*accounts, *a)
-		return nil
+		return []awsconfig.Account{*a}, nil
 	}
 
+	var accounts []awsconfig.Account
 	var nextToken *string
 	childTypes := []types.ChildType{types.ChildTypeAccount, types.ChildTypeOrganizationalUnit}
 
@@ -167,12 +171,17 @@ func _walk(
 				NextToken: nextToken,
 			})
 			if err != nil {
-				return err
+				return nil, err
 			}
 			slog.Debug("listed children", "parent", node, "children", resp.Children)
 
 			for _, child := range resp.Children {
-				_walk(ctx, client, orgId, accounts, append(path, *child.Id))
+				childAccounts, err := _walk(ctx, client, orgId, append(path, *child.Id))
+				if err != nil {
+					return nil, err
+				}
+
+				accounts = slices.Concat(accounts, childAccounts)
 			}
 
 			if resp.NextToken == nil {
@@ -182,7 +191,7 @@ func _walk(
 		}
 	}
 
-	return nil
+	return accounts, nil
 }
 
 func describePolicies(
@@ -337,6 +346,7 @@ func describeAccount(
 	client *organizations.Client,
 	nodeId string) (*organizations.DescribeAccountOutput, error) {
 
+	slog.Debug("calling organizations describe-account", "id", nodeId)
 	return client.DescribeAccount(ctx, &organizations.DescribeAccountInput{
 		AccountId: &nodeId,
 	})
@@ -348,6 +358,7 @@ func describeOu(
 	client *organizations.Client,
 	nodeId string) (*organizations.DescribeOrganizationalUnitOutput, error) {
 
+	slog.Debug("calling organizations describe-organizational-unit", "id", nodeId)
 	return client.DescribeOrganizationalUnit(ctx, &organizations.DescribeOrganizationalUnitInput{
 		OrganizationalUnitId: &nodeId,
 	})
@@ -357,11 +368,21 @@ func describeOu(
 func orgNode(
 	ctx context.Context,
 	client *organizations.Client,
-	path []string,
 	nodeId string) (*awsconfig.OrgNode, error) {
 
 	var id, arn, name, nodeType string
-	if isAccount(nodeId) {
+	if strings.HasPrefix(nodeId, "r-") {
+		nodeType = "ROOT"
+
+		root, err := orgRoot(ctx, client)
+		if err != nil {
+			return nil, err
+		}
+
+		id = *root.Id
+		arn = *root.Arn
+		name = *root.Name
+	} else if isAccount(nodeId) {
 		nodeType = "ACCOUNT"
 
 		summary, err := describeAccount(ctx, client, nodeId)
@@ -412,7 +433,7 @@ func orgNodes(
 
 	nodes := make([]awsconfig.OrgNode, len(path))
 	for i, nodeId := range path {
-		node, err := orgNode(ctx, client, path, nodeId)
+		node, err := orgNode(ctx, client, nodeId)
 		if err != nil {
 			return nil, err
 		}

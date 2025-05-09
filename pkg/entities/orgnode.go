@@ -5,7 +5,7 @@ type OrgNode struct {
 	// Id refers to the primary identifier of the node
 	Id string
 
-	// Type refers to the type of the node, either ACCOUNT or ORGANIZATIONAL_UNIT
+	// Type refers to the type of the node, either ROOT or ORGANIZATIONAL_UNIT or ACCOUNT
 	Type string
 
 	// Arn refers to the Amazon Resource Name of the node
