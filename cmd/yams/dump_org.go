@@ -62,78 +62,24 @@ func dumpOrg() (string, error) {
 }
 
 // -------------------------------------------------------------------------------------------------
-// Organizations API stuff
+// Org walking
 // -------------------------------------------------------------------------------------------------
 
-func isAccount(id string) bool {
-	_, err := strconv.Atoi(id)
-	return err == nil
-}
-
-// orgClient creates and returns a new AWS Organizations SDK client using the provided options
-func orgClient(ctx context.Context) (*organizations.Client, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	client := organizations.NewFromConfig(cfg)
-	return client, nil
-}
-
-func org(ctx context.Context, client *organizations.Client) (*types.Organization, error) {
-	resp, err := client.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
-	if err != nil {
-		return nil, err
-	}
-
-	slog.Debug("found org id", "id", *resp.Organization.Id)
-	return resp.Organization, nil
-}
-
-func orgRoot(ctx context.Context, client *organizations.Client) (*types.Root, error) {
-	resp, err := client.ListRoots(ctx, &organizations.ListRootsInput{})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(resp.Roots) != 1 {
-		return nil, fmt.Errorf("unexpected number of roots: %d (%v)", len(resp.Roots), resp.Roots)
-	}
-
-	slog.Debug("found org root", "id", *resp.Roots[0].Id)
-	return &resp.Roots[0], nil
-}
-
-func orgPaths(orgId string, path []string) []string {
-	var paths []string
-
-	segment := orgId + "/"
-
-	for _, p := range path {
-		if !isAccount(p) {
-			segment += p + "/"
-			paths = append(paths, segment)
-		}
-	}
-
-	slog.Debug("calculated orgpaths", "input", path, "paths", paths)
-	return paths
-}
-
 func walk(ctx context.Context, client *organizations.Client) ([]awsconfig.Account, error) {
-	org, err := org(ctx, client)
+	cache := make(map[string]any)
+
+	org, err := describeOrg(ctx, client, cache)
 	if err != nil {
 		return nil, err
 	}
 
-	root, err := orgRoot(ctx, client)
+	root, err := describeOrgRoot(ctx, client, cache)
 	if err != nil {
 		return nil, err
 	}
 
 	slog.Debug("preparing to walk org tree")
-	accounts, err := _walk(ctx, client, *org.Id, []string{*root.Id})
+	accounts, err := _walk(ctx, client, cache, *org.Id, []string{*root.Id})
 	if err != nil {
 		return nil, err
 	}
@@ -145,13 +91,14 @@ func walk(ctx context.Context, client *organizations.Client) ([]awsconfig.Accoun
 func _walk(
 	ctx context.Context,
 	client *organizations.Client,
+	cache map[string]any,
 	orgId string,
 	path []string) ([]awsconfig.Account, error) {
 	node := path[len(path)-1]
 
 	if isAccount(node) {
 		slog.Debug("found account", "id", node)
-		a, err := makeAccount(ctx, client, orgId, path, node)
+		a, err := makeAccount(ctx, client, cache, orgId, path, node)
 		if err != nil {
 			return nil, err
 		}
@@ -176,7 +123,7 @@ func _walk(
 			slog.Debug("listed children", "parent", node, "children", resp.Children)
 
 			for _, child := range resp.Children {
-				childAccounts, err := _walk(ctx, client, orgId, append(path, *child.Id))
+				childAccounts, err := _walk(ctx, client, cache, orgId, append(path, *child.Id))
 				if err != nil {
 					return nil, err
 				}
@@ -192,6 +139,65 @@ func _walk(
 	}
 
 	return accounts, nil
+}
+
+// -------------------------------------------------------------------------------------------------
+// Organizations API stuff
+// -------------------------------------------------------------------------------------------------
+
+// orgClient creates and returns a new AWS Organizations SDK client using the provided options
+func orgClient(ctx context.Context) (*organizations.Client, error) {
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	client := organizations.NewFromConfig(cfg)
+	return client, nil
+}
+
+func describeOrg(
+	ctx context.Context,
+	client *organizations.Client,
+	cache map[string]any) (*types.Organization, error) {
+
+	key := "describeOrg/"
+	if cached, ok := cache[key].(*types.Organization); ok {
+		return cached, nil
+	}
+
+	resp, err := client.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	slog.Debug("found org id", "id", *resp.Organization.Id)
+	cache[key] = resp.Organization
+	return resp.Organization, nil
+}
+
+func describeOrgRoot(
+	ctx context.Context,
+	client *organizations.Client,
+	cache map[string]any) (*types.Root, error) {
+
+	key := "describeOrgRoot/"
+	if cached, ok := cache[key].(*types.Root); ok {
+		return cached, nil
+	}
+
+	resp, err := client.ListRoots(ctx, &organizations.ListRootsInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Roots) != 1 {
+		return nil, fmt.Errorf("unexpected number of roots: %d (%v)", len(resp.Roots), resp.Roots)
+	}
+
+	slog.Debug("found org root", "id", *resp.Roots[0].Id)
+	cache[key] = &resp.Roots[0]
+	return &resp.Roots[0], nil
 }
 
 func describePolicies(
@@ -232,62 +238,6 @@ func describePolicies(
 	return policies, nil
 }
 
-func describeScps(ctx context.Context, client *organizations.Client) ([]awsconfig.SCP, error) {
-	raw, err := describePolicies(ctx, client, types.PolicyTypeServiceControlPolicy)
-	if err != nil {
-		return nil, err
-	}
-
-	var structured []awsconfig.SCP
-	for _, rawPolicy := range raw {
-		policyDocument, err := policy.FromJsonString(*rawPolicy.Policy.Content)
-		if err != nil {
-			return nil, err
-		}
-
-		s := awsconfig.SCP{
-			ConfigItem: awsconfig.ConfigItem{
-				Type: "Yams::ServiceControlPolicy",
-				Arn:  *rawPolicy.Policy.PolicySummary.Arn,
-			},
-			Configuration: awsconfig.SCPConfiguration{
-				Document: awsconfig.EncodedPolicy(policyDocument),
-			},
-		}
-		structured = append(structured, s)
-	}
-
-	return structured, nil
-}
-
-func describeRcps(ctx context.Context, client *organizations.Client) ([]awsconfig.SCP, error) {
-	raw, err := describePolicies(ctx, client, types.PolicyTypeResourceControlPolicy)
-	if err != nil {
-		return nil, err
-	}
-
-	var structured []awsconfig.SCP
-	for _, rawPolicy := range raw {
-		policyDocument, err := policy.FromJsonString(*rawPolicy.Policy.Content)
-		if err != nil {
-			return nil, err
-		}
-
-		s := awsconfig.SCP{
-			ConfigItem: awsconfig.ConfigItem{
-				Type: "Yams::ResourceControlPolicy",
-				Arn:  *rawPolicy.Policy.PolicySummary.Arn,
-			},
-			Configuration: awsconfig.SCPConfiguration{
-				Document: awsconfig.EncodedPolicy(policyDocument),
-			},
-		}
-		structured = append(structured, s)
-	}
-
-	return structured, nil
-}
-
 func listPoliciesForNodes(
 	ctx context.Context,
 	client *organizations.Client,
@@ -326,55 +276,125 @@ func listPoliciesForNodes(
 func listScpsForNode(
 	ctx context.Context,
 	client *organizations.Client,
+	cache map[string]any,
 	nodeId string) ([]string, error) {
 
-	return listPoliciesForNodes(ctx, client, types.PolicyTypeServiceControlPolicy, nodeId)
+	key := "listScpsForNode/" + nodeId
+	if cached, ok := cache[key].([]string); ok {
+		return cached, nil
+	}
 
+	policies, err := listPoliciesForNodes(ctx, client, types.PolicyTypeServiceControlPolicy, nodeId)
+	if err != nil {
+		return nil, err
+	}
+
+	cache[key] = policies
+	return policies, nil
 }
 
 func listRcpsForNode(
 	ctx context.Context,
 	client *organizations.Client,
+	cache map[string]any,
 	nodeId string) ([]string, error) {
 
-	return listPoliciesForNodes(ctx, client, types.PolicyTypeResourceControlPolicy, nodeId)
+	key := "listRcpsForNode/" + nodeId
+	if cached, ok := cache[key].([]string); ok {
+		return cached, nil
+	}
 
+	policies, err := listPoliciesForNodes(ctx, client, types.PolicyTypeResourceControlPolicy, nodeId)
+	if err != nil {
+		return nil, err
+	}
+
+	cache[key] = policies
+	return policies, nil
 }
 
 func describeAccount(
 	ctx context.Context,
 	client *organizations.Client,
+	cache map[string]any,
 	nodeId string) (*organizations.DescribeAccountOutput, error) {
 
+	key := "describeAccount/" + nodeId
+	if cached, ok := cache[key].(*organizations.DescribeAccountOutput); ok {
+		return cached, nil
+	}
+
 	slog.Debug("calling organizations describe-account", "id", nodeId)
-	return client.DescribeAccount(ctx, &organizations.DescribeAccountInput{
+	resp, err := client.DescribeAccount(ctx, &organizations.DescribeAccountInput{
 		AccountId: &nodeId,
 	})
+	if err != nil {
+		return nil, err
+	}
 
+	cache[key] = resp
+	return resp, nil
 }
 
 func describeOu(
 	ctx context.Context,
 	client *organizations.Client,
+	cache map[string]any,
 	nodeId string) (*organizations.DescribeOrganizationalUnitOutput, error) {
 
+	key := "describeOu/" + nodeId
+	if cached, ok := cache[key].(*organizations.DescribeOrganizationalUnitOutput); ok {
+		return cached, nil
+	}
+
 	slog.Debug("calling organizations describe-organizational-unit", "id", nodeId)
-	return client.DescribeOrganizationalUnit(ctx, &organizations.DescribeOrganizationalUnitInput{
+	resp, err := client.DescribeOrganizationalUnit(ctx, &organizations.DescribeOrganizationalUnitInput{
 		OrganizationalUnitId: &nodeId,
 	})
+	if err != nil {
+		return nil, err
+	}
 
+	cache[key] = resp
+	return resp, nil
+}
+
+// -------------------------------------------------------------------------------------------------
+// Helper functions
+// -------------------------------------------------------------------------------------------------
+
+func isAccount(id string) bool {
+	_, err := strconv.Atoi(id)
+	return err == nil
+}
+
+func orgPaths(orgId string, path []string) []string {
+	var paths []string
+
+	segment := orgId + "/"
+
+	for _, p := range path {
+		if !isAccount(p) {
+			segment += p + "/"
+			paths = append(paths, segment)
+		}
+	}
+
+	slog.Debug("calculated orgpaths", "input", path, "paths", paths)
+	return paths
 }
 
 func orgNode(
 	ctx context.Context,
 	client *organizations.Client,
+	cache map[string]any,
 	nodeId string) (*awsconfig.OrgNode, error) {
 
 	var id, arn, name, nodeType string
 	if strings.HasPrefix(nodeId, "r-") {
 		nodeType = "ROOT"
 
-		root, err := orgRoot(ctx, client)
+		root, err := describeOrgRoot(ctx, client, cache)
 		if err != nil {
 			return nil, err
 		}
@@ -385,7 +405,7 @@ func orgNode(
 	} else if isAccount(nodeId) {
 		nodeType = "ACCOUNT"
 
-		summary, err := describeAccount(ctx, client, nodeId)
+		summary, err := describeAccount(ctx, client, cache, nodeId)
 		if err != nil {
 			return nil, err
 		}
@@ -396,7 +416,7 @@ func orgNode(
 	} else {
 		nodeType = "ORGANIZATIONAL_UNIT"
 
-		summary, err := describeOu(ctx, client, nodeId)
+		summary, err := describeOu(ctx, client, cache, nodeId)
 		if err != nil {
 			return nil, err
 		}
@@ -406,12 +426,12 @@ func orgNode(
 		name = *summary.OrganizationalUnit.Name
 	}
 
-	scps, err := listScpsForNode(ctx, client, nodeId)
+	scps, err := listScpsForNode(ctx, client, cache, nodeId)
 	if err != nil {
 		return nil, err
 	}
 
-	rcps, err := listRcpsForNode(ctx, client, nodeId)
+	rcps, err := listRcpsForNode(ctx, client, cache, nodeId)
 	if err != nil {
 		return nil, err
 	}
@@ -429,11 +449,12 @@ func orgNode(
 func orgNodes(
 	ctx context.Context,
 	client *organizations.Client,
+	cache map[string]any,
 	path []string) ([]awsconfig.OrgNode, error) {
 
 	nodes := make([]awsconfig.OrgNode, len(path))
 	for i, nodeId := range path {
-		node, err := orgNode(ctx, client, nodeId)
+		node, err := orgNode(ctx, client, cache, nodeId)
 		if err != nil {
 			return nil, err
 		}
@@ -447,24 +468,91 @@ func orgNodes(
 func makeAccount(
 	ctx context.Context,
 	client *organizations.Client,
+	cache map[string]any,
 	orgId string,
 	path []string,
 	node string) (*awsconfig.Account, error) {
 
-	nodes, err := orgNodes(ctx, client, path)
+	nodes, err := orgNodes(ctx, client, cache, path)
+	if err != nil {
+		return nil, err
+	}
+
+	summary, err := describeAccount(ctx, client, cache, node)
 	if err != nil {
 		return nil, err
 	}
 
 	return &awsconfig.Account{
 		ConfigItem: awsconfig.ConfigItem{
-			Type:      "Yams::Account",
+			Type:      "Yams::Organizations::Account",
 			AccountId: node,
+			Region:    "global",
+			Arn:       *summary.Account.Arn,
 		},
 		Configuration: awsconfig.AccountConfiguration{
+			Name:     *summary.Account.Name,
 			OrgId:    orgId,
 			OrgPaths: orgPaths(orgId, path),
 			OrgNodes: nodes,
 		},
 	}, nil
+}
+
+func describeScps(ctx context.Context, client *organizations.Client) ([]awsconfig.SCP, error) {
+	raw, err := describePolicies(ctx, client, types.PolicyTypeServiceControlPolicy)
+	if err != nil {
+		return nil, err
+	}
+
+	var structured []awsconfig.SCP
+	for _, rawPolicy := range raw {
+		policyDocument, err := policy.FromJsonString(*rawPolicy.Policy.Content)
+		if err != nil {
+			return nil, err
+		}
+
+		s := awsconfig.SCP{
+			ConfigItem: awsconfig.ConfigItem{
+				Type:   "Yams::Organizations::ServiceControlPolicy",
+				Arn:    *rawPolicy.Policy.PolicySummary.Arn,
+				Region: "global",
+			},
+			Configuration: awsconfig.SCPConfiguration{
+				Document: awsconfig.EncodedPolicy(policyDocument),
+			},
+		}
+		structured = append(structured, s)
+	}
+
+	return structured, nil
+}
+
+func describeRcps(ctx context.Context, client *organizations.Client) ([]awsconfig.SCP, error) {
+	raw, err := describePolicies(ctx, client, types.PolicyTypeResourceControlPolicy)
+	if err != nil {
+		return nil, err
+	}
+
+	var structured []awsconfig.SCP
+	for _, rawPolicy := range raw {
+		policyDocument, err := policy.FromJsonString(*rawPolicy.Policy.Content)
+		if err != nil {
+			return nil, err
+		}
+
+		s := awsconfig.SCP{
+			ConfigItem: awsconfig.ConfigItem{
+				Type:   "Yams::Organizations::ResourceControlPolicy",
+				Arn:    *rawPolicy.Policy.PolicySummary.Arn,
+				Region: "global",
+			},
+			Configuration: awsconfig.SCPConfiguration{
+				Document: awsconfig.EncodedPolicy(policyDocument),
+			},
+		}
+		structured = append(structured, s)
+	}
+
+	return structured, nil
 }

@@ -8,6 +8,9 @@ type Account struct {
 	// AccountId refers to the 12-digit ID of this AWS account
 	Id string
 
+	// Name refers to the AWS alias for the account
+	Name string
+
 	// OrgId refers to the ID of the AWS Organizations org where the Account resides
 	OrgId string
 

@@ -12,7 +12,7 @@ type ConfigItem struct {
 	AccountId string         `json:"accountId"`
 	Region    string         `json:"awsRegion"`
 	Arn       entities.Arn   `json:"arn"`
-	Tags      []entities.Tag `json:"tags"`
+	Tags      []entities.Tag `json:"tags,omitzero"`
 }
 
 // configBlob is an internal-only struct used for multi-stage JSON unmarshalling

@@ -332,6 +332,7 @@ type Account struct {
 }
 
 type AccountConfiguration struct {
+	Name     string    `json:"name"`
 	OrgId    string    `json:"orgId"`
 	OrgPaths []string  `json:"orgPaths"`
 	OrgNodes []OrgNode `json:"orgNodes"`
@@ -349,6 +350,7 @@ type OrgNode struct {
 func (c *Account) asAccount() entities.Account {
 	return entities.Account{
 		Id:       c.AccountId,
+		Name:     c.Configuration.Name,
 		OrgId:    c.Configuration.OrgId,
 		OrgPaths: c.Configuration.OrgPaths,
 		OrgNodes: common.Map(c.Configuration.OrgNodes, func(in OrgNode) entities.OrgNode {
