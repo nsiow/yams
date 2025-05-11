@@ -311,7 +311,7 @@ func TestComputeAccessSummary(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (map[string]int, error) {
 		sim, _ := NewSimulator()
-		sim.options = *TestingSimulationOptions
+		sim.options = TestingSimulationOptions
 		sim.SetUniverse(i.uv)
 		summary, err := sim.ComputeAccessSummary(i.actions)
 		if err != nil {

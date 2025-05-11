@@ -12,13 +12,13 @@ import (
 // Principals + Resources
 type Simulator struct {
 	uv      *entities.Universe
-	options Options
+	options *Options
 }
 
 // NewSimulator creates and returns a Simulator with the provided options
-func NewSimulator(o ...OptionF) (*Simulator, error) {
+func NewSimulator(opts ...OptionF) (*Simulator, error) {
 	s := Simulator{}
-	s.options = *NewOptions(o...)
+	s.options = NewOptions(opts...)
 
 	return &s, nil
 }
@@ -35,20 +35,34 @@ func (s *Simulator) SetUniverse(uv *entities.Universe) {
 
 // Simulate determines whether the provided AuthContext would be allowed
 func (s *Simulator) Simulate(ac AuthContext) (*SimResult, error) {
+	return s.SimulateWithOptions(ac, s.options)
+}
+
+// Simulate determines whether the provided AuthContext would be allowed
+func (s *Simulator) SimulateWithOptions(ac AuthContext, opts *Options) (*SimResult, error) {
 	err := ac.Validate()
 	if err != nil {
 		return nil, err
 	}
 
-	subj := newSubject(&ac, &s.options)
+	subj := newSubject(&ac, opts)
 	return evalOverallAccess(subj)
 }
 
 // SimulateByArn determines whether the operation would be allowed between the Principal and
-// Resource specified by the provided ARNs
+// Resource specified by the provided ARNs, using the Simulator's default options
 func (s *Simulator) SimulateByArn(
 	principalArn, action, resourceArn string,
 	ctx map[string]string) (*SimResult, error) {
+	return s.SimulateByArnWithOptions(principalArn, action, resourceArn, ctx, s.options)
+}
+
+// SimulateByArnWithOptions determines whether the operation would be allowed between the Principal
+// and Resource specified by the provided ARNs, using the provided simulation Options
+func (s *Simulator) SimulateByArnWithOptions(
+	principalArn, action, resourceArn string,
+	ctx map[string]string,
+	opts *Options) (*SimResult, error) {
 
 	var err error
 	ac := AuthContext{}

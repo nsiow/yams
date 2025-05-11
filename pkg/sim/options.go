@@ -5,6 +5,10 @@ type Options struct {
 	// SkipServiceAuthorizationValidation foregoes the usual validation via the Service Authoization
 	// Reference. This will result in faster simulation but at the cost of real-world accuracy
 	SkipServiceAuthorizationValidation bool
+
+	// EnableTracing turns on active tracing for requests. This incurs a minor performance penalty but
+	// allows for helpful explanations of how a particular simulation result was achieved
+	EnableTracing bool
 }
 
 // NewOptions creates and returns a new Options struct parameterized with the provided options
@@ -26,10 +30,18 @@ func WithSkipServiceAuthorizationValidation() OptionF {
 	}
 }
 
+// WithTracing toggles EnableTracing to true
+func WithTracing() OptionF {
+	return func(opt *Options) {
+		opt.EnableTracing = true
+	}
+}
+
 // TestingSimulationOptions provides a specific set of simulation options appropriate for most
 // tests. It allows for exercising difficult-to-reach error paths while also allowing us to bend
 // the rules a bit for testing -- fewer checks around the specifics of the dummy resource calls we
 // use
 var TestingSimulationOptions = NewOptions(
 	WithSkipServiceAuthorizationValidation(),
+	WithTracing(),
 )

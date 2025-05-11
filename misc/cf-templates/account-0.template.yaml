@@ -33,10 +33,8 @@ Resources:
                   - 's3:DeleteObject'
                   - 's3:ListBucket'
                 Resource:
-                  - 'arn:aws:s3:::yams-cyan'
-                  - 'arn:aws:s3:::yams-cyan/*'
-                  - 'arn:aws:s3:::yams-magenta'
-                  - 'arn:aws:s3:::yams-magenta/*'
+                  - 'arn:aws:s3:::yams-*'
+                  - 'arn:aws:s3:::yams-*/*'
       Tags:
         - Key: Color
           Value: Red
@@ -55,7 +53,7 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       ManagedPolicyArns:
-        - !Ref BloodOrangePolicy
+        - !Ref GreyPolicy
       Tags:
         - Key: Color
           Value: Blue
@@ -86,6 +84,16 @@ Resources:
                 Condition:
                   StringNotEquals:
                     aws:ResourceAccount: !Ref 'AWS::AccountId'
+        - PolicyName: 'TouchGreen'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 's3:*'
+                Resource:
+                  - 'arn:aws:s3:::yams-green'
+                  - 'arn:aws:s3:::yams-green/*'
       Tags:
         - Key: Color
           Value: Green
@@ -204,6 +212,14 @@ Resources:
         - Key: Foo
           Value: Bar
 
+  GreenBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: 'yams-green'
+      Tags:
+        - Key: Color
+          Value: Green
+
   CyanBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
     Properties:
@@ -225,13 +241,18 @@ Resources:
               StringNotEquals:
                 aws:PrincipalTag/Color: 'Blue'
 
-  BloodOrangePolicy:
+  GreyPolicy:
     Type: 'AWS::IAM::ManagedPolicy'
     Properties:
-      Description: 'Grants full access to PurpleTopic and YellowQueue'
+      Description: 'Grants full access to a few resources'
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
+          - Effect: 'Allow'
+            Action: 's3:*'
+            Resource:
+              - 'arn:aws:s3:::yams-green'
+              - 'arn:aws:s3:::yams-green/*'
           - Effect: 'Allow'
             Action: 'sns:*'
             Resource: !GetAtt PurpleTopic.TopicArn

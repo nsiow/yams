@@ -10,12 +10,23 @@ import (
 )
 
 func buildTestUniverse() (*entities.Universe, error) {
+	loader := awsconfig.NewLoader()
+
+	// load resources
 	file, err := os.Open("../../testdata/real-world/awsconfig.jsonl")
 	if err != nil {
 		return nil, err
 	}
+	err = loader.LoadJsonl(file)
+	if err != nil {
+		return nil, err
+	}
 
-	loader := awsconfig.NewLoader()
+	// load accounts, etc
+	file, err = os.Open("../../testdata/real-world/org.jsonl")
+	if err != nil {
+		return nil, err
+	}
 	err = loader.LoadJsonl(file)
 	if err != nil {
 		return nil, err
@@ -31,7 +42,7 @@ func buildTestSimulator() (*Simulator, error) {
 	}
 
 	sim, err := NewSimulator()
-	sim.options = *TestingSimulationOptions
+	sim.options = TestingSimulationOptions
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +80,38 @@ func TestRealWorldData(t *testing.T) {
 				p: "arn:aws:iam::777583092761:role/RedRole",
 				a: "s3:listbucket",
 				r: "arn:aws:s3:::yams-cyan",
+			},
+			Want: false,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/GreenRole",
+				a: "s3:listbucket",
+				r: "arn:aws:s3:::yams-green",
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/GreenRole",
+				a: "s3:getobject",
+				r: "arn:aws:s3:::yams-green/secrets.txt",
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/GreenRole",
+				a: "s3:getobject",
+				r: "arn:aws:s3:::yams-green/secrets.txt",
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/RedRole",
+				a: "s3:getobject",
+				r: "arn:aws:s3:::yams-green/secrets.txt",
 			},
 			Want: false,
 		},

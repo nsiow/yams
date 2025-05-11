@@ -148,8 +148,8 @@ CF_DEPLOY = aws cloudformation deploy \
 		--stack-name $(CF_STACK_NAME) \
 		--capabilities CAPABILITY_NAMED_IAM \
 		--no-fail-on-empty-changeset \
-		--disable-rollback \
-		--tags is-yams-test-resource=true
+		--tags is-yams-test-resource=true \
+		--disable-rollback
 
 .PHONY: cf
 cf: cf-account-0 cf-account-1 cf-account-2
