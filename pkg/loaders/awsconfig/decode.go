@@ -14,24 +14,13 @@ type EncodedPolicy policy.Policy
 
 // UnmarshalJSON instructs how to create EncodedPolicy fields from raw bytes
 func (p *EncodedPolicy) UnmarshalJSON(data []byte) error {
-	// Handle empty policy
-	if len(data) == 0 {
-		return nil
-	}
-
 	// Perform first unwrapping of string (if needed)
 	var policyString string
 
 	if data[0] == '"' {
 		err := json.Unmarshal(data, &policyString)
-		if err != nil {
+		if err != nil || len(policyString) == 0 {
 			return fmt.Errorf("error in initial unwrapping of encoded policy (%v) for input %s", err, data)
-		}
-
-		// Empty string == empty policy
-		if len(policyString) == 0 {
-			*p = EncodedPolicy(policy.Policy{})
-			return nil
 		}
 	} else {
 		policyString = string(data)

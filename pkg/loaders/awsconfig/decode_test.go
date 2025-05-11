@@ -8,7 +8,7 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-func TestDecodePolicyString(t *testing.T) {
+func TestDecode(t *testing.T) {
 	tests := []testlib.TestCase[string, policy.Policy]{
 		{
 			Name:  "null",
@@ -21,9 +21,9 @@ func TestDecodePolicyString(t *testing.T) {
 			Want:  policy.Policy{},
 		},
 		{
-			Name:  "empty_quoted",
-			Input: `""`,
-			Want:  policy.Policy{},
+			Name:      "empty_quoted",
+			Input:     `""`,
+			ShouldErr: true,
 		},
 		{
 			Name:  "s3read",

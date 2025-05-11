@@ -24,7 +24,7 @@ type Flags struct {
 
 	// dump
 	DumpTarget string
-	OutFile    string
+	Out        string
 
 	// server
 	Cache string
@@ -34,6 +34,7 @@ type Flags struct {
 func ParseFlags() (*Flags, error) {
 	// Define empty run command; we'll aim to mostly use flag.*Var
 	opts := &Flags{}
+	var err error
 
 	// Check for subcommand
 	if len(os.Args) < 2 || !slices.Contains(VALID_RUN_MODES, os.Args[1]) {
@@ -51,9 +52,9 @@ func ParseFlags() (*Flags, error) {
 		fs := flag.NewFlagSet("dump", flag.ExitOnError)
 		fs.StringVar(&opts.DumpTarget, "target", opts.DumpTarget,
 			fmt.Sprintf("which target to dump, one of: %v", DUMP_TARGETS))
-		fs.StringVar(&opts.OutFile, "out", opts.OutFile,
-			fmt.Sprintf("destination file for writing"))
-		fs.Parse(os.Args[2:])
+		fs.StringVar(&opts.Out, "out", opts.Out,
+			"destination target for writing, such as out.json or file:///tmp/out.json")
+		err = fs.Parse(os.Args[2:])
 
 	// should never get here
 	default:
@@ -61,5 +62,5 @@ func ParseFlags() (*Flags, error) {
 	}
 	slog.Debug("opts after flag parsing", "opts", opts)
 
-	return opts, nil
+	return opts, err
 }

@@ -286,3 +286,31 @@ func TestUniverse_Resources(t *testing.T) {
 		t.Fatalf("universe found resource unwantedly (after removal)")
 	}
 }
+
+func TestUniverse_Subresources(t *testing.T) {
+	uv := NewUniverse()
+
+	// define resource
+	resource := Resource{uv: uv, Type: "AWS::S3::Bucket", Arn: "arn:aws:s3:::mybucket"}
+	subresourceArn := resource.Arn + "/object.txt"
+
+	// add resource
+	uv.PutResource(resource)
+
+	// check subresource
+	a, ok := uv.Resource(subresourceArn)
+	if !ok {
+		t.Fatalf("universe missing subresource: %s", subresourceArn)
+	}
+
+	expected := &Resource{
+		uv:   resource.uv,
+		Type: "AWS::S3::Bucket::Object",
+		Arn:  "arn:aws:s3:::mybucket/object.txt",
+	}
+
+	// check result
+	if !reflect.DeepEqual(a, expected) {
+		t.Fatalf("wanted subresource to be %#v but got %#v", expected, a)
+	}
+}
