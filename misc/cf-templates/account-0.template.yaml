@@ -1,0 +1,587 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for Account 0'
+Parameters:
+  AccountId0:
+    Type: String
+  AccountId1:
+    Type: String
+  AccountId2:
+    Type: String
+Resources:
+  RedRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'RedRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'S3AccessPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 's3:ListAllMyBuckets'
+                Resource:
+                  - '*'
+              - Effect: 'Allow'
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                  - 's3:DeleteObject'
+                  - 's3:ListBucket'
+                Resource:
+                  - 'arn:aws:s3:::yams-*'
+                  - 'arn:aws:s3:::yams-*/*'
+        - PolicyName: 'NoDynamoAccessPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Deny'
+                Action:
+                  - 'dynamodb:*'
+                Resource:
+                  - '*'
+        - PolicyName: 'AssumeAnyRole'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'sts:assumerole'
+                Resource:
+                  - '*'
+      Tags:
+        - Key: Color
+          Value: Red
+
+  BlueRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'BlueRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'TouchLemur'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'sns:*'
+                Resource:
+                  - 'arn:aws:sns:us-east-1:213308312933:LemurTopic'
+        - PolicyName: 'ListBear'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 's3:listbucket'
+                Resource:
+                  - 'arn:aws:s3:::yams-bear'
+      ManagedPolicyArns:
+        - !Ref GreyPolicy
+      Tags:
+        - Key: Color
+          Value: Blue
+
+  GreenRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'GreenRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'WeirdNotActionPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                NotAction:
+                  - 'sns:*'
+                Resource:
+                  - '*'
+                Condition:
+                  StringNotEquals:
+                    aws:ResourceAccount: !Ref 'AWS::AccountId'
+        - PolicyName: 'TouchGreen'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 's3:*'
+                Resource:
+                  - 'arn:aws:s3:::yams-green'
+                  - 'arn:aws:s3:::yams-green/*'
+        - PolicyName: 'AssumeCoral'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 
+                  - 'sts:assumerole'
+                Resource:
+                  - !GetAtt CoralRole.Arn
+      Tags:
+        - Key: Color
+          Value: Green
+
+  MustardRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'MustardRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
+                - !GetAtt GreenRole.Arn
+            Action:
+              - 'sts:AssumeRole'
+      Policies: []
+      PermissionsBoundary: !Ref MustardBoundary
+      Tags:
+        - Key: Color
+          Value: Mustard
+
+  YellowQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: 'YellowQueue'
+      Tags:
+        - Key: Color
+          Value: Yellow
+
+  YellowQueuePolicy:
+    Type: 'AWS::SQS::QueuePolicy'
+    Properties:
+      Queues:
+        - !Ref YellowQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: 'AllowSameAccountRedPrincipals'
+            Effect: 'Allow'
+            Principal:
+              AWS: '*'
+            Action:
+              - 'sqs:*'
+            Resource: !GetAtt YellowQueue.Arn
+            Condition:
+              StringLike:
+                aws:PrincipalArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/Red*'
+          - Sid: 'DenyExternalAccounts'
+            Effect: 'Deny'
+            Principal:
+              AWS: '*'
+            Condition:
+              StringNotEquals:
+                aws:PrincipalAccount: '${aws:ResourceAccount}'
+            Action:
+              - 'sqs:*'
+            Resource: !GetAtt YellowQueue.Arn
+
+  PurpleTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: 'PurpleTopic'
+      Tags:
+        - Key: Color
+          Value: Purple
+
+  OrangeTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: 'OrangeTable'
+      AttributeDefinitions:
+        - AttributeName: 'id'
+          AttributeType: 'S'
+      KeySchema:
+        - AttributeName: 'id'
+          KeyType: 'HASH'
+      BillingMode: 'PAY_PER_REQUEST'
+      ResourcePolicy:
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: 'AllowDogUser'
+              Effect: 'Allow'
+              Principal:
+                AWS: !Sub 'arn:aws:iam::${AccountId1}:user/DogUser'
+              Action:
+                - 'dynamodb:getitem'
+              Resource:
+                - '*'
+      Tags:
+        - Key: Color
+          Value: Orange
+
+  TurquoiseKey:
+    Type: 'AWS::KMS::Key'
+    Properties:
+      Description: 'Turquoise KMS Key'
+      Tags:
+        - Key: Color
+          Value: Turquoise
+
+  MagentaBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: 'yams-magenta'
+      Tags:
+        - Key: Color
+          Value: Magenta
+
+  GreenBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: 'yams-green'
+      Tags:
+        - Key: Color
+          Value: Green
+
+  CyanBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: 'yams-cyan'
+      Tags:
+        - Key: Color
+          Value: Cyan
+        - Key: Foo
+          Value: Bar
+
+  CyanBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref CyanBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Deny'
+            NotPrincipal:
+              AWS: 
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
+            Action:
+              - 's3:listbucket'
+              - 's3:getobject'
+            Resource:
+              - !Sub 'arn:aws:s3:::${CyanBucket}'
+              - !Sub 'arn:aws:s3:::${CyanBucket}/*'
+            Condition:
+              StringNotEquals:
+                aws:PrincipalTag/Color: 'Blue'
+
+  GreyPolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      Description: 'Grants full access to a few resources'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Action: 's3:*'
+            Resource:
+              - 'arn:aws:s3:::yams-green'
+              - 'arn:aws:s3:::yams-green/*'
+          - Effect: 'Allow'
+            Action: 's3:*'
+            Resource:
+              - 'arn:aws:s3:::yams-cyan'
+              - 'arn:aws:s3:::yams-cyan/*'
+          - Effect: 'Allow'
+            Action: 'sns:*'
+            Resource: !GetAtt PurpleTopic.TopicArn
+          - Effect: 'Allow'
+            Action: 'sqs:*'
+            Resource: !GetAtt YellowQueue.Arn
+          - Effect: 'Allow'
+            Action: 'dynamodb:*'
+            Resource: !GetAtt OrangeTable.Arn
+
+  MustardBoundary:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      Description: 'Permission boundary with S3 full access'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Action: 's3:*'
+            Resource: '*'
+
+# Permission Boundary: very restrictive
+  PinkBoundary:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Strict permission boundary for production
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+              - lambda:InvokeFunction
+              - dynamodb:GetItem
+              - dynamodb:Query
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: '*'
+            Condition:
+              StringEquals:
+                'aws:RequestedRegion': us-east-1
+              DateGreaterThan:
+                'aws:CurrentTime': '2024-01-01T00:00:00Z'
+              IpAddress:
+                'aws:SourceIp':
+                  - '10.0.0.0/8'
+                  - '172.16.0.0/12'
+          - Effect: Deny
+            Action:
+              - s3:DeleteObject
+              - s3:DeleteBucket
+              - s3:PutObject  # Very restrictive - no writes
+              - lambda:*
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+              - iam:*
+              - ec2:*
+            Resource: '*'
+
+  # Read-Only Cross-Account Role
+  BeigeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: BeigeRole
+      PermissionsBoundary: !Ref PinkBoundary
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: 
+                - !Sub 'arn:aws:iam::${AccountId1}:root'
+                - !Sub 'arn:aws:iam::${AccountId2}:root'
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                'sts:ExternalId': 'readonly-999'
+              Bool:
+                'aws:MultiFactorAuthPresent': 'true'
+              NumericLessThan:
+                'aws:MultiFactorAuthAge': '3600'
+      # ManagedPolicyArns:
+      #   - arn:aws:iam::aws:policy/ReadOnlyAccess
+
+  # Emergency Break-Glass Role (no permission boundary)
+  CoralRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CoralRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: sts:AssumeRole
+            Condition:
+              Bool:
+                'aws:MultiFactorAuthPresent': 'true'
+              NumericLessThan:
+                'aws:MultiFactorAuthAge': '900'  # 15 minutes
+              StringEquals:
+                'sts:ExternalId': 'emergency-access-critical'
+      Policies:
+        - PolicyName: EmergencyAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    'aws:RequestTag/Emergency': 'true'
+
+  # Account0 Service Role
+  TaupeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: TaupeRole
+      PermissionsBoundary: !Ref PinkBoundary
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - lambda.amazonaws.com
+                - ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ProductionServicePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                  - s3:GetObject
+                  - s3:PutObject  # Will be DENIED by permission boundary
+                  - lambda:InvokeFunction
+                Resource: '*'
+
+  PeachBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'peach-bucket-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  PeachBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PeachBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt BeigeRole.Arn
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+            Resource:
+              - !GetAtt PeachBucket.Arn
+              - !Sub '${PeachBucket.Arn}/*'
+          - Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt PeachBucket.Arn
+              - !Sub '${PeachBucket.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
+
+  NavyTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: NavyTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: gsi_key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: gsi_key
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  GoldLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/gold/application
+      RetentionInDays: 30
+
+  ScarletLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ScarletFunction
+      Runtime: python3.9
+      Handler: index.handler
+      Role: !GetAtt TaupeRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref GoldLogGroup
+      Environment:
+        Variables:
+          ENVIRONMENT: production
+          TABLE_NAME: !Ref NavyTable
+      Code:
+        ZipFile: |
+          import json
+          import os
+          def handler(event, context):
+              return {
+                  'statusCode': 200,
+                  'body': json.dumps({
+                      'message': 'Hello from Account 0 Production!',
+                      'environment': os.environ.get('ENVIRONMENT'),
+                      'table': os.environ.get('TABLE_NAME')
+                  })
+              }
+
+  # KMS Key for additional security
+  ChartreuseKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: Account0 KMS key
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt BeigeRole.Arn
+            Action:
+              - kms:Decrypt
+              - kms:DescribeKey
+            Resource: '*'
+
+  ChartreuseAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/chartreuse-key
+      TargetKeyId: !Ref ChartreuseKey

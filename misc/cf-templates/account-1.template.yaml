@@ -1,0 +1,385 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for Account 1'
+Parameters:
+  AccountId0:
+    Type: String
+  AccountId1:
+    Type: String
+  AccountId2:
+    Type: String
+
+Resources:
+  CatUser:
+    Type: 'AWS::IAM::User'
+    Properties:
+      UserName: 'CatUser'
+      Policies:
+        - PolicyName: 'S3AccessPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 's3:GetObject'
+                Resource:
+                  - '*'
+      Tags:
+        - Key: Animal
+          Value: Cat
+
+  DogUser:
+    Type: 'AWS::IAM::User'
+    Properties:
+      UserName: 'DogUser'
+      Policies:
+        - PolicyName: 'OrangeTableAccessPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'dynamodb:*'
+                Resource:
+                  - !Sub 'arn:aws:dynamodb:us-east-1:${AccountId0}:table/OrangeTable'
+      ManagedPolicyArns:
+        - !Ref DogPolicy
+      Tags:
+        - Key: Animal
+          Value: Dog
+
+  DogPolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      Description: 'Grants admin access'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Action: '*'
+            Resource: '*'
+
+  FishUser:
+    Type: 'AWS::IAM::User'
+    Properties:
+      UserName: 'FishUser'
+      Policies:
+        - PolicyName: 'FullSNSPermissions'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'sns:*'
+                Resource:
+                  - '*'
+      Tags:
+        - Key: Animal
+          Value: Fish
+
+  LionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'LionRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
+            Action:
+              - 'sts:AssumeRole'
+      Tags:
+        - Key: Animal
+          Value: Lion
+  
+  BearBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: 'yams-bear'
+      Tags:
+        - Key: Animal
+          Value: Bear
+        - Key: Foo
+          Value: Bar
+  
+  BearBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref BearBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: 'AllowBlueRole'
+            Effect: 'Allow'
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AccountId0}:role/BlueRole'
+            Action:
+              - 's3:listbucket'
+              - 's3:getobject'
+            Resource:
+              - !Sub 'arn:aws:s3:::${BearBucket}'
+              - !Sub 'arn:aws:s3:::${BearBucket}/*'
+
+  LemurTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: 'LemurTopic'
+      Tags:
+        - Key: Animal
+          Value: Lemur
+
+  LemurTopicPolicy:
+    Type: 'AWS::SNS::TopicPolicy'
+    Properties:
+      Topics:
+        - !Ref LemurTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: 'AllowBlueRole'
+            Effect: 'Allow'
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AccountId0}:role/BlueRole'
+            Action:
+              - 'sns:Publish'
+            Resource: !GetAtt LemurTopic.TopicArn
+          - Sid: 'AllowGreenRole'
+            Effect: 'Allow'
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AccountId0}:role/GreenRole'
+            Action:
+              - 'sns:Publish'
+            Resource: !GetAtt LemurTopic.TopicArn
+
+  TurtleQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: 'TurtleQueue'
+      Tags:
+        - Key: Animal
+          Value: Turtle
+
+  TurtleQueuePolicy:
+    Type: 'AWS::SQS::QueuePolicy'
+    Properties:
+      Queues:
+        - !Ref TurtleQueue
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: 'AllowAccount2'
+            Effect: 'Allow'
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AccountId2}:root'
+            Action:
+              - 'sqs:SendMessage'
+            Resource: !GetAtt TurtleQueue.Arn
+          - Sid: 'AllowGreenRole'
+            Effect: 'Allow'
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AccountId0}:role/GreenRole'
+            Action:
+              - 'sqs:SendMessage'
+            Resource: !GetAtt TurtleQueue.Arn
+          - Sid: 'DenyDogUser'
+            Effect: 'Deny'
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AccountId1}:user/DogUser'
+            Action:
+              - 'sqs:SendMessage'
+            Resource: !GetAtt TurtleQueue.Arn
+          # - Sid: 'DenyDogUser'
+          #   Effect: 'Deny'
+          #   Principal: '*'
+          #   Action:
+          #     - 'sqs:SendMessage'
+          #   Resource: !GetAtt TurtleQueue.Arn
+          #   Condition:
+          #     StringEquals:
+          #       aws:PrincipalArn: !Sub 'arn:aws:iam::${AccountId1}:user/DogUser'
+
+# Permission Boundary - More restrictive
+  LlamaBoundary:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Permission boundary for staging environment
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - lambda:InvokeFunction
+              - lambda:GetFunction
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: '*'
+            Condition:
+              DateGreaterThan:
+                'aws:CurrentTime': '2024-01-01T00:00:00Z'
+          - Effect: Deny
+            Action:
+              - s3:DeleteObject
+              - s3:DeleteBucket
+              - lambda:DeleteFunction
+              - dynamodb:DeleteItem
+              - dynamodb:DeleteTable
+              - iam:*
+              - ec2:*
+            Resource: '*'
+
+  # Cross-Account Access Role
+  PandaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: PandaRole
+      PermissionsBoundary: !Ref LlamaBoundary
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: 
+                - !Sub 'arn:aws:iam::${AccountId2}:root'
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                'sts:ExternalId': 'staging-access-789'
+              IpAddress:
+                'aws:SourceIp': 
+                  - '10.0.0.0/8'
+                  - '172.16.0.0/12'
+      Policies:
+        - PolicyName: StagingAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                  - lambda:*
+                  - dynamodb:*
+                  - logs:*
+                  - s3:DeleteObject  # Will be DENIED by permission boundary
+                Resource: '*'
+
+  # Service Role with specific boundary
+  MouseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: MouseRole
+      PermissionsBoundary: !Ref LlamaBoundary
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - lambda.amazonaws.com
+                - ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      # ManagedPolicyArns:
+      #   - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ServicePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                  - s3:GetObject
+                  - s3:PutObject
+                  - lambda:InvokeFunction
+                Resource: '*'
+
+  CrocodileBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'crocodile-bucket-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # Bucket Policy for Cross-Account Access
+  CrocodileBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CrocodileBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:role/PandaRole'
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+            Resource:
+              - !GetAtt CrocodileBucket.Arn
+              - !Sub '${CrocodileBucket.Arn}/*'
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action:
+              - s3:GetObject
+            Resource: !Sub '${CrocodileBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                's3:ExistingObjectTag/Environment': 'staging'
+
+  ElephantTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ElephantTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  # Lambda for testing cross-account invocation
+  GorillaLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: GorillaFunction
+      Runtime: python3.9
+      Handler: index.handler
+      Role: !GetAtt MouseRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          def handler(event, context):
+              return {
+                  'statusCode': 200, 
+                  'body': json.dumps('Hello from Account 1!')
+              }
+
+  # Resource-based policy for Lambda
+  GorillaLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GorillaLambda
+      Action: lambda:InvokeFunction
+      Principal: !Sub 'arn:aws:iam::${AccountId2}:root'
+      SourceArn: !Sub 'arn:aws:iam::${AccountId2}:role/SandwichRole'

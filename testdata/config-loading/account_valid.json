@@ -1,0 +1,28 @@
+[
+  {
+    "resourceType": "Yams::Organizations::Account",
+    "accountId": "000000000000",
+    "arn": "arn:yams:::account/000000000000",
+    "configuration": {
+      "accountId": "000000000000",
+      "orgId": "o-123",
+			"orgPaths": ["o-123/", "o-123/ou-level-1/", "o-123/ou-level-1/ou-level-2/"],
+      "orgNodes": [
+        {
+          "id": "123",
+          "type": "ACCOUNT",
+          "name": "myaccount",
+          "arn": "arn:aws:organizations::111:account/o-123/123",
+          "serviceControlPolicies": [
+            "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+            "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access"
+          ],
+          "resourceControlPolicies": [
+            "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
+            "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access"
+          ]
+        }
+      ]
+    }
+  }
+]

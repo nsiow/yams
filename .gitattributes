@@ -1,0 +1,2 @@
+# Ignore misc/ directory for purposes of this repo
+misc/* linguist-vendored

@@ -1,0 +1,319 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for Account 2'
+Parameters:
+  AccountId0:
+    Type: String
+  AccountId1:
+    Type: String
+  AccountId2:
+    Type: String
+
+Resources:
+  NoodleRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'NoodleRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
+                - !Sub 'arn:aws:iam::${AccountId0}:role/RedRole'
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/PizzaRole'
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'S3AccessPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 's3:GetObject'
+                Resource:
+                  - '*'
+        - PolicyName: 'AssumeBurgerRole'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'sts:assumerole'
+                Resource:
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/BurgerRole'
+      Tags:
+        - Key: Food
+          Value: Noodle
+  
+  BurgerRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'BurgerRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
+            Action:
+              - 'sts:AssumeRole'
+          - Effect: 'Allow'
+            Principal:
+              AWS: 
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/NoodleRole'
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/SushiRole'
+            Action:
+              - 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                aws:PrincipalTag/Food: 'Noodle'
+      Tags:
+        - Key: Food
+          Value: Burger
+
+  SushiRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'SushiRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
+            Action:
+              - 'sts:AssumeRole'
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !GetAtt PizzaRole.Arn
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'AssumeBurgerRole'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'sts:assumerole'
+                Resource:
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/BurgerRole'
+      Tags:
+        - Key: Food
+          Value: Sushi
+
+  PizzaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: 'PizzaRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS:
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:role/OrganizationAccountAccessRole'
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'AssumeSushiTagRole'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'sts:assumerole'
+                Resource:
+                  - '*'
+                Condition:
+                  StringEquals:
+                    aws:ResourceTag/Food: 'Sushi'       
+      Tags:
+        - Key: Food
+          Value: Pizza
+
+  # Permission Boundary - Defines maximum permissions
+  CupcakeBoundary:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Permission boundary for developers
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:ListBucket
+              - lambda:InvokeFunction
+              - lambda:GetFunction
+              - lambda:ListFunctions
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - sts:AssumeRole
+            Resource: '*'
+            Condition:
+              StringEquals:
+                'aws:RequestedRegion': 
+                  - us-east-1
+                  - us-west-2
+          - Effect: Deny
+            Action:
+              - iam:CreateRole
+              - iam:DeleteRole
+              - iam:CreatePolicy
+              - iam:DeletePolicy
+              - ec2:TerminateInstances
+              - rds:DeleteDBInstance
+            Resource: '*'
+
+  # Developer Role with Permission Boundary
+  SandwichRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: SandwichRole
+      PermissionsBoundary: !Ref CupcakeBoundary
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AccountId1}:root'
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                'sts:ExternalId': 'dev-access-123'
+      ManagedPolicyArns:
+        - !Ref SoupPolicy
+
+# Actual permissions (limited by boundary)
+  SoupPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Developer permissions policy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:*
+              - lambda:*
+              - dynamodb:*
+              - logs:*
+              - iam:CreateRole  # This will be DENIED by permission boundary
+              - ec2:*           # This will be DENIED by permission boundary
+              - sts:assumerole
+            Resource: '*'
+
+  # Admin Role without Permission Boundary
+  SaladRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: SaladRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AccountId0}:root'
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                'sts:ExternalId': 'admin-access-456'
+      ManagedPolicyArns:
+        - !Ref SaladPolicy
+  
+  SaladPolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      Description: 'Grants admin access'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Action: '*'
+            Resource: '*'
+
+  BananaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'banana-bucket-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  BananaBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref BananaBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS: 
+                - !Sub 'arn:aws:iam::${AccountId1}:root'
+            Action:
+              - 's3:*'
+            Resource:
+              - !Sub 'arn:aws:s3:::${BananaBucket}'
+              - !Sub 'arn:aws:s3:::${BananaBucket}/*'
+
+  # Test DynamoDB Table
+  TacoTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TacoTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  HotdogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  PieLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: PieFunction
+      Runtime: python3.9
+      Handler: index.handler
+      Role: !GetAtt HotdogRole.Arn
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              return {'statusCode': 200, 'body': 'Hello from Account 2!'}
