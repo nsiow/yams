@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="" alt="" height="150">
+  <img src="./misc/yams.png" alt="" height="150">
 </div>
 
 # yams
