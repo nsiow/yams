@@ -10,7 +10,7 @@ This page will help you get up and running with **yams**
 
 **yams** can be used as a Go library via:
 ```shell
-go get -u github.com/nsiow/yams@latest
+go get -u github.com/nsiow/yams
 ```
 
 Similarly, the CLI for **yams** can be installed via:
