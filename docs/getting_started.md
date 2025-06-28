@@ -18,16 +18,20 @@ Similarly, the CLI for **yams** can be installed via:
 go install github.com/nsiow/yams/cmd/yams@latest
 ```
 
+!!! note
+
+    If installing via `go install`, ensure that you have `go env GOPATH` somewhere in your `$PATH`
+
 Alternatively, you can clone the [source](https://github.com/nsiow/yams.git) and run:
 ```
 make && make install
 ```
 
-By default, this will install **yams** to `/usr/local/bin/`. If you wish to install elsewhere or
-do not have sufficient permissions, you may need to either:
+By default, the `make` commands will install **yams** to `/usr/local/bin/`. If you wish to install
+elsewhere or do not have sufficient permissions, you may need to either:
 
-* Set the `YAMS_INSTALL_DIR` environment variable to an alternative location
-* Run `make install` as root
+- Set the `YAMS_INSTALL_DIR` environment variable to an alternative location
+- Run `make install` as root
 
 ### Running a Server
 
