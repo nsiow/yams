@@ -123,11 +123,15 @@
 <p>Similarly, the CLI for <strong>yams</strong> can be installed via:</p>
 <pre><code class="language-shell">go install github.com/nsiow/yams/cmd/yams@latest
 </code></pre>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If installing via <code>go install</code>, ensure that you have <code>go env GOPATH</code> somewhere in your <code>$PATH</code></p>
+</div>
 <p>Alternatively, you can clone the <a href="https://github.com/nsiow/yams.git">source</a> and run:</p>
 <pre><code>make &amp;&amp; make install
 </code></pre>
-<p>By default, this will install <strong>yams</strong> to <code>/usr/local/bin/</code>. If you wish to install elsewhere or
-do not have sufficient permissions, you may need to either:</p>
+<p>By default, the <code>make</code> commands will install <strong>yams</strong> to <code>/usr/local/bin/</code>. If you wish to install
+elsewhere or do not have sufficient permissions, you may need to either:</p>
 <ul>
 <li>Set the <code>YAMS_INSTALL_DIR</code> environment variable to an alternative location</li>
 <li>Run <code>make install</code> as root</li>
