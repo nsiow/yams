@@ -4,11 +4,12 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="nicholas siow" /><link rel="canonical" href="https://nsiow.github.io/yams/deployment/" />
-      <link rel="shortcut icon" href="../favicon.ico" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
     <title>Deployment - yams</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../style.css" rel="stylesheet" />
     
       <script>
         // Current page data
@@ -113,7 +114,7 @@ issue on GitHub.</p>
 <p>An overview for a recommended, basic <strong>yams</strong> deployment would be:</p>
 <ul>
 <li>Use <a href="../generating_data/">yams dump</a> commands to populate data sources in S3</li>
-<li>Schedule these using whatever your friendly, neighborhood cron equivalent</li>
+<li>Schedule these using your friendly, neighborhood cron equivalent for evergreen data</li>
 <li>Deploy on a single (large) EC2 instance or container</li>
 <li>Point <strong>yams</strong> server at the cached data in S3</li>
 </ul>
@@ -122,7 +123,7 @@ issue on GitHub.</p>
 environments where the extra edge is needed:</p>
 <ul>
 <li>Use CPU-optimized EC2 instances: access simulation is almost an entirely CPU-bound endeavor and
-  <strong>yams</strong> is heavily parallelized: use as many</li>
+  <strong>yams</strong> is heavily parallelized: use as many cores as you can spare</li>
 <li>Split <a href="../data_sources/">data sources</a> into multiple files: while data loading will rarely be the
   limiting factor, it can become clunky as your sources approach GB scale. Individual data sources
   are loaded on their own goroutines, and so benefit from being partitioned by environment, resource

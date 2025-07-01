@@ -4,11 +4,12 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="nicholas siow" /><link rel="canonical" href="https://nsiow.github.io/yams/simulation/" />
-      <link rel="shortcut icon" href="../favicon.ico" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
     <title>Simulation - yams</title>
     <link rel="stylesheet" href="../css/theme.css" />
     <link rel="stylesheet" href="../css/theme_extra.css" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../style.css" rel="stylesheet" />
     
       <script>
         // Current page data
@@ -115,7 +116,7 @@
               
                 <h1 id="simulation">Simulation</h1>
 <p>One of the core features of <strong>yams</strong> is the ability to accurately simulate IAM access decisions.
-These simulation APIs revolve around four key inputs we will designate as the "<code>PARC</code>" tuple:</p>
+These simulation APIs revolve around four key inputs we will designate as the <code>PARC</code> tuple:</p>
 <ul>
 <li><code>Principal</code>: who is making the request</li>
 <li><code>Action</code>: what AWS API call is being made</li>
@@ -124,7 +125,7 @@ These simulation APIs revolve around four key inputs we will designate as the "<
 </ul>
 <h3 id="basic-simulation">Basic Simulation</h3>
 <p>The most straightforward type of simulation is for a single request, providing all aspects of
-<code>PARC</code></p>
+<code>PARC</code>.</p>
 <p>Once your data is loaded, basic simulation can be facilitated via the <strong>yams</strong> CLI as follows:</p>
 <pre><code class="language-shell">yams sim
   -principal &lt;principal_arn&gt;
@@ -299,7 +300,7 @@ extended simulation becomes prohibitive at sufficiently large scale</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>When defining an <strong>entity</strong> for an overlay, make sure to use the non-frozen version. Overriding
-managed policy definitions should by overwriting the policy itself</p>
+managed policy definitions should be accomplished by overwriting the policy itself</p>
 </div>
 <h3 id="entity-autocomplete">Entity Autocomplete</h3>
 <p>To avoid having excessive copy-pasting of ARNs, <strong>yams</strong> will attempt to autocomplete any provided
@@ -308,7 +309,7 @@ ARN fragments into full <strong>entity</strong> ARNs.</p>
 <li>If a single match is found, that ARN will be used</li>
 <li>If multiple matches are found, <strong>yams</strong> will return an error</li>
 </ul>
-<p>The return value of the simulation will echo the full <strong>Principal</strong> and <strong>Resource</strong> ARNs used</p>
+<p>The return value of the simulation will echo the full <strong>Principal</strong> and <strong>Resource</strong> ARNs used.</p>
 <p><strong>Example: Successful Autocomplete</strong></p>
 <pre><code class="language-shell">yams sim \
   -p arn:aws:iam::777583092761:role/BlueRole \
@@ -332,14 +333,22 @@ ARN fragments into full <strong>entity</strong> ARNs.</p>
 <p><strong>Q: How do I simulate API actions without resources?</strong></p>
 <p>A: For actions that do not accept a Resource, you can simply omit it from the command. <strong>yams</strong>
 will skip resource-level evaluation and return the simulation result directly. For example,</p>
-<pre><code class="language-shell">yams sim -p arn:aws:iam::777583092761:role/RedRole -a s3:listallmybuckets`
+<pre><code class="language-shell">yams sim \
+  -p arn:aws:iam::777583092761:role/RedRole \
+  -a s3:listallmybuckets
 </code></pre>
 <p><strong>Q: I am getting weird results when simulating a "Create" API operation</strong></p>
 <p>A: "Create" operations are tricky. While we usually do not think of them as being performed
 <em>against</em> a resource (after all, they are creating one), IAM authorization does act as if they are.</p>
 <p>A common use case for this is limiting a Principal to create resources with a specified prefix,
-which means the authorization decision depends heavily</p>
-<p>For example, if you want to model whether or not an IAM role can create a bucket, you would</p>
+which means the authorization decision depends heavily on the name of the resource itself.</p>
+<p>For example, if you want to model whether or not an IAM role can create a bucket, you would
+model it as:</p>
+<pre><code class="language-shell">yams sim \
+  -p arn:aws:iam::777583092761:role/RedRole \
+  -a s3:CreateBucket \
+  -r arn:aws:s3:::my-hypothetical-bucket
+</code></pre>
               
             </div>
           </div><footer>
