@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://nsiow.github.io/yams/inventory/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Inventory - yams</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Inventory";
+        var mkdocs_page_input_path = "inventory.md";
+        var mkdocs_page_url = "/yams/inventory/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="..">
+          <img src="../assets/yams.png" class="logo" alt="Logo"/>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">About</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../concepts/">Concepts</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../data_sources/">Data Sources</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../generating_data/">Generating Data</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Inventory</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#aws-api-actions">AWS API Actions</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#list">List</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#search">Search</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#lookup">Lookup</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#principals">Principals</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#list_1">List</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#search_1">Search</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#lookup_1">Lookup</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#resources">Resources</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#list_2">List</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#search_2">Search</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#lookup_2">Lookup</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#policies">Policies</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#list_3">List</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#search_3">Search</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#lookup_3">Lookup</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#accounts">Accounts</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#list_4">List</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#search_4">Search</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#lookup_4">Lookup</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../simulation/">Simulation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../deployment/">Deployment</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../api/">API Reference</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">yams</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Inventory</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="inventory">Inventory</h1>
+<p><strong>yams</strong> provides the ability to query and investigate various sources of IAM policy data in your
+environment. This data is populated via <a href="../data_sources/">Sources</a> and includes the following
+<strong>Entity</strong> types:</p>
+<ul>
+<li>AWS API Actions</li>
+<li>Principals</li>
+<li>Resources</li>
+<li>Policies</li>
+<li>and Accounts</li>
+</ul>
+<p>The inventorying commands for each <strong>Entity</strong> type follow the same common pattern:</p>
+<ul>
+<li><code>yams &lt;type&gt;</code> will list all known instances of that <strong>Entity</strong> type</li>
+<li><code>yams &lt;type&gt; -q/-query &lt;term&gt;</code> will do a case-insensitive search using the provided term across
+  that Entity type</li>
+<li><code>yams &lt;type&gt; -k/-key &lt;name/ARN&gt;</code> will look up the <strong>Entity</strong> by its primary ID (typically ARN,
+  name, or ID); exact match</li>
+</ul>
+<h3 id="aws-api-actions">AWS API Actions</h3>
+<h5 id="list">List</h5>
+<pre><code class="language-shell">yams actions
+</code></pre>
+<pre><code class="language-json">[
+  &quot;a2c:GetContainerizationJobDetails&quot;,
+  &quot;a2c:GetDeploymentJobDetails&quot;,
+  &quot;a2c:StartContainerizationJob&quot;,
+  &quot;a2c:StartDeploymentJob&quot;,
+  &quot;a4b:ApproveSkill&quot;,
+  &quot;a4b:AssociateContactWithAddressBook&quot;,
+  &quot;a4b:AssociateDeviceWithNetworkProfile&quot;,
+  &quot;a4b:AssociateDeviceWithRoom&quot;,
+  &quot;a4b:AssociateSkillGroupWithRoom&quot;,
+  ...
+]
+</code></pre>
+<h5 id="search">Search</h5>
+<pre><code class="language-shell">yams actions -q networkinterface
+</code></pre>
+<pre><code class="language-json">[
+  &quot;ec2:AttachNetworkInterface&quot;,
+  &quot;ec2:CreateNetworkInterface&quot;,
+  &quot;ec2:CreateNetworkInterfacePermission&quot;,
+  &quot;ec2:DeleteNetworkInterface&quot;,
+  &quot;ec2:DeleteNetworkInterfacePermission&quot;,
+  &quot;ec2:DescribeNetworkInterfaceAttribute&quot;,
+  &quot;ec2:DescribeNetworkInterfacePermissions&quot;,
+  &quot;ec2:DescribeNetworkInterfaces&quot;,
+  &quot;ec2:DetachNetworkInterface&quot;,
+  ...
+]
+</code></pre>
+<h5 id="lookup">Lookup</h5>
+<pre><code class="language-shell">yams actions -k dynamodb:PutItem
+
+// also valid
+yams actions -k dynamodb.putitem
+</code></pre>
+<pre><code class="language-json">{
+  &quot;Name&quot;: &quot;PutItem&quot;,
+  &quot;Service&quot;: &quot;dynamodb&quot;,
+  &quot;ActionConditionKeys&quot;: [
+    &quot;dynamodb:attributes&quot;,
+    &quot;dynamodb:enclosingoperation&quot;,
+    &quot;dynamodb:leadingkeys&quot;,
+    &quot;dynamodb:returnconsumedcapacity&quot;,
+    &quot;dynamodb:returnvalues&quot;
+  ],
+  &quot;ResolvedResources&quot;: [
+    {
+      &quot;Name&quot;: &quot;table&quot;,
+      &quot;ARNFormats&quot;: [
+        &quot;arn:*:dynamodb:*:*:table/*&quot;
+      ],
+      &quot;ConditionKeys&quot;: [
+        &quot;aws:resourcetag&quot;
+      ]
+    }
+  ]
+}
+</code></pre>
+<h3 id="principals">Principals</h3>
+<h5 id="list_1">List</h5>
+<pre><code class="language-shell">yams principals
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:iam::213308312933:role/LionRole&quot;,
+  &quot;arn:aws:iam::213308312933:role/MouseRole&quot;,
+  &quot;arn:aws:iam::213308312933:role/PandaRole&quot;,
+  &quot;arn:aws:iam::213308312933:user/CatUser&quot;,
+  &quot;arn:aws:iam::213308312933:user/DogUser&quot;,
+  &quot;arn:aws:iam::213308312933:user/FishUser&quot;,
+  &quot;arn:aws:iam::255082776537:role/BurgerRole&quot;,
+  &quot;arn:aws:iam::255082776537:role/NoodleRole&quot;,
+  &quot;arn:aws:iam::255082776537:role/PizzaRole&quot;,
+  ...
+]
+</code></pre>
+<h5 id="search_1">Search</h5>
+<pre><code class="language-shell">yams principals -q cat
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:iam::213308312933:user/CatUser&quot;
+]
+</code></pre>
+<h5 id="lookup_1">Lookup</h5>
+<pre><code class="language-shell">yams principals -k arn:aws:iam::213308312933:user/CatUser
+</code></pre>
+<pre><code class="language-json">{
+  &quot;Type&quot;: &quot;AWS::IAM::User&quot;,
+  &quot;AccountId&quot;: &quot;213308312933&quot;,
+  &quot;Name&quot;: &quot;CatUser&quot;,
+  &quot;Arn&quot;: &quot;arn:aws:iam::213308312933:user/CatUser&quot;,
+  ...
+}
+</code></pre>
+<h3 id="resources">Resources</h3>
+<h5 id="list_2">List</h5>
+<pre><code class="language-shell">yams resources
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:dynamodb:us-east-1:213308312933:table/ElephantTable&quot;,
+  &quot;arn:aws:dynamodb:us-east-1:255082776537:table/TacoTable&quot;,
+  &quot;arn:aws:dynamodb:us-east-1:777583092761:table/NavyTable&quot;,
+  &quot;arn:aws:dynamodb:us-east-1:777583092761:table/OrangeTable&quot;,
+  &quot;arn:aws:iam::213308312933:policy/yams-test-infra-DogPolicy-pX0mgCedLaeo&quot;,
+  &quot;arn:aws:iam::213308312933:policy/yams-test-infra-LlamaBoundary-mvVoctsE53pG&quot;,
+  &quot;arn:aws:iam::213308312933:role/LionRole&quot;,
+  &quot;arn:aws:iam::213308312933:role/MouseRole&quot;,
+  &quot;arn:aws:iam::213308312933:role/PandaRole&quot;,
+  ...
+]
+</code></pre>
+<h5 id="search_2">Search</h5>
+<pre><code class="language-shell">yams resources -q s3
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:s3:::banana-bucket-255082776537&quot;,
+  &quot;arn:aws:s3:::crocodile-bucket-213308312933&quot;,
+  &quot;arn:aws:s3:::peach-bucket-777583092761&quot;,
+  &quot;arn:aws:s3:::yams-bear&quot;,
+  &quot;arn:aws:s3:::yams-cyan&quot;,
+  &quot;arn:aws:s3:::yams-green&quot;,
+  &quot;arn:aws:s3:::yams-magenta&quot;
+]
+</code></pre>
+<h5 id="lookup_2">Lookup</h5>
+<pre><code class="language-shell">yams resources -k arn:aws:s3:::yams-cyan
+</code></pre>
+<pre><code class="language-json">{
+  &quot;Type&quot;: &quot;AWS::S3::Bucket&quot;,
+  &quot;AccountId&quot;: &quot;777583092761&quot;,
+  &quot;Region&quot;: &quot;us-east-1&quot;,
+  &quot;Name&quot;: &quot;yams-cyan&quot;,
+  &quot;Arn&quot;: &quot;arn:aws:s3:::yams-cyan&quot;,
+  &quot;Policy&quot;: {
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Id&quot;: &quot;&quot;,
+    &quot;Statement&quot;: [
+      {
+        &quot;Sid&quot;: &quot;&quot;,
+        &quot;Effect&quot;: &quot;Deny&quot;,
+        &quot;Principal&quot;: &quot;*&quot;,
+        &quot;Action&quot;: [
+          &quot;s3:listbucket&quot;,
+          &quot;s3:getobject&quot;
+        ],
+        &quot;Resource&quot;: [
+          &quot;arn:aws:s3:::yams-cyan&quot;,
+          &quot;arn:aws:s3:::yams-cyan/*&quot;
+        ],
+        &quot;Condition&quot;: {
+          &quot;StringNotEquals&quot;: {
+            &quot;aws:PrincipalTag/Color&quot;: &quot;Blue&quot;
+          }
+        }
+      }
+    ]
+  },
+  ...
+}
+</code></pre>
+<h3 id="policies">Policies</h3>
+<h5 id="list_3">List</h5>
+<pre><code class="language-shell">yams policies
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:iam::213308312933:policy/yams-test-infra-DogPolicy-pX0mgCedLaeo&quot;,
+  &quot;arn:aws:iam::213308312933:policy/yams-test-infra-LlamaBoundary-mvVoctsE53pG&quot;,
+  &quot;arn:aws:iam::255082776537:policy/yams-test-infra-CupcakeBoundary-udxeJjTH6ebJ&quot;,
+  &quot;arn:aws:iam::255082776537:policy/yams-test-infra-SaladPolicy-opE0edVZrSWR&quot;,
+  &quot;arn:aws:iam::255082776537:policy/yams-test-infra-SoupPolicy-65QKm40EPh1y&quot;,
+  &quot;arn:aws:iam::777583092761:policy/yams-test-infra-GreyPolicy-gLf7j3ZwJYBm&quot;,
+  &quot;arn:aws:iam::777583092761:policy/yams-test-infra-MustardBoundary-47JW6znulEXt&quot;,
+  &quot;arn:aws:iam::777583092761:policy/yams-test-infra-PinkBoundary-xuINwerkCuZ3&quot;,
+  &quot;arn:aws:iam::aws:policy/AIOpsAssistantPolicy&quot;,
+  ...
+]
+</code></pre>
+<h5 id="search_3">Search</h5>
+<pre><code class="language-shell">yams policies -q test
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:iam::213308312933:policy/yams-test-infra-DogPolicy-pX0mgCedLaeo&quot;,
+  &quot;arn:aws:iam::213308312933:policy/yams-test-infra-LlamaBoundary-mvVoctsE53pG&quot;,
+  &quot;arn:aws:iam::255082776537:policy/yams-test-infra-CupcakeBoundary-udxeJjTH6ebJ&quot;,
+  &quot;arn:aws:iam::255082776537:policy/yams-test-infra-SaladPolicy-opE0edVZrSWR&quot;,
+  &quot;arn:aws:iam::255082776537:policy/yams-test-infra-SoupPolicy-65QKm40EPh1y&quot;,
+  &quot;arn:aws:iam::777583092761:policy/yams-test-infra-GreyPolicy-gLf7j3ZwJYBm&quot;,
+  &quot;arn:aws:iam::777583092761:policy/yams-test-infra-MustardBoundary-47JW6znulEXt&quot;,
+  &quot;arn:aws:iam::777583092761:policy/yams-test-infra-PinkBoundary-xuINwerkCuZ3&quot;,
+  &quot;arn:aws:iam::aws:policy/AWSIoTDeviceTesterForFreeRTOSFullAccess&quot;,
+  ...
+]
+</code></pre>
+<h5 id="lookup_3">Lookup</h5>
+<pre><code class="language-shell">yams policies -k arn:aws:iam::213308312933:policy/yams-test-infra-DogPolicy-pX0mgCedLaeo
+</code></pre>
+<pre><code class="language-json">{
+  &quot;Type&quot;: &quot;AWS::IAM::Policy&quot;,
+  &quot;AccountId&quot;: &quot;213308312933&quot;,
+  &quot;Arn&quot;: &quot;arn:aws:iam::213308312933:policy/yams-test-infra-DogPolicy-pX0mgCedLaeo&quot;,
+  &quot;Name&quot;: &quot;yams-test-infra-DogPolicy-pX0mgCedLaeo&quot;,
+  &quot;Policy&quot;: {
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+      {
+        &quot;Effect&quot;: &quot;Allow&quot;,
+        &quot;Action&quot;: &quot;*&quot;,
+        &quot;Resource&quot;: &quot;*&quot;
+      }
+    ]
+  }
+}
+</code></pre>
+<h3 id="accounts">Accounts</h3>
+<h5 id="list_4">List</h5>
+<pre><code class="language-shell">yams accounts
+</code></pre>
+<pre><code class="language-json">[
+  &quot;213308312933&quot;,
+  &quot;255082776537&quot;,
+  &quot;777583092761&quot;,
+  &quot;810970970902&quot;
+]
+</code></pre>
+<h5 id="search_4">Search</h5>
+<pre><code class="language-shell">yams accounts -q 213
+</code></pre>
+<pre><code class="language-json">[
+  &quot;213308312933&quot;
+]
+</code></pre>
+<h5 id="lookup_4">Lookup</h5>
+<pre><code class="language-shell">yams accounts -k 213308312933
+</code></pre>
+<pre><code class="language-json">{
+  &quot;Id&quot;: &quot;213308312933&quot;,
+  &quot;Name&quot;: &quot;yams1&quot;,
+  &quot;OrgId&quot;: &quot;o-9hmw0uhxs4&quot;,
+  &quot;OrgPaths&quot;: [
+    &quot;o-9hmw0uhxs4/r-m4x4/&quot;,
+    &quot;o-9hmw0uhxs4/r-m4x4/ou-m4x4-onrzr6t1/&quot;
+  ],
+  &quot;OrgNodes&quot;: ...
+}
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../generating_data/" class="btn btn-neutral float-left" title="Generating Data"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../simulation/" class="btn btn-neutral float-right" title="Simulation">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../generating_data/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../simulation/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

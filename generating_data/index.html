@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://nsiow.github.io/yams/generating_data/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Generating Data - yams</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Generating Data";
+        var mkdocs_page_input_path = "generating_data.md";
+        var mkdocs_page_url = "/yams/generating_data/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="..">
+          <img src="../assets/yams.png" class="logo" alt="Logo"/>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">About</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../concepts/">Concepts</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../data_sources/">Data Sources</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Generating Data</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#entity-data">Entity Data</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#using-yams">Using yams</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#alternatives">Alternatives</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#org-data">Org Data</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#using-yams_1">Using yams</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#examples_1">Examples</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#alternatives_1">Alternatives</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../inventory/">Inventory</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../simulation/">Simulation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../deployment/">Deployment</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../api/">API Reference</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">yams</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Generating Data</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="generating-data">Generating Data</h1>
+<p>The <a href="../data_sources/">data sources</a> used by <strong>yams</strong> can be created by any tooling adhering to the
+schema and naming conventions. For convenience, <strong>yams</strong> itself can also serve as a generator of
+this data.</p>
+<p>At this time, <strong>yams</strong> supports the generation of two types of data:</p>
+<ul>
+<li><strong>Entities</strong>: principals, resources, policies, etc</li>
+<li><strong>Org Data</strong>: accounts, OUs, SCPs, etc</li>
+</ul>
+<h3 id="entity-data">Entity Data</h3>
+<h5 id="using-yams">Using yams</h5>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Using <strong>yams</strong> to generate <strong>Entity</strong> data requires providing the program with credentials to
+perform <code>config:SelectAggregateResourceConfig</code> in the same AWS account as the AWS Config
+Aggregator</p>
+</div>
+<p><strong>Entity</strong> data can be generated via the <code>yams dump config</code> subcommand, which requires specifying
+both:</p>
+<ul>
+<li><code>-a/-aggregator</code> the name of the AWS Config aggregator to use</li>
+<li><code>-r/-rtype</code> the AWS Config resource type(s) that you would like to dump (allows multiple!)</li>
+</ul>
+<h6 id="examples">Examples</h6>
+<blockquote>
+<p>Dump all known SQS Queues to stdout:</p>
+</blockquote>
+<pre><code class="language-shell">yams dump config \
+  -a my-aggregator \
+  -r AWS::SQS::Queue
+</code></pre>
+<blockquote>
+<p>Dump all IAM <strong>Entities</strong> to a file:</p>
+</blockquote>
+<pre><code class="language-shell">yams dump config \
+  -a my-aggregator \
+  -r AWS::IAM::Role \
+  -r AWS::IAM::User \
+  -r AWS::IAM::Group \
+  -r AWS::IAM::Policy \
+  -o out.json
+</code></pre>
+<blockquote>
+<p>Dump all IAM <strong>Entities</strong> and key resources to an S3 bucket; compressed:</p>
+</blockquote>
+<pre><code class="language-shell">yams dump config \
+  -a my-aggregator \
+  -r AWS::IAM::Role \
+  -r AWS::IAM::User \
+  -r AWS::IAM::Group \
+  -r AWS::IAM::Policy \
+  -r AWS::S3::Bucket \
+  -r AWS::SQS::Queue \
+  -r AWS::SNS::Topic \
+  -r AWS::DynamoDB::Table \
+  -r AWS::KMS::Key \
+  -o s3://my-bucket/resources.json.gz
+</code></pre>
+<h5 id="alternatives">Alternatives</h5>
+<p>You can also use basic command-line tools such as <code>awscli</code> and <code>jq</code> to construct valid <strong>Sources</strong>
+with highly customized subsets of data:</p>
+<pre><code class="language-shell">aws configservice select-aggregate-resource-config \
+--configuration-aggregator-name my-aggregator \
+--expression &quot;SELECT *, configuration, supplementaryConfiguration, tags WHERE ...&quot; \
+| jq -c '.Results[] | fromjson' \
+&gt; resources.jsonl
+</code></pre>
+<h3 id="org-data">Org Data</h3>
+<h5 id="using-yams_1">Using yams</h5>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Using <strong>yams</strong> to generate <strong>Org</strong> data requires providing the program with credentials to
+access read-only <code>organizations</code> APIs in the org master account</p>
+</div>
+<p><strong>Org</strong> data can be generated via the <code>yams dump org</code> subcommand.</p>
+<h6 id="examples_1">Examples</h6>
+<blockquote>
+<p>Dump org data to stdout:</p>
+</blockquote>
+<pre><code class="language-shell">yams dump org
+</code></pre>
+<blockquote>
+<p>Dump org data to an S3 bucket; compressed:</p>
+</blockquote>
+<pre><code class="language-shell">yams dump org \
+  -o s3://my-bucket/org.json.gz
+</code></pre>
+<h5 id="alternatives_1">Alternatives</h5>
+<p>At this time, there are no valid alternatives to generating Org data, due to a lack of standard
+schema and definition for these entity types.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../data_sources/" class="btn btn-neutral float-left" title="Data Sources"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../inventory/" class="btn btn-neutral float-right" title="Inventory">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../data_sources/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../inventory/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

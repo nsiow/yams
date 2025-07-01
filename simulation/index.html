@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://nsiow.github.io/yams/simulation/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Simulation - yams</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Simulation";
+        var mkdocs_page_input_path = "simulation.md";
+        var mkdocs_page_url = "/yams/simulation/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="..">
+          <img src="../assets/yams.png" class="logo" alt="Logo"/>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">About</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../concepts/">Concepts</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../data_sources/">Data Sources</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../generating_data/">Generating Data</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../inventory/">Inventory</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Simulation</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#basic-simulation">Basic Simulation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#extended-simulation">Extended Simulation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#explain-trace">Explain &amp; Trace</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#overlays">Overlays</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#entity-autocomplete">Entity Autocomplete</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#faq">FAQ</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../deployment/">Deployment</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../api/">API Reference</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">yams</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Simulation</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="simulation">Simulation</h1>
+<p>One of the core features of <strong>yams</strong> is the ability to accurately simulate IAM access decisions.
+These simulation APIs revolve around four key inputs we will designate as the "<code>PARC</code>" tuple:</p>
+<ul>
+<li><code>Principal</code>: who is making the request</li>
+<li><code>Action</code>: what AWS API call is being made</li>
+<li><code>Resource</code>: the target of the AWS API call</li>
+<li><code>Context</code>: any additional request context (IP, User-Agent, etc)</li>
+</ul>
+<h3 id="basic-simulation">Basic Simulation</h3>
+<p>The most straightforward type of simulation is for a single request, providing all aspects of
+<code>PARC</code></p>
+<p>Once your data is loaded, basic simulation can be facilitated via the <strong>yams</strong> CLI as follows:</p>
+<pre><code class="language-shell">yams sim
+  -principal &lt;principal_arn&gt;
+  -action &lt;api_action&gt;
+  -resource &lt;resource_arn&gt;
+</code></pre>
+<p><strong>Example</strong></p>
+<pre><code class="language-shell">yams sim \
+  -principal arn:aws:iam::777583092761:role/RedRole \
+  -action s3.getobject \
+  -resource arn:aws:s3:::yams-magenta/secret.txt
+</code></pre>
+<pre><code class="language-json">{
+  &quot;result&quot;: &quot;ALLOW&quot;,
+  &quot;principal&quot;: &quot;arn:aws:iam::777583092761:role/RedRole&quot;,
+  &quot;action&quot;: &quot;s3:GetObject&quot;,
+  &quot;resource&quot;: &quot;arn:aws:s3:::yams-magenta/secret.txt&quot;
+}
+</code></pre>
+<h3 id="extended-simulation">Extended Simulation</h3>
+<p>A more flexible form of simulation can be achieved by omitting one of the <code>PAR</code> identifiers. Doing
+so will affect the results of simulation in the following ways:</p>
+<table>
+<thead>
+<tr>
+<th>Data Provided</th>
+<th>Results</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Principal</code> and <code>Action</code></td>
+<td>"against which resources can this <code>Principal</code> perform this <code>Action</code>"</td>
+</tr>
+<tr>
+<td><code>Action</code> and <code>Resource</code></td>
+<td>"which <code>Principals</code> can perform this <code>Action</code> against this <code>Resource</code>"</td>
+</tr>
+<tr>
+<td><code>Principal</code> and <code>Resource</code></td>
+<td>"which actions can this <code>Principal</code> perform against this <code>Resource</code>"</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example: "which resources?"</strong></p>
+<pre><code class="language-shell">yams sim \
+  -p arn:aws:iam::777583092761:role/RedRole \
+  -a s3.getobject
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:s3:::yams-magenta/*&quot;
+]
+</code></pre>
+<p><strong>Example: "which principals?"</strong></p>
+<pre><code class="language-shell">yams sim \
+  -a s3.getobject \
+  -r arn:aws:s3:::yams-cyan/secret.txt
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:iam::777583092761:role/BlueRole&quot;
+]
+</code></pre>
+<p><strong>Example: "which actions?"</strong></p>
+<pre><code class="language-shell">yams sim \
+  -p arn:aws:iam::777583092761:role/RedRole \
+  -r arn:aws:s3:::yams-magenta/secret.txt
+</code></pre>
+<pre><code class="language-json">[
+  &quot;s3:DeleteObject&quot;,
+  &quot;s3:GetObject&quot;,
+  &quot;s3:ListBucket&quot;,
+  &quot;s3:PutObject&quot;
+]
+</code></pre>
+<h3 id="explain-trace">Explain &amp; Trace</h3>
+<p>Beyond knowing the result of an access decision, it is often useful to know <em>why</em> that decision
+came to be. <strong>yams</strong> comes with two additional simulation flags which help users to understand
+which policies and statements are contributing towards a particular decision.</p>
+<ul>
+<li><code>-e/--explain</code>: provides a concise, human-readable explanation of how the access decision was
+  reached</li>
+<li><code>-t/--trace</code>: provides a detailed walkthrough for each step of the policy evaluation</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>These flags are only available for basic simulation, as recording and storing the data for
+extended simulation becomes prohibitive at sufficiently large scale</p>
+</div>
+<p><strong>Example: <code>explain</code></strong></p>
+<pre><code class="language-shell">yams sim \
+  -p arn:aws:iam::777583092761:role/BlueRole \
+  -a sns.publish \
+  -r arn:aws:sns:us-east-1:213308312933:LemurTopic \
+  -explain
+</code></pre>
+<pre><code class="language-json">{
+  &quot;result&quot;: &quot;ALLOW&quot;,
+  &quot;principal&quot;: &quot;arn:aws:iam::777583092761:role/BlueRole&quot;,
+  &quot;action&quot;: &quot;sns:Publish&quot;,
+  &quot;resource&quot;: &quot;arn:aws:sns:us-east-1:213308312933:LemurTopic&quot;,
+  &quot;explain&quot;: [
+    &quot;allow in inline principal policy: 1&quot;,
+    &quot;[allow] access granted via x-account identity + resource policies&quot;
+  ]
+}
+</code></pre>
+<p><strong>Example: <code>trace</code></strong></p>
+<pre><code class="language-shell">yams sim \
+  -p arn:aws:iam::777583092761:role/BlueRole \
+  -a sns.publish \
+  -r arn:aws:sns:us-east-1:213308312933:LemurTopic \
+  -trace
+</code></pre>
+<pre><code class="language-json">{
+  &quot;result&quot;: &quot;ALLOW&quot;,
+  &quot;principal&quot;: &quot;arn:aws:iam::777583092761:role/BlueRole&quot;,
+  &quot;action&quot;: &quot;sns:Publish&quot;,
+  &quot;resource&quot;: &quot;arn:aws:sns:us-east-1:213308312933:LemurTopic&quot;,
+  &quot;explain&quot;: [
+    &quot;allow in inline principal policy: 1&quot;,
+    &quot;[allow] access granted via x-account identity + resource policies&quot;
+  ],
+  &quot;trace&quot;: [
+    &quot;(allow) begin: root&quot;,
+    &quot;  begin: evaluating resource policies&quot;,
+    &quot;    begin: evaluating policy: 0&quot;,
+    &quot;      begin: evaluating statement: AllowBlueRole&quot;,
+    &quot;        begin: evaluating Action&quot;,
+    &quot;          using Action block&quot;,
+    &quot;          match: sns:Publish and sns:Publish&quot;,
+    &quot;        end: evaluating Action&quot;,
+    &quot;        begin: evaluating Resource&quot;,
+    &quot;          using Resource block&quot;,
+  ...
+}
+</code></pre>
+<h3 id="overlays">Overlays</h3>
+<p>For more information about overlays, please refer to <a href="../concepts/#overlay">Concepts &gt; Overlays</a></p>
+<p>Overlays are supported as input files to the <code>yams sim</code> subcommand, allowing you to override
+<strong>entity</strong> definitions as needed.</p>
+<p><strong>Example: Using an overlay</strong></p>
+<pre><code class="language-shell">yams sim \
+  -p arn:aws:iam::777583092761:role/RedRole \
+  -r arn:aws:s3:::yams-magenta/secret.txt
+</code></pre>
+<pre><code class="language-json">[
+  &quot;s3:DeleteObject&quot;,
+  &quot;s3:GetObject&quot;,
+  &quot;s3:ListBucket&quot;,
+  &quot;s3:PutObject&quot;
+]
+</code></pre>
+<pre><code class="language-shell">yams principals \
+  -k arn:aws:iam::777583092761:role/RedRole \
+  &gt; RedRole.json
+</code></pre>
+<pre><code class="language-shell">vim redrole.json  # make some edits, add s3:PutObjectAcl permission
+</code></pre>
+<pre><code class="language-shell">yams sim \
+  -p arn:aws:iam::777583092761:role/RedRole \
+  -r arn:aws:s3:::yams-magenta/secret.txt \
+  -overlay RedRole.json
+</code></pre>
+<pre><code class="language-json">[
+  &quot;s3:DeleteObject&quot;,
+  &quot;s3:GetObject&quot;,
+  &quot;s3:ListBucket&quot;,
+  &quot;s3:PutObject&quot;,
+  &quot;s3:PutObjectAcl&quot;
+]
+</code></pre>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When defining an <strong>entity</strong> for an overlay, make sure to use the non-frozen version. Overriding
+managed policy definitions should by overwriting the policy itself</p>
+</div>
+<h3 id="entity-autocomplete">Entity Autocomplete</h3>
+<p>To avoid having excessive copy-pasting of ARNs, <strong>yams</strong> will attempt to autocomplete any provided
+ARN fragments into full <strong>entity</strong> ARNs.</p>
+<ul>
+<li>If a single match is found, that ARN will be used</li>
+<li>If multiple matches are found, <strong>yams</strong> will return an error</li>
+</ul>
+<p>The return value of the simulation will echo the full <strong>Principal</strong> and <strong>Resource</strong> ARNs used</p>
+<p><strong>Example: Successful Autocomplete</strong></p>
+<pre><code class="language-shell">yams sim \
+  -p arn:aws:iam::777583092761:role/BlueRole \
+  -a sns.publish \
+  -r arn:aws:sns:us-east-1:213308312933:LemurTopic \
+</code></pre>
+<p>can be shortened to:</p>
+<pre><code class="language-shell">yams sim \
+  -p bluerole \
+  -a sns.publish \
+  -r lemurtopic
+</code></pre>
+<p><strong>Example: Failed Autocomplete</strong></p>
+<pre><code class="language-shell">yams sim -p role -a s3.listbucket -r bucket
+</code></pre>
+<pre><code class="language-json">{
+  &quot;error&quot;: &quot;simulation error: error resolving principal for simulation: too many matches for 'role': [arn:aws:iam::777583092761:role/CoralRole arn:aws:iam::213308312933:role/LionRole arn:aws:iam::777583092761:role/TaupeRole arn:aws:iam::213308312933:role/MouseRole arn:aws:iam::213308312933:role/PandaRole arn:aws:iam::255082776537:role/BurgerRole arn:aws:iam::255082776537:role/SushiRole arn:aws:iam::777583092761:role/BlueRole arn:aws:iam::777583092761:role/RedRole arn:aws:iam::777583092761:role/GreenRole]&quot;
+}
+</code></pre>
+<h3 id="faq">FAQ</h3>
+<p><strong>Q: How do I simulate API actions without resources?</strong></p>
+<p>A: For actions that do not accept a Resource, you can simply omit it from the command. <strong>yams</strong>
+will skip resource-level evaluation and return the simulation result directly. For example,</p>
+<pre><code class="language-shell">yams sim -p arn:aws:iam::777583092761:role/RedRole -a s3:listallmybuckets`
+</code></pre>
+<p><strong>Q: I am getting weird results when simulating a "Create" API operation</strong></p>
+<p>A: "Create" operations are tricky. While we usually do not think of them as being performed
+<em>against</em> a resource (after all, they are creating one), IAM authorization does act as if they are.</p>
+<p>A common use case for this is limiting a Principal to create resources with a specified prefix,
+which means the authorization decision depends heavily</p>
+<p>For example, if you want to model whether or not an IAM role can create a bucket, you would</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../inventory/" class="btn btn-neutral float-left" title="Inventory"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../deployment/" class="btn btn-neutral float-right" title="Deployment">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../inventory/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../deployment/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

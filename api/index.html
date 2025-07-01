@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://nsiow.github.io/yams/api/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>API Reference - yams</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "API Reference";
+        var mkdocs_page_input_path = "api.md";
+        var mkdocs_page_url = "/yams/api/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="..">
+          <img src="../assets/yams.png" class="logo" alt="Logo"/>
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">About</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../concepts/">Concepts</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting_started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../data_sources/">Data Sources</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../generating_data/">Generating Data</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../inventory/">Inventory</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../simulation/">Simulation</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../deployment/">Deployment</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">API Reference</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#healthcheck-api">Healthcheck API</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#status-api">Status API</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#actions-api">Actions API</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#principals-api">Principals API</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#resources-api">Resources API</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#policies-api">Policies API</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#accounts-api">Accounts API</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#basic-simulation">Basic Simulation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#extended-simulation">Extended Simulation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#explain-trace">Explain &amp; Trace</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#overlays">Overlays</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">yams</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">API Reference</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="api-reference">API Reference</h1>
+<p>The following documentation provides examples of integrating with the HTTP API for <strong>yams</strong>.</p>
+<h3 id="healthcheck-api">Healthcheck API</h3>
+<p><code>GET /api/v1/healthcheck</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/healthcheck
+</code></pre>
+<pre><code class="language-shell">OK
+</code></pre>
+<h3 id="status-api">Status API</h3>
+<p><code>GET /api/v1/status</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/status
+</code></pre>
+<pre><code class="language-json">{
+  &quot;accounts&quot;: 4,
+  &quot;entities&quot;: 1448,
+  &quot;groups&quot;: 0,
+  &quot;policies&quot;: 1371,
+  &quot;principals&quot;: 20,
+  &quot;resources&quot;: 53,
+  &quot;sources&quot;: [
+    {
+      &quot;source&quot;: &quot;testdata/real-world/awsconfig.jsonl&quot;,
+      &quot;updated&quot;: &quot;2025-03-15T15:04:35.173468943-07:00&quot;
+    },
+    {
+      &quot;source&quot;: &quot;testdata/real-world/org.jsonl&quot;,
+      &quot;updated&quot;: &quot;2025-03-15T15:04:35.173687682-07:00&quot;
+    }
+  ]
+}
+</code></pre>
+<h3 id="actions-api">Actions API</h3>
+<p><strong>List</strong>
+<code>GET /api/v1/actions</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/actions
+</code></pre>
+<pre><code class="language-json">[
+  &quot;a2c:GetContainerizationJobDetails&quot;,
+  &quot;a2c:GetDeploymentJobDetails&quot;,
+  &quot;a2c:StartContainerizationJob&quot;,
+  &quot;a2c:StartDeploymentJob&quot;,
+  &quot;a4b:ApproveSkill&quot;,
+  &quot;a4b:AssociateContactWithAddressBook&quot;,
+  &quot;a4b:AssociateDeviceWithNetworkProfile&quot;,
+  &quot;a4b:AssociateDeviceWithRoom&quot;,
+  &quot;a4b:AssociateSkillGroupWithRoom&quot;,
+  ...
+]
+</code></pre>
+<p><strong>Lookup</strong>
+<code>GET /api/v1/actions/{key...}</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/actions/dynamodb.putitem
+</code></pre>
+<pre><code class="language-json">{
+  &quot;Name&quot;: &quot;PutItem&quot;,
+  &quot;Service&quot;: &quot;dynamodb&quot;,
+  &quot;ActionConditionKeys&quot;: [
+    &quot;dynamodb:attributes&quot;,
+    &quot;dynamodb:enclosingoperation&quot;,
+    &quot;dynamodb:leadingkeys&quot;,
+    &quot;dynamodb:returnconsumedcapacity&quot;,
+    &quot;dynamodb:returnvalues&quot;
+  ],
+  &quot;ResolvedResources&quot;: [
+    {
+      &quot;Name&quot;: &quot;table&quot;,
+      &quot;ARNFormats&quot;: [
+        &quot;arn:*:dynamodb:*:*:table/*&quot;
+      ],
+      &quot;ConditionKeys&quot;: [
+        &quot;aws:resourcetag&quot;
+      ]
+    }
+  ]
+}
+</code></pre>
+<p><strong>Search</strong>
+<code>GET /api/v1/actions/search/{search...}</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/actions/search/networkinterface
+</code></pre>
+<pre><code class="language-json">[
+  &quot;ec2:AttachNetworkInterface&quot;,
+  &quot;ec2:CreateNetworkInterface&quot;,
+  &quot;ec2:CreateNetworkInterfacePermission&quot;,
+  &quot;ec2:DeleteNetworkInterface&quot;,
+  &quot;ec2:DeleteNetworkInterfacePermission&quot;,
+  &quot;ec2:DescribeNetworkInterfaceAttribute&quot;,
+  &quot;ec2:DescribeNetworkInterfacePermissions&quot;,
+  &quot;ec2:DescribeNetworkInterfaces&quot;,
+  &quot;ec2:DetachNetworkInterface&quot;,
+  ...
+]
+</code></pre>
+<h3 id="principals-api">Principals API</h3>
+<p><strong>List</strong>
+<code>GET /api/v1/principals</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/principals
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:iam::213308312933:role/LionRole&quot;,
+  &quot;arn:aws:iam::213308312933:role/MouseRole&quot;,
+  &quot;arn:aws:iam::213308312933:role/PandaRole&quot;,
+  &quot;arn:aws:iam::213308312933:user/CatUser&quot;,
+  &quot;arn:aws:iam::213308312933:user/DogUser&quot;,
+  &quot;arn:aws:iam::213308312933:user/FishUser&quot;,
+  &quot;arn:aws:iam::255082776537:role/BurgerRole&quot;,
+  &quot;arn:aws:iam::255082776537:role/NoodleRole&quot;,
+  &quot;arn:aws:iam::255082776537:role/PizzaRole&quot;,
+  ...
+]
+</code></pre>
+<p><strong>Lookup</strong>
+<code>GET /api/v1/principals/{key...}</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/principals/arn:aws:iam::213308312933:user/CatUser
+</code></pre>
+<pre><code class="language-json">{
+  &quot;Type&quot;: &quot;AWS::IAM::User&quot;,
+  &quot;AccountId&quot;: &quot;213308312933&quot;,
+  &quot;Name&quot;: &quot;CatUser&quot;,
+  &quot;Arn&quot;: &quot;arn:aws:iam::213308312933:user/CatUser&quot;,
+  ...
+}
+</code></pre>
+<p><strong>Search</strong>
+<code>GET /api/v1/principals/search/{search...}</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/principals/search/cat
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:iam::213308312933:user/CatUser&quot;
+]
+</code></pre>
+<h3 id="resources-api">Resources API</h3>
+<p><strong>List</strong>
+<code>GET /api/v1/resources</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/resources
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:dynamodb:us-east-1:213308312933:table/ElephantTable&quot;,
+  &quot;arn:aws:dynamodb:us-east-1:255082776537:table/TacoTable&quot;,
+  &quot;arn:aws:dynamodb:us-east-1:777583092761:table/NavyTable&quot;,
+  &quot;arn:aws:dynamodb:us-east-1:777583092761:table/OrangeTable&quot;,
+  &quot;arn:aws:iam::213308312933:policy/yams-test-infra-DogPolicy-pX0mgCedLaeo&quot;,
+  &quot;arn:aws:iam::213308312933:policy/yams-test-infra-LlamaBoundary-mvVoctsE53pG&quot;,
+  &quot;arn:aws:iam::213308312933:role/LionRole&quot;,
+  &quot;arn:aws:iam::213308312933:role/MouseRole&quot;,
+  &quot;arn:aws:iam::213308312933:role/PandaRole&quot;,
+  ...
+]
+</code></pre>
+<p><strong>Lookup</strong>
+<code>GET /api/v1/resources/{key...}</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/resources/arn:aws:s3:::yams-cyan
+</code></pre>
+<pre><code class="language-json">{
+  &quot;Type&quot;: &quot;AWS::S3::Bucket&quot;,
+  &quot;AccountId&quot;: &quot;777583092761&quot;,
+  &quot;Region&quot;: &quot;us-east-1&quot;,
+  &quot;Name&quot;: &quot;yams-cyan&quot;,
+  &quot;Arn&quot;: &quot;arn:aws:s3:::yams-cyan&quot;,
+  &quot;Policy&quot;: {
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Id&quot;: &quot;&quot;,
+    &quot;Statement&quot;: [
+      {
+        &quot;Sid&quot;: &quot;&quot;,
+        &quot;Effect&quot;: &quot;Deny&quot;,
+        &quot;Principal&quot;: &quot;*&quot;,
+        &quot;Action&quot;: [
+          &quot;s3:listbucket&quot;,
+          &quot;s3:getobject&quot;
+        ],
+        &quot;Resource&quot;: [
+          &quot;arn:aws:s3:::yams-cyan&quot;,
+          &quot;arn:aws:s3:::yams-cyan/*&quot;
+        ],
+        &quot;Condition&quot;: {
+          &quot;StringNotEquals&quot;: {
+            &quot;aws:PrincipalTag/Color&quot;: &quot;Blue&quot;
+          }
+        }
+      }
+    ]
+  },
+  ...
+}
+</code></pre>
+<p><strong>Search</strong>
+<code>GET /api/v1/resources/search/{search...}</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/resources/search/s3
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:s3:::banana-bucket-255082776537&quot;,
+  &quot;arn:aws:s3:::crocodile-bucket-213308312933&quot;,
+  &quot;arn:aws:s3:::peach-bucket-777583092761&quot;,
+  &quot;arn:aws:s3:::yams-bear&quot;,
+  &quot;arn:aws:s3:::yams-cyan&quot;,
+  &quot;arn:aws:s3:::yams-green&quot;,
+  &quot;arn:aws:s3:::yams-magenta&quot;
+]
+</code></pre>
+<h3 id="policies-api">Policies API</h3>
+<p><strong>List</strong>
+<code>GET /api/v1/policies</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/policies
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:iam::213308312933:policy/yams-test-infra-DogPolicy-pX0mgCedLaeo&quot;,
+  &quot;arn:aws:iam::213308312933:policy/yams-test-infra-LlamaBoundary-mvVoctsE53pG&quot;,
+  &quot;arn:aws:iam::255082776537:policy/yams-test-infra-CupcakeBoundary-udxeJjTH6ebJ&quot;,
+  &quot;arn:aws:iam::255082776537:policy/yams-test-infra-SaladPolicy-opE0edVZrSWR&quot;,
+  &quot;arn:aws:iam::255082776537:policy/yams-test-infra-SoupPolicy-65QKm40EPh1y&quot;,
+  &quot;arn:aws:iam::777583092761:policy/yams-test-infra-GreyPolicy-gLf7j3ZwJYBm&quot;,
+  &quot;arn:aws:iam::777583092761:policy/yams-test-infra-MustardBoundary-47JW6znulEXt&quot;,
+  &quot;arn:aws:iam::777583092761:policy/yams-test-infra-PinkBoundary-xuINwerkCuZ3&quot;,
+  &quot;arn:aws:iam::aws:policy/AIOpsAssistantPolicy&quot;,
+  ...
+]
+</code></pre>
+<p><strong>Lookup</strong>
+<code>GET /api/v1/policies/{key...}</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/policies/arn:aws:iam::213308312933:policy/yams-test-infra-DogPolicy-pX0mgCedLaeo
+</code></pre>
+<pre><code class="language-json">{
+  &quot;Type&quot;: &quot;AWS::IAM::Policy&quot;,
+  &quot;AccountId&quot;: &quot;213308312933&quot;,
+  &quot;Arn&quot;: &quot;arn:aws:iam::213308312933:policy/yams-test-infra-DogPolicy-pX0mgCedLaeo&quot;,
+  &quot;Name&quot;: &quot;yams-test-infra-DogPolicy-pX0mgCedLaeo&quot;,
+  &quot;Policy&quot;: {
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+      {
+        &quot;Effect&quot;: &quot;Allow&quot;,
+        &quot;Action&quot;: &quot;*&quot;,
+        &quot;Resource&quot;: &quot;*&quot;
+      }
+    ]
+  }
+}
+</code></pre>
+<p><strong>Search</strong>
+<code>GET /api/v1/policies/search/{search...}</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/policies/search/test
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:iam::213308312933:policy/yams-test-infra-DogPolicy-pX0mgCedLaeo&quot;,
+  &quot;arn:aws:iam::213308312933:policy/yams-test-infra-LlamaBoundary-mvVoctsE53pG&quot;,
+  &quot;arn:aws:iam::255082776537:policy/yams-test-infra-CupcakeBoundary-udxeJjTH6ebJ&quot;,
+  &quot;arn:aws:iam::255082776537:policy/yams-test-infra-SaladPolicy-opE0edVZrSWR&quot;,
+  &quot;arn:aws:iam::255082776537:policy/yams-test-infra-SoupPolicy-65QKm40EPh1y&quot;,
+  &quot;arn:aws:iam::777583092761:policy/yams-test-infra-GreyPolicy-gLf7j3ZwJYBm&quot;,
+  &quot;arn:aws:iam::777583092761:policy/yams-test-infra-MustardBoundary-47JW6znulEXt&quot;,
+  &quot;arn:aws:iam::777583092761:policy/yams-test-infra-PinkBoundary-xuINwerkCuZ3&quot;,
+  &quot;arn:aws:iam::aws:policy/AWSIoTDeviceTesterForFreeRTOSFullAccess&quot;,
+  ...
+]
+</code></pre>
+<h3 id="accounts-api">Accounts API</h3>
+<p><strong>List</strong>
+<code>GET /api/v1/accounts</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/accounts
+</code></pre>
+<pre><code class="language-json">[
+  &quot;213308312933&quot;,
+  &quot;255082776537&quot;,
+  &quot;777583092761&quot;,
+  &quot;810970970902&quot;
+]
+</code></pre>
+<p><strong>Lookup</strong>
+<code>GET /api/v1/accounts/{key...}</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/accounts/213308312933
+</code></pre>
+<pre><code class="language-json">{
+  &quot;Id&quot;: &quot;213308312933&quot;,
+  &quot;Name&quot;: &quot;yams1&quot;,
+  &quot;OrgId&quot;: &quot;o-9hmw0uhxs4&quot;,
+  &quot;OrgPaths&quot;: [
+    &quot;o-9hmw0uhxs4/r-m4x4/&quot;,
+    &quot;o-9hmw0uhxs4/r-m4x4/ou-m4x4-onrzr6t1/&quot;
+  ],
+  &quot;OrgNodes&quot;: ...
+}
+</code></pre>
+<p><strong>Search</strong>
+<code>GET /api/v1/accounts/search/{search...}</code></p>
+<pre><code class="language-shell">curl ${YAMS_SERVER_ADDRESS}/api/v1/accounts/search/213
+</code></pre>
+<pre><code class="language-json">[
+  &quot;213308312933&quot;
+]
+</code></pre>
+<h3 id="basic-simulation">Basic Simulation</h3>
+<p><code>POST /api/v1/sim</code></p>
+<pre><code class="language-shell">curl -X POST ${YAMS_SERVER_ADDRESS}/api/v1/sim -d '{
+  &quot;principal&quot;: &quot;arn:aws:iam::777583092761:role/RedRole&quot;,
+  &quot;action&quot;: &quot;sns:publish&quot;,
+  &quot;resource&quot;: &quot;arn:aws:sns:us-east-1:777583092761:PurpleTopic&quot;
+}'
+</code></pre>
+<pre><code class="language-json">{
+  &quot;result&quot;: &quot;DENY&quot;,
+  &quot;principal&quot;: &quot;arn:aws:iam::777583092761:role/RedRole&quot;,
+  &quot;action&quot;: &quot;sns:Publish&quot;,
+  &quot;resource&quot;: &quot;arn:aws:sns:us-east-1:777583092761:PurpleTopic&quot;
+}
+</code></pre>
+<h3 id="extended-simulation">Extended Simulation</h3>
+<p><strong>Which Principals?</strong>
+<code>POST /api/v1/sim/whichPrincipals</code></p>
+<pre><code class="language-shell">curl -X POST ${YAMS_SERVER_ADDRESS}/api/v1/sim/whichPrincipals -d '{
+  &quot;action&quot;: &quot;sns:publish&quot;,
+  &quot;resource&quot;: &quot;arn:aws:sns:us-east-1:777583092761:PurpleTopic&quot;
+}'
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:iam::777583092761:role/BlueRole&quot;
+]
+</code></pre>
+<p><strong>Which Resources?</strong>
+<code>POST /api/v1/sim/whichResources</code></p>
+<pre><code class="language-shell">curl -X POST ${YAMS_SERVER_ADDRESS}/api/v1/sim/whichResources -d '{
+  &quot;principal&quot;: &quot;arn:aws:iam::777583092761:role/BlueRole&quot;,
+  &quot;action&quot;: &quot;sns:publish&quot;
+}'
+</code></pre>
+<pre><code class="language-json">[
+  &quot;arn:aws:sns:us-east-1:213308312933:LemurTopic&quot;,
+  &quot;arn:aws:sns:us-east-1:777583092761:PurpleTopic&quot;
+]
+</code></pre>
+<p><strong>Which Actions?</strong>
+<code>POST /api/v1/sim/whichActions</code></p>
+<pre><code class="language-shell">curl -X POST ${YAMS_SERVER_ADDRESS}/api/v1/sim/whichActions -d '{
+  &quot;principal&quot;: &quot;arn:aws:iam::777583092761:role/BlueRole&quot;,
+  &quot;resource&quot;: &quot;arn:aws:sns:us-east-1:777583092761:PurpleTopic&quot;
+}'
+</code></pre>
+<pre><code class="language-json">[
+  &quot;sns:AddPermission&quot;,
+  &quot;sns:ConfirmSubscription&quot;,
+  &quot;sns:CreateTopic&quot;,
+  &quot;sns:DeleteTopic&quot;,
+  &quot;sns:GetDataProtectionPolicy&quot;,
+  &quot;sns:GetTopicAttributes&quot;,
+  &quot;sns:ListSubscriptionsByTopic&quot;,
+  &quot;sns:ListTagsForResource&quot;,
+  &quot;sns:Publish&quot;,
+  &quot;sns:PutDataProtectionPolicy&quot;,
+  &quot;sns:RemovePermission&quot;,
+  &quot;sns:SetTopicAttributes&quot;,
+  &quot;sns:Subscribe&quot;,
+  &quot;sns:TagResource&quot;,
+  &quot;sns:UntagResource&quot;
+]
+</code></pre>
+<h3 id="explain-trace">Explain &amp; Trace</h3>
+<p><code>POST /api/v1/sim</code></p>
+<pre><code class="language-shell">curl -X POST ${YAMS_SERVER_ADDRESS}/api/v1/sim -d '{
+  &quot;principal&quot;: &quot;arn:aws:iam::777583092761:role/RedRole&quot;,
+  &quot;action&quot;: &quot;s3.GetObject&quot;,
+  &quot;resource&quot;: &quot;arn:aws:s3:::yams-cyan/foo.txt&quot;,
+  &quot;explain&quot;: true
+}'
+</code></pre>
+<pre><code class="language-json">{
+  &quot;result&quot;: &quot;DENY&quot;,
+  &quot;principal&quot;: &quot;arn:aws:iam::777583092761:role/RedRole&quot;,
+  &quot;action&quot;: &quot;s3:GetObject&quot;,
+  &quot;resource&quot;: &quot;arn:aws:s3:::yams-cyan/foo.txt&quot;,
+  &quot;explain&quot;: [
+    &quot;[explicit deny] in resource policy&quot;
+  ]
+}
+</code></pre>
+<h3 id="overlays">Overlays</h3>
+<p><code>POST /api/v1/sim</code></p>
+<pre><code class="language-shell">curl -X POST ${YAMS_SERVER_ADDRESS}/api/v1/sim -d '{
+  &quot;principal&quot;: &quot;arn:aws:iam::777583092761:role/RedRole&quot;,
+  &quot;action&quot;: &quot;s3.GetObject&quot;,
+  &quot;resource&quot;: &quot;arn:aws:s3:::yams-cyan/foo.txt&quot;,
+  &quot;overlay&quot;: {
+    &quot;principals&quot;: [
+      {
+        &quot;Type&quot;: &quot;AWS::IAM::Role&quot;,
+        &quot;AccountId&quot;: &quot;777583092761&quot;,
+        &quot;Name&quot;: &quot;RedRole&quot;,
+        &quot;Arn&quot;: &quot;arn:aws:iam::777583092761:role/RedRole&quot;,
+        &quot;Tags&quot;: [
+          {
+            &quot;Key&quot;: &quot;is-yams-test-resource&quot;,
+            &quot;Value&quot;: &quot;true&quot;
+          },
+          {
+            &quot;Key&quot;: &quot;Color&quot;,
+            &quot;Value&quot;: &quot;Blue&quot;
+          }
+        ],
+        &quot;InlinePolicies&quot;: [
+          {
+            &quot;Version&quot;: &quot;2012-10-17&quot;,
+            &quot;Statement&quot;: [
+              {
+                &quot;Effect&quot;: &quot;Allow&quot;,
+                &quot;Action&quot;: &quot;sts:assumerole&quot;,
+                &quot;Resource&quot;: &quot;*&quot;
+              }
+            ]
+          },
+          {
+            &quot;Version&quot;: &quot;2012-10-17&quot;,
+            &quot;Statement&quot;: [
+              {
+                &quot;Effect&quot;: &quot;Deny&quot;,
+                &quot;Action&quot;: &quot;dynamodb:*&quot;,
+                &quot;Resource&quot;: &quot;*&quot;
+              }
+            ]
+          },
+          {
+            &quot;Version&quot;: &quot;2012-10-17&quot;,
+            &quot;Statement&quot;: [
+              {
+                &quot;Effect&quot;: &quot;Allow&quot;,
+                &quot;Action&quot;: &quot;s3:ListAllMyBuckets&quot;,
+                &quot;Resource&quot;: &quot;*&quot;
+              },
+              {
+                &quot;Effect&quot;: &quot;Allow&quot;,
+                &quot;Action&quot;: [
+                  &quot;s3:GetObject&quot;,
+                  &quot;s3:PutObject&quot;,
+                  &quot;s3:DeleteObject&quot;,
+                  &quot;s3:ListBucket&quot;
+                ],
+                &quot;Resource&quot;: [
+                  &quot;arn:aws:s3:::yams-*&quot;,
+                  &quot;arn:aws:s3:::yams-*/*&quot;
+                ]
+              }
+            ]
+          }
+        ],
+        &quot;AttachedPolicies&quot;: null,
+        &quot;Groups&quot;: null
+      }
+    ]
+  }
+}'
+</code></pre>
+<pre><code class="language-json">{
+  &quot;result&quot;: &quot;ALLOW&quot;,
+  &quot;principal&quot;: &quot;arn:aws:iam::777583092761:role/RedRole&quot;,
+  &quot;action&quot;: &quot;s3:GetObject&quot;,
+  &quot;resource&quot;: &quot;arn:aws:s3:::yams-cyan/foo.txt&quot;
+}
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../deployment/" class="btn btn-neutral float-left" title="Deployment"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../deployment/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
