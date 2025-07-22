@@ -143,7 +143,7 @@ this data.</p>
 perform <code>config:SelectAggregateResourceConfig</code> in the same AWS account as the AWS Config
 Aggregator</p>
 </div>
-<p><strong>Entity</strong> data can be generated via the <code>yams dump config</code> subcommand, which requires specifying
+<p><strong>Entity</strong> data can be generated via the <code>yams dump -t config</code> subcommand, which requires specifying
 both:</p>
 <ul>
 <li><code>-a/-aggregator</code> the name of the AWS Config aggregator to use</li>
@@ -153,14 +153,14 @@ both:</p>
 <blockquote>
 <p>Dump all known SQS Queues to stdout:</p>
 </blockquote>
-<pre><code class="language-shell">yams dump config \
+<pre><code class="language-shell">yams dump -t config \
   -a my-aggregator \
   -r AWS::SQS::Queue
 </code></pre>
 <blockquote>
 <p>Dump all IAM <strong>Entities</strong> to a file:</p>
 </blockquote>
-<pre><code class="language-shell">yams dump config \
+<pre><code class="language-shell">yams dump -t config \
   -a my-aggregator \
   -r AWS::IAM::Role \
   -r AWS::IAM::User \
@@ -171,7 +171,7 @@ both:</p>
 <blockquote>
 <p>Dump all IAM <strong>Entities</strong> and key resources to an S3 bucket; compressed:</p>
 </blockquote>
-<pre><code class="language-shell">yams dump config \
+<pre><code class="language-shell">yams dump -t config \
   -a my-aggregator \
   -r AWS::IAM::Role \
   -r AWS::IAM::User \
@@ -200,17 +200,17 @@ with highly customized subsets of data:</p>
 <p>Using <strong>yams</strong> to generate <strong>Org</strong> data requires providing the program with credentials to
 access read-only <code>organizations</code> APIs in the org master account</p>
 </div>
-<p><strong>Org</strong> data can be generated via the <code>yams dump org</code> subcommand.</p>
+<p><strong>Org</strong> data can be generated via the <code>yams dump -t org</code> subcommand.</p>
 <h6 id="examples_1">Examples</h6>
 <blockquote>
 <p>Dump org data to stdout:</p>
 </blockquote>
-<pre><code class="language-shell">yams dump org
+<pre><code class="language-shell">yams dump -t org
 </code></pre>
 <blockquote>
 <p>Dump org data to an S3 bucket; compressed:</p>
 </blockquote>
-<pre><code class="language-shell">yams dump org \
+<pre><code class="language-shell">yams dump -t org \
   -o s3://my-bucket/org.json.gz
 </code></pre>
 <h5 id="alternatives_1">Alternatives</h5>
