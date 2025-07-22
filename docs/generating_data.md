@@ -19,7 +19,7 @@ At this time, **yams** supports the generation of two types of data:
     perform `config:SelectAggregateResourceConfig` in the same AWS account as the AWS Config
     Aggregator
 
-**Entity** data can be generated via the `yams dump config` subcommand, which requires specifying
+**Entity** data can be generated via the `yams dump -t config` subcommand, which requires specifying
 both:
 
 - `-a/-aggregator` the name of the AWS Config aggregator to use
@@ -30,14 +30,14 @@ both:
 
 > Dump all known SQS Queues to stdout:
 ```shell
-yams dump config \
+yams dump -t config \
   -a my-aggregator \
   -r AWS::SQS::Queue
 ```
 
 > Dump all IAM **Entities** to a file:
 ```shell
-yams dump config \
+yams dump -t config \
   -a my-aggregator \
   -r AWS::IAM::Role \
   -r AWS::IAM::User \
@@ -48,7 +48,7 @@ yams dump config \
 
 > Dump all IAM **Entities** and key resources to an S3 bucket; compressed:
 ```shell
-yams dump config \
+yams dump -t config \
   -a my-aggregator \
   -r AWS::IAM::Role \
   -r AWS::IAM::User \
@@ -84,18 +84,18 @@ aws configservice select-aggregate-resource-config \
     Using **yams** to generate **Org** data requires providing the program with credentials to
     access read-only `organizations` APIs in the org master account
 
-**Org** data can be generated via the `yams dump org` subcommand.
+**Org** data can be generated via the `yams dump -t org` subcommand.
 
 ###### Examples
 
 > Dump org data to stdout:
 ```shell
-yams dump org
+yams dump -t org
 ```
 
 > Dump org data to an S3 bucket; compressed:
 ```shell
-yams dump org \
+yams dump -t org \
   -o s3://my-bucket/org.json.gz
 ```
 
