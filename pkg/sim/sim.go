@@ -41,7 +41,7 @@ func (s *Simulator) resolvePrincipal(arn string, opts Options) (*entities.Frozen
 	for _, uv := range uvs {
 		principal, ok := uv.Principal(arn)
 		if ok {
-			fp, err := principal.FreezeWith(uvs...)
+			fp, err := principal.FreezeWith(opts.Strict, uvs...)
 			return &fp, err
 		}
 	}
@@ -77,7 +77,7 @@ func (s *Simulator) resolveResource(arn string, opts Options) (*entities.FrozenR
 	for _, uv := range uvs {
 		resource, ok := uv.Resource(arn)
 		if ok {
-			fr, err := resource.FreezeWith(uvs...)
+			fr, err := resource.FreezeWith(opts.Strict, uvs...)
 			return &fr, err
 		}
 	}
