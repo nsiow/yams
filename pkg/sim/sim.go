@@ -388,7 +388,7 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 
 				if len(batch.Jobs) == s.Pool.BatchSize() {
 					s.Pool.Submit(batch)
-					batch = simBatch{Jobs: []simIn{}, Finished: finished}
+					batch = simBatch{Jobs: []simIn{}, Finished: finished, Done: &done}
 				}
 			}
 		}
