@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/nsiow/yams/cmd/yams/cli"
 	v1 "github.com/nsiow/yams/pkg/server/api/v1"
 	"github.com/nsiow/yams/pkg/sim"
 )
@@ -14,16 +15,18 @@ type Server struct {
 
 	Sources   []*Source
 	Simulator *sim.Simulator
+	Opts      *cli.Flags
 }
 
-func NewServer(addr string) (*Server, error) {
+func NewServer(opts *cli.Flags) (*Server, error) {
 	mux := http.NewServeMux()
 	server := Server{
 		Server: &http.Server{
-			Addr:    addr,
+			Addr:    opts.Addr,
 			Handler: mux,
 		},
-		mux: mux,
+		mux:  mux,
+		Opts: opts,
 	}
 
 	sim, err := sim.NewSimulator()
