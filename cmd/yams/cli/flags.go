@@ -131,12 +131,6 @@ func Parse() (*Flags, error) {
 		err = fs.Parse(os.Args[2:])
 		args = fs.Args()
 
-		// Allow address override via environment
-		envserver := os.Getenv("YAMS_SERVER_ADDRESS")
-		if len(envserver) > 0 && opts.Addr == ":8888" {
-			opts.Addr = envserver
-		}
-
 	case
 		RUN_MODE_ACCOUNTS,
 		RUN_MODE_ACTIONS,
@@ -217,6 +211,12 @@ func Parse() (*Flags, error) {
 
 	if len(args) > 0 {
 		return nil, fmt.Errorf("unknown argument: %s", args[0])
+	}
+
+	// Allow address override via environment
+	envserver := os.Getenv("YAMS_SERVER_ADDRESS")
+	if len(envserver) > 0 {
+		opts.Server = envserver
 	}
 
 	return opts, err
