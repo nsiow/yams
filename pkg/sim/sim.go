@@ -2,7 +2,9 @@ package sim
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -334,6 +336,10 @@ type AccessTuple struct {
 // product of the provided simulation identifiers, while also filtering out any combinations that
 // are not allowed.
 func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, error) {
+	simId := rand.Text()
+	slog.Debug("calculating product",
+		"sim_id", simId)
+
 	var fas []*types.Action
 	for _, a := range as {
 		fa, ok := sar.LookupString(a)
@@ -360,6 +366,9 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 		}
 		frs = append(frs, fr)
 	}
+
+	slog.Debug("froze entities",
+		"sim_id", simId)
 
 	var submitted int32
 	var done atomic.Int32
@@ -399,6 +408,10 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 		s.Pool.Submit(batch)
 	}
 
+	slog.Debug("submitted work",
+		"sim_id", simId,
+		"submitted", submitted)
+
 	var matrix []AccessTuple
 
 	for done.Load() < submitted {
@@ -416,7 +429,9 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 					Result:    job.Result})
 			}
 		case <-time.After(time.Second * 1):
-			break
+			slog.Debug("simulation in progress",
+				"done", done.Load(),
+				"out_of", submitted)
 		}
 	}
 

@@ -2,6 +2,7 @@ package sim
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"runtime"
 	"strconv"
@@ -47,11 +48,17 @@ type Pool struct {
 // -------------------------------------------------------------------------------------------------
 
 func NewPool(ctx context.Context, simulator *Simulator) *Pool {
-	return &Pool{
+	p := Pool{
 		Simulator: simulator,
 		Ctx:       ctx,
 		work:      make(chan simBatch, 512), // TODO(nsiow) figure out what a good default is
 	}
+
+	slog.Info("created pool",
+		"num_workers", p.NumWorkers(),
+		"batch_size", p.BatchSize(),
+		"timeout", p.Timeout())
+	return &p
 }
 
 func (p *Pool) NumWorkers() int {
@@ -68,10 +75,6 @@ func (p *Pool) NumWorkers() int {
 	return p.numWorkers
 }
 
-func (p *Pool) SetWorkers(num int) {
-	p.numWorkers = num
-}
-
 func (p *Pool) BatchSize() int {
 	if p.batchSize == 0 {
 		fromEnv := os.Getenv("YAMS_SIM_BATCH_SIZE")
@@ -84,10 +87,6 @@ func (p *Pool) BatchSize() int {
 	}
 
 	return p.batchSize
-}
-
-func (p *Pool) SetBatchSize(num int) {
-	p.batchSize = num
 }
 
 func (p *Pool) Timeout() time.Duration {
@@ -104,21 +103,13 @@ func (p *Pool) Timeout() time.Duration {
 	return p.timeout
 }
 
-func (p *Pool) SetTimeout(timeout time.Duration) {
-	p.timeout = timeout
-}
-
 // -------------------------------------------------------------------------------------------------
 // Pool Execution
 // -------------------------------------------------------------------------------------------------
 
 func (p *Pool) Start() {
 	p.started.Do(func() {
-		if p.numWorkers < 1 {
-			p.numWorkers = 1
-		}
-
-		for range p.numWorkers {
+		for range p.NumWorkers() {
 			go p.startWorker()
 		}
 	})
