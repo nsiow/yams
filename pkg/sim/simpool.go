@@ -63,13 +63,13 @@ func NewPool(ctx context.Context, simulator *Simulator) *Pool {
 
 func (p *Pool) NumWorkers() int {
 	if p.numWorkers == 0 {
+		p.numWorkers = runtime.NumCPU() // default to some reasonable number of workers
+
 		fromEnv := os.Getenv("YAMS_SIM_NUM_WORKERS")
 		num, err := strconv.Atoi(fromEnv)
 		if err == nil {
 			p.numWorkers = num
 		}
-
-		p.numWorkers = runtime.NumCPU() // default to some reasonable number of workers
 	}
 
 	return p.numWorkers
@@ -77,13 +77,13 @@ func (p *Pool) NumWorkers() int {
 
 func (p *Pool) BatchSize() int {
 	if p.batchSize == 0 {
+		p.batchSize = 1024 // default to some reasonable batch size
+
 		fromEnv := os.Getenv("YAMS_SIM_BATCH_SIZE")
 		num, err := strconv.Atoi(fromEnv)
 		if err == nil {
 			p.batchSize = num
 		}
-
-		p.batchSize = 1024 // default to some reasonable batch size
 	}
 
 	return p.batchSize
@@ -91,13 +91,13 @@ func (p *Pool) BatchSize() int {
 
 func (p *Pool) Timeout() time.Duration {
 	if p.timeout == 0 {
+		p.timeout = 60 * time.Second
+
 		fromEnv := os.Getenv("YAMS_SIM_TIMEOUT")
 		num, err := strconv.Atoi(fromEnv)
 		if err == nil {
 			p.timeout = time.Duration(num * int(time.Second))
 		}
-
-		p.timeout = 60 * time.Second
 	}
 
 	return p.timeout
