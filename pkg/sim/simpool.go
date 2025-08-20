@@ -98,7 +98,7 @@ func (p *Pool) Timeout() time.Duration {
 			p.timeout = time.Duration(num * int(time.Second))
 		}
 
-		p.timeout = 30 * time.Second
+		p.timeout = 60 * time.Second
 	}
 
 	return p.timeout
@@ -138,7 +138,7 @@ func (p *Pool) startWorker() {
 func (p *Pool) handleBatch(b simBatch) {
 	for _, item := range b.Jobs {
 		result, err := p.Simulator.SimulateWithOptions(item.AuthContext, item.Options)
-		if result.IsAllowed {
+		if err != nil || result.IsAllowed {
 			out := simOut{Result: result, Error: err}
 			b.Finished <- out
 		}

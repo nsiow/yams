@@ -415,11 +415,11 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 					Resource:  job.Result.Resource,
 					Result:    job.Result})
 			}
-		case <-time.After(s.Pool.Timeout()):
-			return nil, fmt.Errorf("simulation unit timed out after %v; completed %d/%d jobs",
-				s.Pool.Timeout(), done.Load(), submitted)
+		case <-time.After(time.Second * 1):
+			break
 		}
 	}
 
+	close(finished)
 	return matrix, nil
 }
