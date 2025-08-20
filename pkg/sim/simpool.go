@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -26,6 +27,7 @@ type simOut struct {
 type simBatch struct {
 	Jobs     []simIn
 	Finished chan<- simOut
+	Done     *atomic.Int32
 }
 
 type Pool struct {
@@ -136,9 +138,13 @@ func (p *Pool) startWorker() {
 func (p *Pool) handleBatch(b simBatch) {
 	for _, item := range b.Jobs {
 		result, err := p.Simulator.SimulateWithOptions(item.AuthContext, item.Options)
-		out := simOut{Result: result, Error: err}
-		b.Finished <- out
+		if result.IsAllowed {
+			out := simOut{Result: result, Error: err}
+			b.Finished <- out
+		}
 	}
+
+	b.Done.Add(int32(len(b.Jobs)))
 }
 
 func (p *Pool) Submit(b simBatch) {

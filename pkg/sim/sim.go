@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/nsiow/yams/internal/common"
@@ -360,9 +361,10 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 		frs = append(frs, fr)
 	}
 
-	submittedJobs := 0
+	var submitted int32
+	var done atomic.Int32
 	finished := make(chan simOut, s.Pool.NumWorkers())
-	batch := simBatch{Jobs: []simIn{}, Finished: finished}
+	batch := simBatch{Jobs: []simIn{}, Finished: finished, Done: &done}
 
 	for _, p := range fps {
 		for _, a := range fas {
@@ -382,7 +384,7 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 					opts,
 				}
 				batch.Jobs = append(batch.Jobs, job)
-				submittedJobs++
+				submitted++
 
 				if len(batch.Jobs) == s.Pool.BatchSize() {
 					s.Pool.Submit(batch)
@@ -398,18 +400,15 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 	}
 
 	var matrix []AccessTuple
-	var finishedJobs int
 
-	for finishedJobs < submittedJobs {
+	for done.Load() < submitted {
 		select {
 		case job := <-finished:
-			finishedJobs++
-
 			if job.Error != nil {
 				return nil, fmt.Errorf("simulation error: %w", job.Error)
 			}
 
-			if job.Result.IsAllowed {
+			if job.Result.IsAllowed { // should always be the case, but confirm
 				matrix = append(matrix, AccessTuple{
 					Principal: job.Result.Principal,
 					Action:    job.Result.Action,
@@ -418,7 +417,7 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 			}
 		case <-time.After(s.Pool.Timeout()):
 			return nil, fmt.Errorf("simulation unit timed out after %v; completed %d/%d jobs",
-				s.Pool.Timeout(), finishedJobs, submittedJobs)
+				s.Pool.Timeout(), done.Load(), submitted)
 		}
 	}
 
