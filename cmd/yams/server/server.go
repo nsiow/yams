@@ -11,7 +11,7 @@ import (
 
 // Logic for the "server" subcommand
 func Run(opts *cli.Flags) {
-	srv, err := server.NewServer(opts.Addr)
+	srv, err := server.NewServer(opts)
 	if err != nil {
 		cli.Fail("error starting server: %v", err)
 	}

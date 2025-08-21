@@ -49,6 +49,7 @@ type Flags struct {
 	Sources MultiString
 	Refresh int
 	Debug   bool
+	Env     MultiString
 
 	// inventory
 	Key    string
@@ -127,6 +128,9 @@ func Parse() (*Flags, error) {
 		fs.IntVar(&opts.Refresh, "r", 0, "alias for -refresh")
 		fs.IntVar(&opts.Refresh, "refresh", 0,
 			"refresh rate (in seconds) for specified sources; defaults to no refresh")
+
+		fs.Var(&opts.Env, "e", "alias for -env")
+		fs.Var(&opts.Env, "env", "environment variables to report in /status endpoint")
 
 		err = fs.Parse(os.Args[2:])
 		args = fs.Args()

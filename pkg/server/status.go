@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/nsiow/yams/internal/common"
 	"github.com/nsiow/yams/pkg/server/httputil"
@@ -21,6 +22,18 @@ func (s *Server) Status(w http.ResponseWriter, req *http.Request) {
 				"updated": src.Updated,
 			}
 		}),
+	}
+
+	env := make(map[string]string)
+	for _, key := range s.Opts.Env {
+		val := os.Getenv(key)
+		if len(val) > 0 {
+			env[key] = val
+		}
+	}
+
+	if len(env) > 0 {
+		status["env"] = env
 	}
 
 	httputil.WriteJsonResponse(w, req, status)
