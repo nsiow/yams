@@ -14,11 +14,6 @@ import (
 
 // Logic for the "sim" subcommand
 func Run(opts *cli.Flags) {
-	// if opts.Action == "" {
-	// 	cli.Fail("must provide -a/--action for simulation")
-	// }
-	//
-
 	havePrincipal := opts.Principal != ""
 	haveAction := opts.Action != ""
 	haveResource := opts.Resource != ""
