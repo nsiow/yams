@@ -23,7 +23,7 @@ func NewServer(opts *cli.Flags) (*Server, error) {
 	server := Server{
 		Server: &http.Server{
 			Addr:    opts.Addr,
-			Handler: mux,
+			Handler: corsMiddleware(mux),
 		},
 		mux:  mux,
 		Opts: opts,
@@ -39,4 +39,20 @@ func NewServer(opts *cli.Flags) (*Server, error) {
 	server.addV1Routes(&v1.API{Simulator: server.Simulator})
 
 	return &server, nil
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		
+		next.ServeHTTP(w, r)
+	})
 }
