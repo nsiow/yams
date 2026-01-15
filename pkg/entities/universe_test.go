@@ -324,3 +324,177 @@ func TestUniverse_Subresources(t *testing.T) {
 		t.Fatalf("wanted subresource to be %#v but got %#v", expected, a)
 	}
 }
+
+// -------------------------------------------------------------------------------------------------
+// Merge
+// -------------------------------------------------------------------------------------------------
+
+func TestUniverse_Merge(t *testing.T) {
+	uv1 := NewUniverse()
+	uv1.PutAccount(Account{Id: "111111111111"})
+	uv1.PutGroup(Group{Arn: "arn:aws:iam::111111111111:group/group1"})
+	uv1.PutPolicy(ManagedPolicy{Arn: "arn:aws:iam::111111111111:policy/pol1"})
+	uv1.PutPrincipal(Principal{Arn: "arn:aws:iam::111111111111:role/role1"})
+	uv1.PutResource(Resource{Arn: "arn:aws:s3:::bucket1"})
+
+	uv2 := NewUniverse()
+	uv2.PutAccount(Account{Id: "222222222222"})
+	uv2.PutGroup(Group{Arn: "arn:aws:iam::222222222222:group/group2"})
+	uv2.PutPolicy(ManagedPolicy{Arn: "arn:aws:iam::222222222222:policy/pol2"})
+	uv2.PutPrincipal(Principal{Arn: "arn:aws:iam::222222222222:role/role2"})
+	uv2.PutResource(Resource{Arn: "arn:aws:s3:::bucket2"})
+
+	uv1.Merge(uv2)
+
+	// Verify merged counts
+	if uv1.NumAccounts() != 2 {
+		t.Fatalf("expected 2 accounts, got %d", uv1.NumAccounts())
+	}
+	if uv1.NumGroups() != 2 {
+		t.Fatalf("expected 2 groups, got %d", uv1.NumGroups())
+	}
+	if uv1.NumPolicies() != 2 {
+		t.Fatalf("expected 2 policies, got %d", uv1.NumPolicies())
+	}
+	if uv1.NumPrincipals() != 2 {
+		t.Fatalf("expected 2 principals, got %d", uv1.NumPrincipals())
+	}
+	if uv1.NumResources() != 2 {
+		t.Fatalf("expected 2 resources, got %d", uv1.NumResources())
+	}
+
+	// Verify all entities are accessible
+	if !uv1.HasAccount("111111111111") || !uv1.HasAccount("222222222222") {
+		t.Fatal("missing accounts after merge")
+	}
+}
+
+// -------------------------------------------------------------------------------------------------
+// Overlay
+// -------------------------------------------------------------------------------------------------
+
+func TestUniverse_Overlay(t *testing.T) {
+	base := NewUniverse()
+	overlay := NewUniverse()
+
+	// Test with overlay
+	result := base.Overlay(overlay)
+	if len(result) != 2 {
+		t.Fatalf("expected 2 universes, got %d", len(result))
+	}
+	if result[0] != overlay {
+		t.Fatal("overlay should be first (higher priority)")
+	}
+	if result[1] != base {
+		t.Fatal("base should be second")
+	}
+
+	// Test with nil overlay
+	result = base.Overlay(nil)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 universe, got %d", len(result))
+	}
+	if result[0] != base {
+		t.Fatal("base should be the only element")
+	}
+}
+
+// -------------------------------------------------------------------------------------------------
+// Size
+// -------------------------------------------------------------------------------------------------
+
+func TestUniverse_Size(t *testing.T) {
+	uv := NewUniverse()
+
+	if uv.Size() != 0 {
+		t.Fatalf("expected size 0, got %d", uv.Size())
+	}
+
+	uv.PutAccount(Account{Id: "123456789012"})
+	uv.PutGroup(Group{Arn: "arn:aws:iam::123456789012:group/g"})
+	uv.PutPolicy(ManagedPolicy{Arn: "arn:aws:iam::123456789012:policy/p"})
+	uv.PutPrincipal(Principal{Arn: "arn:aws:iam::123456789012:role/r"})
+	uv.PutResource(Resource{Arn: "arn:aws:s3:::bucket"})
+
+	if uv.Size() != 5 {
+		t.Fatalf("expected size 5, got %d", uv.Size())
+	}
+}
+
+// -------------------------------------------------------------------------------------------------
+// Arns methods
+// -------------------------------------------------------------------------------------------------
+
+func TestUniverse_GroupArns(t *testing.T) {
+	uv := NewUniverse()
+	uv.PutGroup(Group{Arn: "arn:aws:iam::123456789012:group/g1"})
+	uv.PutGroup(Group{Arn: "arn:aws:iam::123456789012:group/g2"})
+
+	arns := uv.GroupArns()
+	if len(arns) != 2 {
+		t.Fatalf("expected 2 arns, got %d", len(arns))
+	}
+}
+
+func TestUniverse_PolicyArns(t *testing.T) {
+	uv := NewUniverse()
+	uv.PutPolicy(ManagedPolicy{Arn: "arn:aws:iam::123456789012:policy/p1"})
+	uv.PutPolicy(ManagedPolicy{Arn: "arn:aws:iam::123456789012:policy/p2"})
+
+	arns := uv.PolicyArns()
+	if len(arns) != 2 {
+		t.Fatalf("expected 2 arns, got %d", len(arns))
+	}
+}
+
+func TestUniverse_PrincipalArns(t *testing.T) {
+	uv := NewUniverse()
+	uv.PutPrincipal(Principal{Arn: "arn:aws:iam::123456789012:role/r1"})
+	uv.PutPrincipal(Principal{Arn: "arn:aws:iam::123456789012:role/r2"})
+
+	arns := uv.PrincipalArns()
+	if len(arns) != 2 {
+		t.Fatalf("expected 2 arns, got %d", len(arns))
+	}
+}
+
+func TestUniverse_ResourceArns(t *testing.T) {
+	uv := NewUniverse()
+	uv.PutResource(Resource{Arn: "arn:aws:s3:::bucket1"})
+	uv.PutResource(Resource{Arn: "arn:aws:s3:::bucket2"})
+
+	arns := uv.ResourceArns()
+	if len(arns) != 2 {
+		t.Fatalf("expected 2 arns, got %d", len(arns))
+	}
+}
+
+// -------------------------------------------------------------------------------------------------
+// LoadBasePolicies
+// -------------------------------------------------------------------------------------------------
+
+func TestUniverse_LoadBasePolicies(t *testing.T) {
+	uv := NewUniverse()
+
+	// Initially no policies
+	if uv.NumPolicies() != 0 {
+		t.Fatalf("expected 0 policies initially, got %d", uv.NumPolicies())
+	}
+
+	// Load base policies
+	uv.LoadBasePolicies()
+
+	// Should have loaded AWS managed policies
+	if uv.NumPolicies() == 0 {
+		t.Fatal("expected policies to be loaded")
+	}
+
+	initialCount := uv.NumPolicies()
+
+	// Call again should be idempotent
+	uv.LoadBasePolicies()
+
+	if uv.NumPolicies() != initialCount {
+		t.Fatal("LoadBasePolicies should be idempotent")
+	}
+}

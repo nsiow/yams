@@ -977,6 +977,51 @@ func TestSARValidationMultiKey(t *testing.T) {
 			},
 			Want: nil,
 		},
+		{
+			Name: "principal_org_paths",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Principal: &entities.FrozenPrincipal{
+						Account: entities.FrozenAccount{
+							OrgPaths: []string{
+								"o-123/",
+								"o-123/ou-1/",
+								"o-123/ou-1/ou-2/",
+							},
+						},
+					},
+				},
+				key: "aws:PrincipalOrgPaths",
+			},
+			Want: []string{
+				"o-123/",
+				"o-123/ou-1/",
+				"o-123/ou-1/ou-2/",
+			},
+		},
+		{
+			Name: "resource_org_paths",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:receivemessage"),
+					Resource: &entities.FrozenResource{
+						Arn: "arn:aws:sqs:us-east-1:55555:myqueue",
+						Account: entities.FrozenAccount{
+							OrgPaths: []string{
+								"o-456/",
+								"o-456/ou-a/",
+							},
+						},
+					},
+				},
+				key: "aws:ResourceOrgPaths",
+			},
+			Want: []string{
+				"o-456/",
+				"o-456/ou-a/",
+			},
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) ([]string, error) {
