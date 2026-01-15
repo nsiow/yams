@@ -154,3 +154,42 @@ func TestWriteJsonResponse(t *testing.T) {
 	}
 }
 
+// errWriter is a writer that always fails
+type errWriter struct {
+	header http.Header
+}
+
+func (e *errWriter) Header() http.Header {
+	if e.header == nil {
+		e.header = make(http.Header)
+	}
+	return e.header
+}
+
+func (e *errWriter) Write([]byte) (int, error) {
+	return 0, errors.New("write error")
+}
+
+func (e *errWriter) WriteHeader(int) {}
+
+func TestWriteJsonResponse_WriteError(t *testing.T) {
+	req := httptest.NewRequest("GET", "/test", nil)
+	w := &errWriter{}
+
+	// This should not panic or loop infinitely, just log the error
+	WriteJsonResponse(w, req, map[string]string{"key": "value"})
+}
+
+func TestWriteJsonResponse_MarshalError(t *testing.T) {
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/test", nil)
+
+	// Create an object that can't be marshaled (channel)
+	obj := make(chan int)
+
+	WriteJsonResponse(w, req, obj)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("WriteJsonResponse with unmarshalable object status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+}

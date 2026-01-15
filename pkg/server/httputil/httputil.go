@@ -31,15 +31,17 @@ func WriteJsonResponse(w http.ResponseWriter, req *http.Request, obj any) {
 		slog.Error("error json-ifying object",
 			"error", err,
 			"obj", obj)
-		ServerError(w, req, err)
+		// Write a simple error response directly to avoid recursion
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"internal server error"}` + "\n"))
 		return
 	}
 
 	_, err = w.Write(append(jsonBytes, '\n'))
 	if err != nil {
-		slog.Error("error writing object",
+		// Don't try to send an error response - the writer is broken.
+		// Just log and return.
+		slog.Error("error writing response",
 			"error", err)
-		ServerError(w, req, err)
-		return
 	}
 }
