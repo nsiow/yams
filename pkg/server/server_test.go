@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nsiow/yams/cmd/yams/cli"
 	"github.com/nsiow/yams/internal/smartrw"
 )
 
 func TestNewServer(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
@@ -38,7 +39,7 @@ func TestNewServer(t *testing.T) {
 }
 
 func TestHealthcheck(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
@@ -59,7 +60,7 @@ func TestHealthcheck(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
@@ -88,7 +89,7 @@ func TestStatus(t *testing.T) {
 }
 
 func TestStatus_WithSources(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
@@ -122,7 +123,7 @@ func TestStatus_WithSources(t *testing.T) {
 }
 
 func TestServer_IntegrationRoutes(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}

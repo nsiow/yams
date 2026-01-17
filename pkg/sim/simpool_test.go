@@ -6,69 +6,6 @@ import (
 	"time"
 )
 
-func TestPool_SetWorkers(t *testing.T) {
-	ctx := context.Background()
-	sim, err := NewSimulator()
-	if err != nil {
-		t.Fatalf("error creating simulator: %v", err)
-	}
-
-	pool := NewPool(ctx, sim)
-
-	// Test SetWorkers
-	pool.SetWorkers(4)
-	if pool.numWorkers != 4 {
-		t.Fatalf("expected 4 workers, got %d", pool.numWorkers)
-	}
-
-	// Test NumWorkers returns the set value
-	if pool.NumWorkers() != 4 {
-		t.Fatalf("expected NumWorkers() to return 4, got %d", pool.NumWorkers())
-	}
-}
-
-func TestPool_SetBatchSize(t *testing.T) {
-	ctx := context.Background()
-	sim, err := NewSimulator()
-	if err != nil {
-		t.Fatalf("error creating simulator: %v", err)
-	}
-
-	pool := NewPool(ctx, sim)
-
-	// Test SetBatchSize
-	pool.SetBatchSize(256)
-	if pool.batchSize != 256 {
-		t.Fatalf("expected batch size 256, got %d", pool.batchSize)
-	}
-
-	// Test BatchSize returns the set value
-	if pool.BatchSize() != 256 {
-		t.Fatalf("expected BatchSize() to return 256, got %d", pool.BatchSize())
-	}
-}
-
-func TestPool_SetTimeout(t *testing.T) {
-	ctx := context.Background()
-	sim, err := NewSimulator()
-	if err != nil {
-		t.Fatalf("error creating simulator: %v", err)
-	}
-
-	pool := NewPool(ctx, sim)
-
-	// Test SetTimeout
-	pool.SetTimeout(60 * time.Second)
-	if pool.timeout != 60*time.Second {
-		t.Fatalf("expected timeout 60s, got %v", pool.timeout)
-	}
-
-	// Test Timeout returns the set value
-	if pool.Timeout() != 60*time.Second {
-		t.Fatalf("expected Timeout() to return 60s, got %v", pool.Timeout())
-	}
-}
-
 func TestPool_NumWorkers_Default(t *testing.T) {
 	ctx := context.Background()
 	sim, err := NewSimulator()
@@ -127,7 +64,6 @@ func TestPool_Start(t *testing.T) {
 	}
 
 	pool := NewPool(ctx, sim)
-	pool.SetWorkers(2)
 
 	// Start should be idempotent
 	pool.Start()
@@ -146,7 +82,6 @@ func TestPool_ContextCancellation(t *testing.T) {
 	}
 
 	pool := NewPool(ctx, sim)
-	pool.SetWorkers(1)
 	pool.Start()
 
 	// Cancel context - workers should exit
@@ -170,7 +105,7 @@ func TestPool_NumWorkers_FromEnv(t *testing.T) {
 
 	// Should use env var value
 	if numWorkers != 8 {
-		t.Logf("NumWorkers returned %d (env var may not be used due to fallback logic)", numWorkers)
+		t.Errorf("NumWorkers returned %d, want 8", numWorkers)
 	}
 }
 
@@ -187,7 +122,7 @@ func TestPool_BatchSize_FromEnv(t *testing.T) {
 	batchSize := pool.BatchSize()
 
 	if batchSize != 512 {
-		t.Logf("BatchSize returned %d (env var may not be used due to fallback logic)", batchSize)
+		t.Errorf("BatchSize returned %d, want 512", batchSize)
 	}
 }
 
@@ -204,6 +139,6 @@ func TestPool_Timeout_FromEnv(t *testing.T) {
 	timeout := pool.Timeout()
 
 	if timeout != 120*time.Second {
-		t.Logf("Timeout returned %v (env var may not be used due to fallback logic)", timeout)
+		t.Errorf("Timeout returned %v, want 120s", timeout)
 	}
 }

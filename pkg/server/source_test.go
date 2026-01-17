@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nsiow/yams/cmd/yams/cli"
 	"github.com/nsiow/yams/internal/smartrw"
 )
 
@@ -95,7 +96,7 @@ func TestSource_Universe_InvalidFormat(t *testing.T) {
 }
 
 func TestServer_AddSource(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
@@ -128,7 +129,7 @@ func TestServer_AddSource(t *testing.T) {
 }
 
 func TestServer_Load(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
@@ -162,7 +163,7 @@ func TestServer_Load(t *testing.T) {
 }
 
 func TestServer_AddSource_WithRefresh(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
@@ -196,7 +197,7 @@ func TestServer_AddSource_WithRefresh(t *testing.T) {
 }
 
 func TestServer_Load_InvalidSource(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
@@ -225,7 +226,7 @@ func TestServer_Load_InvalidSource(t *testing.T) {
 }
 
 func TestServer_AddSource_Invalid(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
@@ -260,7 +261,7 @@ func TestServer_AddSource_Invalid(t *testing.T) {
 }
 
 func TestServer_Refresh_Success(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
@@ -303,7 +304,7 @@ func TestServer_Refresh_Success(t *testing.T) {
 }
 
 func TestServer_Refresh_ResetError(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
@@ -346,7 +347,7 @@ func TestServer_Refresh_ResetError(t *testing.T) {
 }
 
 func TestServer_Refresh_LoadError(t *testing.T) {
-	server, err := NewServer(":8080")
+	server, err := NewServer(&cli.Flags{Addr: ":8080"})
 	if err != nil {
 		t.Fatalf("NewServer() error = %v", err)
 	}
