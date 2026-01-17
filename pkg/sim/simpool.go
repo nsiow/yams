@@ -2,10 +2,12 @@ package sim
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"runtime"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -26,6 +28,7 @@ type simOut struct {
 type simBatch struct {
 	Jobs     []simIn
 	Finished chan<- simOut
+	Done     *atomic.Int32
 }
 
 type Pool struct {
@@ -45,15 +48,23 @@ type Pool struct {
 // -------------------------------------------------------------------------------------------------
 
 func NewPool(ctx context.Context, simulator *Simulator) *Pool {
-	return &Pool{
+	p := Pool{
 		Simulator: simulator,
 		Ctx:       ctx,
 		work:      make(chan simBatch, 512), // TODO(nsiow) figure out what a good default is
 	}
+
+	slog.Info("created pool",
+		"num_workers", p.NumWorkers(),
+		"batch_size", p.BatchSize(),
+		"timeout", p.Timeout())
+	return &p
 }
 
 func (p *Pool) NumWorkers() int {
 	if p.numWorkers == 0 {
+		p.numWorkers = runtime.NumCPU() // default to some reasonable number of workers
+
 		fromEnv := os.Getenv("YAMS_SIM_NUM_WORKERS")
 		num, err := strconv.Atoi(fromEnv)
 		if err == nil {
@@ -66,12 +77,10 @@ func (p *Pool) NumWorkers() int {
 	return p.numWorkers
 }
 
-func (p *Pool) SetWorkers(num int) {
-	p.numWorkers = num
-}
-
 func (p *Pool) BatchSize() int {
 	if p.batchSize == 0 {
+		p.batchSize = 1024 // default to some reasonable batch size
+
 		fromEnv := os.Getenv("YAMS_SIM_BATCH_SIZE")
 		num, err := strconv.Atoi(fromEnv)
 		if err == nil {
@@ -84,12 +93,10 @@ func (p *Pool) BatchSize() int {
 	return p.batchSize
 }
 
-func (p *Pool) SetBatchSize(num int) {
-	p.batchSize = num
-}
-
 func (p *Pool) Timeout() time.Duration {
 	if p.timeout == 0 {
+		p.timeout = 60 * time.Second
+
 		fromEnv := os.Getenv("YAMS_SIM_TIMEOUT")
 		num, err := strconv.Atoi(fromEnv)
 		if err == nil {
@@ -102,21 +109,13 @@ func (p *Pool) Timeout() time.Duration {
 	return p.timeout
 }
 
-func (p *Pool) SetTimeout(timeout time.Duration) {
-	p.timeout = timeout
-}
-
 // -------------------------------------------------------------------------------------------------
 // Pool Execution
 // -------------------------------------------------------------------------------------------------
 
 func (p *Pool) Start() {
 	p.started.Do(func() {
-		if p.numWorkers < 1 {
-			p.numWorkers = 1
-		}
-
-		for range p.numWorkers {
+		for range p.NumWorkers() {
 			go p.startWorker()
 		}
 	})
@@ -136,9 +135,13 @@ func (p *Pool) startWorker() {
 func (p *Pool) handleBatch(b simBatch) {
 	for _, item := range b.Jobs {
 		result, err := p.Simulator.SimulateWithOptions(item.AuthContext, item.Options)
-		out := simOut{Result: result, Error: err}
-		b.Finished <- out
+		if err != nil || result.IsAllowed {
+			out := simOut{Result: result, Error: err}
+			b.Finished <- out
+		}
 	}
+
+	b.Done.Add(int32(len(b.Jobs)))
 }
 
 func (p *Pool) Submit(b simBatch) {

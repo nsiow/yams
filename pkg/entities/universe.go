@@ -134,6 +134,14 @@ func (u *Universe) RemoveAccount(id string) {
 // Groups
 // -------------------------------------------------------------------------------------------------
 
+// normalizeGroupArn removes all path information from the group ARN, which is blatantly dishonest
+// but also required since some core AWS data sources provide only account + group name and omit any
+// other path information
+func normalizeGroupArn(arn Arn) Arn {
+	components := strings.Split(arn, "/")
+	return components[0] + "/" + components[len(components)-1]
+}
+
 // NumGroups returns the number of groups known to the universe
 func (u *Universe) NumGroups() int {
 	u.mut.RLock()
@@ -166,12 +174,15 @@ func (u *Universe) HasGroup(arn Arn) bool {
 
 // Group attempts to retrieve the group based on its ARN
 func (u *Universe) Group(arn Arn) (*Group, bool) {
+	arn = normalizeGroupArn(arn)
 	g, ok := u.groups[arn]
 	return g, ok
 }
 
 // PutGroup saves the provided group into the universe, updating the definition if needed
 func (u *Universe) PutGroup(g Group) {
+	g.Arn = normalizeGroupArn(g.Arn)
+
 	u.mut.Lock()
 	defer u.mut.Unlock()
 
@@ -181,6 +192,8 @@ func (u *Universe) PutGroup(g Group) {
 
 // RemoveGroup removes the group referenced by the provided ARN
 func (u *Universe) RemoveGroup(arn Arn) {
+	arn = normalizeGroupArn(arn)
+
 	u.mut.Lock()
 	defer u.mut.Unlock()
 

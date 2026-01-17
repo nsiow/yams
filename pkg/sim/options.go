@@ -33,6 +33,10 @@ type Options struct {
 	// matches
 	EnableFuzzyMatchArn bool
 
+	// Strict causes simulation to fail if it encounters an AWS managed policy or group that it cannot
+	// resolve. Otherwise, simulation will use an empty policy
+	Strict bool
+
 	// ForceFailure causes all simulation results to throw an error. Primarily used for testing and
 	// debugging purposes
 	ForceFailure bool
@@ -95,6 +99,13 @@ func WithEnableFuzzyMatchArn() OptionF {
 	}
 }
 
+// WithStrict enables failures for unknown managed policies and groups
+func WithStrict() OptionF {
+	return func(opt *Options) {
+		opt.Strict = true
+	}
+}
+
 // WithForceFailure causes all simulations to fail
 func WithForceFailure() OptionF {
 	return func(opt *Options) {
@@ -107,6 +118,7 @@ func WithForceFailure() OptionF {
 // the rules a bit for testing -- fewer checks around the specifics of the dummy resource calls we
 // use
 var TestingSimulationOptions = NewOptions(
-	WithSkipServiceAuthorizationValidation(),
+	WithStrict(),
 	WithTracing(),
+	WithSkipServiceAuthorizationValidation(),
 )
