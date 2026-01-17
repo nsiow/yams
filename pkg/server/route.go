@@ -1,6 +1,8 @@
 package server
 
-import v1 "github.com/nsiow/yams/pkg/server/api/v1"
+import (
+	v1 "github.com/nsiow/yams/pkg/server/api/v1"
+)
 
 func (s *Server) addV1Routes(v1 *v1.API) {
 	// administration

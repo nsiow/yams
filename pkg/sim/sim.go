@@ -2,8 +2,11 @@ package sim
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
+	"log/slog"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/nsiow/yams/internal/common"
@@ -41,7 +44,7 @@ func (s *Simulator) resolvePrincipal(arn string, opts Options) (*entities.Frozen
 	for _, uv := range uvs {
 		principal, ok := uv.Principal(arn)
 		if ok {
-			fp, err := principal.FreezeWith(uvs...)
+			fp, err := principal.FreezeWith(opts.Strict, uvs...)
 			return &fp, err
 		}
 	}
@@ -77,7 +80,7 @@ func (s *Simulator) resolveResource(arn string, opts Options) (*entities.FrozenR
 	for _, uv := range uvs {
 		resource, ok := uv.Resource(arn)
 		if ok {
-			fr, err := resource.FreezeWith(uvs...)
+			fr, err := resource.FreezeWith(opts.Strict, uvs...)
 			return &fr, err
 		}
 	}
@@ -195,7 +198,7 @@ func (s *Simulator) SimulateByArnWithOptions(
 	// Locate Resource (if needed)
 	if ac.Action.HasTargets() {
 		_, ok := s.Universe.Resource(resourceArn)
-		if !ok && strings.HasPrefix(ac.Action.Name, "Create") {
+		if !ok && strings.HasPrefix(ac.Action.Name, "Create") || ac.Action.Name == "RunInstances" {
 			// Handle case where API call DOES have targets but those targets shouldn't exist yet. It's
 			// really just targeted Create* calls
 			// TODO(nsiow) revisit this
@@ -333,6 +336,10 @@ type AccessTuple struct {
 // product of the provided simulation identifiers, while also filtering out any combinations that
 // are not allowed.
 func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, error) {
+	simId := rand.Text()
+	slog.Debug("calculating product",
+		"sim_id", simId)
+
 	var fas []*types.Action
 	for _, a := range as {
 		fa, ok := sar.LookupString(a)
@@ -360,9 +367,13 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 		frs = append(frs, fr)
 	}
 
-	submittedJobs := 0
+	slog.Debug("froze entities",
+		"sim_id", simId)
+
+	var submitted int32
+	var done atomic.Int32
 	finished := make(chan simOut, s.Pool.NumWorkers())
-	batch := simBatch{Jobs: []simIn{}, Finished: finished}
+	batch := simBatch{Jobs: []simIn{}, Finished: finished, Done: &done}
 
 	for _, p := range fps {
 		for _, a := range fas {
@@ -382,11 +393,11 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 					opts,
 				}
 				batch.Jobs = append(batch.Jobs, job)
-				submittedJobs++
+				submitted++
 
 				if len(batch.Jobs) == s.Pool.BatchSize() {
 					s.Pool.Submit(batch)
-					batch = simBatch{Jobs: []simIn{}, Finished: finished}
+					batch = simBatch{Jobs: []simIn{}, Finished: finished, Done: &done}
 				}
 			}
 		}
@@ -397,30 +408,33 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 		s.Pool.Submit(batch)
 	}
 
-	var matrix []AccessTuple
-	var finishedJobs int
+	slog.Debug("submitted work",
+		"sim_id", simId,
+		"submitted", submitted)
 
-	for finishedJobs < submittedJobs {
+	var matrix []AccessTuple
+
+	for done.Load() < submitted {
 		select {
 		case job := <-finished:
-			finishedJobs++
-
 			if job.Error != nil {
 				return nil, fmt.Errorf("simulation error: %w", job.Error)
 			}
 
-			if job.Result.IsAllowed {
+			if job.Result.IsAllowed { // should always be the case, but confirm
 				matrix = append(matrix, AccessTuple{
 					Principal: job.Result.Principal,
 					Action:    job.Result.Action,
 					Resource:  job.Result.Resource,
 					Result:    job.Result})
 			}
-		case <-time.After(s.Pool.Timeout()):
-			return nil, fmt.Errorf("simulation unit timed out after %v; completed %d/%d jobs",
-				s.Pool.Timeout(), finishedJobs, submittedJobs)
+		case <-time.After(time.Second * 1):
+			slog.Debug("simulation in progress",
+				"done", done.Load(),
+				"out_of", submitted)
 		}
 	}
 
+	close(finished)
 	return matrix, nil
 }

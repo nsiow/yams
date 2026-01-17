@@ -249,10 +249,11 @@ func TestSimulateByArn(t *testing.T) {
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		sim, _ := NewSimulator()
 		sim.Universe = i.uv
-		res, err := sim.SimulateByArn(
+		res, err := sim.SimulateByArnWithOptions(
 			i.principalArn,
 			i.action,
 			i.resourceArn,
+			TestingSimulationOptions,
 		)
 		if err != nil {
 			return false, err

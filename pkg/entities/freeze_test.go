@@ -334,12 +334,12 @@ func TestFreeze(t *testing.T) {
 
 		var err error
 
-		out.fp, err = input.FrozenPrincipals(nil)
+		out.fp, err = input.FrozenPrincipals(true, nil)
 		if err != nil {
 			return output{}, err
 		}
 
-		out.fr, err = input.FrozenResources(nil)
+		out.fr, err = input.FrozenResources(true, nil)
 		if err != nil {
 			return output{}, err
 		}
