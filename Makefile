@@ -42,7 +42,7 @@ ifdef run
 endif
 
 # Track coverage of code outside of test helperstest helpers
-COVERAGE_OMIT ?= '(yams/internal/testlib)'
+COVERAGE_OMIT ?= '(yams/cmd|yams/internal/testlib)'
 
 .PHONY: format
 format:
