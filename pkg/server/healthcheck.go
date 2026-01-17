@@ -1,10 +1,11 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
+
+	"github.com/nsiow/yams/pkg/server/httputil"
 )
 
 func (s *Server) Healthcheck(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "OK\n")
+	httputil.WriteJsonResponse(w, req, map[string]string{"status": "ok"})
 }

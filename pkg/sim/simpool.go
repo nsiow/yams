@@ -58,9 +58,9 @@ func (p *Pool) NumWorkers() int {
 		num, err := strconv.Atoi(fromEnv)
 		if err == nil {
 			p.numWorkers = num
+		} else {
+			p.numWorkers = runtime.NumCPU() // default to some reasonable number of workers
 		}
-
-		p.numWorkers = runtime.NumCPU() // default to some reasonable number of workers
 	}
 
 	return p.numWorkers
@@ -76,9 +76,9 @@ func (p *Pool) BatchSize() int {
 		num, err := strconv.Atoi(fromEnv)
 		if err == nil {
 			p.batchSize = num
+		} else {
+			p.batchSize = 1024 // default to some reasonable batch size
 		}
-
-		p.batchSize = 1024 // default to some reasonable batch size
 	}
 
 	return p.batchSize
@@ -94,9 +94,9 @@ func (p *Pool) Timeout() time.Duration {
 		num, err := strconv.Atoi(fromEnv)
 		if err == nil {
 			p.timeout = time.Duration(num * int(time.Second))
+		} else {
+			p.timeout = 30 * time.Second
 		}
-
-		p.timeout = 30 * time.Second
 	}
 
 	return p.timeout

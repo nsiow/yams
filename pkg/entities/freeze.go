@@ -263,6 +263,7 @@ func (r *Resource) FreezeWith(universes ...*Universe) (FrozenResource, error) {
 	f := FrozenResource{
 		Type:      r.Type,
 		AccountId: r.AccountId,
+		Region:    r.Region,
 		Arn:       r.Arn,
 		Tags:      r.Tags,
 		Policy:    r.Policy,

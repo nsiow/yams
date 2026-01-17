@@ -26,6 +26,7 @@ func evalOverallAccess(s *subject) *SimResult {
 	}
 	if !rAccess.Allowed() && !evalIsSameAccount(s) {
 		s.trc.Denied("[implicit deny] x-account, missing resource policy access")
+		return &SimResult{Trace: &s.trc, IsAllowed: false}
 	}
 
 	// Calculate Principal access
@@ -36,6 +37,7 @@ func evalOverallAccess(s *subject) *SimResult {
 	}
 	if !pAccess.Allowed() && !evalIsSameAccount(s) {
 		s.trc.Denied("[implicit deny] no identity-based policy allows access")
+		return &SimResult{Trace: &s.trc, IsAllowed: false}
 	}
 
 	// Calculate SCP access, if present

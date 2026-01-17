@@ -60,7 +60,7 @@ func TestUnmarshal(t *testing.T) {
 		{Input: `{"S": []}`, Want: Value{}},
 		{Input: `{"S": true}`, Want: Value{"true"}},
 		{Input: `{"S": false}`, Want: Value{"false"}},
-		{Input: `{"S": "\""}`, ShouldErr: true},
+		{Input: `{"S": "\""}`, Want: Value{`"`}},
 		{Input: `{"S": [0]}`, ShouldErr: true},
 		{Input: `{"S": 0}`, ShouldErr: true},
 		{Input: `{"S": 1000}`, ShouldErr: true},

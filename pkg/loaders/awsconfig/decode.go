@@ -17,6 +17,10 @@ func (p *EncodedPolicy) UnmarshalJSON(data []byte) error {
 	// Perform first unwrapping of string (if needed)
 	var policyString string
 
+	if len(data) == 0 {
+		return fmt.Errorf("empty data for encoded policy")
+	}
+
 	if data[0] == '"' {
 		err := json.Unmarshal(data, &policyString)
 		if err != nil || len(policyString) == 0 {

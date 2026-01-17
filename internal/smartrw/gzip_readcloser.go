@@ -28,10 +28,10 @@ func (g *GzipReadCloser) Read(p []byte) (n int, err error) {
 }
 
 func (g *GzipReadCloser) Close() error {
-	err := g.gz.Close()
-	if err != nil {
-		return err
+	gzErr := g.gz.Close()
+	rErr := g.r.Close()
+	if gzErr != nil {
+		return gzErr
 	}
-
-	return g.r.Close()
+	return rErr
 }

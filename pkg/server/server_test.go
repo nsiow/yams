@@ -49,8 +49,9 @@ func TestHealthcheck(t *testing.T) {
 		t.Errorf("Healthcheck() status = %d, want %d", w.Code, http.StatusOK)
 	}
 
-	if w.Body.String() != "OK\n" {
-		t.Errorf("Healthcheck() body = %q, want %q", w.Body.String(), "OK\n")
+	want := "{\n  \"status\": \"ok\"\n}\n"
+	if w.Body.String() != want {
+		t.Errorf("Healthcheck() body = %q, want %q", w.Body.String(), want)
 	}
 }
 
