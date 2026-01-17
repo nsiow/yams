@@ -377,7 +377,9 @@ func TestServer_Refresh_LoadError(t *testing.T) {
 	}
 
 	// Corrupt the file to cause Load() to fail on refresh
-	os.WriteFile(tempFile, []byte("invalid json"), 0644)
+	if err := os.WriteFile(tempFile, []byte("invalid json"), 0644); err != nil {
+		t.Fatalf("failed to corrupt test file: %v", err)
+	}
 
 	// Start refresh - should exit after first failed load
 	go server.Refresh(src)

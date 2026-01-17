@@ -95,7 +95,9 @@ func TestS3Writer_Close(t *testing.T) {
 	}
 
 	// Write some data first
-	w.Write([]byte("test content"))
+	if _, err := w.Write([]byte("test content")); err != nil {
+		t.Fatalf("failed to write test data: %v", err)
+	}
 
 	// Close should call PutObject
 	err := w.Close()

@@ -54,8 +54,12 @@ func TestNewGzipReadCloser(t *testing.T) {
 	// Create valid gzipped data
 	var gzippedBuf bytes.Buffer
 	gzWriter := gzip.NewWriter(&gzippedBuf)
-	gzWriter.Write([]byte("test content"))
-	gzWriter.Close()
+	if _, err := gzWriter.Write([]byte("test content")); err != nil {
+		t.Fatalf("failed to write gzip data: %v", err)
+	}
+	if err := gzWriter.Close(); err != nil {
+		t.Fatalf("failed to close gzip writer: %v", err)
+	}
 	gzippedData := gzippedBuf.Bytes()
 
 	tests := []testlib.TestCase[[]byte, bool]{
@@ -90,8 +94,12 @@ func TestGzipReadCloser_Read(t *testing.T) {
 	// Create gzipped data
 	var gzippedBuf bytes.Buffer
 	gzWriter := gzip.NewWriter(&gzippedBuf)
-	gzWriter.Write([]byte("test content"))
-	gzWriter.Close()
+	if _, err := gzWriter.Write([]byte("test content")); err != nil {
+		t.Fatalf("failed to write gzip data: %v", err)
+	}
+	if err := gzWriter.Close(); err != nil {
+		t.Fatalf("failed to close gzip writer: %v", err)
+	}
 
 	rc := newMockReadCloser(gzippedBuf.Bytes())
 	gz, err := NewGzipReadCloser(rc)
@@ -115,8 +123,12 @@ func TestGzipReadCloser_Close(t *testing.T) {
 	// Create gzipped data
 	var gzippedBuf bytes.Buffer
 	gzWriter := gzip.NewWriter(&gzippedBuf)
-	gzWriter.Write([]byte("test"))
-	gzWriter.Close()
+	if _, err := gzWriter.Write([]byte("test")); err != nil {
+		t.Fatalf("failed to write gzip data: %v", err)
+	}
+	if err := gzWriter.Close(); err != nil {
+		t.Fatalf("failed to close gzip writer: %v", err)
+	}
 
 	rc := newMockReadCloser(gzippedBuf.Bytes())
 	gz, err := NewGzipReadCloser(rc)
@@ -138,8 +150,12 @@ func TestGzipReadCloser_CloseWithError(t *testing.T) {
 	// Create gzipped data
 	var gzippedBuf bytes.Buffer
 	gzWriter := gzip.NewWriter(&gzippedBuf)
-	gzWriter.Write([]byte("test"))
-	gzWriter.Close()
+	if _, err := gzWriter.Write([]byte("test")); err != nil {
+		t.Fatalf("failed to write gzip data: %v", err)
+	}
+	if err := gzWriter.Close(); err != nil {
+		t.Fatalf("failed to close gzip writer: %v", err)
+	}
 
 	rc := newMockReadCloser(gzippedBuf.Bytes())
 	rc.closeErr = errors.New("close error")
@@ -200,7 +216,9 @@ func TestGzipWriteCloser_CloseWithError(t *testing.T) {
 	gz := NewGzipWriteCloser(wc)
 
 	// Write some data first to make gzip valid
-	gz.Write([]byte("test"))
+	if _, err := gz.Write([]byte("test")); err != nil {
+		t.Fatalf("failed to write to gzip: %v", err)
+	}
 
 	// Close should propagate the error
 	err := gz.Close()

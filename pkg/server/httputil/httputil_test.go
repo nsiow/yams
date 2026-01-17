@@ -141,8 +141,12 @@ func TestWriteJsonResponse(t *testing.T) {
 			gotBytes, _ := json.Marshal(got)
 
 			var wantNorm, gotNorm any
-			json.Unmarshal(wantBytes, &wantNorm)
-			json.Unmarshal(gotBytes, &gotNorm)
+			if err := json.Unmarshal(wantBytes, &wantNorm); err != nil {
+				t.Fatalf("failed to unmarshal want: %v", err)
+			}
+			if err := json.Unmarshal(gotBytes, &gotNorm); err != nil {
+				t.Fatalf("failed to unmarshal got: %v", err)
+			}
 
 			wantFinal, _ := json.Marshal(wantNorm)
 			gotFinal, _ := json.Marshal(gotNorm)

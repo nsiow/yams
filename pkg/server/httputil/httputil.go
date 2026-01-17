@@ -35,7 +35,9 @@ func WriteJsonResponse(w http.ResponseWriter, req *http.Request, obj any) {
 		// Write a simple error response directly to avoid recursion
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"internal server error"}` + "\n"))
+		if _, writeErr := w.Write([]byte(`{"error":"internal server error"}` + "\n")); writeErr != nil {
+			slog.Error("error writing error response", "error", writeErr)
+		}
 		return
 	}
 
