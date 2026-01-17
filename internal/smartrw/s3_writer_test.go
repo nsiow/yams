@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/nsiow/yams/internal/testlib"
 )
@@ -133,5 +134,16 @@ func TestSelectWriter_S3(t *testing.T) {
 	// This will fail without proper AWS credentials, which is expected
 	if err == nil {
 		t.Log("S3 writer created successfully (requires valid AWS credentials)")
+	}
+}
+
+func TestNewS3Writer_ConfigError(t *testing.T) {
+	// Test the config error path by passing an option that returns an error
+	_, err := NewS3Writer("mybucket/mykey", func(lo *config.LoadOptions) error {
+		return errors.New("config load error")
+	})
+
+	if err == nil {
+		t.Fatal("expected config error but got nil")
 	}
 }

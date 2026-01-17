@@ -630,6 +630,78 @@ func TestAuthContextKeys(t *testing.T) {
 			},
 			Want: EMPTY,
 		},
+
+		// -------------------------------------------------------------------------------------------
+		// Nil Principal/Resource edge cases
+		// -------------------------------------------------------------------------------------------
+
+		{
+			Name: "principal_arn_nil_principal",
+			Input: input{
+				ac:  AuthContext{Principal: nil},
+				key: "aws:PrincipalArn",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "principal_account_nil_principal",
+			Input: input{
+				ac:  AuthContext{Principal: nil},
+				key: "aws:PrincipalAccount",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "principal_type_nil_principal",
+			Input: input{
+				ac:  AuthContext{Principal: nil},
+				key: "aws:PrincipalType",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "principal_org_id_nil_principal",
+			Input: input{
+				ac:  AuthContext{Principal: nil},
+				key: "aws:PrincipalOrgID",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "principal_tag_nil_principal",
+			Input: input{
+				ac:  AuthContext{Principal: nil},
+				key: "aws:PrincipalTag/foo",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "resource_account_nil_resource",
+			Input: input{
+				ac:  AuthContext{Resource: nil},
+				key: "aws:ResourceAccount",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "resource_org_id_nil_resource",
+			Input: input{
+				ac:  AuthContext{Resource: nil},
+				key: "aws:ResourceOrgID",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "resource_tag_nil_resource",
+			Input: input{
+				ac: AuthContext{
+					Action:   sar.MustLookupString("dynamodb:query"),
+					Resource: nil,
+				},
+				key: "aws:ResourceTag/foo",
+			},
+			Want: EMPTY,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
@@ -1021,6 +1093,26 @@ func TestSARValidationMultiKey(t *testing.T) {
 				"o-456/",
 				"o-456/ou-a/",
 			},
+		},
+		{
+			Name: "principal_org_paths_nil_principal",
+			Input: input{
+				ac: AuthContext{
+					Principal: nil,
+				},
+				key: "aws:PrincipalOrgPaths",
+			},
+			Want: nil,
+		},
+		{
+			Name: "resource_org_paths_nil_resource",
+			Input: input{
+				ac: AuthContext{
+					Resource: nil,
+				},
+				key: "aws:ResourceOrgPaths",
+			},
+			Want: nil,
 		},
 	}
 

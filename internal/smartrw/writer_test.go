@@ -62,6 +62,25 @@ func TestSelect(t *testing.T) {
 			Input:     "foo:///tmp/foo",
 			ShouldErr: true,
 		},
+		{
+			// s3 writer - will either succeed or fail based on AWS config
+			// but tests the code path
+			Name:  "s3_path",
+			Input: "s3://mybucket/mykey",
+			Want:  "*smartrw.S3Writer",
+		},
+		{
+			// s3 writer with .gz suffix
+			Name:  "s3_path_gzip",
+			Input: "s3://mybucket/mykey.gz",
+			Want:  "*smartrw.GzipWriteCloser",
+		},
+		{
+			// Invalid s3 path (no key)
+			Name:      "s3_path_invalid",
+			Input:     "s3://bucketonly",
+			ShouldErr: true,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(in string) (string, error) {

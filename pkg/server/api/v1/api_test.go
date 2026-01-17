@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/nsiow/yams/pkg/entities"
+	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim"
 )
 
@@ -544,6 +545,20 @@ func TestAPI_WhichPrincipals(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("WhichPrincipals() with invalid JSON status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
+
+	// Missing required action
+	input2 := WhichPrincipalsInput{
+		Resource: "arn:aws:s3:::test-bucket",
+	}
+	body, _ = json.Marshal(input2)
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/v1/sim/whichPrincipals", bytes.NewReader(body))
+
+	api.WhichPrincipals(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("WhichPrincipals() missing action status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
 }
 
 func TestAPI_WhichActions(t *testing.T) {
@@ -602,6 +617,20 @@ func TestAPI_WhichResources(t *testing.T) {
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("WhichResources() with invalid JSON status = %d, want %d", w.Code, http.StatusBadRequest)
 	}
+
+	// Missing required principal
+	input2 := WhichResourcesInput{
+		Action: "s3:ListBucket",
+	}
+	body, _ = json.Marshal(input2)
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/v1/sim/whichResources", bytes.NewReader(body))
+
+	api.WhichResources(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("WhichResources() missing principal status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -646,5 +675,193 @@ func TestGet_WithFreeze(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Errorf("GetPrincipal() with freeze status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestGet_FreezeError(t *testing.T) {
+	api := newTestAPIWithData(t)
+
+	// Add a principal with an attached policy that doesn't exist in the universe
+	principal := entities.Principal{
+		Arn:              "arn:aws:iam::123456789012:user/baduser",
+		AccountId:        "123456789012",
+		AttachedPolicies: []entities.Arn{"arn:aws:iam::123456789012:policy/nonexistent"},
+	}
+	api.Simulator.Universe.PutPrincipal(principal)
+
+	// Test freeze suffix should fail
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/principals/arn:aws:iam::123456789012:user/baduser/freeze", nil)
+	req.SetPathValue("key", "arn:aws:iam::123456789012:user/baduser/freeze")
+
+	api.GetPrincipal(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("GetPrincipal() with freeze error status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestSimRun_Allow(t *testing.T) {
+	api := newTestAPIWithData(t)
+
+	// Add a principal with an inline policy that allows s3:ListBucket
+	principal := entities.Principal{
+		Arn:       "arn:aws:iam::123456789012:user/adminuser",
+		AccountId: "123456789012",
+		InlinePolicies: []policy.Policy{
+			{
+				Statement: []policy.Statement{
+					{
+						Effect:   policy.EFFECT_ALLOW,
+						Action:   []string{"s3:ListBucket"},
+						Resource: []string{"arn:aws:s3:::allowbucket"},
+					},
+				},
+			},
+		},
+	}
+	api.Simulator.Universe.PutPrincipal(principal)
+
+	// Add a resource that's in the same account
+	resource := entities.Resource{
+		Arn:       "arn:aws:s3:::allowbucket",
+		Type:      "AWS::S3::Bucket",
+		AccountId: "123456789012",
+	}
+	api.Simulator.Universe.PutResource(resource)
+
+	// SimRun should return ALLOW
+	input := SimInput{
+		Principal: "arn:aws:iam::123456789012:user/adminuser",
+		Action:    "s3:ListBucket",
+		Resource:  "arn:aws:s3:::allowbucket",
+	}
+	body, _ := json.Marshal(input)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/sim/run", bytes.NewReader(body))
+
+	api.SimRun(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("SimRun() allow status = %d, want %d, body = %s", w.Code, http.StatusOK, w.Body.String())
+	}
+
+	var out SimOutput
+	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
+		t.Fatalf("SimRun() invalid JSON: %v", err)
+	}
+	if out.Result != "ALLOW" {
+		t.Errorf("SimRun() result = %s, want ALLOW", out.Result)
+	}
+}
+
+func TestSimRun_FreezeError(t *testing.T) {
+	api := newTestAPIWithData(t)
+
+	// Add a principal with an attached policy that doesn't exist in the universe
+	principal := entities.Principal{
+		Arn:              "arn:aws:iam::123456789012:user/baduser",
+		AccountId:        "123456789012",
+		AttachedPolicies: []entities.Arn{"arn:aws:iam::123456789012:policy/nonexistent"},
+	}
+	api.Simulator.Universe.PutPrincipal(principal)
+
+	// SimRun should fail when freezing
+	input := SimInput{
+		Principal: "arn:aws:iam::123456789012:user/baduser",
+		Action:    "s3:ListBucket",
+		Resource:  "arn:aws:s3:::test-bucket",
+	}
+	body, _ := json.Marshal(input)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/sim/run", bytes.NewReader(body))
+
+	api.SimRun(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("SimRun() with freeze error status = %d, want %d, body = %s", w.Code, http.StatusInternalServerError, w.Body.String())
+	}
+}
+
+func TestWhichActions_FreezeError(t *testing.T) {
+	api := newTestAPIWithData(t)
+
+	// Add a principal with an attached policy that doesn't exist in the universe
+	principal := entities.Principal{
+		Arn:              "arn:aws:iam::123456789012:user/baduser",
+		AccountId:        "123456789012",
+		AttachedPolicies: []entities.Arn{"arn:aws:iam::123456789012:policy/nonexistent"},
+	}
+	api.Simulator.Universe.PutPrincipal(principal)
+
+	// WhichActions should fail when freezing
+	input := WhichActionsInput{
+		Principal: "arn:aws:iam::123456789012:user/baduser",
+		Resource:  "arn:aws:s3:::test-bucket",
+	}
+	body, _ := json.Marshal(input)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/sim/whichActions", bytes.NewReader(body))
+
+	api.WhichActions(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("WhichActions() with freeze error status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestWhichPrincipals_FreezeError(t *testing.T) {
+	api := newTestAPIWithData(t)
+
+	// Add a resource with an account that has SCPs that can't be resolved
+	// Actually, Resource.Freeze() fails if uv is nil, but we set it via PutResource
+	// Let's add a principal that fails freeze and test with that
+	principal := entities.Principal{
+		Arn:              "arn:aws:iam::123456789012:user/baduser",
+		AccountId:        "123456789012",
+		AttachedPolicies: []entities.Arn{"arn:aws:iam::123456789012:policy/nonexistent"},
+	}
+	api.Simulator.Universe.PutPrincipal(principal)
+
+	// WhichPrincipals should fail when freezing the principal
+	input := WhichPrincipalsInput{
+		Action:   "s3:ListBucket",
+		Resource: "arn:aws:s3:::test-bucket",
+	}
+	body, _ := json.Marshal(input)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/sim/whichPrincipals", bytes.NewReader(body))
+
+	api.WhichPrincipals(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("WhichPrincipals() with freeze error status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestWhichResources_FreezeError(t *testing.T) {
+	api := newTestAPIWithData(t)
+
+	// Add a principal with an attached policy that doesn't exist in the universe
+	principal := entities.Principal{
+		Arn:              "arn:aws:iam::123456789012:user/baduser",
+		AccountId:        "123456789012",
+		AttachedPolicies: []entities.Arn{"arn:aws:iam::123456789012:policy/nonexistent"},
+	}
+	api.Simulator.Universe.PutPrincipal(principal)
+
+	// WhichResources should fail when freezing
+	input := WhichResourcesInput{
+		Principal: "arn:aws:iam::123456789012:user/baduser",
+		Action:    "s3:ListBucket",
+	}
+	body, _ := json.Marshal(input)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/sim/whichResources", bytes.NewReader(body))
+
+	api.WhichResources(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("WhichResources() with freeze error status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
 }

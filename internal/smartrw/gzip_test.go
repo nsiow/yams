@@ -208,3 +208,39 @@ func TestGzipWriteCloser_CloseWithError(t *testing.T) {
 		t.Fatal("expected close error but got nil")
 	}
 }
+
+// mockFailingWriter fails on Write - used to test gzip Close error path
+type mockFailingWriter struct {
+	failOnWrite bool
+	writeErr    error
+	closeErr    error
+	closed      bool
+}
+
+func (m *mockFailingWriter) Write(p []byte) (int, error) {
+	if m.failOnWrite {
+		return 0, m.writeErr
+	}
+	return len(p), nil
+}
+
+func (m *mockFailingWriter) Close() error {
+	m.closed = true
+	return m.closeErr
+}
+
+func TestGzipWriteCloser_CloseWithGzipError(t *testing.T) {
+	// Create a writer that fails when gzip tries to write the trailer
+	wc := &mockFailingWriter{
+		failOnWrite: true,
+		writeErr:    errors.New("write error"),
+	}
+	gz := NewGzipWriteCloser(wc)
+
+	// Close will fail because gzip.Close() tries to write trailer and fails
+	err := gz.Close()
+	if err == nil {
+		t.Fatal("expected gzip close error but got nil")
+	}
+}
+

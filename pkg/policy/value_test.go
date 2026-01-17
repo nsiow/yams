@@ -89,6 +89,24 @@ func TestInvalid(t *testing.T) {
 	})
 }
 
+func TestValue_UnmarshalJSON_ErrorPaths(t *testing.T) {
+	// Test error path in single-value clause (line 56-57)
+	// A string that starts with " but isn't valid JSON
+	var v1 Value
+	err := v1.UnmarshalJSON([]byte(`"unterminated`))
+	if err == nil {
+		t.Fatal("expected error for invalid single-value JSON but got nil")
+	}
+
+	// Test error path in multi-value clause (line 66-67)
+	// An array that starts with [ but contains invalid elements
+	var v2 Value
+	err = v2.UnmarshalJSON([]byte(`[1, 2, 3]`))
+	if err == nil {
+		t.Fatal("expected error for invalid array elements but got nil")
+	}
+}
+
 func TestEmpty(t *testing.T) {
 	tests := []testlib.TestCase[Value, bool]{
 		{Input: nil, Want: true},

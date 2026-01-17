@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/nsiow/yams/internal/smartrw"
 )
 
 func TestNewServer(t *testing.T) {
@@ -81,6 +84,40 @@ func TestStatus(t *testing.T) {
 		if _, ok := status[field]; !ok {
 			t.Errorf("Status() missing field %q", field)
 		}
+	}
+}
+
+func TestStatus_WithSources(t *testing.T) {
+	server, err := NewServer(":8080")
+	if err != nil {
+		t.Fatalf("NewServer() error = %v", err)
+	}
+
+	// Add a mock source directly to test status with sources
+	server.Sources = append(server.Sources, &Source{
+		Reader:  smartrw.Reader{Source: "test-source.json"},
+		Refresh: 0,
+		Updated: time.Now(),
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/status", nil)
+
+	server.Status(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Status() status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var status map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &status); err != nil {
+		t.Fatalf("Status() produced invalid JSON: %v", err)
+	}
+
+	// Verify sources field contains our source
+	sources, ok := status["sources"].([]any)
+	if !ok || len(sources) != 1 {
+		t.Errorf("Status() sources field incorrect, got %v", status["sources"])
 	}
 }
 

@@ -28,6 +28,7 @@ install: $(CLI)
 clean:
 	rm -f $(CLI)
 	rm -f coverage.*
+	rm -f *.cov
 	go clean -testcache
 
 # --------------------------------------------------------------------------------
@@ -40,8 +41,8 @@ ifdef run
 	GO_TEST_FLAGS += "-run=$(run)"
 endif
 
-# Track coverage of library and server; not CLI / test helpers
-COVERAGE_OMIT ?= '(yams/cmd|yams/internal/testlib)'
+# Track coverage of code outside of test helperstest helpers
+COVERAGE_OMIT ?= '(yams/internal/testlib)'
 
 .PHONY: format
 format:
