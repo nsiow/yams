@@ -312,6 +312,11 @@ func Cond_ArnLike(s *subject, left, right string) bool {
 	return wildcard.MatchArn(right, left)
 }
 
+// Cond_ArnEquals defines the `ArnEquals` condition function (exact match, no wildcards)
+func Cond_ArnEquals(s *subject, left, right string) bool {
+	return left == right
+}
+
 // -------------------------------------------------------------------------------------------------
 // Condition modifiers
 // -------------------------------------------------------------------------------------------------
@@ -457,7 +462,7 @@ func Mod_Date(f func(*subject, int, int) bool) Compare {
 	return func(s *subject, left, right string) bool {
 		nLeft, err := parseEpochFromString(left)
 		if err != nil {
-			s.trc.Log("error converting %s to epoch: %v", right, err)
+			s.trc.Log("error converting %s to epoch: %v", left, err)
 			return false
 		}
 
