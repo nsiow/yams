@@ -1,6 +1,7 @@
 package sim
 
 import (
+	"os"
 	"reflect"
 	"testing"
 
@@ -801,5 +802,169 @@ func TestSimulateByArn_CreateAction(t *testing.T) {
 
 	if !res.IsAllowed {
 		t.Fatal("expected allow for create action with non-existent resource")
+	}
+}
+
+func TestSimulateByArn_RunInstancesAction(t *testing.T) {
+	// Test case where action is RunInstances and resource doesn't exist
+	uv := entities.NewBuilder().
+		WithPrincipals(
+			entities.Principal{
+				Arn:       "arn:aws:iam::88888:role/role1",
+				Type:      "AWS::IAM::Role",
+				AccountId: "88888",
+				InlinePolicies: []policy.Policy{
+					{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"ec2:RunInstances"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+			},
+		).
+		Build()
+
+	sim, _ := NewSimulator()
+	sim.Universe = uv
+
+	// RunInstances with non-existent resource ARN
+	res, err := sim.SimulateByArnWithOptions(
+		"arn:aws:iam::88888:role/role1",
+		"ec2:RunInstances",
+		"arn:aws:ec2:us-east-1:88888:instance/i-nonexistent",
+		Options{DefaultS3Key: "*"},
+	)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !res.IsAllowed {
+		t.Fatal("expected allow for RunInstances action with non-existent resource")
+	}
+}
+
+func TestSimulateByArn_Default(t *testing.T) {
+	// Test the default SimulateByArn function (which uses DEFAULT_OPTIONS)
+	uv := entities.NewBuilder().
+		WithPrincipals(
+			entities.Principal{
+				Arn:       "arn:aws:iam::88888:role/role1",
+				Type:      "AWS::IAM::Role",
+				AccountId: "88888",
+				InlinePolicies: []policy.Policy{
+					{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:listbucket"},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+							},
+						},
+					},
+				},
+			},
+		).
+		WithResources(
+			entities.Resource{
+				Arn:       "arn:aws:s3:::mybucket",
+				Type:      "AWS::S3::Bucket",
+				AccountId: "88888",
+			},
+		).
+		Build()
+
+	sim, _ := NewSimulator()
+	sim.Universe = uv
+
+	// Use the default SimulateByArn (no options)
+	res, err := sim.SimulateByArn(
+		"arn:aws:iam::88888:role/role1",
+		"s3:listbucket",
+		"arn:aws:s3:::mybucket",
+	)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !res.IsAllowed {
+		t.Fatal("expected allow")
+	}
+}
+
+func TestSimulateWithOptions_ForceFailure(t *testing.T) {
+	sim, _ := NewSimulator()
+	sim.Universe = SimpleTestUniverse_1
+
+	ac := AuthContext{
+		Action: sar.MustLookupString("s3:listbucket"),
+		Principal: &entities.FrozenPrincipal{
+			Arn:       "arn:aws:iam::88888:role/role1",
+			AccountId: "88888",
+		},
+		Resource: &entities.FrozenResource{
+			Arn:       "arn:aws:s3:::bucket1",
+			AccountId: "88888",
+		},
+	}
+
+	opts := Options{ForceFailure: true}
+	_, err := sim.SimulateWithOptions(ac, opts)
+
+	if err == nil {
+		t.Fatal("expected error due to ForceFailure option")
+	}
+}
+
+func TestProduct_BatchSubmission(t *testing.T) {
+	// Set a small batch size to trigger the mid-batch submission path
+	os.Setenv("YAMS_SIM_BATCH_SIZE", "2")
+	defer os.Unsetenv("YAMS_SIM_BATCH_SIZE")
+
+	// Create a universe with enough entities to exceed batch size
+	uv := entities.NewBuilder().
+		WithPrincipals(
+			entities.Principal{
+				Arn:       "arn:aws:iam::88888:role/role1",
+				Type:      "AWS::IAM::Role",
+				AccountId: "88888",
+			},
+			entities.Principal{
+				Arn:       "arn:aws:iam::88888:role/role2",
+				Type:      "AWS::IAM::Role",
+				AccountId: "88888",
+			},
+		).
+		WithResources(
+			entities.Resource{
+				Arn:       "arn:aws:s3:::bucket1",
+				Type:      "AWS::S3::Bucket",
+				AccountId: "88888",
+			},
+			entities.Resource{
+				Arn:       "arn:aws:s3:::bucket2",
+				Type:      "AWS::S3::Bucket",
+				AccountId: "88888",
+			},
+		).
+		Build()
+
+	sim, _ := NewSimulator()
+	sim.Universe = uv
+
+	// This should trigger batch submission when jobs exceed batch size
+	results, err := sim.AccessSummary([]string{"s3:listbucket"}, TestingSimulationOptions)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify results were computed
+	if len(results) == 0 {
+		t.Fatal("expected results from AccessSummary")
 	}
 }
