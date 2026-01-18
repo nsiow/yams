@@ -270,9 +270,10 @@ func MatchAllOrNothing(pattern, value string) bool {
 // matchViaRegex attempts to match the strings via a limited regex subset.
 // Compiled regexes are cached to avoid recompilation overhead.
 func matchViaRegex(pattern, value string) bool {
-	// Convert wildcard pattern to regex pattern
+	// Convert wildcard pattern to regex pattern and anchor it
 	regexPattern := strings.ReplaceAll(pattern, "*", `[^:]*`)
 	regexPattern = strings.ReplaceAll(regexPattern, "?", `[^:]`)
+	regexPattern = "^" + regexPattern + "$"
 
 	// Check cache first
 	if cached, ok := regexCache.Load(regexPattern); ok {
