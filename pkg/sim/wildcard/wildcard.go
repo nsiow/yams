@@ -12,10 +12,6 @@ var regexCache sync.Map
 
 // MatchSegments determines if the provided string matches the wildcard pattern, using AWS's
 // heuristics for wildcards
-//
-// TODO(nsiow) consider moving this to its own package
-// TODO(nsiow) add trace logging for better debugging
-// TODO(nsiow) fix behavior for */? interleaved patterns
 func MatchSegments(pattern, value string) bool {
 	// Full wildcard case -- '*' matches absolutely everything
 	if pattern == "*" {
@@ -270,22 +266,43 @@ func MatchAllOrNothing(pattern, value string) bool {
 // matchViaRegex attempts to match the strings via a limited regex subset.
 // Compiled regexes are cached to avoid recompilation overhead.
 func matchViaRegex(pattern, value string) bool {
-	// Convert wildcard pattern to regex pattern and anchor it
-	regexPattern := strings.ReplaceAll(pattern, "*", `[^:]*`)
-	regexPattern = strings.ReplaceAll(regexPattern, "?", `[^:]`)
-	regexPattern = "^" + regexPattern + "$"
-
-	// Check cache first
-	if cached, ok := regexCache.Load(regexPattern); ok {
+	// Check cache first using original pattern as key
+	if cached, ok := regexCache.Load(pattern); ok {
 		return cached.(*regexp.Regexp).MatchString(value)
 	}
 
-	// Compile and cache
-	re, err := regexp.Compile(regexPattern)
+	// Build regex by escaping literal parts and converting wildcards
+	var buf strings.Builder
+	buf.WriteString("^")
+
+	i := 0
+	for i < len(pattern) {
+		switch pattern[i] {
+		case '*':
+			buf.WriteString(`[^:]*`)
+		case '?':
+			buf.WriteString(`[^:]`)
+		default:
+			// Find the extent of the literal portion
+			j := i
+			for j < len(pattern) && pattern[j] != '*' && pattern[j] != '?' {
+				j++
+			}
+			// Escape the literal portion for regex
+			buf.WriteString(regexp.QuoteMeta(pattern[i:j]))
+			i = j
+			continue
+		}
+		i++
+	}
+
+	buf.WriteString("$")
+
+	re, err := regexp.Compile(buf.String())
 	if err != nil {
 		return false
 	}
 
-	regexCache.Store(regexPattern, re)
+	regexCache.Store(pattern, re)
 	return re.MatchString(value)
 }

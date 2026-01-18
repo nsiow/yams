@@ -65,6 +65,11 @@ const (
 	ArnLike      = "ArnLike"
 	ArnNotLike   = "ArnNotLike"
 
-	// TODO(nsiow) add Null operator
-	// https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html#Conditions_Null
+	// ---------------------------------------------------------------------------------------------
+	// Null Function
+	// ---------------------------------------------------------------------------------------------
+
+	// Null checks whether a condition key is present in the request context.
+	// "true" matches when the key is absent; "false" matches when the key is present.
+	Null = "Null"
 )
