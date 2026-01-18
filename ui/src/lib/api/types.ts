@@ -59,6 +59,7 @@ export interface Policy {
 }
 
 export interface PolicyDocument {
+  _Name?: string;
   Version: string;
   Id?: string;
   Statement: PolicyStatement[];

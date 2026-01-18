@@ -439,18 +439,23 @@ export function PrincipalsPage(): JSX.Element {
                     <Card withBorder p="sm">
                       <Title order={5} mb="xs">Inline Policies</Title>
                       <Stack gap="md">
-                        {selectedPrincipal.InlinePolicies.map((policy, index) => (
-                          <Box key={index}>
-                            <Text size="sm" fw={600} mb="xs">
-                              {policy.Id || `Policy ${index + 1}`}
-                            </Text>
-                            <CodeHighlight
-                              code={JSON.stringify(policy, null, 2)}
-                              language="json"
-                              withCopyButton
-                            />
-                          </Box>
-                        ))}
+                        {selectedPrincipal.InlinePolicies.map((policy, index) => {
+                          // Extract _Name for display, then remove it from JSON output
+                          const { _Name, ...policyWithoutName } = policy;
+                          const displayName = _Name || policy.Id || `Policy ${index + 1}`;
+                          return (
+                            <Box key={index}>
+                              <Text size="sm" fw={600} mb="xs">
+                                {displayName}
+                              </Text>
+                              <CodeHighlight
+                                code={JSON.stringify(policyWithoutName, null, 2)}
+                                language="json"
+                                withCopyButton
+                              />
+                            </Box>
+                          );
+                        })}
                       </Stack>
                     </Card>
                   )}

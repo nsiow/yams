@@ -15,7 +15,7 @@
 ---
 
 ## Development Rules (All)
-* **Git:** Use Conventional Commits (e.g., `feat:`, `fix:`, `docs:`).
+* **Git:** Match commit message and PR style to existing repo history. Keep messages concise and lowercase.
 * **Comments:** Keep comments concise, and use them to summarize what is happening in "paragraphs"
   of code. Avoid stream-of-consciousness comments and overly verbose language.
 

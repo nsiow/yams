@@ -73,7 +73,9 @@ func (c *IamUser) asPrincipal() entities.Principal {
 		Tags:      c.Tags,
 		InlinePolicies: common.Map(c.Configuration.UserPolicies,
 			func(x inlinePolicy) policy.Policy {
-				return policy.Policy(x.Document)
+				p := policy.Policy(x.Document)
+				p.Name = x.Name
+				return p
 			}),
 		AttachedPolicies: common.Map(c.Configuration.AttachedManagedPolicies,
 			func(x policyRef) entities.Arn {
@@ -121,7 +123,9 @@ func (c *IamRole) asPrincipal() entities.Principal {
 		Tags:      c.Tags,
 		InlinePolicies: common.Map(c.Configuration.RolePolicies,
 			func(x inlinePolicy) policy.Policy {
-				return policy.Policy(x.Document)
+				p := policy.Policy(x.Document)
+				p.Name = x.Name
+				return p
 			}),
 		AttachedPolicies: common.Map(c.Configuration.AttachedManagedPolicies,
 			func(x policyRef) entities.Arn {
@@ -205,7 +209,9 @@ func (c *IamGroup) asGroup() entities.Group {
 		Arn:       c.Arn,
 		InlinePolicies: common.Map(c.Configuration.GroupPolicies,
 			func(x inlinePolicy) policy.Policy {
-				return policy.Policy(x.Document)
+				p := policy.Policy(x.Document)
+				p.Name = x.Name
+				return p
 			}),
 		AttachedPolicies: common.Map(c.Configuration.AttachedManagedPolicies,
 			func(x policyRef) entities.Arn {

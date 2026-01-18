@@ -61,18 +61,23 @@ func evalPrincipalGroupPolicies(s *subject, groups []entities.FrozenGroup) Decis
 // evalPrincipalHelperInline is a helper function for easier evaluation of inline policies
 func evalPrincipalHelperInline(s *subject, pType string, inline []policy.Policy) Decision {
 	decision := Decision{}
-	for i, policy := range inline {
-		s.trc.Push("evaluating %s policy: %s", pType, Id(policy.Id, i))
-		localDecision := evalPolicy(s, policy,
+	for i, pol := range inline {
+		// Prefer Name (inline policy name) over Id (policy document id)
+		policyName := pol.Name
+		if policyName == "" {
+			policyName = Id(pol.Id, i)
+		}
+		s.trc.Push("evaluating %s policy: %s", pType, policyName)
+		localDecision := evalPolicy(s, pol,
 			evalStatementMatchesAction,
 			evalStatementMatchesResource,
 			evalStatementMatchesCondition)
 
 		if localDecision.Allowed() {
-			s.trc.Allowed("allow in %s policy: %s", pType, Id(policy.Id, i))
+			s.trc.Allowed("allow in %s policy: %s", pType, policyName)
 		}
 		if localDecision.DeniedExplicit() {
-			s.trc.Denied("explicit deny in %s policy: %s", pType, Id(policy.Id, i))
+			s.trc.Denied("explicit deny in %s policy: %s", pType, policyName)
 		}
 
 		decision.Merge(localDecision)

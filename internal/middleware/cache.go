@@ -64,7 +64,7 @@ func Cache(maxAge time.Duration) func(http.Handler) http.Handler {
 
 			// Write the response
 			w.WriteHeader(crw.statusCode)
-			w.Write(crw.buf.Bytes())
+			_, _ = w.Write(crw.buf.Bytes())
 		})
 	}
 }

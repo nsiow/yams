@@ -191,6 +191,7 @@ func TestLoad(t *testing.T) {
 						},
 						InlinePolicies: []policy.Policy{
 							{
+								Name:    "my-group-policy",
 								Version: "2012-10-17",
 								Statement: policy.StatementBlock{
 									policy.Statement{
@@ -274,6 +275,7 @@ func TestLoad(t *testing.T) {
 						},
 						InlinePolicies: []policy.Policy{
 							{
+								Name:    "s3readpermissions",
 								Version: "2012-10-17",
 								Statement: []policy.Statement{
 									{
@@ -341,6 +343,7 @@ func TestLoad(t *testing.T) {
 						Tags:      []entities.Tag{},
 						InlinePolicies: []policy.Policy{
 							{
+								Name:    "someUserPermissions",
 								Version: "2012-10-17",
 								Statement: policy.StatementBlock{
 									policy.Statement{
