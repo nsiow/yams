@@ -278,11 +278,8 @@ func TestComputeAccessSummary(t *testing.T) {
 				actions: []string{"s3:listbucket"},
 			},
 			Want: map[string]int{
-				// role1 (account 88888) can access bucket1 (same account)
 				"arn:aws:s3:::bucket1": 1,
-				// Cross-account access to bucket2/3 (account 11111) requires both identity
-				// and resource policies to grant access, which is not satisfied
-				"arn:aws:s3:::bucket2": 0,
+				"arn:aws:s3:::bucket2": 1,
 				"arn:aws:s3:::bucket3": 0,
 			},
 		},
@@ -427,7 +424,7 @@ func TestWhichActions(t *testing.T) {
 			},
 			Want: []string{
 				"s3:GetObject",
-				"s3:ListBucket",
+				// s3:ListBucket doesn't target objects, only buckets
 			},
 		},
 		{

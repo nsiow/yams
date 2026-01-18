@@ -1,6 +1,10 @@
 package types
 
-import "github.com/nsiow/yams/pkg/sim/wildcard"
+import (
+	"strings"
+
+	"github.com/nsiow/yams/pkg/sim/wildcard"
+)
 
 // Service represents a SAR service
 type Service struct {
@@ -32,6 +36,22 @@ func (a *Action) HasTargets() bool {
 // Targets determines whether this Action supports targeting of the specified Resource
 func (a *Action) Targets(arn string) bool {
 	for _, allowedResource := range a.Resources {
+		// Check custom handling rules before format matching
+		skip := false
+		for _, handling := range allowedResource.CustomHandling {
+			switch handling {
+			case "DisallowSlashes":
+				if strings.Contains(arn, "/") {
+					skip = true
+				}
+			default:
+				panic("unknown custom handling value: " + handling)
+			}
+		}
+		if skip {
+			continue
+		}
+
 		for _, allowedFormat := range allowedResource.ARNFormats {
 			if wildcard.MatchSegments(allowedFormat, arn) {
 				return true
@@ -50,9 +70,10 @@ type Condition struct {
 
 // Resource represents a SAR resource
 type Resource struct {
-	Name          string
-	ARNFormats    []string
-	ConditionKeys []string
+	Name           string
+	ARNFormats     []string
+	ConditionKeys  []string
+	CustomHandling []string
 }
 
 // ResourcePointer represents a SAR resource pointer

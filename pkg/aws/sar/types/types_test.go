@@ -122,3 +122,39 @@ func TestTargets_NoResources(t *testing.T) {
 		t.Fatal("expected false for action without resources")
 	}
 }
+
+func TestTargets_CustomHandling(t *testing.T) {
+	action := Action{
+		Service: "s3",
+		Name:    "ListBucket",
+		Resources: []Resource{
+			{
+				Name:           "bucket",
+				ARNFormats:     []string{"arn:aws:s3:::*"},
+				CustomHandling: []string{"DisallowSlashes"},
+			},
+		},
+	}
+
+	tests := []testlib.TestCase[string, bool]{
+		{
+			Name:  "bucket_arn_allowed",
+			Input: "arn:aws:s3:::mybucket",
+			Want:  true,
+		},
+		{
+			Name:  "object_arn_disallowed",
+			Input: "arn:aws:s3:::mybucket/mykey",
+			Want:  false,
+		},
+		{
+			Name:  "wildcard_object_disallowed",
+			Input: "arn:aws:s3:::mybucket/*",
+			Want:  false,
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(arn string) (bool, error) {
+		return action.Targets(arn), nil
+	})
+}

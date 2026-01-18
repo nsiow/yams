@@ -176,13 +176,13 @@ func TestQuery(t *testing.T) {
 			Input: func(q *Query) *Query {
 				return q.WithService("aCcOuNt")
 			},
-			Want: []string{"AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "DisableRegion", "EnableRegion", "GetAccountInformation", "GetAlternateContact", "GetContactInformation", "GetPrimaryEmail", "GetRegionOptStatus", "ListRegions", "PutAlternateContact", "PutContactInformation", "StartPrimaryEmailUpdate"},
+			Want: []string{"AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "DisableRegion", "EnableRegion", "GetAccountInformation", "GetAlternateContact", "GetContactInformation", "GetGovCloudAccountInformation", "GetPrimaryEmail", "GetRegionOptStatus", "ListRegions", "PutAccountName", "PutAlternateContact", "PutContactInformation", "StartPrimaryEmailUpdate"},
 		},
 		{
 			Input: func(q *Query) *Query {
 				return q.WithService("account")
 			},
-			Want: []string{"AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "DisableRegion", "EnableRegion", "GetAccountInformation", "GetAlternateContact", "GetContactInformation", "GetPrimaryEmail", "GetRegionOptStatus", "ListRegions", "PutAlternateContact", "PutContactInformation", "StartPrimaryEmailUpdate"},
+			Want: []string{"AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "DisableRegion", "EnableRegion", "GetAccountInformation", "GetAlternateContact", "GetContactInformation", "GetGovCloudAccountInformation", "GetPrimaryEmail", "GetRegionOptStatus", "ListRegions", "PutAccountName", "PutAlternateContact", "PutContactInformation", "StartPrimaryEmailUpdate"},
 		},
 	}
 

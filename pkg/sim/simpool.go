@@ -29,6 +29,7 @@ type simBatch struct {
 	Jobs     []simIn
 	Finished chan<- simOut
 	Done     *atomic.Int32
+	Sent     *atomic.Int32
 }
 
 type Pool struct {
@@ -138,10 +139,10 @@ func (p *Pool) handleBatch(b simBatch) {
 		if err != nil || result.IsAllowed {
 			out := simOut{Result: result, Error: err}
 			b.Finished <- out
+			b.Sent.Add(1)
 		}
+		b.Done.Add(1)
 	}
-
-	b.Done.Add(int32(len(b.Jobs)))
 }
 
 func (p *Pool) Submit(b simBatch) {

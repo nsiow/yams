@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "joblib",
+#     "pydantic",
+#     "requests",
+# ]
+# ///
 
 import gzip
 import json
@@ -32,6 +40,7 @@ class Resource(pydantic.BaseModel):
     Name: str
     ARNFormats: list[str] = []
     ConditionKeys: list[str] = []
+    CustomHandling: list[str] = []
 
 class Action(pydantic.BaseModel):
     Name: str
@@ -84,6 +93,7 @@ def normalize(service: Service) -> Service:
     service = normalize_resource_arn_formats(service)
     service = propagate_service(service)
     service = resolve_resource_pointers(service)
+    service = apply_custom_handling(service)
     return service
 
 # aws:RequestTag/${TagKey} => aws:requesttag
@@ -124,9 +134,22 @@ def resolve_resource_pointers(service: Service) -> Service:
                 resolved = next(r for r in service.Resources if r.Name == resource.Name)
                 action.ResolvedResources.append(resolved)
             except StopIteration:
-                raise ValueError('unable to resolve pointer for {}/{}/{}'.format(
-                    service.Name, action.Name, resource.Name
-                ))
+                # Some actions reference resources that don't exist in the service
+                # This is a data quality issue from AWS; skip these
+                logging.warning('unable to resolve pointer for %s/%s/%s',
+                    service.Name, action.Name, resource.Name)
+    return service
+
+# apply custom handling rules to resolved resources
+def apply_custom_handling(service: Service) -> Service:
+    for action in service.Actions:
+        for resource in action.ResolvedResources:
+            # S3 bucket resources with arn:*:s3:::* should disallow slashes
+            # This prevents bucket-level actions from matching object ARNs
+            if service.Name == 's3' and resource.Name == 'bucket':
+                if 'arn:*:s3:::*' in resource.ARNFormats:
+                    if 'DisallowSlashes' not in resource.CustomHandling:
+                        resource.CustomHandling.append('DisallowSlashes')
     return service
 
 # ------------------------------------------------------------------------------------------------

@@ -126,7 +126,7 @@ data: sar mp
 sar: $(BUILD_DATA_DIR)/sar.json.gz
 
 $(BUILD_DATA_DIR)/sar.json.gz: ./misc/sar_v2.py
-	./$< $@
+	uv run $< $@
 
 .PHONY: mp
 mp: $(BUILD_DATA_DIR)/mp.json.gz

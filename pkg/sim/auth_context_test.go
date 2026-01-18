@@ -971,7 +971,7 @@ func TestSARValidation(t *testing.T) {
 				},
 				key: "aws:ResourceTag/Foo",
 			},
-			Want: EMPTY,
+			Want: "Bar", // aws:resourcetag now supported for S3 objects
 		},
 		{
 			Name: "yet_another_invalid_resource_condition",
