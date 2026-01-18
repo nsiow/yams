@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/nsiow/yams/cmd/yams/cli"
+	"github.com/nsiow/yams/internal/middleware"
 	v1 "github.com/nsiow/yams/pkg/server/api/v1"
 	"github.com/nsiow/yams/pkg/sim"
 )
@@ -23,7 +24,7 @@ func NewServer(opts *cli.Flags) (*Server, error) {
 	server := Server{
 		Server: &http.Server{
 			Addr:    opts.Addr,
-			Handler: corsMiddleware(mux),
+			Handler: middleware.Gzip(corsMiddleware(mux)),
 		},
 		mux:  mux,
 		Opts: opts,
