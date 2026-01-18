@@ -200,6 +200,22 @@ export function HomePage(): JSX.Element {
                 })}
               </Stack>
             )}
+
+            {status.env && Object.keys(status.env).length > 0 && (
+              <>
+                <Title order={3} mt="xl">Server Environment</Title>
+                <Card shadow="sm" padding="md" radius="md" withBorder>
+                  <Stack gap="xs">
+                    {Object.entries(status.env).map(([key, value]) => (
+                      <Group key={key} gap="xs">
+                        <Text size="sm" fw={600} c="dimmed">{key}:</Text>
+                        <Text size="sm">{value}</Text>
+                      </Group>
+                    ))}
+                  </Stack>
+                </Card>
+              </>
+            )}
           </>
         )}
       </Stack>
