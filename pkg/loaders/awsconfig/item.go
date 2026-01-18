@@ -1,9 +1,7 @@
 package awsconfig
 
 import (
-	"slices"
-
-	json "github.com/bytedance/sonic"
+	"github.com/bytedance/sonic"
 	"github.com/nsiow/yams/pkg/entities"
 )
 
@@ -22,19 +20,16 @@ type ConfigItem struct {
 // When unmarshalling from JSON, it allows us to peek at the type of the config item before
 // delegating to a more specialized handler
 type configBlob struct {
-	Type string `json:"resourceType"`
-	raw  []byte `json:"-"`
+	Type string
+	raw  []byte
 }
 
-func (c *configBlob) UnmarshalJSON(data []byte) error {
-	type alias configBlob
-	var a alias
-	err := json.Unmarshal(data, &a)
+// extractType uses sonic.Get to quickly extract resourceType without full parsing
+func extractType(data []byte) string {
+	node, err := sonic.Get(data, "resourceType")
 	if err != nil {
-		return err
+		return ""
 	}
-
-	c.Type = a.Type
-	c.raw = slices.Clone(data)
-	return nil
+	typ, _ := node.String()
+	return typ
 }
