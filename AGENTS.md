@@ -1,4 +1,4 @@
-# GEMINI.md
+# CLAUDE.md
 
 ## Persona & Tone
 * **Role:** Senior Software Engineer (Pragmatic, Security-conscious).
@@ -47,7 +47,18 @@
 ---
 
 ## Project Structure
-TBD, follow what currently exists
+* **Backend:** Go code in `cmd/`, `pkg/`, `internal/`
+* **Frontend:** All UI code lives in `ui/` directory
+
+---
+
+## UI Color Scheme
+Primary palette from https://coolors.co/6e44ff-b892ff-ffc2e2-ff90b3-ef7a85:
+* **Primary:** `#6E44FF` (vivid purple)
+* **Secondary:** `#B892FF` (light purple)
+* **Accent 1:** `#FFC2E2` (soft pink)
+* **Accent 2:** `#FF90B3` (medium pink)
+* **Accent 3:** `#EF7A85` (coral)
 
 ---
 

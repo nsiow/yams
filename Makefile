@@ -201,3 +201,34 @@ real-world-data:
 .PHONY: real-world-org-data
 real-world-org-data:
 	make cli && ./yams dump -target org -out /tmp/org.json && cat /tmp/org.json | jq -c '.[]' > testdata/real-world/org.jsonl
+
+# --------------------------------------------------------------------------------
+# UI Development
+# --------------------------------------------------------------------------------
+
+UI_DIR = ./ui
+
+.PHONY: ui-deps
+ui-deps:
+	cd $(UI_DIR) && npm install
+
+.PHONY: ui-dev
+ui-dev:
+	cd $(UI_DIR) && npm run dev
+
+.PHONY: ui-build
+ui-build:
+	cd $(UI_DIR) && npm run build
+
+.PHONY: ui-lint
+ui-lint:
+	cd $(UI_DIR) && npm run lint
+
+.PHONY: ui-preview
+ui-preview:
+	cd $(UI_DIR) && npm run preview
+
+.PHONY: ui-clean
+ui-clean:
+	rm -rf $(UI_DIR)/node_modules
+	rm -rf $(UI_DIR)/dist
