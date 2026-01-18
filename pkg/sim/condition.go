@@ -245,6 +245,12 @@ var ConditionOperatorMap = map[string]CondInner{
 			),
 		),
 	),
+
+	// -----------------------------------------------------------------------------------------------
+	// Null Function
+	// -----------------------------------------------------------------------------------------------
+
+	condition.Null: Cond_Null,
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -315,6 +321,22 @@ func Cond_ArnLike(s *subject, left, right string) bool {
 // Cond_ArnEquals defines the `ArnEquals` condition function (exact match, no wildcards)
 func Cond_ArnEquals(s *subject, left, right string) bool {
 	return left == right
+}
+
+// Cond_Null checks whether a condition key is present in the request context.
+// If the policy value is "true", the condition matches when the key is absent (left is empty).
+// If the policy value is "false", the condition matches when the key is present (left is non-empty).
+func Cond_Null(s *subject, left string, right policy.Value) bool {
+	keyIsAbsent := left == ""
+
+	for _, v := range right {
+		wantAbsent := strings.EqualFold(v, "true")
+		if keyIsAbsent == wantAbsent {
+			return true
+		}
+	}
+
+	return false
 }
 
 // -------------------------------------------------------------------------------------------------

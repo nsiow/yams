@@ -55,9 +55,9 @@ var TIME_FORMATS = []string{
 // VariableExpansionRegex defines the variable to use for expanding policy variables
 var VariableExpansionRegex = regexp.MustCompile(`\${([a-zA-Z0-9]+:\S+?)}`)
 
-// ConditionKey retrieves the value for the requested key from the AuthContext
-// TODO(nsiow) key retrieval should be case insensitive... I think
-// TODO(nsiow) support Trace object here for even lower level debugging
+// ConditionKey retrieves the value for the requested key from the AuthContext.
+// Key lookups are case-insensitive for the key name portion; tag keys (after '/') remain
+// case-sensitive per AWS behavior.
 func (ac *AuthContext) ConditionKey(key string, opts Options) string {
 
 	// ---------------------------------------------------------------------------------------------
@@ -354,7 +354,6 @@ func (ac *AuthContext) principalType() string {
 
 // supportsKey consults the SAR package to determine whether or not the requested key is supported
 // for the simulated API call
-// TODO(nsiow) perform condition key type validation
 func (ac *AuthContext) supportsKey(key string) bool {
 	normalizedPrefix := keyPrefix(key)
 
