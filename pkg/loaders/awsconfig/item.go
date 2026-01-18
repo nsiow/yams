@@ -2,7 +2,6 @@ package awsconfig
 
 import (
 	"encoding/json"
-	"slices"
 
 	"github.com/nsiow/yams/pkg/entities"
 )
@@ -24,17 +23,4 @@ type ConfigItem struct {
 type configBlob struct {
 	Type string          `json:"resourceType"`
 	raw  json.RawMessage `json:"-"`
-}
-
-func (c *configBlob) UnmarshalJSON(data []byte) error {
-	type alias configBlob
-	var a alias
-	err := json.Unmarshal(data, &a)
-	if err != nil {
-		return err
-	}
-
-	c.Type = a.Type
-	c.raw = slices.Clone(data)
-	return nil
 }
