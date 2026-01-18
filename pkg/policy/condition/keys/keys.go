@@ -2,8 +2,6 @@ package keys
 
 import "strings"
 
-// TODO(nsiow) write tests for the case-insensitivity of condition keys
-
 // This const block holds string constants corresponding to AWS global condition keys
 const (
 	PrincipalTagPrefix = "aws:principaltag"

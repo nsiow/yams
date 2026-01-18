@@ -266,7 +266,7 @@ func (c *DynamodbTable) asResource() entities.Resource {
 		Region:    c.Region,
 		Arn:       c.Arn,
 		Tags:      c.Tags,
-		Policy:    policy.Policy{}, // TODO(nsiow) implement DDB table policy support
+		Policy:    policy.Policy{}, // TODO(nsiow) DDB table policies: AWS Config does not yet export these
 	}
 }
 
@@ -286,7 +286,7 @@ func (c *KmsKey) asResource() entities.Resource {
 		Region:    c.Region,
 		Arn:       c.Arn,
 		Tags:      c.Tags,
-		Policy:    policy.Policy{}, // TODO(nsiow) implement KMS key policy support
+		Policy:    policy.Policy{}, // TODO(nsiow) KMS key policies: AWS Config does not yet export these
 	}
 }
 
