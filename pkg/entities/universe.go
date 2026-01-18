@@ -42,25 +42,56 @@ func NewUniverse() *Universe {
 	}
 }
 
+// -------------------------------------------------------------------------------------------------
+// Bulk Operations
+// -------------------------------------------------------------------------------------------------
+
+// BulkWriter provides methods for adding entities without per-call locking.
+// Use with WithBulkWriter to add many entities efficiently.
+type BulkWriter struct {
+	u *Universe
+}
+
+func (b *BulkWriter) PutAccount(a Account)        { b.u.putAccount(a) }
+func (b *BulkWriter) PutGroup(g Group)            { b.u.putGroup(g) }
+func (b *BulkWriter) PutPolicy(p ManagedPolicy)   { b.u.putPolicy(p) }
+func (b *BulkWriter) PutPrincipal(p Principal)    { b.u.putPrincipal(p) }
+func (b *BulkWriter) PutResource(r Resource)      { b.u.putResource(r) }
+
+// WithBulkWriter holds the write lock and calls fn with a BulkWriter.
+// Use this for bulk loading operations to avoid per-entity lock overhead.
+func (u *Universe) WithBulkWriter(fn func(*BulkWriter)) {
+	u.mut.Lock()
+	defer u.mut.Unlock()
+	fn(&BulkWriter{u: u})
+}
+
+// -------------------------------------------------------------------------------------------------
+// Merge
+// -------------------------------------------------------------------------------------------------
+
 // Merge adds all entries in `other` [Universe] to this one
 func (u *Universe) Merge(other *Universe) {
 	other.mut.RLock()
 	defer other.mut.RUnlock()
 
+	u.mut.Lock()
+	defer u.mut.Unlock()
+
 	for _, item := range other.accounts {
-		u.PutAccount(*item)
+		u.putAccount(*item)
 	}
 	for _, item := range other.groups {
-		u.PutGroup(*item)
+		u.putGroup(*item)
 	}
 	for _, item := range other.policies {
-		u.PutPolicy(*item)
+		u.putPolicy(*item)
 	}
 	for _, item := range other.principals {
-		u.PutPrincipal(*item)
+		u.putPrincipal(*item)
 	}
 	for _, item := range other.resources {
-		u.PutResource(*item)
+		u.putResource(*item)
 	}
 }
 
@@ -117,7 +148,11 @@ func (u *Universe) Account(id string) (*Account, bool) {
 func (u *Universe) PutAccount(a Account) {
 	u.mut.Lock()
 	defer u.mut.Unlock()
+	u.putAccount(a)
+}
 
+// putAccount is the internal unlocked version of PutAccount
+func (u *Universe) putAccount(a Account) {
 	a.uv = u
 	u.accounts[a.Id] = &a
 }
@@ -181,11 +216,14 @@ func (u *Universe) Group(arn Arn) (*Group, bool) {
 
 // PutGroup saves the provided group into the universe, updating the definition if needed
 func (u *Universe) PutGroup(g Group) {
-	g.Arn = normalizeGroupArn(g.Arn)
-
 	u.mut.Lock()
 	defer u.mut.Unlock()
+	u.putGroup(g)
+}
 
+// putGroup is the internal unlocked version of PutGroup
+func (u *Universe) putGroup(g Group) {
+	g.Arn = normalizeGroupArn(g.Arn)
 	g.uv = u
 	u.groups[g.Arn] = &g
 }
@@ -206,19 +244,24 @@ func (u *Universe) RemoveGroup(arn Arn) {
 
 // LoadBasePolicies bootstraps the Universe with base IAM policies that are present in every account
 func (u *Universe) LoadBasePolicies() {
-	if !u.hasLoadedBasePolicies {
-		for arn, policy := range assets.ManagedPolicyData() {
-			u.PutPolicy(ManagedPolicy{
-				Type:      "AWS::IAM::Policy",
-				AccountId: "AWS",
-				Arn:       arn,
-				Name:      path.Base(arn),
-				Policy:    policy,
-			})
-		}
+	u.mut.Lock()
+	defer u.mut.Unlock()
 
-		u.hasLoadedBasePolicies = true
+	if u.hasLoadedBasePolicies {
+		return
 	}
+
+	for arn, policy := range assets.ManagedPolicyData() {
+		u.putPolicy(ManagedPolicy{
+			Type:      "AWS::IAM::Policy",
+			AccountId: "AWS",
+			Arn:       arn,
+			Name:      path.Base(arn),
+			Policy:    policy,
+		})
+	}
+
+	u.hasLoadedBasePolicies = true
 }
 
 // NumPolicies returns the number of policies known to the universe
@@ -264,7 +307,11 @@ func (u *Universe) Policy(arn Arn) (*ManagedPolicy, bool) {
 func (u *Universe) PutPolicy(p ManagedPolicy) {
 	u.mut.Lock()
 	defer u.mut.Unlock()
+	u.putPolicy(p)
+}
 
+// putPolicy is the internal unlocked version of PutPolicy
+func (u *Universe) putPolicy(p ManagedPolicy) {
 	u.policies[p.Arn] = &p
 }
 
@@ -320,7 +367,11 @@ func (u *Universe) Principal(arn Arn) (*Principal, bool) {
 func (u *Universe) PutPrincipal(p Principal) {
 	u.mut.Lock()
 	defer u.mut.Unlock()
+	u.putPrincipal(p)
+}
 
+// putPrincipal is the internal unlocked version of PutPrincipal
+func (u *Universe) putPrincipal(p Principal) {
 	p.uv = u
 	u.principals[p.Arn] = &p
 	// TODO(nsiow) should this also update the resources where relevant (user/role)?
@@ -399,7 +450,11 @@ func (u *Universe) Resource(arn Arn) (*Resource, bool) {
 func (u *Universe) PutResource(r Resource) {
 	u.mut.Lock()
 	defer u.mut.Unlock()
+	u.putResource(r)
+}
 
+// putResource is the internal unlocked version of PutResource
+func (u *Universe) putResource(r Resource) {
 	r.uv = u
 	u.resources[r.Arn] = &r
 }

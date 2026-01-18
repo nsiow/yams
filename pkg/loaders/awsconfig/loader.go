@@ -81,50 +81,53 @@ func (l *Loader) LoadJsonl(reader io.Reader) error {
 }
 
 func (l *Loader) loadItems(blobs []configBlob) error {
-	for _, blob := range blobs {
-		err := l.loadItem(blob)
-		if err != nil {
-			return fmt.Errorf("error loading blob: %w\n%s", err, blob.raw)
+	var loadErr error
+	l.uv.WithBulkWriter(func(w *entities.BulkWriter) {
+		for _, blob := range blobs {
+			err := l.loadItem(blob, w)
+			if err != nil {
+				loadErr = fmt.Errorf("error loading blob: %w\n%s", err, blob.raw)
+				return
+			}
 		}
-	}
-
-	return nil
+	})
+	return loadErr
 }
 
 // -------------------------------------------------------------------------------------------------
 // Load routing
 // -------------------------------------------------------------------------------------------------
 
-func (l *Loader) loadItem(blob configBlob) error {
+func (l *Loader) loadItem(blob configBlob, w *entities.BulkWriter) error {
 	var err error
 
 	switch blob.Type {
 	case CONST_TYPE_YAMS_ORGANIZATIONS_ACCOUNT:
-		err = l.loadAccount(blob)
+		err = l.loadAccount(blob, w)
 	case CONST_TYPE_YAMS_ORGANIZATIONS_SCP:
-		err = l.loadSCP(blob)
+		err = l.loadSCP(blob, w)
 	case CONST_TYPE_YAMS_ORGANIZATIONS_RCP:
-		err = l.loadRCP(blob)
+		err = l.loadRCP(blob, w)
 	case CONST_TYPE_AWS_IAM_GROUP:
-		err = l.loadGroup(blob)
+		err = l.loadGroup(blob, w)
 	case CONST_TYPE_AWS_IAM_POLICY:
-		err = l.loadManagedPolicy(blob)
+		err = l.loadManagedPolicy(blob, w)
 	case CONST_TYPE_AWS_IAM_ROLE:
-		err = l.loadRole(blob)
+		err = l.loadRole(blob, w)
 	case CONST_TYPE_AWS_IAM_USER:
-		err = l.loadUser(blob)
+		err = l.loadUser(blob, w)
 	case CONST_TYPE_AWS_S3_BUCKET:
-		err = l.loadBucket(blob)
+		err = l.loadBucket(blob, w)
 	case CONST_TYPE_AWS_DYNAMODB_TABLE:
-		err = l.loadTable(blob)
+		err = l.loadTable(blob, w)
 	case CONST_TYPE_AWS_SNS_TOPIC:
-		err = l.loadTopic(blob)
+		err = l.loadTopic(blob, w)
 	case CONST_TYPE_AWS_SQS_QUEUE:
-		err = l.loadQueue(blob)
+		err = l.loadQueue(blob, w)
 	case CONST_TYPE_AWS_KMS_KEY:
-		err = l.loadKey(blob)
+		err = l.loadKey(blob, w)
 	default:
-		err = l.loadGenericResource(blob)
+		err = l.loadGenericResource(blob, w)
 	}
 
 	if err != nil {
@@ -134,7 +137,7 @@ func (l *Loader) loadItem(blob configBlob) error {
 	return nil
 }
 
-func (l *Loader) loadAccount(blob configBlob) error {
+func (l *Loader) loadAccount(blob configBlob, w *entities.BulkWriter) error {
 	var target Account
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -142,11 +145,11 @@ func (l *Loader) loadAccount(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutAccount(target.asAccount())
+	w.PutAccount(target.asAccount())
 	return nil
 }
 
-func (l *Loader) loadSCP(blob configBlob) error {
+func (l *Loader) loadSCP(blob configBlob, w *entities.BulkWriter) error {
 	var target SCP
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -154,12 +157,12 @@ func (l *Loader) loadSCP(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutPolicy(target.asPolicy())
-	l.uv.PutResource(target.asResource())
+	w.PutPolicy(target.asPolicy())
+	w.PutResource(target.asResource())
 	return nil
 }
 
-func (l *Loader) loadRCP(blob configBlob) error {
+func (l *Loader) loadRCP(blob configBlob, w *entities.BulkWriter) error {
 	var target RCP
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -167,12 +170,12 @@ func (l *Loader) loadRCP(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutPolicy(target.asPolicy())
-	l.uv.PutResource(target.asResource())
+	w.PutPolicy(target.asPolicy())
+	w.PutResource(target.asResource())
 	return nil
 }
 
-func (l *Loader) loadGroup(blob configBlob) error {
+func (l *Loader) loadGroup(blob configBlob, w *entities.BulkWriter) error {
 	var target IamGroup
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -180,12 +183,12 @@ func (l *Loader) loadGroup(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutGroup(target.asGroup())
-	l.uv.PutResource(target.asResource())
+	w.PutGroup(target.asGroup())
+	w.PutResource(target.asResource())
 	return nil
 }
 
-func (l *Loader) loadManagedPolicy(blob configBlob) error {
+func (l *Loader) loadManagedPolicy(blob configBlob, w *entities.BulkWriter) error {
 	var target IamPolicy
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -198,12 +201,12 @@ func (l *Loader) loadManagedPolicy(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutPolicy(resolvedPolicy)
-	l.uv.PutResource(target.asResource())
+	w.PutPolicy(resolvedPolicy)
+	w.PutResource(target.asResource())
 	return nil
 }
 
-func (l *Loader) loadRole(blob configBlob) error {
+func (l *Loader) loadRole(blob configBlob, w *entities.BulkWriter) error {
 	var target IamRole
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -211,12 +214,12 @@ func (l *Loader) loadRole(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutPrincipal(target.asPrincipal())
-	l.uv.PutResource(target.asResource())
+	w.PutPrincipal(target.asPrincipal())
+	w.PutResource(target.asResource())
 	return nil
 }
 
-func (l *Loader) loadUser(blob configBlob) error {
+func (l *Loader) loadUser(blob configBlob, w *entities.BulkWriter) error {
 	var target IamUser
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -224,12 +227,12 @@ func (l *Loader) loadUser(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutPrincipal(target.asPrincipal())
-	l.uv.PutResource(target.asResource())
+	w.PutPrincipal(target.asPrincipal())
+	w.PutResource(target.asResource())
 	return nil
 }
 
-func (l *Loader) loadBucket(blob configBlob) error {
+func (l *Loader) loadBucket(blob configBlob, w *entities.BulkWriter) error {
 	var target S3Bucket
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -237,11 +240,11 @@ func (l *Loader) loadBucket(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutResource(target.asResource())
+	w.PutResource(target.asResource())
 	return nil
 }
 
-func (l *Loader) loadTable(blob configBlob) error {
+func (l *Loader) loadTable(blob configBlob, w *entities.BulkWriter) error {
 	var target DynamodbTable
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -249,11 +252,11 @@ func (l *Loader) loadTable(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutResource(target.asResource())
+	w.PutResource(target.asResource())
 	return nil
 }
 
-func (l *Loader) loadTopic(blob configBlob) error {
+func (l *Loader) loadTopic(blob configBlob, w *entities.BulkWriter) error {
 	var target SnsTopic
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -261,11 +264,11 @@ func (l *Loader) loadTopic(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutResource(target.asResource())
+	w.PutResource(target.asResource())
 	return nil
 }
 
-func (l *Loader) loadQueue(blob configBlob) error {
+func (l *Loader) loadQueue(blob configBlob, w *entities.BulkWriter) error {
 	var target SqsQueue
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -273,11 +276,11 @@ func (l *Loader) loadQueue(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutResource(target.asResource())
+	w.PutResource(target.asResource())
 	return nil
 }
 
-func (l *Loader) loadKey(blob configBlob) error {
+func (l *Loader) loadKey(blob configBlob, w *entities.BulkWriter) error {
 	var target KmsKey
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -285,11 +288,11 @@ func (l *Loader) loadKey(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutResource(target.asResource())
+	w.PutResource(target.asResource())
 	return nil
 }
 
-func (l *Loader) loadGenericResource(blob configBlob) error {
+func (l *Loader) loadGenericResource(blob configBlob, w *entities.BulkWriter) error {
 	var target genericResource
 
 	err := json.Unmarshal(blob.raw, &target)
@@ -297,6 +300,6 @@ func (l *Loader) loadGenericResource(blob configBlob) error {
 		return err
 	}
 
-	l.uv.PutResource(target.asResource())
+	w.PutResource(target.asResource())
 	return nil
 }
