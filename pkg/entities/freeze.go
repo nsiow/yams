@@ -2,10 +2,17 @@ package entities
 
 import (
 	"fmt"
+	"strings"
 
 	arnlib "github.com/nsiow/yams/pkg/arn"
 	"github.com/nsiow/yams/pkg/policy"
 )
+
+// SplitArn splits an ARN into its colon-separated segments for efficient wildcard matching.
+// This is done once at freeze time to avoid repeated allocations during simulation.
+func SplitArn(arn string) []string {
+	return strings.Split(arn, ":")
+}
 
 // -------------------------------------------------------------------------------------------------
 // Universe
@@ -177,6 +184,9 @@ type FrozenPrincipal struct {
 	Arn       Arn
 	Tags      []Tag
 
+	// ArnSegments contains the pre-split ARN segments for efficient wildcard matching
+	ArnSegments []string `json:"-"`
+
 	InlinePolicies     []policy.Policy
 	Account            FrozenAccount `json:",omitzero"`
 	AttachedPolicies   []ManagedPolicy
@@ -197,6 +207,7 @@ func (p *Principal) FreezeWith(strict bool, uvs ...*Universe) (FrozenPrincipal, 
 		Type:           p.Type,
 		AccountId:      p.AccountId,
 		Arn:            p.Arn,
+		ArnSegments:    SplitArn(p.Arn),
 		Tags:           p.Tags,
 		InlinePolicies: p.InlinePolicies,
 	}
@@ -247,6 +258,9 @@ type FrozenResource struct {
 	Arn       Arn
 	Tags      []Tag `json:",omitzero"`
 
+	// ArnSegments contains the pre-split ARN segments for efficient wildcard matching
+	ArnSegments []string `json:"-"`
+
 	Policy  policy.Policy `json:",omitzero"`
 	Account FrozenAccount `json:",omitzero"`
 }
@@ -262,12 +276,13 @@ func (r *Resource) Freeze() (FrozenResource, error) {
 
 func (r *Resource) FreezeWith(strict bool, uvs ...*Universe) (FrozenResource, error) {
 	f := FrozenResource{
-		Type:      r.Type,
-		AccountId: r.AccountId,
-		Region:    r.Region,
-		Arn:       r.Arn,
-		Tags:      r.Tags,
-		Policy:    r.Policy,
+		Type:        r.Type,
+		AccountId:   r.AccountId,
+		Region:      r.Region,
+		Arn:         r.Arn,
+		ArnSegments: SplitArn(r.Arn),
+		Tags:        r.Tags,
+		Policy:      r.Policy,
 	}
 
 	var err error
