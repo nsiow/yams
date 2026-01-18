@@ -31,7 +31,9 @@ jobs:
       - name: Install MkDocs
         run: pip install mkdocs
       - name: Build Documentation
-        run: mkdocs build
+        run: |
+          mkdocs build
+          touch ./site/.nojekyll
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
