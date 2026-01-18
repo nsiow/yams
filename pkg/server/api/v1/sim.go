@@ -1,11 +1,11 @@
 package v1
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 
+	json "github.com/bytedance/sonic"
 	"github.com/nsiow/yams/pkg/server/httputil"
 	"github.com/nsiow/yams/pkg/sim"
 )
@@ -42,7 +42,7 @@ type SimOutput struct {
 func (api *API) SimRun(w http.ResponseWriter, req *http.Request) {
 	// read input
 	input := SimInput{}
-	decoder := json.NewDecoder(req.Body)
+	decoder := json.ConfigDefault.NewDecoder(req.Body)
 	err := decoder.Decode(&input)
 	if err != nil {
 		httputil.ClientError(w, req, fmt.Errorf("invalid JSON: %v", err))

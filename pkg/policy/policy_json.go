@@ -1,8 +1,9 @@
 package policy
 
 import (
-	"encoding/json"
 	"fmt"
+
+	json "github.com/bytedance/sonic"
 )
 
 // -------------------------------------------------------------------------------------------------

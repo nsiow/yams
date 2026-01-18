@@ -1,11 +1,13 @@
 package httputil
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
+
+	json "github.com/bytedance/sonic"
 )
 
 func TestError(t *testing.T) {
@@ -136,23 +138,15 @@ func TestWriteJsonResponse(t *testing.T) {
 				t.Fatalf("WriteJsonResponse() produced invalid JSON: %v", err)
 			}
 
-			// Re-marshal both and compare
+			// Normalize both by marshaling/unmarshaling to compare structure
 			wantBytes, _ := json.Marshal(tt.obj)
-			gotBytes, _ := json.Marshal(got)
-
-			var wantNorm, gotNorm any
-			if err := json.Unmarshal(wantBytes, &wantNorm); err != nil {
+			var want any
+			if err := json.Unmarshal(wantBytes, &want); err != nil {
 				t.Fatalf("failed to unmarshal want: %v", err)
 			}
-			if err := json.Unmarshal(gotBytes, &gotNorm); err != nil {
-				t.Fatalf("failed to unmarshal got: %v", err)
-			}
 
-			wantFinal, _ := json.Marshal(wantNorm)
-			gotFinal, _ := json.Marshal(gotNorm)
-
-			if string(wantFinal) != string(gotFinal) {
-				t.Errorf("WriteJsonResponse() = %s, want %s", gotFinal, wantFinal)
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("WriteJsonResponse() = %v, want %v", got, want)
 			}
 		})
 	}

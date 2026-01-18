@@ -1,11 +1,11 @@
 package sim
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 
+	json "github.com/bytedance/sonic"
 	"github.com/nsiow/yams/cmd/yams/cli"
 	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"

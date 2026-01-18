@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"io"
 	"sync"
 
+	json "github.com/bytedance/sonic"
 	"github.com/nsiow/yams/pkg/policy"
 )
 

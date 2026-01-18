@@ -22,8 +22,9 @@
 ---
 
 ## Development Rules (Backend)
+* **Dependencies:** Avoid use of any external/third-party libraries unless explicitly asked to use
+  them.
 * **Style:** Simple, imperative Go. Avoid syntax that is difficult to understand. Keep the code DRY.
-* **Dependencies:** Avoid use of any external dependencies other than the AWS SDK for Go.
 * **Test style:** Where possible for Go tests, use the TDT pattern implemented in
   `testlib.RunTestSuite`
 * **Test data:** Use `testdata/` directories for any file/data type content used in tests. There are many such directories within the repo.

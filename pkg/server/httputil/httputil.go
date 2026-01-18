@@ -1,9 +1,10 @@
 package httputil
 
 import (
-	"encoding/json"
 	"log/slog"
 	"net/http"
+
+	json "github.com/bytedance/sonic"
 )
 
 func Error(w http.ResponseWriter, req *http.Request, statusCode int, err error) {
