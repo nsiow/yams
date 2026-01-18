@@ -42,20 +42,27 @@ export interface Principal {
   PermissionsBoundary?: string;
 }
 
+export interface ResourceTag {
+  Key: string;
+  Value: string;
+}
+
 export interface Resource {
-  arn: string;
-  type: string;
-  accountId: string;
-  region?: string;
-  name?: string;
-  policy?: unknown;
+  Type: string;
+  AccountId: string;
+  Region: string;
+  Name: string;
+  Arn: string;
+  Tags?: ResourceTag[];
+  Policy?: PolicyDocument;
 }
 
 export interface Policy {
-  arn: string;
-  name: string;
-  type: string;
-  document: PolicyDocument;
+  Type: string;
+  AccountId: string;
+  Arn: string;
+  Name: string;
+  Policy: PolicyDocument;
 }
 
 export interface PolicyDocument {

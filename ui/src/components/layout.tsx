@@ -103,7 +103,7 @@ export function Layout(): JSX.Element {
                 {section.title}
               </Text>
               {section.items.map((item) => {
-                const isActive = location.pathname === item.path;
+                const isActive = location.pathname.startsWith(item.path);
                 return (
                   <Box
                     key={item.path}

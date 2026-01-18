@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Alert,
-  Anchor,
   Badge,
   Box,
   Card,
@@ -13,52 +12,87 @@ import {
   ScrollArea,
   Select,
   Stack,
-  Table,
   Text,
   TextInput,
   Title,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { CodeHighlight } from '@mantine/code-highlight';
-import { IconAlertCircle, IconSearch, IconUser, IconMask } from '@tabler/icons-react';
+import { IconAlertCircle, IconSearch, IconFileText, IconHierarchy } from '@tabler/icons-react';
 import { yamsApi } from '../../lib/api';
-import type { Principal } from '../../lib/api';
+import type { Policy } from '../../lib/api';
 
 import '@mantine/code-highlight/styles.css';
 
-interface PrincipalListItem {
+type PolicyType = 'iam' | 'scp' | 'rcp';
+
+interface PolicyListItem {
   arn: string;
-  type: 'user' | 'role';
   accountId: string;
   name: string;
+  policyType: PolicyType;
 }
 
 function formatNumber(n: number): string {
   return n.toLocaleString();
 }
 
-function parsePrincipalArn(arn: string): PrincipalListItem {
-  // ARN format: arn:aws:iam::ACCOUNT_ID:user/NAME or arn:aws:iam::ACCOUNT_ID:role/NAME
+function parsePolicyArn(arn: string): PolicyListItem {
   const parts = arn.split(':');
+  const service = parts[2] || '';
   const accountId = parts[4] || '';
-  const resourcePart = parts[5] || '';
-  const [typeStr, ...nameParts] = resourcePart.split('/');
-  const name = nameParts.join('/') || '';
-  const type = typeStr === 'role' ? 'role' : 'user';
+  const resourcePart = parts.slice(5).join(':');
 
-  return { arn, type, accountId, name };
+  let policyType: PolicyType = 'iam';
+  let name = resourcePart;
+
+  if (service === 'organizations') {
+    // arn:aws:organizations::ACCOUNT:policy/ORG/service_control_policy/ID
+    // arn:aws:organizations::ACCOUNT:policy/ORG/resource_control_policy/ID
+    if (resourcePart.includes('service_control_policy')) {
+      policyType = 'scp';
+      name = resourcePart.split('/').pop() || resourcePart;
+    } else if (resourcePart.includes('resource_control_policy')) {
+      policyType = 'rcp';
+      name = resourcePart.split('/').pop() || resourcePart;
+    }
+  } else {
+    // arn:aws:iam::ACCOUNT:policy/NAME
+    name = resourcePart.replace(/^policy\//, '');
+  }
+
+  return { arn, accountId, name, policyType };
 }
 
-export function PrincipalsPage(): JSX.Element {
+const policyTypeLabels: Record<PolicyType, string> = {
+  iam: 'IAM Policy',
+  scp: 'Service Control Policy',
+  rcp: 'Resource Control Policy',
+};
+
+const policyTypeColors: Record<PolicyType, string> = {
+  iam: 'grape',
+  scp: 'orange',
+  rcp: 'cyan',
+};
+
+// Convert API type (AWS::IAM::Policy, Yams::Organizations::ServiceControlPolicy) to PolicyType
+function apiTypeToPolicyType(apiType: string): PolicyType {
+  if (apiType.includes('ServiceControlPolicy')) return 'scp';
+  if (apiType.includes('ResourceControlPolicy')) return 'rcp';
+  return 'iam';
+}
+
+export function PoliciesPage(): JSX.Element {
   const navigate = useNavigate();
   const { '*': arnFromUrl } = useParams();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [principalArns, setPrincipalArns] = useState<string[]>([]);
+  const [policyArns, setPolicyArns] = useState<string[]>([]);
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [selectedArn, setSelectedArn] = useState<string | null>(arnFromUrl || null);
-  const [selectedPrincipal, setSelectedPrincipal] = useState<Principal | null>(null);
+  const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   // Filters
@@ -67,14 +101,23 @@ export function PrincipalsPage(): JSX.Element {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [accountFilter, setAccountFilter] = useState<string | null>(null);
 
-  // Parse all principal ARNs into list items
-  const principalList = useMemo(() => {
-    return principalArns.map(parsePrincipalArn);
-  }, [principalArns]);
+  // Parse all policy ARNs into list items
+  const policyList = useMemo(() => {
+    return policyArns.map(parsePolicyArn);
+  }, [policyArns]);
 
-  // Extract unique account IDs and build display labels
+  // Extract unique types for filter dropdown
+  const typeOptions = useMemo(() => {
+    const types = new Set(policyList.map(p => p.policyType));
+    return Array.from(types).sort().map(t => ({
+      value: t,
+      label: policyTypeLabels[t],
+    }));
+  }, [policyList]);
+
+  // Extract unique accounts for filter dropdown
   const accountOptions = useMemo(() => {
-    const ids = new Set(principalList.map(p => p.accountId));
+    const ids = new Set(policyList.map(p => p.accountId));
     return Array.from(ids)
       .sort()
       .map(id => {
@@ -82,7 +125,7 @@ export function PrincipalsPage(): JSX.Element {
         const label = name ? `${name} (${id})` : id;
         return { value: id, label };
       });
-  }, [principalList, accountNames]);
+  }, [policyList, accountNames]);
 
   // Helper to format account display
   const formatAccount = (accountId: string): string => {
@@ -90,11 +133,11 @@ export function PrincipalsPage(): JSX.Element {
     return name ? `${name} (${accountId})` : accountId;
   };
 
-  // Filter principals based on search and filters
-  const filteredPrincipals = useMemo(() => {
-    return principalList.filter(p => {
+  // Filter policies based on search and filters
+  const filteredPolicies = useMemo(() => {
+    return policyList.filter(p => {
       // Type filter
-      if (typeFilter && p.type !== typeFilter) {
+      if (typeFilter && p.policyType !== typeFilter) {
         return false;
       }
       // Account filter
@@ -111,17 +154,17 @@ export function PrincipalsPage(): JSX.Element {
       }
       return true;
     });
-  }, [principalList, typeFilter, accountFilter, debouncedSearch]);
+  }, [policyList, typeFilter, accountFilter, debouncedSearch]);
 
-  // Fetch all principal ARNs and account names on mount
+  // Fetch all policy ARNs and account names on mount
   useEffect(() => {
     async function fetchData(): Promise<void> {
       try {
         const [arns, names] = await Promise.all([
-          yamsApi.listPrincipals(),
+          yamsApi.listPolicies(),
           yamsApi.accountNames(),
         ]);
-        setPrincipalArns(arns);
+        setPolicyArns(arns);
         setAccountNames(names);
         setError(null);
       } catch (err) {
@@ -134,55 +177,55 @@ export function PrincipalsPage(): JSX.Element {
     fetchData();
   }, []);
 
-  // Fetch principal detail when selected
-  const fetchPrincipalDetail = useCallback(async (arn: string): Promise<void> => {
+  // Fetch policy detail when selected
+  const fetchPolicyDetail = useCallback(async (arn: string): Promise<void> => {
     setLoadingDetail(true);
     try {
-      const principal = await yamsApi.getPrincipal(arn);
-      setSelectedPrincipal(principal);
+      const policy = await yamsApi.getPolicy(arn);
+      setSelectedPolicy(policy);
     } catch (err) {
-      console.error('Failed to fetch principal detail:', err);
-      setSelectedPrincipal(null);
+      console.error('Failed to fetch policy detail:', err);
+      setSelectedPolicy(null);
     } finally {
       setLoadingDetail(false);
     }
   }, []);
 
-  const handleSelectPrincipal = (arn: string): void => {
+  const handleSelectPolicy = (arn: string): void => {
     setSelectedArn(arn);
-    fetchPrincipalDetail(arn);
-    navigate(`/search/principals/${arn}`, { replace: true });
+    fetchPolicyDetail(arn);
+    navigate(`/search/policies/${arn}`, { replace: true });
   };
 
-  // Load principal from URL on mount or when URL changes
+  // Load policy from URL on mount or when URL changes
   useEffect(() => {
     if (arnFromUrl && arnFromUrl !== selectedArn) {
       setSelectedArn(arnFromUrl);
-      fetchPrincipalDetail(arnFromUrl);
+      fetchPolicyDetail(arnFromUrl);
     }
-  }, [arnFromUrl, fetchPrincipalDetail, selectedArn]);
+  }, [arnFromUrl, fetchPolicyDetail, selectedArn]);
 
   // Pagination
   const [page, setPage] = useState(1);
   const itemsPerPage = 20;
-  const totalPages = Math.ceil(filteredPrincipals.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredPolicies.length / itemsPerPage);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, typeFilter, accountFilter]);
 
-  const paginatedPrincipals = useMemo(() => {
+  const paginatedPolicies = useMemo(() => {
     const start = (page - 1) * itemsPerPage;
-    return filteredPrincipals.slice(start, start + itemsPerPage);
-  }, [filteredPrincipals, page]);
+    return filteredPolicies.slice(start, start + itemsPerPage);
+  }, [filteredPolicies, page]);
 
   if (loading) {
     return (
       <Box p="xl">
         <Stack align="center" gap="md">
           <Loader size="lg" />
-          <Text c="dimmed">Loading principals...</Text>
+          <Text c="dimmed">Loading policies...</Text>
         </Stack>
       </Box>
     );
@@ -208,11 +251,11 @@ export function PrincipalsPage(): JSX.Element {
         {/* Left column - Search and list */}
         <Grid.Col span={5}>
           <Stack gap="md" h="100%">
-            <Title order={2}>Principals</Title>
+            <Title order={2}>Policies</Title>
 
             {/* Search box */}
             <TextInput
-              placeholder="Search principals..."
+              placeholder="Search policies..."
               leftSection={<IconSearch size={16} />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
@@ -223,14 +266,10 @@ export function PrincipalsPage(): JSX.Element {
               <Select
                 placeholder="All types"
                 size="sm"
-                data={[
-                  { value: 'user', label: 'Users' },
-                  { value: 'role', label: 'Roles' },
-                ]}
+                data={typeOptions}
                 value={typeFilter}
                 onChange={setTypeFilter}
                 clearable
-                searchable
               />
               <Select
                 placeholder="All accounts"
@@ -257,17 +296,17 @@ export function PrincipalsPage(): JSX.Element {
 
             {/* Results count */}
             <Text size="sm" c="dimmed">
-              {formatNumber(filteredPrincipals.length)} of {formatNumber(principalList.length)} principals
+              {formatNumber(filteredPolicies.length)} of {formatNumber(policyList.length)} policies
               {totalPages > 1 && ` (page ${formatNumber(page)} of ${formatNumber(totalPages)})`}
             </Text>
 
-            {/* Principal list - paginated */}
+            {/* Policy list - paginated */}
             <Card withBorder p={0} style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               <ScrollArea style={{ flex: 1 }}>
-                {paginatedPrincipals.map((p) => (
+                {paginatedPolicies.map((p) => (
                   <div
                     key={p.arn}
-                    onClick={() => handleSelectPrincipal(p.arn)}
+                    onClick={() => handleSelectPolicy(p.arn)}
                     style={{
                       cursor: 'pointer',
                       padding: '8px 12px',
@@ -291,10 +330,10 @@ export function PrincipalsPage(): JSX.Element {
                     }}
                   >
                     <div style={{ flexShrink: 0 }}>
-                      {p.type === 'role' ? (
-                        <IconMask size={16} color="var(--mantine-color-orange-6)" />
+                      {p.policyType === 'iam' ? (
+                        <IconFileText size={16} color={`var(--mantine-color-${policyTypeColors[p.policyType]}-6)`} />
                       ) : (
-                        <IconUser size={16} color="var(--mantine-color-blue-6)" />
+                        <IconHierarchy size={16} color={`var(--mantine-color-${policyTypeColors[p.policyType]}-6)`} />
                       )}
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
@@ -302,7 +341,7 @@ export function PrincipalsPage(): JSX.Element {
                         {p.name}
                       </Text>
                       <Text size="xs" c="dimmed" truncate>
-                        {formatAccount(p.accountId)}
+                        {policyTypeLabels[p.policyType]} · {formatAccount(p.accountId)}
                       </Text>
                     </div>
                   </div>
@@ -328,24 +367,21 @@ export function PrincipalsPage(): JSX.Element {
           <Card withBorder h="100%" p="md">
             {!selectedArn ? (
               <Stack align="center" justify="center" h="100%">
-                <Text c="dimmed">Select a principal to view details</Text>
+                <Text c="dimmed">Select a policy to view details</Text>
               </Stack>
             ) : loadingDetail ? (
               <Stack align="center" justify="center" h="100%">
                 <Loader size="md" />
                 <Text c="dimmed">Loading details...</Text>
               </Stack>
-            ) : selectedPrincipal ? (
+            ) : selectedPolicy ? (
               <ScrollArea h="calc(100vh - 180px)">
                 <Stack gap="md">
                   {/* Header */}
                   <Group justify="space-between" align="flex-start">
-                    <Title order={3}>{selectedPrincipal.Name}</Title>
-                    <Badge
-                      color={selectedPrincipal.Type === 'role' ? 'orange' : 'blue'}
-                      size="lg"
-                    >
-                      {selectedPrincipal.Type}
+                    <Title order={3}>{selectedPolicy.Name || parsePolicyArn(selectedPolicy.Arn).name}</Title>
+                    <Badge color={policyTypeColors[apiTypeToPolicyType(selectedPolicy.Type)]} size="lg">
+                      {policyTypeLabels[apiTypeToPolicyType(selectedPolicy.Type)]}
                     </Badge>
                   </Group>
 
@@ -355,119 +391,29 @@ export function PrincipalsPage(): JSX.Element {
                     <Stack gap="xs">
                       <Group gap="xs">
                         <Text size="sm" fw={600} c="dimmed" w={100}>ARN:</Text>
-                        <Text size="sm" ff="monospace" style={{ wordBreak: 'break-all' }}>{selectedPrincipal.Arn}</Text>
+                        <Text size="sm" ff="monospace" style={{ wordBreak: 'break-all' }}>{selectedPolicy.Arn}</Text>
                       </Group>
                       <Group gap="xs">
                         <Text size="sm" fw={600} c="dimmed" w={100}>Account:</Text>
-                        <Text size="sm" ff="monospace">{formatAccount(selectedPrincipal.AccountId)}</Text>
-                      </Group>
-                      <Group gap="xs">
-                        <Text size="sm" fw={600} c="dimmed" w={100}>Type:</Text>
-                        <Text size="sm" ff="monospace">{selectedPrincipal.Type}</Text>
+                        <Text size="sm" ff="monospace">{formatAccount(selectedPolicy.AccountId)}</Text>
                       </Group>
                     </Stack>
                   </Card>
 
-                  {/* Tags */}
-                  {selectedPrincipal.Tags && selectedPrincipal.Tags.length > 0 && (
-                    <Card withBorder p="sm">
-                      <Title order={5} mb="xs">Tags</Title>
-                      <Table withRowBorders={false}>
-                        <Table.Tbody>
-                          {selectedPrincipal.Tags.map((tag) => (
-                            <Table.Tr key={tag.Key}>
-                              <Table.Td w={200} style={{ verticalAlign: 'top' }}>
-                                <Text size="sm" fw={500} c="dimmed">{tag.Key}</Text>
-                              </Table.Td>
-                              <Table.Td>
-                                <Text size="sm" style={{ wordBreak: 'break-word' }}>{tag.Value}</Text>
-                              </Table.Td>
-                            </Table.Tr>
-                          ))}
-                        </Table.Tbody>
-                      </Table>
-                    </Card>
-                  )}
-
-                  {/* Groups */}
-                  {selectedPrincipal.Groups && selectedPrincipal.Groups.length > 0 && (
-                    <Card withBorder p="sm">
-                      <Title order={5} mb="xs">Groups</Title>
-                      <Group gap="xs">
-                        {selectedPrincipal.Groups.map((group) => (
-                          <Badge key={group} variant="light" size="sm">
-                            {group}
-                          </Badge>
-                        ))}
-                      </Group>
-                    </Card>
-                  )}
-
-                  {/* Attached Policies */}
-                  {selectedPrincipal.AttachedPolicies && selectedPrincipal.AttachedPolicies.length > 0 && (
-                    <Card withBorder p="sm">
-                      <Title order={5} mb="xs">Attached Policies</Title>
-                      <Stack gap="xs">
-                        {selectedPrincipal.AttachedPolicies.map((policy) => (
-                          <Anchor
-                            key={policy}
-                            component={Link}
-                            to={`/search/policies/${policy}`}
-                            size="sm"
-                            style={{ fontFamily: 'monospace' }}
-                          >
-                            {policy}
-                          </Anchor>
-                        ))}
-                      </Stack>
-                    </Card>
-                  )}
-
-                  {/* Permission Boundary */}
-                  {selectedPrincipal.PermissionsBoundary && (
-                    <Card withBorder p="sm">
-                      <Title order={5} mb="xs">Permission Boundary</Title>
-                      <Anchor
-                        component={Link}
-                        to={`/search/policies/${selectedPrincipal.PermissionsBoundary}`}
-                        size="sm"
-                        style={{ fontFamily: 'monospace' }}
-                      >
-                        {selectedPrincipal.PermissionsBoundary}
-                      </Anchor>
-                    </Card>
-                  )}
-
-                  {/* Inline Policies */}
-                  {selectedPrincipal.InlinePolicies && selectedPrincipal.InlinePolicies.length > 0 && (
-                    <Card withBorder p="sm">
-                      <Title order={5} mb="xs">Inline Policies</Title>
-                      <Stack gap="md">
-                        {selectedPrincipal.InlinePolicies.map((policy, index) => {
-                          // Extract _Name for display, then remove it from JSON output
-                          const { _Name, ...policyWithoutName } = policy;
-                          const displayName = _Name || policy.Id || `Policy ${index + 1}`;
-                          return (
-                            <Box key={index}>
-                              <Text size="sm" fw={600} mb="xs">
-                                {displayName}
-                              </Text>
-                              <CodeHighlight
-                                code={JSON.stringify(policyWithoutName, null, 2)}
-                                language="json"
-                                withCopyButton
-                              />
-                            </Box>
-                          );
-                        })}
-                      </Stack>
-                    </Card>
-                  )}
+                  {/* Policy Document */}
+                  <Card withBorder p="sm">
+                    <Title order={5} mb="xs">Policy Document</Title>
+                    <CodeHighlight
+                      code={JSON.stringify(selectedPolicy.Policy, null, 2)}
+                      language="json"
+                      withCopyButton
+                    />
+                  </Card>
                 </Stack>
               </ScrollArea>
             ) : (
               <Stack align="center" justify="center" h="100%">
-                <Text c="dimmed">Failed to load principal details</Text>
+                <Text c="dimmed">Failed to load policy details</Text>
               </Stack>
             )}
           </Card>

@@ -126,32 +126,32 @@ export class YamsClient {
 
   // Resources
 
-  async listResources(): Promise<Resource[]> {
-    return this.fetch<Resource[]>('/resources');
+  async listResources(): Promise<string[]> {
+    return this.fetch<string[]>('/resources');
   }
 
-  async getResource(key: string): Promise<Resource> {
-    return this.fetch<Resource>(`/resources/${encodeURIComponent(key)}`);
+  async getResource(arn: string): Promise<Resource> {
+    return this.fetch<Resource>(`/resources/${encodeURIComponent(arn)}`);
   }
 
-  async searchResources(query: string): Promise<Resource[]> {
-    return this.fetch<Resource[]>(
+  async searchResources(query: string): Promise<string[]> {
+    return this.fetch<string[]>(
       `/resources/search/${encodeURIComponent(query)}`
     );
   }
 
   // Policies
 
-  async listPolicies(): Promise<Policy[]> {
-    return this.fetch<Policy[]>('/policies');
+  async listPolicies(): Promise<string[]> {
+    return this.fetch<string[]>('/policies');
   }
 
-  async getPolicy(key: string): Promise<Policy> {
-    return this.fetch<Policy>(`/policies/${encodeURIComponent(key)}`);
+  async getPolicy(arn: string): Promise<Policy> {
+    return this.fetch<Policy>(`/policies/${encodeURIComponent(arn)}`);
   }
 
-  async searchPolicies(query: string): Promise<Policy[]> {
-    return this.fetch<Policy[]>(
+  async searchPolicies(query: string): Promise<string[]> {
+    return this.fetch<string[]>(
       `/policies/search/${encodeURIComponent(query)}`
     );
   }
