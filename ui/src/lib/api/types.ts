@@ -25,15 +25,21 @@ export interface Action {
   conditionKeys?: string[];
 }
 
+export interface PrincipalTag {
+  Key: string;
+  Value: string;
+}
+
 export interface Principal {
-  arn: string;
-  name: string;
-  type: string;
-  accountId: string;
-  path?: string;
-  tags?: Record<string, string>;
-  attachedPolicies?: string[];
-  inlinePolicies?: Record<string, unknown>;
+  Type: string;
+  AccountId: string;
+  Name: string;
+  Arn: string;
+  Tags?: PrincipalTag[];
+  InlinePolicies?: PolicyDocument[];
+  AttachedPolicies?: string[];
+  Groups?: string[] | null;
+  PermissionsBoundary?: string;
 }
 
 export interface Resource {
@@ -54,6 +60,7 @@ export interface Policy {
 
 export interface PolicyDocument {
   Version: string;
+  Id?: string;
   Statement: PolicyStatement[];
 }
 

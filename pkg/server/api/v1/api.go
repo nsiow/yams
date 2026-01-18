@@ -51,6 +51,14 @@ func (api *API) ListAccounts(w http.ResponseWriter, req *http.Request) {
 	List(w, req, api.Simulator.Universe.Accounts)
 }
 
+func (api *API) AccountNames(w http.ResponseWriter, req *http.Request) {
+	names := make(map[string]string)
+	for account := range api.Simulator.Universe.Accounts() {
+		names[account.Id] = account.Name
+	}
+	httputil.WriteJsonResponse(w, req, names)
+}
+
 func (api *API) ListGroups(w http.ResponseWriter, req *http.Request) {
 	List(w, req, api.Simulator.Universe.Groups)
 }

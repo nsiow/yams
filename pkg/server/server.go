@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/nsiow/yams/cmd/yams/cli"
 	"github.com/nsiow/yams/internal/middleware"
@@ -21,10 +22,16 @@ type Server struct {
 
 func NewServer(opts *cli.Flags) (*Server, error) {
 	mux := http.NewServeMux()
+
+	// Middleware chain: Cache -> Gzip -> CORS -> Handler
+	handler := corsMiddleware(mux)
+	handler = middleware.Gzip(handler)
+	handler = middleware.Cache(5 * time.Minute)(handler)
+
 	server := Server{
 		Server: &http.Server{
 			Addr:    opts.Addr,
-			Handler: middleware.Gzip(corsMiddleware(mux)),
+			Handler: handler,
 		},
 		mux:  mux,
 		Opts: opts,

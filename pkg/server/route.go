@@ -11,6 +11,7 @@ func (s *Server) addV1Routes(v1 *v1.API) {
 
 	// accounts
 	s.mux.HandleFunc("GET /api/v1/accounts", v1.ListAccounts)
+	s.mux.HandleFunc("GET /api/v1/accounts/names", v1.AccountNames)
 	s.mux.HandleFunc("GET /api/v1/accounts/{key...}", v1.GetAccount)
 	s.mux.HandleFunc("GET /api/v1/accounts/search/{search...}", v1.SearchAccounts)
 

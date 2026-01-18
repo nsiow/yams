@@ -110,16 +110,16 @@ export class YamsClient {
 
   // Principals
 
-  async listPrincipals(): Promise<Principal[]> {
-    return this.fetch<Principal[]>('/principals');
+  async listPrincipals(): Promise<string[]> {
+    return this.fetch<string[]>('/principals');
   }
 
-  async getPrincipal(key: string): Promise<Principal> {
-    return this.fetch<Principal>(`/principals/${encodeURIComponent(key)}`);
+  async getPrincipal(arn: string): Promise<Principal> {
+    return this.fetch<Principal>(`/principals/${encodeURIComponent(arn)}`);
   }
 
-  async searchPrincipals(query: string): Promise<Principal[]> {
-    return this.fetch<Principal[]>(
+  async searchPrincipals(query: string): Promise<string[]> {
+    return this.fetch<string[]>(
       `/principals/search/${encodeURIComponent(query)}`
     );
   }
@@ -170,6 +170,10 @@ export class YamsClient {
     return this.fetch<Account[]>(
       `/accounts/search/${encodeURIComponent(query)}`
     );
+  }
+
+  async accountNames(): Promise<Record<string, string>> {
+    return this.fetch<Record<string, string>>('/accounts/names');
   }
 
   // Simulation
