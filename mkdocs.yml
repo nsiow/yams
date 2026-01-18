@@ -1,0 +1,27 @@
+site_name: yams
+site_url: https://nsiow.github.io/yams/
+site_description: yams is a Go library, server, and CLI providing foundational capabilities to simulate access for AWS IAM policies
+site_author: nicholas siow
+extra_css:
+  - style.css
+
+theme:
+  name: readthedocs
+  logo: assets/yams.png
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+
+markdown_extensions:
+  - admonition
+
+nav:
+  - About: index.md
+  - Concepts: concepts.md
+  - Getting Started: getting_started.md
+  - Data Sources: data_sources.md
+  - Generating Data: generating_data.md
+  - Inventory: inventory.md
+  - Simulation: simulation.md
+  - Deployment: deployment.md
+  - API Reference: api.md

@@ -2,8 +2,8 @@ package entities
 
 import (
 	"iter"
-	"maps"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 
@@ -42,25 +42,56 @@ func NewUniverse() *Universe {
 	}
 }
 
+// -------------------------------------------------------------------------------------------------
+// Bulk Operations
+// -------------------------------------------------------------------------------------------------
+
+// BulkWriter provides methods for adding entities without per-call locking.
+// Use with WithBulkWriter to add many entities efficiently.
+type BulkWriter struct {
+	u *Universe
+}
+
+func (b *BulkWriter) PutAccount(a Account)        { b.u.putAccount(a) }
+func (b *BulkWriter) PutGroup(g Group)            { b.u.putGroup(g) }
+func (b *BulkWriter) PutPolicy(p ManagedPolicy)   { b.u.putPolicy(p) }
+func (b *BulkWriter) PutPrincipal(p Principal)    { b.u.putPrincipal(p) }
+func (b *BulkWriter) PutResource(r Resource)      { b.u.putResource(r) }
+
+// WithBulkWriter holds the write lock and calls fn with a BulkWriter.
+// Use this for bulk loading operations to avoid per-entity lock overhead.
+func (u *Universe) WithBulkWriter(fn func(*BulkWriter)) {
+	u.mut.Lock()
+	defer u.mut.Unlock()
+	fn(&BulkWriter{u: u})
+}
+
+// -------------------------------------------------------------------------------------------------
+// Merge
+// -------------------------------------------------------------------------------------------------
+
 // Merge adds all entries in `other` [Universe] to this one
 func (u *Universe) Merge(other *Universe) {
 	other.mut.RLock()
 	defer other.mut.RUnlock()
 
+	u.mut.Lock()
+	defer u.mut.Unlock()
+
 	for _, item := range other.accounts {
-		u.PutAccount(*item)
+		u.putAccount(*item)
 	}
 	for _, item := range other.groups {
-		u.PutGroup(*item)
+		u.putGroup(*item)
 	}
 	for _, item := range other.policies {
-		u.PutPolicy(*item)
+		u.putPolicy(*item)
 	}
 	for _, item := range other.principals {
-		u.PutPrincipal(*item)
+		u.putPrincipal(*item)
 	}
 	for _, item := range other.resources {
-		u.PutResource(*item)
+		u.putResource(*item)
 	}
 }
 
@@ -98,7 +129,14 @@ func (u *Universe) NumAccounts() int {
 
 // Accounts returns an iterator over all the Account entities known to the universe
 func (u *Universe) Accounts() iter.Seq[*Account] {
-	return maps.Values(u.accounts)
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
+	snapshot := make([]*Account, 0, len(u.accounts))
+	for _, a := range u.accounts {
+		snapshot = append(snapshot, a)
+	}
+	return slices.Values(snapshot)
 }
 
 // HasAccount returns whether or not the specified account exists in the universe
@@ -109,6 +147,8 @@ func (u *Universe) HasAccount(id string) bool {
 
 // Account attempts to retrieve the account based on its id
 func (u *Universe) Account(id string) (*Account, bool) {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	a, ok := u.accounts[id]
 	return a, ok
 }
@@ -117,7 +157,11 @@ func (u *Universe) Account(id string) (*Account, bool) {
 func (u *Universe) PutAccount(a Account) {
 	u.mut.Lock()
 	defer u.mut.Unlock()
+	u.putAccount(a)
+}
 
+// putAccount is the internal unlocked version of PutAccount
+func (u *Universe) putAccount(a Account) {
 	a.uv = u
 	u.accounts[a.Id] = &a
 }
@@ -151,7 +195,14 @@ func (u *Universe) NumGroups() int {
 
 // Groups returns an iterator over all the Group entities known to the universe
 func (u *Universe) Groups() iter.Seq[*Group] {
-	return maps.Values(u.groups)
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
+	snapshot := make([]*Group, 0, len(u.groups))
+	for _, g := range u.groups {
+		snapshot = append(snapshot, g)
+	}
+	return slices.Values(snapshot)
 }
 
 // GroupArns returns a slice containing the ARNs of all known Groups
@@ -174,6 +225,8 @@ func (u *Universe) HasGroup(arn Arn) bool {
 
 // Group attempts to retrieve the group based on its ARN
 func (u *Universe) Group(arn Arn) (*Group, bool) {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	arn = normalizeGroupArn(arn)
 	g, ok := u.groups[arn]
 	return g, ok
@@ -181,11 +234,14 @@ func (u *Universe) Group(arn Arn) (*Group, bool) {
 
 // PutGroup saves the provided group into the universe, updating the definition if needed
 func (u *Universe) PutGroup(g Group) {
-	g.Arn = normalizeGroupArn(g.Arn)
-
 	u.mut.Lock()
 	defer u.mut.Unlock()
+	u.putGroup(g)
+}
 
+// putGroup is the internal unlocked version of PutGroup
+func (u *Universe) putGroup(g Group) {
+	g.Arn = normalizeGroupArn(g.Arn)
 	g.uv = u
 	u.groups[g.Arn] = &g
 }
@@ -206,19 +262,24 @@ func (u *Universe) RemoveGroup(arn Arn) {
 
 // LoadBasePolicies bootstraps the Universe with base IAM policies that are present in every account
 func (u *Universe) LoadBasePolicies() {
-	if !u.hasLoadedBasePolicies {
-		for arn, policy := range assets.ManagedPolicyData() {
-			u.PutPolicy(ManagedPolicy{
-				Type:      "AWS::IAM::Policy",
-				AccountId: "AWS",
-				Arn:       arn,
-				Name:      path.Base(arn),
-				Policy:    policy,
-			})
-		}
+	u.mut.Lock()
+	defer u.mut.Unlock()
 
-		u.hasLoadedBasePolicies = true
+	if u.hasLoadedBasePolicies {
+		return
 	}
+
+	for arn, policy := range assets.ManagedPolicyData() {
+		u.putPolicy(ManagedPolicy{
+			Type:      "AWS::IAM::Policy",
+			AccountId: "AWS",
+			Arn:       arn,
+			Name:      path.Base(arn),
+			Policy:    policy,
+		})
+	}
+
+	u.hasLoadedBasePolicies = true
 }
 
 // NumPolicies returns the number of policies known to the universe
@@ -233,7 +294,14 @@ func (u *Universe) NumPolicies() int {
 // This includes any policy with an ARN, e.g. managed policies, SCPs, etc. It does not include
 // inline Principal or Resource policies
 func (u *Universe) Policies() iter.Seq[*ManagedPolicy] {
-	return maps.Values(u.policies)
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
+	snapshot := make([]*ManagedPolicy, 0, len(u.policies))
+	for _, p := range u.policies {
+		snapshot = append(snapshot, p)
+	}
+	return slices.Values(snapshot)
 }
 
 // PolicyArns returns a slice containing the ARNs of all known Policies
@@ -256,6 +324,8 @@ func (u *Universe) HasPolicy(arn Arn) bool {
 
 // Policy attempts to retrieve the policy based on its ARN
 func (u *Universe) Policy(arn Arn) (*ManagedPolicy, bool) {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	p, ok := u.policies[arn]
 	return p, ok
 }
@@ -264,7 +334,11 @@ func (u *Universe) Policy(arn Arn) (*ManagedPolicy, bool) {
 func (u *Universe) PutPolicy(p ManagedPolicy) {
 	u.mut.Lock()
 	defer u.mut.Unlock()
+	u.putPolicy(p)
+}
 
+// putPolicy is the internal unlocked version of PutPolicy
+func (u *Universe) putPolicy(p ManagedPolicy) {
 	u.policies[p.Arn] = &p
 }
 
@@ -289,7 +363,14 @@ func (u *Universe) NumPrincipals() int {
 
 // Principals returns an iterator over all the Principal entities known to the universe
 func (u *Universe) Principals() iter.Seq[*Principal] {
-	return maps.Values(u.principals)
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
+	snapshot := make([]*Principal, 0, len(u.principals))
+	for _, p := range u.principals {
+		snapshot = append(snapshot, p)
+	}
+	return slices.Values(snapshot)
 }
 
 // PrincipalArns returns a slice containing the ARNs of all known Principals
@@ -312,6 +393,8 @@ func (u *Universe) HasPrincipal(arn Arn) bool {
 
 // Principal attempts to retrieve the principal based on its ARN
 func (u *Universe) Principal(arn Arn) (*Principal, bool) {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	p, ok := u.principals[arn]
 	return p, ok
 }
@@ -320,7 +403,11 @@ func (u *Universe) Principal(arn Arn) (*Principal, bool) {
 func (u *Universe) PutPrincipal(p Principal) {
 	u.mut.Lock()
 	defer u.mut.Unlock()
+	u.putPrincipal(p)
+}
 
+// putPrincipal is the internal unlocked version of PutPrincipal
+func (u *Universe) putPrincipal(p Principal) {
 	p.uv = u
 	u.principals[p.Arn] = &p
 	// TODO(nsiow) should this also update the resources where relevant (user/role)?
@@ -357,7 +444,14 @@ func (u *Universe) subresource(arn Arn) (string, string) {
 
 // Resources returns an iterator over all the Resource entities known to the universe
 func (u *Universe) Resources() iter.Seq[*Resource] {
-	return maps.Values(u.resources)
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
+	snapshot := make([]*Resource, 0, len(u.resources))
+	for _, r := range u.resources {
+		snapshot = append(snapshot, r)
+	}
+	return slices.Values(snapshot)
 }
 
 // ResourceArns returns a slice containing the ARNs of all known Resources
@@ -382,7 +476,10 @@ func (u *Universe) HasResource(arn Arn) bool {
 func (u *Universe) Resource(arn Arn) (*Resource, bool) {
 	arn, path := u.subresource(arn)
 
+	u.mut.RLock()
 	r, ok := u.resources[arn]
+	u.mut.RUnlock()
+
 	if !ok {
 		return nil, ok
 	}
@@ -399,7 +496,11 @@ func (u *Universe) Resource(arn Arn) (*Resource, bool) {
 func (u *Universe) PutResource(r Resource) {
 	u.mut.Lock()
 	defer u.mut.Unlock()
+	u.putResource(r)
+}
 
+// putResource is the internal unlocked version of PutResource
+func (u *Universe) putResource(r Resource) {
 	r.uv = u
 	u.resources[r.Arn] = &r
 }

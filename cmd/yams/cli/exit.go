@@ -1,9 +1,10 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
+
+	json "github.com/bytedance/sonic"
 )
 
 func Fail(format string, a ...any) {

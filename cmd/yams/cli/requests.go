@@ -2,15 +2,16 @@ package cli
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
+
+	json "github.com/bytedance/sonic"
 )
 
 func GetReq(url string) {
-	slog.Debug("making request")
+	slog.Debug("making request", "url", url)
 	resp, err := http.Get(url)
 	if err != nil {
 		Fail("error retrieving URL '%s': %v", url, err)
@@ -31,7 +32,7 @@ func GetReq(url string) {
 
 func PostReq(url string, body any) {
 	var buf bytes.Buffer
-	err := json.NewEncoder(&buf).Encode(body)
+	err := json.ConfigDefault.NewEncoder(&buf).Encode(body)
 	if err != nil {
 		Fail("error encoding simulation input: %v", err)
 	}

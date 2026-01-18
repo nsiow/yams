@@ -2,11 +2,11 @@ package v1
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	json "github.com/bytedance/sonic"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim"
@@ -730,6 +730,127 @@ func TestSimRun_Allow(t *testing.T) {
 	}
 	if out.Result != "ALLOW" {
 		t.Errorf("SimRun() result = %s, want ALLOW", out.Result)
+	}
+}
+
+func TestSimRun_UnknownPrincipal(t *testing.T) {
+	api := newTestAPI(t)
+
+	input := SimInput{
+		Principal: "arn:aws:iam::123456789012:user/nonexistent",
+		Action:    "s3:ListBucket",
+		Resource:  "arn:aws:s3:::mybucket",
+	}
+	body, _ := json.Marshal(input)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/sim/run", bytes.NewReader(body))
+
+	api.SimRun(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("SimRun() with unknown principal status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestSimRun_UnknownAction(t *testing.T) {
+	api := newTestAPIWithData(t)
+
+	input := SimInput{
+		Principal: "arn:aws:iam::123456789012:user/testuser",
+		Action:    "invalid:UnknownAction",
+		Resource:  "arn:aws:s3:::test-bucket",
+	}
+	body, _ := json.Marshal(input)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/sim/run", bytes.NewReader(body))
+
+	api.SimRun(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("SimRun() with unknown action status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestGet_WithFreeze_Normal(t *testing.T) {
+	api := newTestAPIWithData(t)
+
+	// Add a principal with a missing attached policy - non-strict freeze should succeed
+	principal := entities.Principal{
+		Arn:       "arn:aws:iam::123456789012:user/freezeuser",
+		AccountId: "123456789012",
+		AttachedPolicies: []entities.Arn{
+			"arn:aws:iam::123456789012:policy/nonexistent",
+		},
+	}
+	api.Simulator.Universe.PutPrincipal(principal)
+
+	// Request freeze on principal - should succeed with non-strict freeze
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/principals/arn:aws:iam::123456789012:user/freezeuser/freeze", nil)
+	req.SetPathValue("key", "arn:aws:iam::123456789012:user/freezeuser/freeze")
+
+	api.GetPrincipal(w, req)
+
+	// Non-strict freeze should succeed
+	if w.Code != http.StatusOK {
+		t.Errorf("GetPrincipal() with freeze status = %d, want %d, body = %s", w.Code, http.StatusOK, w.Body.String())
+	}
+}
+
+func TestWhichActions_ServerError(t *testing.T) {
+	api := newTestAPI(t)
+
+	// Missing principal should cause server error
+	input := WhichActionsInput{
+		Principal: "arn:aws:iam::123456789012:user/nonexistent",
+		Resource:  "arn:aws:s3:::bucket",
+	}
+	body, _ := json.Marshal(input)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/sim/whichActions", bytes.NewReader(body))
+
+	api.WhichActions(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("WhichActions() with nonexistent principal status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestWhichPrincipals_ServerError(t *testing.T) {
+	api := newTestAPI(t)
+
+	// Missing resource should cause server error
+	input := WhichPrincipalsInput{
+		Action:   "s3:GetObject",
+		Resource: "arn:aws:s3:::nonexistent-bucket",
+	}
+	body, _ := json.Marshal(input)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/sim/whichPrincipals", bytes.NewReader(body))
+
+	api.WhichPrincipals(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("WhichPrincipals() with nonexistent resource status = %d, want %d", w.Code, http.StatusInternalServerError)
+	}
+}
+
+func TestWhichResources_ServerError(t *testing.T) {
+	api := newTestAPI(t)
+
+	// Missing principal should cause server error
+	input := WhichResourcesInput{
+		Principal: "arn:aws:iam::123456789012:user/nonexistent",
+		Action:    "s3:ListBucket",
+	}
+	body, _ := json.Marshal(input)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/sim/whichResources", bytes.NewReader(body))
+
+	api.WhichResources(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("WhichResources() with nonexistent principal status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
 }
 

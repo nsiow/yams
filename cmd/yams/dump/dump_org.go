@@ -2,7 +2,6 @@ package dump
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -12,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	json "github.com/bytedance/sonic"
 	"github.com/nsiow/yams/cmd/yams/cli"
 	"github.com/nsiow/yams/pkg/loaders/awsconfig"
 	"github.com/nsiow/yams/pkg/policy"

@@ -5,9 +5,14 @@ import (
 	"io"
 )
 
+// gzipReader interface allows mocking in tests
+type gzipReader interface {
+	io.ReadCloser
+}
+
 type GzipReadCloser struct {
 	r  io.ReadCloser
-	gz *gzip.Reader
+	gz gzipReader
 }
 
 func NewGzipReadCloser(r io.ReadCloser) (*GzipReadCloser, error) {

@@ -102,16 +102,9 @@ func evalOverallAccess(s *subject) *SimResult {
 		s.trc.Allowed("[allow] access granted via x-account identity + resource policies")
 		return &SimResult{Trace: &s.trc, IsAllowed: true}
 	}
-	if pAccess.Allowed() && !rAccess.Allowed() {
-		s.trc.Denied("[implicit deny] x-account, missing resource policy access")
-		return &SimResult{Trace: &s.trc, IsAllowed: false}
-	}
-	if !pAccess.Allowed() && rAccess.Allowed() {
-		s.trc.Denied("[implicit deny] x-account, missing identity policy access")
-		return &SimResult{Trace: &s.trc, IsAllowed: false}
-	}
 
-	// We fell through and no access was granted from either side
-	s.trc.Denied("[implicit deny] x-account, missing both identity + resource access")
+	// For same-account strict calls that fall through: principal allowed but resource didn't
+	// (For cross-account, early returns at lines 27-30 and 38-40 ensure both must allow to reach here)
+	s.trc.Denied("[implicit deny] missing resource policy access")
 	return &SimResult{Trace: &s.trc, IsAllowed: false}
 }

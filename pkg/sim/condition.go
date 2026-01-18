@@ -6,12 +6,22 @@ import (
 	"net/netip"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/policy/condition"
 	"github.com/nsiow/yams/pkg/sim/wildcard"
 )
+
+// conditionEvaluatorCache stores resolved condition evaluators to avoid repeated string operations.
+var conditionEvaluatorCache sync.Map
+
+// cachedConditionResult holds a cached condition evaluator result
+type cachedConditionResult struct {
+	evaluator CondOuter
+	exists    bool
+}
 
 // -------------------------------------------------------------------------------------------------
 // Setup
@@ -235,6 +245,12 @@ var ConditionOperatorMap = map[string]CondInner{
 			),
 		),
 	),
+
+	// -----------------------------------------------------------------------------------------------
+	// Null Function
+	// -----------------------------------------------------------------------------------------------
+
+	condition.Null: Cond_Null,
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -300,6 +316,27 @@ func Cond_IpAddress(s *subject, left netip.Addr, right netip.Prefix) bool {
 // Cond_ArnLike defines the `ArnLike` condition function
 func Cond_ArnLike(s *subject, left, right string) bool {
 	return wildcard.MatchArn(right, left)
+}
+
+// Cond_ArnEquals defines the `ArnEquals` condition function (exact match, no wildcards)
+func Cond_ArnEquals(s *subject, left, right string) bool {
+	return left == right
+}
+
+// Cond_Null checks whether a condition key is present in the request context.
+// If the policy value is "true", the condition matches when the key is absent (left is empty).
+// If the policy value is "false", the condition matches when the key is present (left is non-empty).
+func Cond_Null(s *subject, left string, right policy.Value) bool {
+	keyIsAbsent := left == ""
+
+	for _, v := range right {
+		wantAbsent := strings.EqualFold(v, "true")
+		if keyIsAbsent == wantAbsent {
+			return true
+		}
+	}
+
+	return false
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -447,7 +484,7 @@ func Mod_Date(f func(*subject, int, int) bool) Compare {
 	return func(s *subject, left, right string) bool {
 		nLeft, err := parseEpochFromString(left)
 		if err != nil {
-			s.trc.Log("error converting %s to epoch: %v", right, err)
+			s.trc.Log("error converting %s to epoch: %v", left, err)
 			return false
 		}
 
@@ -529,6 +566,28 @@ func Mod_Network(f func(*subject, netip.Addr, netip.Prefix) bool) Compare {
 // If the function could be resolved, the second return value is `true`. Otherwise, the second
 // return value is `false`
 func ResolveConditionEvaluator(op string) (CondOuter, bool) {
+	// Check cache first
+	if cached, ok := conditionEvaluatorCache.Load(op); ok {
+		result := cached.(cachedConditionResult)
+		return result.evaluator, result.exists
+	}
+
+	// Resolve the evaluator
+	evaluator, exists := resolveConditionEvaluatorUncached(op)
+
+	// Cache the result
+	conditionEvaluatorCache.Store(op, cachedConditionResult{
+		evaluator: evaluator,
+		exists:    exists,
+	})
+
+	return evaluator, exists
+}
+
+// resolveConditionEvaluatorUncached performs the actual resolution without caching
+func resolveConditionEvaluatorUncached(op string) (CondOuter, bool) {
+	originalOp := op
+
 	// Determine the condition lift
 	var lift CondLift
 	if strings.HasPrefix(op, "ForAllValues:") {
@@ -558,5 +617,7 @@ func ResolveConditionEvaluator(op string) (CondOuter, bool) {
 	for _, mod := range mods {
 		f = mod(f)
 	}
+
+	_ = originalOp // Avoid unused variable warning
 	return lift(f), true
 }
