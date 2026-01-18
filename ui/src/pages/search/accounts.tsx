@@ -17,7 +17,7 @@ import {
   Title,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
-import { IconAlertCircle, IconSearch, IconBuilding } from '@tabler/icons-react';
+import { IconAlertCircle, IconSearch, IconCloud } from '@tabler/icons-react';
 import { yamsApi } from '../../lib/api';
 import type { Account } from '../../lib/api';
 
@@ -220,7 +220,7 @@ export function AccountsPage(): JSX.Element {
                     }}
                   >
                     <div style={{ flexShrink: 0 }}>
-                      <IconBuilding size={16} color="var(--mantine-color-indigo-6)" />
+                      <IconCloud size={16} color="var(--mantine-color-indigo-6)" />
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <Text size="sm" fw={500} truncate>
