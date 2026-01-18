@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/bytedance/sonic"
 	json "github.com/bytedance/sonic"
+	"github.com/bytedance/sonic/ast"
 	"github.com/nsiow/yams/pkg/entities"
 )
 
@@ -35,20 +37,45 @@ func (l *Loader) LoadJson(reader io.Reader) error {
 		return err
 	}
 
-	var blobs []configBlob
-	err = json.Unmarshal(data, &blobs)
+	// Parse as AST for efficient array iteration
+	root, err := sonic.Get(data)
 	if err != nil {
-		return fmt.Errorf("unable to load data as JSON: %w", err)
+		return fmt.Errorf("unable to parse JSON: %w", err)
 	}
+
+	// Verify it's an array
+	nodeType := root.TypeSafe()
+	if nodeType != ast.V_ARRAY {
+		return fmt.Errorf("expected JSON array, got %v", nodeType)
+	}
+
+	// Get array length for pre-allocation
+	length, _ := root.Len()
+	blobs := make([]configBlob, 0, length)
+
+	// Iterate over array elements
+	elems, _ := root.ArrayUseNode()
+	for _, elem := range elems {
+		raw, err := elem.Raw()
+		if err != nil {
+			return fmt.Errorf("error getting raw element: %w", err)
+		}
+
+		rawBytes := []byte(raw)
+		blobs = append(blobs, configBlob{
+			Type: extractType(rawBytes),
+			raw:  rawBytes,
+		})
+	}
+
 	return l.loadItems(blobs)
 }
 
-// LoadJsonl loads data from the provided newline-separate JSONL input
+// LoadJsonl loads data from the provided newline-separated JSONL input
 func (l *Loader) LoadJsonl(reader io.Reader) error {
 	s := bufio.NewScanner(reader)
 
-	// Some buffer customization, since these JSON blobs can get big
-	// TODO(nsiow) move these to constants
+	// Buffer customization for large JSON blobs
 	buf := make([]byte, SCAN_BUF_SIZE)
 	s.Buffer(buf, len(buf))
 
@@ -60,15 +87,14 @@ func (l *Loader) LoadJsonl(reader io.Reader) error {
 			continue
 		}
 
-		// Unmarshal into a single item
-		var i configBlob
-		err := json.Unmarshal(b, &i)
-		if err != nil {
-			return fmt.Errorf("error decoding fragment: %w", err)
-		}
+		// Copy bytes since scanner reuses buffer, extract type efficiently
+		raw := make([]byte, len(b))
+		copy(raw, b)
 
-		// Add to running list of items
-		blobs = append(blobs, i)
+		blobs = append(blobs, configBlob{
+			Type: extractType(raw),
+			raw:  raw,
+		})
 	}
 
 	// If we encountered an error scanning, return it
