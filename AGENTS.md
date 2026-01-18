@@ -57,6 +57,17 @@
 
 ---
 
+## Development Server
+* A yams server is typically already running on port 8888 during development.
+* When you need to start a one-off yams server for testing (e.g., to curl an API endpoint), use a different port:
+  ```bash
+  ./yams server -a :9999 &
+  curl -s http://localhost:9999/api/v1/actions/s3:GetObject
+  pkill -f "yams server.*9999" || true
+  ```
+
+---
+
 ## UI Color Scheme
 Primary palette from https://coolors.co/6e44ff-b892ff-ffc2e2-ff90b3-ef7a85:
 * **Primary:** `#6E44FF` (vivid purple)

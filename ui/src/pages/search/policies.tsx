@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import {
-  Alert,
+  Anchor,
   Badge,
   Box,
+  Breadcrumbs,
   Card,
   Grid,
   Group,
-  Loader,
   Pagination,
   ScrollArea,
   Select,
@@ -18,9 +18,19 @@ import {
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { CodeHighlight } from '@mantine/code-highlight';
-import { IconAlertCircle, IconSearch, IconFileText, IconHierarchy } from '@tabler/icons-react';
+import { IconSearch, IconFileText, IconHierarchy, IconChevronRight } from '@tabler/icons-react';
 import { yamsApi } from '../../lib/api';
 import type { Policy } from '../../lib/api';
+import {
+  CollapsibleCard,
+  CopyButton,
+  CopyEntityButton,
+  EmptyState,
+  ExportButton,
+  FilterBar,
+  ListSkeleton,
+  DetailSkeleton,
+} from '../../components';
 
 import '@mantine/code-highlight/styles.css';
 
@@ -86,6 +96,7 @@ function apiTypeToPolicyType(apiType: string): PolicyType {
 export function PoliciesPage(): JSX.Element {
   const navigate = useNavigate();
   const { '*': arnFromUrl } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,11 +106,28 @@ export function PoliciesPage(): JSX.Element {
   const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState('');
+  // Initialize filters from URL params
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [debouncedSearch] = useDebouncedValue(searchQuery, 200);
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
-  const [accountFilter, setAccountFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(searchParams.get('type'));
+  const [accountFilter, setAccountFilter] = useState<string | null>(searchParams.get('account'));
+
+  // Sync filters to URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    if (typeFilter) params.set('type', typeFilter);
+    if (accountFilter) params.set('account', accountFilter);
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, typeFilter, accountFilter, setSearchParams]);
+
+  const hasActiveFilters = Boolean(searchQuery || typeFilter || accountFilter);
+
+  const clearAllFilters = (): void => {
+    setSearchQuery('');
+    setTypeFilter(null);
+    setAccountFilter(null);
+  };
 
   // Parse all policy ARNs into list items
   const policyList = useMemo(() => {
@@ -136,21 +164,11 @@ export function PoliciesPage(): JSX.Element {
   // Filter policies based on search and filters
   const filteredPolicies = useMemo(() => {
     return policyList.filter(p => {
-      // Type filter
-      if (typeFilter && p.policyType !== typeFilter) {
-        return false;
-      }
-      // Account filter
-      if (accountFilter && p.accountId !== accountFilter) {
-        return false;
-      }
-      // Search filter (searches name and ARN)
+      if (typeFilter && p.policyType !== typeFilter) return false;
+      if (accountFilter && p.accountId !== accountFilter) return false;
       if (debouncedSearch) {
         const query = debouncedSearch.toLowerCase();
-        return (
-          p.name.toLowerCase().includes(query) ||
-          p.arn.toLowerCase().includes(query)
-        );
+        return p.name.toLowerCase().includes(query) || p.arn.toLowerCase().includes(query);
       }
       return true;
     });
@@ -194,7 +212,7 @@ export function PoliciesPage(): JSX.Element {
   const handleSelectPolicy = (arn: string): void => {
     setSelectedArn(arn);
     fetchPolicyDetail(arn);
-    navigate(`/search/policies/${arn}`, { replace: true });
+    navigate(`/search/policies/${arn}?${searchParams.toString()}`, { replace: true });
   };
 
   // Load policy from URL on mount or when URL changes
@@ -220,27 +238,32 @@ export function PoliciesPage(): JSX.Element {
     return filteredPolicies.slice(start, start + itemsPerPage);
   }, [filteredPolicies, page]);
 
-  if (loading) {
+  // Breadcrumb items
+  const getPolicyDisplayName = (): string => {
+    if (!selectedPolicy) return '';
+    return selectedPolicy.Name || parsePolicyArn(selectedPolicy.Arn).name;
+  };
+
+  const breadcrumbItems = [
+    { title: 'Search', href: '/' },
+    { title: 'Policies', href: '/search/policies' },
+    ...(selectedPolicy ? [{ title: getPolicyDisplayName(), href: '' }] : []),
+  ].map((item, index, arr) => {
+    const isLast = index === arr.length - 1;
+    if (isLast) {
+      return <Text key={item.title} size="sm" c="dimmed">{item.title}</Text>;
+    }
     return (
-      <Box p="xl">
-        <Stack align="center" gap="md">
-          <Loader size="lg" />
-          <Text c="dimmed">Loading policies...</Text>
-        </Stack>
-      </Box>
+      <Anchor key={item.title} component={Link} to={item.href} size="sm">
+        {item.title}
+      </Anchor>
     );
-  }
+  });
 
   if (error) {
     return (
-      <Box p="xl">
-        <Alert
-          icon={<IconAlertCircle size={16} />}
-          title="Error"
-          color="red"
-        >
-          {error}
-        </Alert>
+      <Box p="md">
+        <EmptyState variant="error" message={error} />
       </Box>
     );
   }
@@ -248,12 +271,12 @@ export function PoliciesPage(): JSX.Element {
   return (
     <Box p="md" h="100%">
       <Grid gutter="md" h="100%">
-        {/* Left column - Search and list */}
+        {/* Left column */}
         <Grid.Col span={5}>
           <Stack gap="md" h="100%">
+            <Breadcrumbs separator={<IconChevronRight size={14} />}>{breadcrumbItems}</Breadcrumbs>
             <Title order={2}>Policies</Title>
 
-            {/* Search box */}
             <TextInput
               placeholder="Search policies..."
               leftSection={<IconSearch size={16} />}
@@ -261,8 +284,7 @@ export function PoliciesPage(): JSX.Element {
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
             />
 
-            {/* Type and Account filters */}
-            <Group gap="sm" grow>
+            <FilterBar hasActiveFilters={hasActiveFilters} onClearAll={clearAllFilters}>
               <Select
                 placeholder="All types"
                 size="sm"
@@ -270,6 +292,7 @@ export function PoliciesPage(): JSX.Element {
                 value={typeFilter}
                 onChange={setTypeFilter}
                 clearable
+                style={{ flex: 1 }}
               />
               <Select
                 placeholder="All accounts"
@@ -279,142 +302,130 @@ export function PoliciesPage(): JSX.Element {
                 onChange={setAccountFilter}
                 clearable
                 searchable
-                renderOption={({ option }) => {
-                  const name = accountNames[option.value];
-                  if (name) {
-                    return (
-                      <Group gap="xs">
-                        <Text size="sm">{name}</Text>
-                        <Text size="xs" c="dimmed">({option.value})</Text>
-                      </Group>
-                    );
-                  }
-                  return <Text size="sm">{option.value}</Text>;
-                }}
+                style={{ flex: 1 }}
               />
-            </Group>
+            </FilterBar>
 
-            {/* Results count */}
             <Text size="sm" c="dimmed">
               {formatNumber(filteredPolicies.length)} of {formatNumber(policyList.length)} policies
               {totalPages > 1 && ` (page ${formatNumber(page)} of ${formatNumber(totalPages)})`}
             </Text>
 
-            {/* Policy list - paginated */}
             <Card withBorder p={0} style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               <ScrollArea style={{ flex: 1 }}>
-                {paginatedPolicies.map((p) => (
-                  <div
-                    key={p.arn}
-                    onClick={() => handleSelectPolicy(p.arn)}
-                    style={{
-                      cursor: 'pointer',
-                      padding: '8px 12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      backgroundColor: selectedArn === p.arn
-                        ? 'var(--mantine-color-primary-light)'
-                        : undefined,
-                      borderBottom: '1px solid var(--mantine-color-default-border)',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedArn !== p.arn) {
-                        e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-light-hover)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedArn !== p.arn) {
-                        e.currentTarget.style.backgroundColor = '';
-                      }
-                    }}
-                  >
-                    <div style={{ flexShrink: 0 }}>
-                      {p.policyType === 'iam' ? (
-                        <IconFileText size={16} color={`var(--mantine-color-${policyTypeColors[p.policyType]}-6)`} />
-                      ) : (
-                        <IconHierarchy size={16} color={`var(--mantine-color-${policyTypeColors[p.policyType]}-6)`} />
-                      )}
+                {loading ? (
+                  <ListSkeleton />
+                ) : filteredPolicies.length === 0 ? (
+                  <Box p="xl">
+                    <EmptyState
+                      variant={hasActiveFilters ? 'no-results' : 'no-data'}
+                      entityName="policy"
+                    />
+                  </Box>
+                ) : (
+                  paginatedPolicies.map((p) => (
+                    <div
+                      key={p.arn}
+                      onClick={() => handleSelectPolicy(p.arn)}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '8px 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        backgroundColor: selectedArn === p.arn
+                          ? 'var(--mantine-color-primary-light)'
+                          : undefined,
+                        borderBottom: '1px solid var(--mantine-color-default-border)',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (selectedArn !== p.arn) {
+                          e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-light-hover)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (selectedArn !== p.arn) {
+                          e.currentTarget.style.backgroundColor = '';
+                        }
+                      }}
+                    >
+                      <div style={{ flexShrink: 0 }}>
+                        {p.policyType === 'iam' ? (
+                          <IconFileText size={16} color={`var(--mantine-color-${policyTypeColors[p.policyType]}-6)`} />
+                        ) : (
+                          <IconHierarchy size={16} color={`var(--mantine-color-${policyTypeColors[p.policyType]}-6)`} />
+                        )}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <Text size="sm" fw={500} truncate>{p.name}</Text>
+                        <Text size="xs" c="dimmed" truncate>
+                          {policyTypeLabels[p.policyType]} · {formatAccount(p.accountId)}
+                        </Text>
+                      </div>
                     </div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <Text size="sm" fw={500} truncate>
-                        {p.name}
-                      </Text>
-                      <Text size="xs" c="dimmed" truncate>
-                        {policyTypeLabels[p.policyType]} · {formatAccount(p.accountId)}
-                      </Text>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </ScrollArea>
               {totalPages > 1 && (
                 <Box p="xs" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
-                  <Pagination
-                    value={page}
-                    onChange={setPage}
-                    total={totalPages}
-                    size="sm"
-                    withEdges
-                  />
+                  <Pagination value={page} onChange={setPage} total={totalPages} size="sm" withEdges />
                 </Box>
               )}
             </Card>
           </Stack>
         </Grid.Col>
 
-        {/* Right column - Detail panel */}
+        {/* Right column */}
         <Grid.Col span={7}>
           <Card withBorder h="100%" p="md">
             {!selectedArn ? (
-              <Stack align="center" justify="center" h="100%">
-                <Text c="dimmed">Select a policy to view details</Text>
-              </Stack>
+              <EmptyState variant="no-selection" entityName="policy" />
             ) : loadingDetail ? (
-              <Stack align="center" justify="center" h="100%">
-                <Loader size="md" />
-                <Text c="dimmed">Loading details...</Text>
-              </Stack>
+              <DetailSkeleton />
             ) : selectedPolicy ? (
               <ScrollArea h="calc(100vh - 180px)">
                 <Stack gap="md">
-                  {/* Header */}
                   <Group justify="space-between" align="flex-start">
                     <Title order={3}>{selectedPolicy.Name || parsePolicyArn(selectedPolicy.Arn).name}</Title>
-                    <Badge color={policyTypeColors[apiTypeToPolicyType(selectedPolicy.Type)]} size="lg">
-                      {policyTypeLabels[apiTypeToPolicyType(selectedPolicy.Type)]}
-                    </Badge>
+                    <Group gap="xs">
+                      <CopyEntityButton data={selectedPolicy} />
+                      <ExportButton data={selectedPolicy} filename={`policy-${selectedPolicy.Name || parsePolicyArn(selectedPolicy.Arn).name}`} />
+                      <Badge color={policyTypeColors[apiTypeToPolicyType(selectedPolicy.Type)]} size="lg">
+                        {policyTypeLabels[apiTypeToPolicyType(selectedPolicy.Type)]}
+                      </Badge>
+                    </Group>
                   </Group>
 
-                  {/* Metadata */}
-                  <Card withBorder p="sm">
-                    <Title order={5} mb="xs">Metadata</Title>
+                  <CollapsibleCard title="Metadata">
                     <Stack gap="xs">
                       <Group gap="xs">
                         <Text size="sm" fw={600} c="dimmed" w={100}>ARN:</Text>
-                        <Text size="sm" ff="monospace" style={{ wordBreak: 'break-all' }}>{selectedPolicy.Arn}</Text>
+                        <Text size="sm" ff="monospace" style={{ wordBreak: 'break-all', flex: 1 }}>
+                          {selectedPolicy.Arn}
+                        </Text>
+                        <CopyButton value={selectedPolicy.Arn} />
                       </Group>
                       <Group gap="xs">
                         <Text size="sm" fw={600} c="dimmed" w={100}>Account:</Text>
-                        <Text size="sm" ff="monospace">{formatAccount(selectedPolicy.AccountId)}</Text>
+                        <Anchor component={Link} to={`/search/accounts/${selectedPolicy.AccountId}`} size="sm" ff="monospace">
+                          {formatAccount(selectedPolicy.AccountId)}
+                        </Anchor>
+                        <CopyButton value={selectedPolicy.AccountId} />
                       </Group>
                     </Stack>
-                  </Card>
+                  </CollapsibleCard>
 
-                  {/* Policy Document */}
-                  <Card withBorder p="sm">
-                    <Title order={5} mb="xs">Policy Document</Title>
+                  <CollapsibleCard title="Policy Document">
                     <CodeHighlight
                       code={JSON.stringify(selectedPolicy.Policy, null, 2)}
                       language="json"
                       withCopyButton
                     />
-                  </Card>
+                  </CollapsibleCard>
                 </Stack>
               </ScrollArea>
             ) : (
-              <Stack align="center" justify="center" h="100%">
-                <Text c="dimmed">Failed to load policy details</Text>
-              </Stack>
+              <EmptyState variant="error" message="Failed to load policy details" />
             )}
           </Card>
         </Grid.Col>

@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import {
-  Alert,
+  Anchor,
   Badge,
   Box,
+  Breadcrumbs,
   Card,
   Code,
   Grid,
   Group,
-  Loader,
   Pagination,
   ScrollArea,
   Select,
@@ -18,9 +18,19 @@ import {
   Title,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
-import { IconAlertCircle, IconSearch, IconBolt } from '@tabler/icons-react';
+import { IconSearch, IconBolt, IconChevronRight } from '@tabler/icons-react';
 import { yamsApi } from '../../lib/api';
 import type { Action } from '../../lib/api';
+import {
+  CollapsibleCard,
+  CopyButton,
+  CopyEntityButton,
+  EmptyState,
+  ExportButton,
+  FilterBar,
+  ListSkeleton,
+  DetailSkeleton,
+} from '../../components';
 
 interface ActionListItem {
   key: string;
@@ -43,6 +53,7 @@ function parseActionKey(key: string): ActionListItem {
 export function ActionsPage(): JSX.Element {
   const navigate = useNavigate();
   const { '*': keyFromUrl } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,10 +62,25 @@ export function ActionsPage(): JSX.Element {
   const [selectedAction, setSelectedAction] = useState<Action | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState('');
+  // Initialize filters from URL params
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [debouncedSearch] = useDebouncedValue(searchQuery, 200);
-  const [serviceFilter, setServiceFilter] = useState<string | null>(null);
+  const [serviceFilter, setServiceFilter] = useState<string | null>(searchParams.get('service'));
+
+  // Sync filters to URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    if (serviceFilter) params.set('service', serviceFilter);
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, serviceFilter, setSearchParams]);
+
+  const hasActiveFilters = Boolean(searchQuery || serviceFilter);
+
+  const clearAllFilters = (): void => {
+    setSearchQuery('');
+    setServiceFilter(null);
+  };
 
   // Parse all action keys into list items
   const actionList = useMemo(() => {
@@ -70,17 +96,10 @@ export function ActionsPage(): JSX.Element {
   // Filter actions based on search and filters
   const filteredActions = useMemo(() => {
     return actionList.filter(a => {
-      // Service filter
-      if (serviceFilter && a.service !== serviceFilter) {
-        return false;
-      }
-      // Search filter (searches name and key)
+      if (serviceFilter && a.service !== serviceFilter) return false;
       if (debouncedSearch) {
         const query = debouncedSearch.toLowerCase();
-        return (
-          a.name.toLowerCase().includes(query) ||
-          a.key.toLowerCase().includes(query)
-        );
+        return a.name.toLowerCase().includes(query) || a.key.toLowerCase().includes(query);
       }
       return true;
     });
@@ -120,7 +139,7 @@ export function ActionsPage(): JSX.Element {
   const handleSelectAction = (key: string): void => {
     setSelectedKey(key);
     fetchActionDetail(key);
-    navigate(`/search/actions/${key}`, { replace: true });
+    navigate(`/search/actions/${key}?${searchParams.toString()}`, { replace: true });
   };
 
   // Load action from URL on mount or when URL changes
@@ -146,27 +165,27 @@ export function ActionsPage(): JSX.Element {
     return filteredActions.slice(start, start + itemsPerPage);
   }, [filteredActions, page]);
 
-  if (loading) {
+  // Breadcrumb items
+  const breadcrumbItems = [
+    { title: 'Search', href: '/' },
+    { title: 'Actions', href: '/search/actions' },
+    ...(selectedAction ? [{ title: `${selectedAction.Service}:${selectedAction.Name}`, href: '' }] : []),
+  ].map((item, index, arr) => {
+    const isLast = index === arr.length - 1;
+    if (isLast) {
+      return <Text key={item.title} size="sm" c="dimmed">{item.title}</Text>;
+    }
     return (
-      <Box p="xl">
-        <Stack align="center" gap="md">
-          <Loader size="lg" />
-          <Text c="dimmed">Loading actions...</Text>
-        </Stack>
-      </Box>
+      <Anchor key={item.title} component={Link} to={item.href} size="sm">
+        {item.title}
+      </Anchor>
     );
-  }
+  });
 
   if (error) {
     return (
-      <Box p="xl">
-        <Alert
-          icon={<IconAlertCircle size={16} />}
-          title="Error"
-          color="red"
-        >
-          {error}
-        </Alert>
+      <Box p="md">
+        <EmptyState variant="error" message={error} />
       </Box>
     );
   }
@@ -174,12 +193,12 @@ export function ActionsPage(): JSX.Element {
   return (
     <Box p="md" h="100%">
       <Grid gutter="md" h="100%">
-        {/* Left column - Search and list */}
+        {/* Left column */}
         <Grid.Col span={5}>
           <Stack gap="md" h="100%">
+            <Breadcrumbs separator={<IconChevronRight size={14} />}>{breadcrumbItems}</Breadcrumbs>
             <Title order={2}>Actions</Title>
 
-            {/* Search box */}
             <TextInput
               placeholder="Search actions..."
               leftSection={<IconSearch size={16} />}
@@ -187,135 +206,127 @@ export function ActionsPage(): JSX.Element {
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
             />
 
-            {/* Service filter */}
-            <Select
-              placeholder="All services"
-              size="sm"
-              data={serviceOptions}
-              value={serviceFilter}
-              onChange={setServiceFilter}
-              clearable
-              searchable
-            />
+            <FilterBar hasActiveFilters={hasActiveFilters} onClearAll={clearAllFilters}>
+              <Select
+                placeholder="All services"
+                size="sm"
+                data={serviceOptions}
+                value={serviceFilter}
+                onChange={setServiceFilter}
+                clearable
+                searchable
+                style={{ flex: 1 }}
+              />
+            </FilterBar>
 
-            {/* Results count */}
             <Text size="sm" c="dimmed">
               {formatNumber(filteredActions.length)} of {formatNumber(actionList.length)} actions
               {totalPages > 1 && ` (page ${formatNumber(page)} of ${formatNumber(totalPages)})`}
             </Text>
 
-            {/* Action list - paginated */}
             <Card withBorder p={0} style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               <ScrollArea style={{ flex: 1 }}>
-                {paginatedActions.map((a) => (
-                  <div
-                    key={a.key}
-                    onClick={() => handleSelectAction(a.key)}
-                    style={{
-                      cursor: 'pointer',
-                      padding: '8px 12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      backgroundColor: selectedKey === a.key
-                        ? 'var(--mantine-color-primary-light)'
-                        : undefined,
-                      borderBottom: '1px solid var(--mantine-color-default-border)',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedKey !== a.key) {
-                        e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-light-hover)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedKey !== a.key) {
-                        e.currentTarget.style.backgroundColor = '';
-                      }
-                    }}
-                  >
-                    <div style={{ flexShrink: 0 }}>
-                      <IconBolt size={16} color="var(--mantine-color-yellow-6)" />
+                {loading ? (
+                  <ListSkeleton />
+                ) : filteredActions.length === 0 ? (
+                  <Box p="xl">
+                    <EmptyState
+                      variant={hasActiveFilters ? 'no-results' : 'no-data'}
+                      entityName="action"
+                    />
+                  </Box>
+                ) : (
+                  paginatedActions.map((a) => (
+                    <div
+                      key={a.key}
+                      onClick={() => handleSelectAction(a.key)}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '8px 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        backgroundColor: selectedKey === a.key
+                          ? 'var(--mantine-color-primary-light)'
+                          : undefined,
+                        borderBottom: '1px solid var(--mantine-color-default-border)',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (selectedKey !== a.key) {
+                          e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-light-hover)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (selectedKey !== a.key) {
+                          e.currentTarget.style.backgroundColor = '';
+                        }
+                      }}
+                    >
+                      <div style={{ flexShrink: 0 }}>
+                        <IconBolt size={16} color="var(--mantine-color-yellow-6)" />
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <Text size="sm" fw={500} truncate>{a.name}</Text>
+                        <Text size="xs" c="dimmed" truncate>{a.service}</Text>
+                      </div>
                     </div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <Text size="sm" fw={500} truncate>
-                        {a.name}
-                      </Text>
-                      <Text size="xs" c="dimmed" truncate>
-                        {a.service}
-                      </Text>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </ScrollArea>
               {totalPages > 1 && (
                 <Box p="xs" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
-                  <Pagination
-                    value={page}
-                    onChange={setPage}
-                    total={totalPages}
-                    size="sm"
-                    withEdges
-                  />
+                  <Pagination value={page} onChange={setPage} total={totalPages} size="sm" withEdges />
                 </Box>
               )}
             </Card>
           </Stack>
         </Grid.Col>
 
-        {/* Right column - Detail panel */}
+        {/* Right column */}
         <Grid.Col span={7}>
           <Card withBorder h="100%" p="md">
             {!selectedKey ? (
-              <Stack align="center" justify="center" h="100%">
-                <Text c="dimmed">Select an action to view details</Text>
-              </Stack>
+              <EmptyState variant="no-selection" entityName="action" />
             ) : loadingDetail ? (
-              <Stack align="center" justify="center" h="100%">
-                <Loader size="md" />
-                <Text c="dimmed">Loading details...</Text>
-              </Stack>
+              <DetailSkeleton />
             ) : selectedAction ? (
               <ScrollArea h="calc(100vh - 180px)">
                 <Stack gap="md">
-                  {/* Header */}
                   <Group justify="space-between" align="flex-start">
                     <Title order={3}>{selectedAction.Service}:{selectedAction.Name}</Title>
-                    <Badge color="yellow" size="lg">
-                      {selectedAction.Service}
-                    </Badge>
+                    <Group gap="xs">
+                      <CopyEntityButton data={selectedAction} />
+                      <ExportButton data={selectedAction} filename={`action-${selectedAction.Service}-${selectedAction.Name}`} />
+                      <Badge color="yellow" size="lg">{selectedAction.Service}</Badge>
+                    </Group>
                   </Group>
 
-                  {/* Metadata */}
-                  <Card withBorder p="sm">
-                    <Title order={5} mb="xs">Metadata</Title>
+                  <CollapsibleCard title="Metadata">
                     <Stack gap="xs">
                       <Group gap="xs">
                         <Text size="sm" fw={600} c="dimmed" w={100}>Action:</Text>
-                        <Text size="sm" ff="monospace">{selectedAction.Name}</Text>
+                        <Text size="sm" ff="monospace" style={{ flex: 1 }}>{selectedAction.Name}</Text>
+                        <CopyButton value={`${selectedAction.Service}:${selectedAction.Name}`} />
                       </Group>
                       <Group gap="xs">
                         <Text size="sm" fw={600} c="dimmed" w={100}>Service:</Text>
                         <Text size="sm" ff="monospace">{selectedAction.Service}</Text>
                       </Group>
                     </Stack>
-                  </Card>
+                  </CollapsibleCard>
 
-                  {/* Action Condition Keys */}
                   {selectedAction.ActionConditionKeys && selectedAction.ActionConditionKeys.length > 0 && (
-                    <Card withBorder p="sm">
-                      <Title order={5} mb="xs">Action Condition Keys</Title>
+                    <CollapsibleCard title="Action Condition Keys">
                       <Group gap="xs">
                         {selectedAction.ActionConditionKeys.map((key) => (
                           <Code key={key}>{key}</Code>
                         ))}
                       </Group>
-                    </Card>
+                    </CollapsibleCard>
                   )}
 
-                  {/* Resource Types */}
                   {selectedAction.ResolvedResources && selectedAction.ResolvedResources.length > 0 && (
-                    <Card withBorder p="sm">
-                      <Title order={5} mb="xs">Resource Types</Title>
+                    <CollapsibleCard title="Resource Types">
                       <Stack gap="md">
                         {selectedAction.ResolvedResources.map((resource) => (
                           <Box key={resource.Name}>
@@ -345,14 +356,12 @@ export function ActionsPage(): JSX.Element {
                           </Box>
                         ))}
                       </Stack>
-                    </Card>
+                    </CollapsibleCard>
                   )}
                 </Stack>
               </ScrollArea>
             ) : (
-              <Stack align="center" justify="center" h="100%">
-                <Text c="dimmed">Failed to load action details</Text>
-              </Stack>
+              <EmptyState variant="error" message="Failed to load action details" />
             )}
           </Card>
         </Grid.Col>

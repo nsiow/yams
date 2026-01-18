@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import {
-  Alert,
+  Anchor,
   Badge,
   Box,
+  Breadcrumbs,
   Card,
   Grid,
   Group,
-  Loader,
   Pagination,
   ScrollArea,
   Select,
@@ -19,9 +19,19 @@ import {
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { CodeHighlight } from '@mantine/code-highlight';
-import { IconAlertCircle, IconSearch, IconDatabase } from '@tabler/icons-react';
+import { IconSearch, IconDatabase, IconChevronRight } from '@tabler/icons-react';
 import { yamsApi } from '../../lib/api';
 import type { Resource } from '../../lib/api';
+import {
+  CollapsibleCard,
+  CopyButton,
+  CopyEntityButton,
+  EmptyState,
+  ExportButton,
+  FilterBar,
+  ListSkeleton,
+  DetailSkeleton,
+} from '../../components';
 
 import '@mantine/code-highlight/styles.css';
 
@@ -85,6 +95,7 @@ function formatCloudFormationType(cfnType: string): string {
 export function ResourcesPage(): JSX.Element {
   const navigate = useNavigate();
   const { '*': arnFromUrl } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,12 +105,31 @@ export function ResourcesPage(): JSX.Element {
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState('');
+  // Initialize filters from URL params
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [debouncedSearch] = useDebouncedValue(searchQuery, 200);
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
-  const [regionFilter, setRegionFilter] = useState<string | null>(null);
-  const [accountFilter, setAccountFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(searchParams.get('type'));
+  const [regionFilter, setRegionFilter] = useState<string | null>(searchParams.get('region'));
+  const [accountFilter, setAccountFilter] = useState<string | null>(searchParams.get('account'));
+
+  // Sync filters to URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    if (typeFilter) params.set('type', typeFilter);
+    if (regionFilter) params.set('region', regionFilter);
+    if (accountFilter) params.set('account', accountFilter);
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, typeFilter, regionFilter, accountFilter, setSearchParams]);
+
+  const hasActiveFilters = Boolean(searchQuery || typeFilter || regionFilter || accountFilter);
+
+  const clearAllFilters = (): void => {
+    setSearchQuery('');
+    setTypeFilter(null);
+    setRegionFilter(null);
+    setAccountFilter(null);
+  };
 
   // Parse all resource ARNs into list items
   const resourceList = useMemo(() => {
@@ -140,25 +170,12 @@ export function ResourcesPage(): JSX.Element {
   // Filter resources based on search and filters
   const filteredResources = useMemo(() => {
     return resourceList.filter(r => {
-      // Type filter
-      if (typeFilter && formatResourceType(r) !== typeFilter) {
-        return false;
-      }
-      // Region filter
-      if (regionFilter && r.region !== regionFilter) {
-        return false;
-      }
-      // Account filter
-      if (accountFilter && r.accountId !== accountFilter) {
-        return false;
-      }
-      // Search filter (searches name and ARN)
+      if (typeFilter && formatResourceType(r) !== typeFilter) return false;
+      if (regionFilter && r.region !== regionFilter) return false;
+      if (accountFilter && r.accountId !== accountFilter) return false;
       if (debouncedSearch) {
         const query = debouncedSearch.toLowerCase();
-        return (
-          r.name.toLowerCase().includes(query) ||
-          r.arn.toLowerCase().includes(query)
-        );
+        return r.name.toLowerCase().includes(query) || r.arn.toLowerCase().includes(query);
       }
       return true;
     });
@@ -202,7 +219,7 @@ export function ResourcesPage(): JSX.Element {
   const handleSelectResource = (arn: string): void => {
     setSelectedArn(arn);
     fetchResourceDetail(arn);
-    navigate(`/search/resources/${arn}`, { replace: true });
+    navigate(`/search/resources/${arn}?${searchParams.toString()}`, { replace: true });
   };
 
   // Load resource from URL on mount or when URL changes
@@ -228,27 +245,27 @@ export function ResourcesPage(): JSX.Element {
     return filteredResources.slice(start, start + itemsPerPage);
   }, [filteredResources, page]);
 
-  if (loading) {
+  // Breadcrumb items
+  const breadcrumbItems = [
+    { title: 'Search', href: '/' },
+    { title: 'Resources', href: '/search/resources' },
+    ...(selectedResource ? [{ title: selectedResource.Name, href: '' }] : []),
+  ].map((item, index, arr) => {
+    const isLast = index === arr.length - 1;
+    if (isLast) {
+      return <Text key={item.title} size="sm" c="dimmed">{item.title}</Text>;
+    }
     return (
-      <Box p="xl">
-        <Stack align="center" gap="md">
-          <Loader size="lg" />
-          <Text c="dimmed">Loading resources...</Text>
-        </Stack>
-      </Box>
+      <Anchor key={item.title} component={Link} to={item.href} size="sm">
+        {item.title}
+      </Anchor>
     );
-  }
+  });
 
   if (error) {
     return (
-      <Box p="xl">
-        <Alert
-          icon={<IconAlertCircle size={16} />}
-          title="Error"
-          color="red"
-        >
-          {error}
-        </Alert>
+      <Box p="md">
+        <EmptyState variant="error" message={error} />
       </Box>
     );
   }
@@ -256,12 +273,12 @@ export function ResourcesPage(): JSX.Element {
   return (
     <Box p="md" h="100%">
       <Grid gutter="md" h="100%">
-        {/* Left column - Search and list */}
+        {/* Left column */}
         <Grid.Col span={5}>
           <Stack gap="md" h="100%">
+            <Breadcrumbs separator={<IconChevronRight size={14} />}>{breadcrumbItems}</Breadcrumbs>
             <Title order={2}>Resources</Title>
 
-            {/* Search box */}
             <TextInput
               placeholder="Search resources..."
               leftSection={<IconSearch size={16} />}
@@ -269,8 +286,7 @@ export function ResourcesPage(): JSX.Element {
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
             />
 
-            {/* Filters */}
-            <Group gap="sm" grow>
+            <FilterBar hasActiveFilters={hasActiveFilters} onClearAll={clearAllFilters}>
               <Select
                 placeholder="All types"
                 size="sm"
@@ -279,6 +295,7 @@ export function ResourcesPage(): JSX.Element {
                 onChange={setTypeFilter}
                 clearable
                 searchable
+                style={{ flex: 1 }}
               />
               <Select
                 placeholder="All regions"
@@ -288,8 +305,9 @@ export function ResourcesPage(): JSX.Element {
                 onChange={setRegionFilter}
                 clearable
                 searchable
+                style={{ flex: 1 }}
               />
-            </Group>
+            </FilterBar>
             <Select
               placeholder="All accounts"
               size="sm"
@@ -298,118 +316,109 @@ export function ResourcesPage(): JSX.Element {
               onChange={setAccountFilter}
               clearable
               searchable
-              renderOption={({ option }) => {
-                const name = accountNames[option.value];
-                if (name) {
-                  return (
-                    <Group gap="xs">
-                      <Text size="sm">{name}</Text>
-                      <Text size="xs" c="dimmed">({option.value})</Text>
-                    </Group>
-                  );
-                }
-                return <Text size="sm">{option.value}</Text>;
-              }}
             />
 
-            {/* Results count */}
             <Text size="sm" c="dimmed">
               {formatNumber(filteredResources.length)} of {formatNumber(resourceList.length)} resources
               {totalPages > 1 && ` (page ${formatNumber(page)} of ${formatNumber(totalPages)})`}
             </Text>
 
-            {/* Resource list - paginated */}
             <Card withBorder p={0} style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               <ScrollArea style={{ flex: 1 }}>
-                {paginatedResources.map((r) => (
-                  <div
-                    key={r.arn}
-                    onClick={() => handleSelectResource(r.arn)}
-                    style={{
-                      cursor: 'pointer',
-                      padding: '8px 12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      backgroundColor: selectedArn === r.arn
-                        ? 'var(--mantine-color-primary-light)'
-                        : undefined,
-                      borderBottom: '1px solid var(--mantine-color-default-border)',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedArn !== r.arn) {
-                        e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-light-hover)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedArn !== r.arn) {
-                        e.currentTarget.style.backgroundColor = '';
-                      }
-                    }}
-                  >
-                    <div style={{ flexShrink: 0 }}>
-                      <IconDatabase size={16} color="var(--mantine-color-teal-6)" />
+                {loading ? (
+                  <ListSkeleton />
+                ) : filteredResources.length === 0 ? (
+                  <Box p="xl">
+                    <EmptyState
+                      variant={hasActiveFilters ? 'no-results' : 'no-data'}
+                      entityName="resource"
+                    />
+                  </Box>
+                ) : (
+                  paginatedResources.map((r) => (
+                    <div
+                      key={r.arn}
+                      onClick={() => handleSelectResource(r.arn)}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '8px 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        backgroundColor: selectedArn === r.arn
+                          ? 'var(--mantine-color-primary-light)'
+                          : undefined,
+                        borderBottom: '1px solid var(--mantine-color-default-border)',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (selectedArn !== r.arn) {
+                          e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-light-hover)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (selectedArn !== r.arn) {
+                          e.currentTarget.style.backgroundColor = '';
+                        }
+                      }}
+                    >
+                      <div style={{ flexShrink: 0 }}>
+                        <IconDatabase size={16} color="var(--mantine-color-teal-6)" />
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <Text size="sm" fw={500} truncate>{r.name}</Text>
+                        <Text size="xs" c="dimmed" truncate>
+                          {formatResourceType(r)} &middot; {r.region || 'global'}
+                        </Text>
+                      </div>
                     </div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <Text size="sm" fw={500} truncate>
-                        {r.name}
-                      </Text>
-                      <Text size="xs" c="dimmed" truncate>
-                        {formatResourceType(r)} &middot; {r.region || 'global'}
-                      </Text>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </ScrollArea>
               {totalPages > 1 && (
                 <Box p="xs" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
-                  <Pagination
-                    value={page}
-                    onChange={setPage}
-                    total={totalPages}
-                    size="sm"
-                    withEdges
-                  />
+                  <Pagination value={page} onChange={setPage} total={totalPages} size="sm" withEdges />
                 </Box>
               )}
             </Card>
           </Stack>
         </Grid.Col>
 
-        {/* Right column - Detail panel */}
+        {/* Right column */}
         <Grid.Col span={7}>
           <Card withBorder h="100%" p="md">
             {!selectedArn ? (
-              <Stack align="center" justify="center" h="100%">
-                <Text c="dimmed">Select a resource to view details</Text>
-              </Stack>
+              <EmptyState variant="no-selection" entityName="resource" />
             ) : loadingDetail ? (
-              <Stack align="center" justify="center" h="100%">
-                <Loader size="md" />
-                <Text c="dimmed">Loading details...</Text>
-              </Stack>
+              <DetailSkeleton />
             ) : selectedResource ? (
               <ScrollArea h="calc(100vh - 180px)">
                 <Stack gap="md">
-                  {/* Header */}
                   <Group justify="space-between" align="flex-start">
                     <Title order={3}>{selectedResource.Name}</Title>
-                    <Badge color="teal" size="lg">
-                      {formatCloudFormationType(selectedResource.Type)}
-                    </Badge>
+                    <Group gap="xs">
+                      <CopyEntityButton data={selectedResource} />
+                      <ExportButton data={selectedResource} filename={`resource-${selectedResource.Name}`} />
+                      <Badge color="teal" size="lg">
+                        {formatCloudFormationType(selectedResource.Type)}
+                      </Badge>
+                    </Group>
                   </Group>
 
-                  {/* Metadata */}
-                  <Card withBorder p="sm">
-                    <Title order={5} mb="xs">Metadata</Title>
+                  <CollapsibleCard title="Metadata">
                     <Stack gap="xs">
                       <Group gap="xs">
                         <Text size="sm" fw={600} c="dimmed" w={100}>ARN:</Text>
-                        <Text size="sm" ff="monospace" style={{ wordBreak: 'break-all' }}>{selectedResource.Arn}</Text>
+                        <Text size="sm" ff="monospace" style={{ wordBreak: 'break-all', flex: 1 }}>
+                          {selectedResource.Arn}
+                        </Text>
+                        <CopyButton value={selectedResource.Arn} />
                       </Group>
                       <Group gap="xs">
                         <Text size="sm" fw={600} c="dimmed" w={100}>Account:</Text>
-                        <Text size="sm" ff="monospace">{formatAccount(selectedResource.AccountId)}</Text>
+                        <Anchor component={Link} to={`/search/accounts/${selectedResource.AccountId}`} size="sm" ff="monospace">
+                          {formatAccount(selectedResource.AccountId)}
+                        </Anchor>
+                        <CopyButton value={selectedResource.AccountId} />
                       </Group>
                       <Group gap="xs">
                         <Text size="sm" fw={600} c="dimmed" w={100}>Region:</Text>
@@ -420,12 +429,10 @@ export function ResourcesPage(): JSX.Element {
                         <Text size="sm" ff="monospace">{formatCloudFormationType(selectedResource.Type)}</Text>
                       </Group>
                     </Stack>
-                  </Card>
+                  </CollapsibleCard>
 
-                  {/* Tags */}
                   {selectedResource.Tags && selectedResource.Tags.length > 0 && (
-                    <Card withBorder p="sm">
-                      <Title order={5} mb="xs">Tags</Title>
+                    <CollapsibleCard title="Tags">
                       <Table withRowBorders={false}>
                         <Table.Tbody>
                           {selectedResource.Tags.map((tag) => (
@@ -440,26 +447,22 @@ export function ResourcesPage(): JSX.Element {
                           ))}
                         </Table.Tbody>
                       </Table>
-                    </Card>
+                    </CollapsibleCard>
                   )}
 
-                  {/* Resource Policy */}
                   {selectedResource.Policy && selectedResource.Policy.Statement && selectedResource.Policy.Statement.length > 0 && (
-                    <Card withBorder p="sm">
-                      <Title order={5} mb="xs">Resource Policy</Title>
+                    <CollapsibleCard title="Resource Policy">
                       <CodeHighlight
                         code={JSON.stringify(selectedResource.Policy, null, 2)}
                         language="json"
                         withCopyButton
                       />
-                    </Card>
+                    </CollapsibleCard>
                   )}
                 </Stack>
               </ScrollArea>
             ) : (
-              <Stack align="center" justify="center" h="100%">
-                <Text c="dimmed">Failed to load resource details</Text>
-              </Stack>
+              <EmptyState variant="error" message="Failed to load resource details" />
             )}
           </Card>
         </Grid.Col>

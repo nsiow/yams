@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import {
   Anchor,
-  Alert,
   Badge,
   Box,
+  Breadcrumbs,
   Card,
   Grid,
   Group,
-  Loader,
   Pagination,
   ScrollArea,
   Stack,
@@ -17,9 +16,19 @@ import {
   Title,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
-import { IconAlertCircle, IconSearch, IconCloud } from '@tabler/icons-react';
+import { IconSearch, IconCloud, IconChevronRight } from '@tabler/icons-react';
 import { yamsApi } from '../../lib/api';
 import type { Account } from '../../lib/api';
+import {
+  CollapsibleCard,
+  CopyButton,
+  CopyEntityButton,
+  EmptyState,
+  ExportButton,
+  FilterBar,
+  ListSkeleton,
+  DetailSkeleton,
+} from '../../components';
 
 // TODO(nsiow): Add tag filtering when tags are available in the API
 
@@ -35,6 +44,7 @@ function formatNumber(n: number): string {
 export function AccountsPage(): JSX.Element {
   const navigate = useNavigate();
   const { '*': idFromUrl } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +54,23 @@ export function AccountsPage(): JSX.Element {
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState('');
+  // Initialize filters from URL params
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [debouncedSearch] = useDebouncedValue(searchQuery, 200);
   // TODO(nsiow): Add OU filter when we have a way to efficiently get OU data for all accounts
+
+  // Sync filters to URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('q', searchQuery);
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, setSearchParams]);
+
+  const hasActiveFilters = Boolean(searchQuery);
+
+  const clearAllFilters = (): void => {
+    setSearchQuery('');
+  };
 
   // Build account list with names
   const accountList = useMemo((): AccountListItem[] => {
@@ -60,13 +83,9 @@ export function AccountsPage(): JSX.Element {
   // Filter accounts based on search
   const filteredAccounts = useMemo(() => {
     return accountList.filter(a => {
-      // Search filter (searches name and ID)
       if (debouncedSearch) {
         const query = debouncedSearch.toLowerCase();
-        return (
-          a.name.toLowerCase().includes(query) ||
-          a.id.toLowerCase().includes(query)
-        );
+        return a.name.toLowerCase().includes(query) || a.id.toLowerCase().includes(query);
       }
       return true;
     });
@@ -110,7 +129,7 @@ export function AccountsPage(): JSX.Element {
   const handleSelectAccount = (id: string): void => {
     setSelectedId(id);
     fetchAccountDetail(id);
-    navigate(`/search/accounts/${id}`, { replace: true });
+    navigate(`/search/accounts/${id}?${searchParams.toString()}`, { replace: true });
   };
 
   // Load account from URL on mount or when URL changes
@@ -143,27 +162,27 @@ export function AccountsPage(): JSX.Element {
     return ous.length > 0 ? ous[ous.length - 1].Name : null;
   };
 
-  if (loading) {
+  // Breadcrumb items
+  const breadcrumbItems = [
+    { title: 'Search', href: '/' },
+    { title: 'Accounts', href: '/search/accounts' },
+    ...(selectedAccount ? [{ title: selectedAccount.Name, href: '' }] : []),
+  ].map((item, index, arr) => {
+    const isLast = index === arr.length - 1;
+    if (isLast) {
+      return <Text key={item.title} size="sm" c="dimmed">{item.title}</Text>;
+    }
     return (
-      <Box p="xl">
-        <Stack align="center" gap="md">
-          <Loader size="lg" />
-          <Text c="dimmed">Loading accounts...</Text>
-        </Stack>
-      </Box>
+      <Anchor key={item.title} component={Link} to={item.href} size="sm">
+        {item.title}
+      </Anchor>
     );
-  }
+  });
 
   if (error) {
     return (
-      <Box p="xl">
-        <Alert
-          icon={<IconAlertCircle size={16} />}
-          title="Error"
-          color="red"
-        >
-          {error}
-        </Alert>
+      <Box p="md">
+        <EmptyState variant="error" message={error} />
       </Box>
     );
   }
@@ -171,12 +190,12 @@ export function AccountsPage(): JSX.Element {
   return (
     <Box p="md" h="100%">
       <Grid gutter="md" h="100%">
-        {/* Left column - Search and list */}
+        {/* Left column */}
         <Grid.Col span={5}>
           <Stack gap="md" h="100%">
+            <Breadcrumbs separator={<IconChevronRight size={14} />}>{breadcrumbItems}</Breadcrumbs>
             <Title order={2}>Accounts</Title>
 
-            {/* Search box */}
             <TextInput
               placeholder="Search accounts..."
               leftSection={<IconSearch size={16} />}
@@ -184,100 +203,98 @@ export function AccountsPage(): JSX.Element {
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
             />
 
-            {/* Results count */}
+            <FilterBar hasActiveFilters={hasActiveFilters} onClearAll={clearAllFilters}>
+              <Text size="sm" c="dimmed">Search by name or ID</Text>
+            </FilterBar>
+
             <Text size="sm" c="dimmed">
               {formatNumber(filteredAccounts.length)} of {formatNumber(accountList.length)} accounts
               {totalPages > 1 && ` (page ${formatNumber(page)} of ${formatNumber(totalPages)})`}
             </Text>
 
-            {/* Account list - paginated */}
             <Card withBorder p={0} style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               <ScrollArea style={{ flex: 1 }}>
-                {paginatedAccounts.map((a) => (
-                  <div
-                    key={a.id}
-                    onClick={() => handleSelectAccount(a.id)}
-                    style={{
-                      cursor: 'pointer',
-                      padding: '8px 12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      backgroundColor: selectedId === a.id
-                        ? 'var(--mantine-color-primary-light)'
-                        : undefined,
-                      borderBottom: '1px solid var(--mantine-color-default-border)',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedId !== a.id) {
-                        e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-light-hover)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedId !== a.id) {
-                        e.currentTarget.style.backgroundColor = '';
-                      }
-                    }}
-                  >
-                    <div style={{ flexShrink: 0 }}>
-                      <IconCloud size={16} color="var(--mantine-color-indigo-6)" />
+                {loading ? (
+                  <ListSkeleton />
+                ) : filteredAccounts.length === 0 ? (
+                  <Box p="xl">
+                    <EmptyState
+                      variant={hasActiveFilters ? 'no-results' : 'no-data'}
+                      entityName="account"
+                    />
+                  </Box>
+                ) : (
+                  paginatedAccounts.map((a) => (
+                    <div
+                      key={a.id}
+                      onClick={() => handleSelectAccount(a.id)}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '8px 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        backgroundColor: selectedId === a.id
+                          ? 'var(--mantine-color-primary-light)'
+                          : undefined,
+                        borderBottom: '1px solid var(--mantine-color-default-border)',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (selectedId !== a.id) {
+                          e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-light-hover)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (selectedId !== a.id) {
+                          e.currentTarget.style.backgroundColor = '';
+                        }
+                      }}
+                    >
+                      <div style={{ flexShrink: 0 }}>
+                        <IconCloud size={16} color="var(--mantine-color-indigo-6)" />
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <Text size="sm" fw={500} truncate>{a.name}</Text>
+                        <Text size="xs" c="dimmed" truncate>{a.id}</Text>
+                      </div>
                     </div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <Text size="sm" fw={500} truncate>
-                        {a.name}
-                      </Text>
-                      <Text size="xs" c="dimmed" truncate>
-                        {a.id}
-                      </Text>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </ScrollArea>
               {totalPages > 1 && (
                 <Box p="xs" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
-                  <Pagination
-                    value={page}
-                    onChange={setPage}
-                    total={totalPages}
-                    size="sm"
-                    withEdges
-                  />
+                  <Pagination value={page} onChange={setPage} total={totalPages} size="sm" withEdges />
                 </Box>
               )}
             </Card>
           </Stack>
         </Grid.Col>
 
-        {/* Right column - Detail panel */}
+        {/* Right column */}
         <Grid.Col span={7}>
           <Card withBorder h="100%" p="md">
             {!selectedId ? (
-              <Stack align="center" justify="center" h="100%">
-                <Text c="dimmed">Select an account to view details</Text>
-              </Stack>
+              <EmptyState variant="no-selection" entityName="account" />
             ) : loadingDetail ? (
-              <Stack align="center" justify="center" h="100%">
-                <Loader size="md" />
-                <Text c="dimmed">Loading details...</Text>
-              </Stack>
+              <DetailSkeleton />
             ) : selectedAccount ? (
               <ScrollArea h="calc(100vh - 180px)">
                 <Stack gap="md">
-                  {/* Header */}
                   <Group justify="space-between" align="flex-start">
                     <Title order={3}>{selectedAccount.Name}</Title>
-                    <Badge color="indigo" size="lg">
-                      Account
-                    </Badge>
+                    <Group gap="xs">
+                      <CopyEntityButton data={selectedAccount} />
+                      <ExportButton data={selectedAccount} filename={`account-${selectedAccount.Name}`} />
+                      <Badge color="indigo" size="lg">Account</Badge>
+                    </Group>
                   </Group>
 
-                  {/* Metadata */}
-                  <Card withBorder p="sm">
-                    <Title order={5} mb="xs">Metadata</Title>
+                  <CollapsibleCard title="Metadata">
                     <Stack gap="xs">
                       <Group gap="xs">
                         <Text size="sm" fw={600} c="dimmed" w={120}>Account ID:</Text>
-                        <Text size="sm" ff="monospace">{selectedAccount.Id}</Text>
+                        <Text size="sm" ff="monospace" style={{ flex: 1 }}>{selectedAccount.Id}</Text>
+                        <CopyButton value={selectedAccount.Id} />
                       </Group>
                       <Group gap="xs">
                         <Text size="sm" fw={600} c="dimmed" w={120}>Name:</Text>
@@ -285,7 +302,8 @@ export function AccountsPage(): JSX.Element {
                       </Group>
                       <Group gap="xs">
                         <Text size="sm" fw={600} c="dimmed" w={120}>Organization:</Text>
-                        <Text size="sm" ff="monospace">{selectedAccount.OrgId}</Text>
+                        <Text size="sm" ff="monospace" style={{ flex: 1 }}>{selectedAccount.OrgId}</Text>
+                        <CopyButton value={selectedAccount.OrgId} />
                       </Group>
                       {getLeafOuName(selectedAccount) && (
                         <Group gap="xs">
@@ -294,12 +312,10 @@ export function AccountsPage(): JSX.Element {
                         </Group>
                       )}
                     </Stack>
-                  </Card>
+                  </CollapsibleCard>
 
-                  {/* Organization Hierarchy */}
                   {selectedAccount.OrgNodes && selectedAccount.OrgNodes.length > 0 && (
-                    <Card withBorder p="sm">
-                      <Title order={5} mb="xs">Organization Hierarchy</Title>
+                    <CollapsibleCard title="Organization Hierarchy">
                       <Stack gap="md">
                         {selectedAccount.OrgNodes.map((node, idx) => (
                           <Box
@@ -369,14 +385,12 @@ export function AccountsPage(): JSX.Element {
                           </Box>
                         ))}
                       </Stack>
-                    </Card>
+                    </CollapsibleCard>
                   )}
                 </Stack>
               </ScrollArea>
             ) : (
-              <Stack align="center" justify="center" h="100%">
-                <Text c="dimmed">Failed to load account details</Text>
-              </Stack>
+              <EmptyState variant="error" message="Failed to load account details" />
             )}
           </Card>
         </Grid.Col>
