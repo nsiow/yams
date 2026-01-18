@@ -99,11 +99,8 @@ func (p *Pool) Timeout() time.Duration {
 		p.timeout = 60 * time.Second
 
 		fromEnv := os.Getenv("YAMS_SIM_TIMEOUT")
-		num, err := strconv.Atoi(fromEnv)
-		if err == nil {
-			p.timeout = time.Duration(num * int(time.Second))
-		} else {
-			p.timeout = 30 * time.Second
+		if num, err := strconv.Atoi(fromEnv); err == nil {
+			p.timeout = time.Duration(num) * time.Second
 		}
 	}
 
