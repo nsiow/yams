@@ -30,6 +30,7 @@
 * **Test style:** Where possible for Go tests, use the TDT pattern implemented in
   `testlib.RunTestSuite`
 * **Test data:** Use `testdata/` directories for any file/data type content used in tests. There are many such directories within the repo.
+* **Yams server:** When starting a one-off yams server for testing, use a non-default port (e.g., `-a :9999`) since port 8888 is typically already in use during development.
 * **Test coverage:** Use `make cov-report` as the source of coverage data. This generates a function-level coverage report.
 
 ---
@@ -58,3 +59,9 @@ TBD, follow what currently exists
 ## Output Format
 * Include the **file path** as a comment on the first line of every code block.
 * If a change involves multiple files, provide a **bulleted summary** of changes before the code.
+
+---
+
+## Pull Requests
+* **PR body:** Keep concise. Include a brief summary only. Do not include test plans, commit lists, or AI attribution.
+* **Commit messages:** Keep short and use conventional commit format.
