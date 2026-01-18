@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -155,5 +156,131 @@ func TestServer_IntegrationRoutes(t *testing.T) {
 				t.Errorf("Request %s %s status = %d, want %d", tt.method, tt.path, w.Code, tt.want)
 			}
 		})
+	}
+}
+
+func TestCorsMiddleware(t *testing.T) {
+	// Create a simple handler that the middleware wraps
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	})
+
+	// Wrap with cors middleware
+	wrapped := corsMiddleware(handler)
+
+	t.Run("normal_request", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/test", nil)
+
+		wrapped.ServeHTTP(w, req)
+
+		// Check CORS headers are set
+		if w.Header().Get("Access-Control-Allow-Origin") != "*" {
+			t.Error("expected Access-Control-Allow-Origin: *")
+		}
+		if w.Header().Get("Access-Control-Allow-Methods") != "*" {
+			t.Error("expected Access-Control-Allow-Methods: *")
+		}
+		if w.Header().Get("Access-Control-Allow-Headers") != "*" {
+			t.Error("expected Access-Control-Allow-Headers: *")
+		}
+		if w.Header().Get("Access-Control-Allow-Credentials") != "true" {
+			t.Error("expected Access-Control-Allow-Credentials: true")
+		}
+
+		// Should pass through to handler
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", w.Code)
+		}
+	})
+
+	t.Run("options_preflight", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("OPTIONS", "/test", nil)
+
+		wrapped.ServeHTTP(w, req)
+
+		// Check CORS headers are set
+		if w.Header().Get("Access-Control-Allow-Origin") != "*" {
+			t.Error("expected Access-Control-Allow-Origin: *")
+		}
+
+		// OPTIONS should return 200 without calling the underlying handler
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", w.Code)
+		}
+
+		// Body should be empty for OPTIONS
+		if w.Body.Len() > 0 {
+			t.Error("OPTIONS response body should be empty")
+		}
+	})
+}
+
+func TestStatus_WithEnvVars(t *testing.T) {
+	// Set an env var to test the env section
+	envKey := "YAMS_TEST_VAR"
+	os.Setenv(envKey, "test_value")
+	defer os.Unsetenv(envKey)
+
+	server, err := NewServer(&cli.Flags{Addr: ":8080", Env: []string{envKey}})
+	if err != nil {
+		t.Fatalf("NewServer() error = %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/status", nil)
+
+	server.Status(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Status() status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var status map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &status); err != nil {
+		t.Fatalf("Status() produced invalid JSON: %v", err)
+	}
+
+	// Verify env field is present
+	env, ok := status["env"].(map[string]any)
+	if !ok {
+		t.Fatal("Status() missing env field")
+	}
+
+	if env[envKey] != "test_value" {
+		t.Errorf("Status() env[%s] = %v, want 'test_value'", envKey, env[envKey])
+	}
+}
+
+func TestStatus_WithEmptyEnvVar(t *testing.T) {
+	// Set an empty env var - should not be included
+	envKey := "YAMS_TEST_EMPTY_VAR"
+	os.Setenv(envKey, "")
+	defer os.Unsetenv(envKey)
+
+	server, err := NewServer(&cli.Flags{Addr: ":8080", Env: []string{envKey}})
+	if err != nil {
+		t.Fatalf("NewServer() error = %v", err)
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/status", nil)
+
+	server.Status(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Status() status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var status map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &status); err != nil {
+		t.Fatalf("Status() produced invalid JSON: %v", err)
+	}
+
+	// Verify env field is not present (empty env vars are excluded)
+	if _, ok := status["env"]; ok {
+		t.Error("Status() should not include env field when all env vars are empty")
 	}
 }

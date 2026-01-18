@@ -62,3 +62,6 @@ go.work
 ui/node_modules/
 ui/dist/
 ui/*.local
+*.tsbuildinfo
+ui/vite.config.js
+ui/vite.config.d.ts

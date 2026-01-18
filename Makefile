@@ -89,6 +89,9 @@ cov-missing: coverage.out
 .PHONY: cov-html
 cov-html: coverage.html
 
+.PHONY: precommit
+precommit: clean test lint cov-report
+
 coverage.out: $(GO_FILES)
 	GO_TEST_FLAGS='-coverprofile=$@' make test
 	grep -Ev $(COVERAGE_OMIT) $@ > $@.tmp

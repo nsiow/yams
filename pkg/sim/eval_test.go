@@ -375,6 +375,33 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 			Want: true,
 		},
 		{
+			Name: "same_account_strict_deny_no_resource_policy",
+			Input: AuthContext{
+				Action: sar.MustLookupString("sts:assumerole"),
+				Principal: &entities.FrozenPrincipal{
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"sts:AssumeRole"},
+									Resource: []string{"*"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:iam::88888:role/yourrole",
+					AccountId: "88888",
+					// No trust policy - resource doesn't allow
+				},
+			},
+			Want: false,
+		},
+		{
 			Name: "same_account_simple_deny",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
