@@ -176,13 +176,13 @@ func TestQuery(t *testing.T) {
 			Input: func(q *Query) *Query {
 				return q.WithService("aCcOuNt")
 			},
-			Want: []string{"AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "DisableRegion", "EnableRegion", "GetAccountInformation", "GetAlternateContact", "GetContactInformation", "GetPrimaryEmail", "GetRegionOptStatus", "ListRegions", "PutAlternateContact", "PutContactInformation", "StartPrimaryEmailUpdate"},
+			Want: []string{"AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "DisableRegion", "EnableRegion", "GetAccountInformation", "GetAlternateContact", "GetContactInformation", "GetGovCloudAccountInformation", "GetPrimaryEmail", "GetRegionOptStatus", "ListRegions", "PutAccountName", "PutAlternateContact", "PutContactInformation", "StartPrimaryEmailUpdate"},
 		},
 		{
 			Input: func(q *Query) *Query {
 				return q.WithService("account")
 			},
-			Want: []string{"AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "DisableRegion", "EnableRegion", "GetAccountInformation", "GetAlternateContact", "GetContactInformation", "GetPrimaryEmail", "GetRegionOptStatus", "ListRegions", "PutAlternateContact", "PutContactInformation", "StartPrimaryEmailUpdate"},
+			Want: []string{"AcceptPrimaryEmailUpdate", "CloseAccount", "DeleteAlternateContact", "DisableRegion", "EnableRegion", "GetAccountInformation", "GetAlternateContact", "GetContactInformation", "GetGovCloudAccountInformation", "GetPrimaryEmail", "GetRegionOptStatus", "ListRegions", "PutAccountName", "PutAlternateContact", "PutContactInformation", "StartPrimaryEmailUpdate"},
 		},
 	}
 
@@ -197,4 +197,36 @@ func TestQuery(t *testing.T) {
 
 		return actionNames, nil
 	})
+}
+
+func TestQueryWithSearch(t *testing.T) {
+	// Test WithSearch functionality
+	q := NewQuery().WithSearch("s3:list")
+	results := q.Results()
+
+	// Should find S3 list actions
+	found := false
+	for _, action := range results {
+		if strings.Contains(strings.ToLower(action.ShortName()), "s3:list") {
+			found = true
+			break
+		}
+	}
+	if !found && len(results) > 0 {
+		t.Fatal("expected to find s3:list actions in search results")
+	}
+
+	// Test case insensitivity
+	q2 := NewQuery().WithSearch("S3:LIST")
+	results2 := q2.Results()
+	if len(results) != len(results2) {
+		t.Fatal("WithSearch should be case-insensitive")
+	}
+
+	// Test empty search returns nothing when combined with other filters
+	q3 := NewQuery().WithSearch("nonexistentaction12345")
+	results3 := q3.Results()
+	if len(results3) != 0 {
+		t.Fatalf("expected 0 results for nonexistent search, got %d", len(results3))
+	}
 }

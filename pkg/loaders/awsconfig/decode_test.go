@@ -161,3 +161,12 @@ func TestDecode(t *testing.T) {
 		return policy.Policy(e), nil
 	})
 }
+
+func TestEncodedPolicy_UnmarshalJSON_EmptyData(t *testing.T) {
+	// Test the empty data path directly (line 20-22 in decode.go)
+	var e EncodedPolicy
+	err := e.UnmarshalJSON([]byte{})
+	if err == nil {
+		t.Fatal("expected error for empty data but got nil")
+	}
+}

@@ -618,6 +618,7 @@ func TestLoad(t *testing.T) {
 		if err != nil {
 			t.Fatalf("error while attempting to open test file '%s': %v", fp, err)
 		}
+		defer f.Close()
 
 		// Call the correct loader based on input type
 		l := NewLoader()

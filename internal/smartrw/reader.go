@@ -59,6 +59,7 @@ func selectReader(src string) (io.ReadCloser, error) {
 	if strings.HasSuffix(src, ".gz") {
 		gz, err := NewGzipReadCloser(r)
 		if err != nil {
+			r.Close()
 			return nil, fmt.Errorf("unable to wrap gzip reader: %v", err)
 		}
 		r = gz

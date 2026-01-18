@@ -29,6 +29,7 @@ type simBatch struct {
 	Jobs     []simIn
 	Finished chan<- simOut
 	Done     *atomic.Int32
+	Sent     *atomic.Int32
 }
 
 type Pool struct {
@@ -69,6 +70,8 @@ func (p *Pool) NumWorkers() int {
 		num, err := strconv.Atoi(fromEnv)
 		if err == nil {
 			p.numWorkers = num
+		} else {
+			p.numWorkers = runtime.NumCPU() // default to some reasonable number of workers
 		}
 	}
 
@@ -83,6 +86,8 @@ func (p *Pool) BatchSize() int {
 		num, err := strconv.Atoi(fromEnv)
 		if err == nil {
 			p.batchSize = num
+		} else {
+			p.batchSize = 1024 // default to some reasonable batch size
 		}
 	}
 
@@ -97,6 +102,8 @@ func (p *Pool) Timeout() time.Duration {
 		num, err := strconv.Atoi(fromEnv)
 		if err == nil {
 			p.timeout = time.Duration(num * int(time.Second))
+		} else {
+			p.timeout = 30 * time.Second
 		}
 	}
 
@@ -132,10 +139,10 @@ func (p *Pool) handleBatch(b simBatch) {
 		if err != nil || result.IsAllowed {
 			out := simOut{Result: result, Error: err}
 			b.Finished <- out
+			b.Sent.Add(1)
 		}
+		b.Done.Add(1)
 	}
-
-	b.Done.Add(int32(len(b.Jobs)))
 }
 
 func (p *Pool) Submit(b simBatch) {

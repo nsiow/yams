@@ -38,6 +38,11 @@ func (api *API) WhichResources(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if len(input.Principal) == 0 {
+		httputil.ClientError(w, req, fmt.Errorf("missing required field: principal"))
+		return
+	}
+
 	opts := sim.NewOptions(sim.WithAdditionalProperties(input.Context))
 	opts.Overlay = input.Overlay.Universe()
 	opts.EnableFuzzyMatchArn = input.Fuzzy

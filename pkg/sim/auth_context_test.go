@@ -630,6 +630,78 @@ func TestAuthContextKeys(t *testing.T) {
 			},
 			Want: EMPTY,
 		},
+
+		// -------------------------------------------------------------------------------------------
+		// Nil Principal/Resource edge cases
+		// -------------------------------------------------------------------------------------------
+
+		{
+			Name: "principal_arn_nil_principal",
+			Input: input{
+				ac:  AuthContext{Principal: nil},
+				key: "aws:PrincipalArn",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "principal_account_nil_principal",
+			Input: input{
+				ac:  AuthContext{Principal: nil},
+				key: "aws:PrincipalAccount",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "principal_type_nil_principal",
+			Input: input{
+				ac:  AuthContext{Principal: nil},
+				key: "aws:PrincipalType",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "principal_org_id_nil_principal",
+			Input: input{
+				ac:  AuthContext{Principal: nil},
+				key: "aws:PrincipalOrgID",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "principal_tag_nil_principal",
+			Input: input{
+				ac:  AuthContext{Principal: nil},
+				key: "aws:PrincipalTag/foo",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "resource_account_nil_resource",
+			Input: input{
+				ac:  AuthContext{Resource: nil},
+				key: "aws:ResourceAccount",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "resource_org_id_nil_resource",
+			Input: input{
+				ac:  AuthContext{Resource: nil},
+				key: "aws:ResourceOrgID",
+			},
+			Want: EMPTY,
+		},
+		{
+			Name: "resource_tag_nil_resource",
+			Input: input{
+				ac: AuthContext{
+					Action:   sar.MustLookupString("dynamodb:query"),
+					Resource: nil,
+				},
+				key: "aws:ResourceTag/foo",
+			},
+			Want: EMPTY,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (string, error) {
@@ -899,7 +971,7 @@ func TestSARValidation(t *testing.T) {
 				},
 				key: "aws:ResourceTag/Foo",
 			},
-			Want: EMPTY,
+			Want: "Bar", // aws:resourcetag now supported for S3 objects
 		},
 		{
 			Name: "yet_another_invalid_resource_condition",
@@ -974,6 +1046,71 @@ func TestSARValidationMultiKey(t *testing.T) {
 					}),
 				},
 				key: "s3:tagkeys",
+			},
+			Want: nil,
+		},
+		{
+			Name: "principal_org_paths",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:listqueues"),
+					Principal: &entities.FrozenPrincipal{
+						Account: entities.FrozenAccount{
+							OrgPaths: []string{
+								"o-123/",
+								"o-123/ou-1/",
+								"o-123/ou-1/ou-2/",
+							},
+						},
+					},
+				},
+				key: "aws:PrincipalOrgPaths",
+			},
+			Want: []string{
+				"o-123/",
+				"o-123/ou-1/",
+				"o-123/ou-1/ou-2/",
+			},
+		},
+		{
+			Name: "resource_org_paths",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("sqs:receivemessage"),
+					Resource: &entities.FrozenResource{
+						Arn: "arn:aws:sqs:us-east-1:55555:myqueue",
+						Account: entities.FrozenAccount{
+							OrgPaths: []string{
+								"o-456/",
+								"o-456/ou-a/",
+							},
+						},
+					},
+				},
+				key: "aws:ResourceOrgPaths",
+			},
+			Want: []string{
+				"o-456/",
+				"o-456/ou-a/",
+			},
+		},
+		{
+			Name: "principal_org_paths_nil_principal",
+			Input: input{
+				ac: AuthContext{
+					Principal: nil,
+				},
+				key: "aws:PrincipalOrgPaths",
+			},
+			Want: nil,
+		},
+		{
+			Name: "resource_org_paths_nil_resource",
+			Input: input{
+				ac: AuthContext{
+					Resource: nil,
+				},
+				key: "aws:ResourceOrgPaths",
 			},
 			Want: nil,
 		},

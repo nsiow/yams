@@ -44,6 +44,9 @@ func NewUniverse() *Universe {
 
 // Merge adds all entries in `other` [Universe] to this one
 func (u *Universe) Merge(other *Universe) {
+	other.mut.RLock()
+	defer other.mut.RUnlock()
+
 	for _, item := range other.accounts {
 		u.PutAccount(*item)
 	}
@@ -72,11 +75,14 @@ func (u *Universe) Overlay(other *Universe) []*Universe {
 
 // Size returns the number of known entities in the universe
 func (u *Universe) Size() int {
-	return u.NumAccounts() +
-		u.NumGroups() +
-		u.NumPolicies() +
-		u.NumPrincipals() +
-		u.NumResources()
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
+	return len(u.accounts) +
+		len(u.groups) +
+		len(u.policies) +
+		len(u.principals) +
+		len(u.resources)
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -85,6 +91,8 @@ func (u *Universe) Size() int {
 
 // NumAccounts returns the number of accounts known to the universe
 func (u *Universe) NumAccounts() int {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	return len(u.accounts)
 }
 
@@ -136,6 +144,8 @@ func normalizeGroupArn(arn Arn) Arn {
 
 // NumGroups returns the number of groups known to the universe
 func (u *Universe) NumGroups() int {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	return len(u.groups)
 }
 
@@ -146,8 +156,11 @@ func (u *Universe) Groups() iter.Seq[*Group] {
 
 // GroupArns returns a slice containing the ARNs of all known Groups
 func (u *Universe) GroupArns() []string {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
 	arns := []string{}
-	for g := range u.Groups() {
+	for _, g := range u.groups {
 		arns = append(arns, g.Arn)
 	}
 	return arns
@@ -210,6 +223,8 @@ func (u *Universe) LoadBasePolicies() {
 
 // NumPolicies returns the number of policies known to the universe
 func (u *Universe) NumPolicies() int {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	return len(u.policies)
 }
 
@@ -223,8 +238,11 @@ func (u *Universe) Policies() iter.Seq[*ManagedPolicy] {
 
 // PolicyArns returns a slice containing the ARNs of all known Policies
 func (u *Universe) PolicyArns() []string {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
 	arns := []string{}
-	for p := range u.Policies() {
+	for _, p := range u.policies {
 		arns = append(arns, p.Arn)
 	}
 	return arns
@@ -264,6 +282,8 @@ func (u *Universe) RemovePolicy(arn Arn) {
 
 // NumPrincipals returns the number of principals known to the universe
 func (u *Universe) NumPrincipals() int {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	return len(u.principals)
 }
 
@@ -274,8 +294,11 @@ func (u *Universe) Principals() iter.Seq[*Principal] {
 
 // PrincipalArns returns a slice containing the ARNs of all known Principals
 func (u *Universe) PrincipalArns() []string {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
 	arns := []string{}
-	for p := range u.Principals() {
+	for _, p := range u.principals {
 		arns = append(arns, p.Arn)
 	}
 	return arns
@@ -317,6 +340,8 @@ func (u *Universe) RemovePrincipal(arn Arn) {
 
 // NumResources returns the number of resources known to the universe
 func (u *Universe) NumResources() int {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	return len(u.resources)
 }
 
@@ -337,8 +362,11 @@ func (u *Universe) Resources() iter.Seq[*Resource] {
 
 // ResourceArns returns a slice containing the ARNs of all known Resources
 func (u *Universe) ResourceArns() []string {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
 	arns := []string{}
-	for r := range u.Resources() {
+	for _, r := range u.resources {
 		arns = append(arns, r.Arn)
 	}
 	return arns

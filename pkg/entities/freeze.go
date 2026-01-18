@@ -264,6 +264,7 @@ func (r *Resource) FreezeWith(strict bool, uvs ...*Universe) (FrozenResource, er
 	f := FrozenResource{
 		Type:      r.Type,
 		AccountId: r.AccountId,
+		Region:    r.Region,
 		Arn:       r.Arn,
 		Tags:      r.Tags,
 		Policy:    r.Policy,

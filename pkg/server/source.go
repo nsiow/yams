@@ -88,7 +88,10 @@ func (serv *Server) Load(src *Source) error {
 }
 
 func (serv *Server) Refresh(src *Source) {
-	for tick := range time.Tick(src.Refresh) {
+	ticker := time.NewTicker(src.Refresh)
+	defer ticker.Stop()
+
+	for tick := range ticker.C {
 		slog.Info("refreshing source",
 			"tick", tick,
 			"source", src.Reader.Source)

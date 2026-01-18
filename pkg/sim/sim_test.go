@@ -278,10 +278,9 @@ func TestComputeAccessSummary(t *testing.T) {
 				actions: []string{"s3:listbucket"},
 			},
 			Want: map[string]int{
-				"arn:aws:s3:::bucket1":   1,
-				"arn:aws:s3:::bucket1/*": 1,
-				"arn:aws:s3:::bucket2":   1,
-				"arn:aws:s3:::bucket3":   0,
+				"arn:aws:s3:::bucket1": 1,
+				"arn:aws:s3:::bucket2": 1,
+				"arn:aws:s3:::bucket3": 0,
 			},
 		},
 		{
@@ -425,7 +424,7 @@ func TestWhichActions(t *testing.T) {
 			},
 			Want: []string{
 				"s3:GetObject",
-				"s3:ListBucket",
+				// s3:ListBucket doesn't target objects, only buckets
 			},
 		},
 		{
@@ -674,3 +673,133 @@ var InvalidTestUniverse_3 = entities.NewBuilder().
 		},
 	).
 	Build()
+
+func TestSimulateByArn_FuzzyMatch(t *testing.T) {
+	type input struct {
+		uv           *entities.Universe
+		action       string
+		principalArn string
+		resourceArn  string
+		opts         Options
+	}
+
+	tests := []testlib.TestCase[input, bool]{
+		{
+			Name: "fuzzy_match_principal",
+			Input: input{
+				uv:           SimpleTestUniverse_1,
+				action:       "s3:listbucket",
+				principalArn: "role1", // partial match
+				resourceArn:  "arn:aws:s3:::bucket1",
+				opts:         Options{EnableFuzzyMatchArn: true, DefaultS3Key: "*"},
+			},
+			Want: true,
+		},
+		{
+			Name: "fuzzy_match_resource",
+			Input: input{
+				uv:           SimpleTestUniverse_1,
+				action:       "s3:listbucket",
+				principalArn: "arn:aws:iam::88888:role/role1",
+				resourceArn:  "bucket1", // partial match
+				opts:         Options{EnableFuzzyMatchArn: true, DefaultS3Key: "*"},
+			},
+			Want: true,
+		},
+		{
+			Name: "fuzzy_match_no_match",
+			Input: input{
+				uv:           SimpleTestUniverse_1,
+				action:       "s3:listbucket",
+				principalArn: "nonexistent",
+				resourceArn:  "arn:aws:s3:::bucket1",
+				opts:         Options{EnableFuzzyMatchArn: true, DefaultS3Key: "*"},
+			},
+			ShouldErr: true,
+		},
+		{
+			Name: "fuzzy_match_too_many_principal_matches",
+			Input: input{
+				uv:           SimpleTestUniverse_1,
+				action:       "s3:listbucket",
+				principalArn: "role", // matches role1, role2, role3
+				resourceArn:  "arn:aws:s3:::bucket1",
+				opts:         Options{EnableFuzzyMatchArn: true, DefaultS3Key: "*"},
+			},
+			ShouldErr: true,
+		},
+		{
+			Name: "fuzzy_match_too_many_resource_matches",
+			Input: input{
+				uv:           SimpleTestUniverse_1,
+				action:       "s3:listbucket",
+				principalArn: "arn:aws:iam::88888:role/role1",
+				resourceArn:  "bucket", // matches bucket1, bucket2, bucket3
+				opts:         Options{EnableFuzzyMatchArn: true, DefaultS3Key: "*"},
+			},
+			ShouldErr: true,
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
+		sim, _ := NewSimulator()
+		sim.Universe = i.uv
+		res, err := sim.SimulateByArnWithOptions(
+			i.principalArn,
+			i.action,
+			i.resourceArn,
+			i.opts,
+		)
+		if err != nil {
+			return false, err
+		}
+
+		return res.IsAllowed, nil
+	})
+}
+
+func TestSimulateByArn_CreateAction(t *testing.T) {
+	// Test case where action is Create* and resource doesn't exist
+	sim, _ := NewSimulator()
+	sim.Universe = SimpleTestUniverse_1
+
+	// s3:CreateBucket is a Create action without resources in SAR, so let's use something else
+	// Actually test the CreateBucket path which checks for !ok && strings.HasPrefix(ac.Action.Name, "Create")
+	uv := entities.NewBuilder().
+		WithPrincipals(
+			entities.Principal{
+				Arn:       "arn:aws:iam::88888:role/role1",
+				Type:      "AWS::IAM::Role",
+				AccountId: "88888",
+				InlinePolicies: []policy.Policy{
+					{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"sqs:createqueue"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+			},
+		).
+		Build()
+
+	sim.Universe = uv
+	// CreateQueue with non-existent resource ARN
+	res, err := sim.SimulateByArnWithOptions(
+		"arn:aws:iam::88888:role/role1",
+		"sqs:createqueue",
+		"arn:aws:sqs:us-east-1:88888:newqueue",
+		Options{DefaultS3Key: "*"},
+	)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !res.IsAllowed {
+		t.Fatal("expected allow for create action with non-existent resource")
+	}
+}

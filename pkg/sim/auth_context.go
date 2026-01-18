@@ -117,24 +117,42 @@ func (ac *AuthContext) ConditionKey(key string, opts Options) string {
 	// ---------------------------------------------------------------------------------------------
 
 	case condkey.PrincipalArn:
+		if ac.Principal == nil {
+			return EMPTY
+		}
 		return ac.Principal.Arn
 	case condkey.PrincipalAccount:
+		if ac.Principal == nil {
+			return EMPTY
+		}
 		return ac.Principal.AccountId
 	case condkey.PrincipalIsAwsService:
 		return "false" // we do not support simulation for AWS services
 	case condkey.PrincipalServiceName:
 		return EMPTY // we do not support simulation for AWS services
 	case condkey.PrincipalType:
+		if ac.Principal == nil {
+			return EMPTY
+		}
 		return ac.principalType()
 	case condkey.ResourceAccount:
+		if ac.Resource == nil {
+			return EMPTY
+		}
 		return ac.Resource.AccountId
 	case condkey.CurrentTime:
 		return ac.now().UTC().Format(DEFAULT_TIME_FORMAT)
 	case condkey.EpochTime:
 		return strconv.FormatInt(ac.now().Unix(), 10)
 	case condkey.PrincipalOrgId:
+		if ac.Principal == nil {
+			return EMPTY
+		}
 		return ac.Principal.Account.OrgId
 	case condkey.ResourceOrgId:
+		if ac.Resource == nil {
+			return EMPTY
+		}
 		return ac.Resource.Account.OrgId
 
 	// ---------------------------------------------------------------------------------------------
@@ -142,6 +160,9 @@ func (ac *AuthContext) ConditionKey(key string, opts Options) string {
 	// ---------------------------------------------------------------------------------------------
 
 	case condkey.PrincipalTagPrefix:
+		if ac.Principal == nil {
+			return EMPTY
+		}
 		return ac.extractTag(key, ac.Principal.Tags)
 	}
 
@@ -162,6 +183,9 @@ func (ac *AuthContext) ConditionKey(key string, opts Options) string {
 	case condkey.RequestTagPrefix:
 		return ac.Properties.Get(key)
 	case condkey.ResourceTagPrefix:
+		if ac.Resource == nil {
+			return EMPTY
+		}
 		return ac.extractTag(key, ac.Resource.Tags)
 	}
 
@@ -189,8 +213,14 @@ func (ac *AuthContext) MultiKey(key string, opts Options) []string {
 		condkey.SourceOrgPaths:
 		break
 	case condkey.PrincipalOrgPaths:
+		if ac.Principal == nil {
+			return nil
+		}
 		return ac.Principal.Account.OrgPaths
 	case condkey.ResourceOrgPaths:
+		if ac.Resource == nil {
+			return nil
+		}
 		return ac.Resource.Account.OrgPaths
 	}
 

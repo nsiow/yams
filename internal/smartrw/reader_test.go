@@ -44,6 +44,12 @@ func TestReader(t *testing.T) {
 			Input:     "bad.gz",
 			ShouldErr: true,
 		},
+		{
+			// File exists but is not valid gzip - tests gzip error + close path
+			Name:      "invalid_gzip_content",
+			Input:     "../../testdata/smartrw/invalid.gz",
+			ShouldErr: true,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(in string) (string, error) {

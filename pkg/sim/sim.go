@@ -372,8 +372,9 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 
 	var submitted int32
 	var done atomic.Int32
+	var sent atomic.Int32
 	finished := make(chan simOut, s.Pool.NumWorkers())
-	batch := simBatch{Jobs: []simIn{}, Finished: finished, Done: &done}
+	batch := simBatch{Jobs: []simIn{}, Finished: finished, Done: &done, Sent: &sent}
 
 	for _, p := range fps {
 		for _, a := range fas {
@@ -397,7 +398,7 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 
 				if len(batch.Jobs) == s.Pool.BatchSize() {
 					s.Pool.Submit(batch)
-					batch = simBatch{Jobs: []simIn{}, Finished: finished, Done: &done}
+					batch = simBatch{Jobs: []simIn{}, Finished: finished, Done: &done, Sent: &sent}
 				}
 			}
 		}
@@ -413,15 +414,17 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 		"submitted", submitted)
 
 	var matrix []AccessTuple
+	var received int32
 
-	for done.Load() < submitted {
+	for {
 		select {
 		case job := <-finished:
+			received++
 			if job.Error != nil {
 				return nil, fmt.Errorf("simulation error: %w", job.Error)
 			}
 
-			if job.Result.IsAllowed { // should always be the case, but confirm
+			if job.Result.IsAllowed {
 				matrix = append(matrix, AccessTuple{
 					Principal: job.Result.Principal,
 					Action:    job.Result.Action,
@@ -431,7 +434,14 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 		case <-time.After(time.Second * 1):
 			slog.Debug("simulation in progress",
 				"done", done.Load(),
+				"sent", sent.Load(),
+				"received", received,
 				"out_of", submitted)
+		}
+
+		// Exit when all jobs are processed AND all sent results are received
+		if done.Load() >= submitted && received >= sent.Load() {
+			break
 		}
 	}
 
