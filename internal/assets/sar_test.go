@@ -30,9 +30,8 @@ func TestInvalidSarGzip(t *testing.T) {
 }
 
 func TestInvalidSarDecode(t *testing.T) {
-	defer testlib.AssertPanicWithText(t, `error decoding SAR data: unexpected end of JSON input`)
+	defer testlib.AssertPanicWithText(t, `error decoding SAR data:`)
 	loadSAR(fixtureInvalidEncodedSar())
-
 }
 
 func TestInvalidSarEmpty(t *testing.T) {

@@ -2,10 +2,10 @@ package awsconfig
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 
+	json "github.com/bytedance/sonic"
 	"github.com/nsiow/yams/pkg/entities"
 )
 
