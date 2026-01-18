@@ -1,9 +1,9 @@
 package awsconfig
 
 import (
-	"encoding/json"
 	"slices"
 
+	json "github.com/bytedance/sonic"
 	"github.com/nsiow/yams/pkg/entities"
 )
 
@@ -22,8 +22,8 @@ type ConfigItem struct {
 // When unmarshalling from JSON, it allows us to peek at the type of the config item before
 // delegating to a more specialized handler
 type configBlob struct {
-	Type string          `json:"resourceType"`
-	raw  json.RawMessage `json:"-"`
+	Type string `json:"resourceType"`
+	raw  []byte `json:"-"`
 }
 
 func (c *configBlob) UnmarshalJSON(data []byte) error {

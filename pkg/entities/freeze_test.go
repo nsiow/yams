@@ -31,7 +31,8 @@ func TestFreeze(t *testing.T) {
 			Want: output{
 				fp: []FrozenPrincipal{
 					{
-						Arn: "arn:aws:iam::88888:role/role1",
+						Arn:         "arn:aws:iam::88888:role/role1",
+						ArnSegments: []string{"arn", "aws", "iam", "", "88888", "role/role1"},
 					},
 				},
 			},
@@ -153,7 +154,8 @@ func TestFreeze(t *testing.T) {
 			Want: output{
 				fr: []FrozenResource{
 					{
-						Arn: "arn:aws:s3:::some-bucket",
+						Arn:         "arn:aws:s3:::some-bucket",
+						ArnSegments: []string{"arn", "aws", "s3", "", "", "some-bucket"},
 					},
 				},
 			},
@@ -231,8 +233,9 @@ func TestFreeze(t *testing.T) {
 			Want: output{
 				fp: []FrozenPrincipal{
 					{
-						AccountId: "55555",
-						Arn:       "arn:aws:iam::55555:role/role1",
+						AccountId:   "55555",
+						Arn:         "arn:aws:iam::55555:role/role1",
+						ArnSegments: []string{"arn", "aws", "iam", "", "55555", "role/role1"},
 						Account: FrozenAccount{
 							Id: "55555",
 							OrgNodes: []FrozenOrgNode{
@@ -304,8 +307,9 @@ func TestFreeze(t *testing.T) {
 			Want: output{
 				fp: []FrozenPrincipal{
 					{
-						AccountId: "55555",
-						Arn:       "arn:aws:iam::55555:role/role1",
+						AccountId:   "55555",
+						Arn:         "arn:aws:iam::55555:role/role1",
+						ArnSegments: []string{"arn", "aws", "iam", "", "55555", "role/role1"},
 						Groups: []FrozenGroup{
 							{
 								Arn: "arn:aws:iam::55555:group/group-1",

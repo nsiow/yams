@@ -1,9 +1,10 @@
 package policy
 
 import (
-	"encoding/json"
 	"fmt"
 	"slices"
+
+	json "github.com/bytedance/sonic"
 )
 
 // Value is a JSON-centric helper struct to facilitate one-or-more value representations

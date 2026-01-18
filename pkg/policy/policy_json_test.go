@@ -1,9 +1,9 @@
 package policy
 
 import (
-	"encoding/json"
 	"testing"
 
+	json "github.com/bytedance/sonic"
 	"github.com/nsiow/yams/internal/testlib"
 )
 

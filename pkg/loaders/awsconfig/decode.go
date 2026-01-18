@@ -1,11 +1,11 @@
 package awsconfig
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
 
+	json "github.com/bytedance/sonic"
 	"github.com/nsiow/yams/pkg/policy"
 )
 

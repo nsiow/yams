@@ -371,10 +371,18 @@ func (ac *AuthContext) supportsKey(key string) bool {
 	// Otherwise check for each matched resource
 	for _, resource := range ac.Action.Resources {
 		for _, format := range resource.ARNFormats {
-			if ac.Resource != nil && wildcard.MatchSegments(format, ac.Resource.Arn) {
-				if slices.Contains(resource.ConditionKeys, normalizedPrefix) {
-					return true
-				}
+			if ac.Resource == nil {
+				continue
+			}
+			// Use pre-split segments if available
+			var match bool
+			if len(ac.Resource.ArnSegments) > 0 {
+				match = wildcard.MatchSegmentsPreSplit(format, ac.Resource.ArnSegments)
+			} else {
+				match = wildcard.MatchSegments(format, ac.Resource.Arn)
+			}
+			if match && slices.Contains(resource.ConditionKeys, normalizedPrefix) {
+				return true
 			}
 		}
 	}
