@@ -3,7 +3,12 @@ package wildcard
 import (
 	"regexp"
 	"strings"
+	"sync"
 )
+
+// regexCache stores compiled regular expressions to avoid recompilation on every match.
+// Using sync.Map for concurrent access safety with good performance for read-heavy workloads.
+var regexCache sync.Map
 
 // MatchSegments determines if the provided string matches the wildcard pattern, using AWS's
 // heuristics for wildcards
@@ -41,6 +46,37 @@ func MatchSegments(pattern, value string) bool {
 	}
 
 	// If we got here, then all our segments matched - success!
+	return true
+}
+
+// MatchSegmentsPreSplit is an optimized version of MatchSegments that accepts pre-split
+// value segments to avoid repeated string splitting allocations.
+func MatchSegmentsPreSplit(pattern string, valueSegments []string) bool {
+	// Full wildcard case -- '*' matches absolutely everything
+	if pattern == "*" {
+		return true
+	}
+
+	// Empty pattern case -- '' matches absolutely nothing
+	if pattern == "" {
+		return false
+	}
+
+	// Split only the pattern (which varies per policy statement)
+	patternSegments := strings.Split(pattern, ":")
+
+	// Segment length should be the same size
+	if len(patternSegments) != len(valueSegments) {
+		return false
+	}
+
+	// Segments should be equivalent
+	for i := range patternSegments {
+		if !MatchString(patternSegments[i], valueSegments[i]) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -85,9 +121,78 @@ func MatchString(pattern, value string) bool {
 }
 
 // MatchSegmentsIgnoreCase determines if the provided string matches the wildcard pattern, using
-// AWS's heuristics for wildcards
+// AWS's heuristics for wildcards. This version avoids allocations by using case-insensitive comparison.
 func MatchSegmentsIgnoreCase(pattern, value string) bool {
-	return MatchSegments(strings.ToLower(pattern), strings.ToLower(value))
+	// Full wildcard case -- '*' matches absolutely everything
+	if pattern == "*" {
+		return true
+	}
+
+	// Empty pattern case -- '' matches absolutely nothing
+	if pattern == "" {
+		return false
+	}
+
+	// Otherwise we do wildcard matches separated by ':' boundaries
+	patternSegments := strings.Split(pattern, ":")
+	valueSegments := strings.Split(value, ":")
+
+	// Segment length should be the same size
+	if len(patternSegments) != len(valueSegments) {
+		return false
+	}
+
+	// Segments should be equivalent (case-insensitive)
+	for i := range patternSegments {
+		if !matchStringIgnoreCase(patternSegments[i], valueSegments[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// matchStringIgnoreCase handles the comparison of a single segment with case-insensitive matching
+func matchStringIgnoreCase(pattern, value string) bool {
+	// * matches everything within a subsegment
+	if pattern == "*" {
+		return true
+	}
+
+	// Count the number of '*' and '?'
+	wildcards := strings.Count(pattern, "*")
+	anys := strings.Count(pattern, "?")
+
+	// If we have both, only choice is a regex (lowercase for case insensitivity)
+	if wildcards > 0 && anys > 0 {
+		return matchViaRegex(strings.ToLower(pattern), strings.ToLower(value))
+	}
+
+	// If we have neither, treat as string literals (case-insensitive)
+	if wildcards == 0 && anys == 0 {
+		return strings.EqualFold(pattern, value)
+	}
+
+	// Handle wildcards prefixes (case-insensitive)
+	if wildcards == 1 && pattern[0] == '*' {
+		suffix := strings.TrimLeft(pattern, "*")
+		return len(value) >= len(suffix) && strings.EqualFold(value[len(value)-len(suffix):], suffix)
+	}
+
+	// Handle wildcard suffixes (case-insensitive)
+	if wildcards == 1 && pattern[len(pattern)-1] == '*' {
+		prefix := strings.TrimRight(pattern, "*")
+		return len(value) >= len(prefix) && strings.EqualFold(value[:len(prefix)], prefix)
+	}
+
+	// Handle wildcard prefixes + suffixes (case-insensitive)
+	if wildcards == 2 && pattern[0] == '*' && pattern[len(pattern)-1] == '*' {
+		middle := strings.Trim(pattern, "*")
+		return strings.Contains(strings.ToLower(value), strings.ToLower(middle))
+	}
+
+	// Fall back to regex matching (lowercase for case insensitivity)
+	return matchViaRegex(strings.ToLower(pattern), strings.ToLower(value))
 }
 
 // MatchArn performs specialized ARN-matching logic for certain condition operators
@@ -162,15 +267,24 @@ func MatchAllOrNothing(pattern, value string) bool {
 	return pattern == "*" || pattern == value
 }
 
-// matchViaRegex attempts to match the strings via a limited regex subset
-// TODO(nsiow) determine if we should cache this to avoid extensive RE recompilation
+// matchViaRegex attempts to match the strings via a limited regex subset.
+// Compiled regexes are cached to avoid recompilation overhead.
 func matchViaRegex(pattern, value string) bool {
-	pattern = strings.ReplaceAll(pattern, "*", `[^:]*`)
-	pattern = strings.ReplaceAll(pattern, "?", `[^:]`)
-	re, err := regexp.Compile(pattern)
+	// Convert wildcard pattern to regex pattern
+	regexPattern := strings.ReplaceAll(pattern, "*", `[^:]*`)
+	regexPattern = strings.ReplaceAll(regexPattern, "?", `[^:]`)
+
+	// Check cache first
+	if cached, ok := regexCache.Load(regexPattern); ok {
+		return cached.(*regexp.Regexp).MatchString(value)
+	}
+
+	// Compile and cache
+	re, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return false
 	}
 
+	regexCache.Store(regexPattern, re)
 	return re.MatchString(value)
 }

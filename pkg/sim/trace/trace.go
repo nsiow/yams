@@ -50,6 +50,12 @@ func (t *Trace) Disable() {
 	t.enabled = false
 }
 
+// Enabled returns whether tracing is currently enabled. Callers can use this
+// to avoid preparing expensive arguments when tracing is disabled.
+func (t *Trace) Enabled() bool {
+	return t.enabled
+}
+
 // Push creates a new Frame and adds it to the top of the stack
 func (t *Trace) Push(header string, args ...any) {
 	if !t.enabled {

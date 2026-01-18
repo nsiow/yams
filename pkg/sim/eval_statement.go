@@ -150,8 +150,16 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
 
 	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
 	// TODO(nsiow) this needs to support variable expansion
+
+	// Use pre-split segments if available, otherwise fall back to regular matching
+	arnSegments := s.auth.Resource.ArnSegments
 	for _, r := range resources {
-		match := wildcard.MatchSegments(r, s.auth.Resource.Arn)
+		var match bool
+		if len(arnSegments) > 0 {
+			match = wildcard.MatchSegmentsPreSplit(r, arnSegments)
+		} else {
+			match = wildcard.MatchSegments(r, s.auth.Resource.Arn)
+		}
 		if match {
 			s.trc.Log("match: %s and %s", r, s.auth.Resource.Arn)
 			return _gate.Apply(true)

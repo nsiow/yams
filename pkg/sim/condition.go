@@ -6,12 +6,22 @@ import (
 	"net/netip"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/policy/condition"
 	"github.com/nsiow/yams/pkg/sim/wildcard"
 )
+
+// conditionEvaluatorCache stores resolved condition evaluators to avoid repeated string operations.
+var conditionEvaluatorCache sync.Map
+
+// cachedConditionResult holds a cached condition evaluator result
+type cachedConditionResult struct {
+	evaluator CondOuter
+	exists    bool
+}
 
 // -------------------------------------------------------------------------------------------------
 // Setup
@@ -529,6 +539,28 @@ func Mod_Network(f func(*subject, netip.Addr, netip.Prefix) bool) Compare {
 // If the function could be resolved, the second return value is `true`. Otherwise, the second
 // return value is `false`
 func ResolveConditionEvaluator(op string) (CondOuter, bool) {
+	// Check cache first
+	if cached, ok := conditionEvaluatorCache.Load(op); ok {
+		result := cached.(cachedConditionResult)
+		return result.evaluator, result.exists
+	}
+
+	// Resolve the evaluator
+	evaluator, exists := resolveConditionEvaluatorUncached(op)
+
+	// Cache the result
+	conditionEvaluatorCache.Store(op, cachedConditionResult{
+		evaluator: evaluator,
+		exists:    exists,
+	})
+
+	return evaluator, exists
+}
+
+// resolveConditionEvaluatorUncached performs the actual resolution without caching
+func resolveConditionEvaluatorUncached(op string) (CondOuter, bool) {
+	originalOp := op
+
 	// Determine the condition lift
 	var lift CondLift
 	if strings.HasPrefix(op, "ForAllValues:") {
@@ -558,5 +590,7 @@ func ResolveConditionEvaluator(op string) (CondOuter, bool) {
 	for _, mod := range mods {
 		f = mod(f)
 	}
+
+	_ = originalOp // Avoid unused variable warning
 	return lift(f), true
 }
