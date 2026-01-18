@@ -90,7 +90,7 @@ cov-missing: coverage.out
 cov-html: coverage.html
 
 .PHONY: precommit
-precommit: clean test lint cov-report
+precommit: clean test lint cov-report ui-lint
 
 coverage.out: $(GO_FILES)
 	GO_TEST_FLAGS='-coverprofile=$@' make test

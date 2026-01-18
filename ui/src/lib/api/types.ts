@@ -16,13 +16,17 @@ export interface StatusResponse {
   env?: Record<string, string>;
 }
 
+export interface ActionResource {
+  Name: string;
+  ARNFormats?: string[];
+  ConditionKeys?: string[];
+}
+
 export interface Action {
-  key: string;
-  service: string;
-  action: string;
-  description?: string;
-  resourceTypes?: string[];
-  conditionKeys?: string[];
+  Name: string;
+  Service: string;
+  ActionConditionKeys?: string[];
+  ResolvedResources?: ActionResource[];
 }
 
 export interface PrincipalTag {
@@ -81,10 +85,22 @@ export interface PolicyStatement {
   Principal?: string | Record<string, string | string[]>;
 }
 
+export interface OrgNode {
+  Id: string;
+  Type: 'ROOT' | 'ORGANIZATIONAL_UNIT' | 'ACCOUNT';
+  Arn: string;
+  Name: string;
+  SCPs?: string[];
+  RCPs?: string[];
+}
+
 export interface Account {
-  id: string;
-  name?: string;
-  email?: string;
+  Id: string;
+  Name: string;
+  OrgId: string;
+  OrgPaths?: string[];
+  OrgNodes?: OrgNode[];
+  // TODO(nsiow): Add Tags field when available in API
 }
 
 // Simulation Types

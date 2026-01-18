@@ -96,16 +96,16 @@ export class YamsClient {
 
   // Actions
 
-  async listActions(): Promise<Action[]> {
-    return this.fetch<Action[]>('/actions');
+  async listActions(): Promise<string[]> {
+    return this.fetch<string[]>('/actions');
   }
 
   async getAction(key: string): Promise<Action> {
     return this.fetch<Action>(`/actions/${encodeURIComponent(key)}`);
   }
 
-  async searchActions(query: string): Promise<Action[]> {
-    return this.fetch<Action[]>(`/actions/search/${encodeURIComponent(query)}`);
+  async searchActions(query: string): Promise<string[]> {
+    return this.fetch<string[]>(`/actions/search/${encodeURIComponent(query)}`);
   }
 
   // Principals
@@ -158,16 +158,16 @@ export class YamsClient {
 
   // Accounts
 
-  async listAccounts(): Promise<Account[]> {
-    return this.fetch<Account[]>('/accounts');
+  async listAccounts(): Promise<string[]> {
+    return this.fetch<string[]>('/accounts');
   }
 
-  async getAccount(key: string): Promise<Account> {
-    return this.fetch<Account>(`/accounts/${encodeURIComponent(key)}`);
+  async getAccount(id: string): Promise<Account> {
+    return this.fetch<Account>(`/accounts/${encodeURIComponent(id)}`);
   }
 
-  async searchAccounts(query: string): Promise<Account[]> {
-    return this.fetch<Account[]>(
+  async searchAccounts(query: string): Promise<string[]> {
+    return this.fetch<string[]>(
       `/accounts/search/${encodeURIComponent(query)}`
     );
   }

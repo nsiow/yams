@@ -27,6 +27,7 @@ const navSections: NavSection[] = [
   {
     title: 'Search',
     items: [
+      { label: 'Accounts', path: '/search/accounts' },
       { label: 'Principals', path: '/search/principals' },
       { label: 'Resources', path: '/search/resources' },
       { label: 'Policies', path: '/search/policies' },
