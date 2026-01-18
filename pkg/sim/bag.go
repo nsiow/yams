@@ -17,7 +17,7 @@ func NewBag[T any]() Bag[T] {
 	return Bag[T]{innerMap: map[string]T{}}
 }
 
-// NewBagFroMap creates and returns a new case-folded bag with the specified value type T,
+// NewBagFromMap creates and returns a new case-folded bag with the specified value type T,
 // seeded using the folded key/values from the provided map
 func NewBagFromMap[T any](other map[string]T) Bag[T] {
 	b := Bag[T]{innerMap: make(map[string]T)}

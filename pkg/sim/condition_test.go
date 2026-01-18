@@ -2256,3 +2256,113 @@ func TestForAnyValues(t *testing.T) {
 		return evalStatementMatchesCondition(subj, &i.stmt), nil
 	})
 }
+
+// --------------------------------------------------------------------------------
+// Null tests
+// --------------------------------------------------------------------------------
+
+func TestNull(t *testing.T) {
+	tests := []testlib.TestCase[input, bool]{
+		{
+			Name: "key_absent_want_absent",
+			Input: input{
+				ac: AuthContext{},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Null": {
+							"aws:TokenIssueTime": []string{"true"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "key_present_want_absent",
+			Input: input{
+				ac: AuthContext{
+					Properties: NewBagFromMap(map[string]string{
+						"aws:TokenIssueTime": "2024-01-01T00:00:00Z",
+					}),
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Null": {
+							"aws:TokenIssueTime": []string{"true"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "key_present_want_present",
+			Input: input{
+				ac: AuthContext{
+					Properties: NewBagFromMap(map[string]string{
+						"aws:TokenIssueTime": "2024-01-01T00:00:00Z",
+					}),
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Null": {
+							"aws:TokenIssueTime": []string{"false"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "key_absent_want_present",
+			Input: input{
+				ac: AuthContext{},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Null": {
+							"aws:TokenIssueTime": []string{"false"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "case_insensitive_true",
+			Input: input{
+				ac: AuthContext{},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Null": {
+							"aws:TokenIssueTime": []string{"TRUE"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "case_insensitive_false",
+			Input: input{
+				ac: AuthContext{
+					Properties: NewBagFromMap(map[string]string{
+						"aws:TokenIssueTime": "2024-01-01T00:00:00Z",
+					}),
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Null": {
+							"aws:TokenIssueTime": []string{"FALSE"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
+		subj := newSubject(i.ac, TestingSimulationOptions)
+		return evalStatementMatchesCondition(subj, &i.stmt), nil
+	})
+}

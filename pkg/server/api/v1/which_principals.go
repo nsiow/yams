@@ -1,10 +1,10 @@
 package v1
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
+	json "github.com/bytedance/sonic"
 	"github.com/nsiow/yams/pkg/server/httputil"
 	"github.com/nsiow/yams/pkg/sim"
 )
@@ -31,7 +31,7 @@ type WhichPrincipalsOutput = []string
 
 func (api *API) WhichPrincipals(w http.ResponseWriter, req *http.Request) {
 	input := WhichPrincipalsInput{}
-	decoder := json.NewDecoder(req.Body)
+	decoder := json.ConfigDefault.NewDecoder(req.Body)
 	err := decoder.Decode(&input)
 	if err != nil {
 		httputil.ClientError(w, req, fmt.Errorf("invalid JSON: %v", err))

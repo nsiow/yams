@@ -25,9 +25,8 @@ func TestInvalidPolicyGzip(t *testing.T) {
 
 func TestInvalidPolicyDecode(t *testing.T) {
 	defer testlib.AssertPanicWithText(t,
-		`error decoding managed policy data: unexpected end of JSON input`)
+		`error decoding managed policy data:`)
 	loadManagedPolicyData(fixtureInvalidEncodedPolicy())
-
 }
 
 func TestInvalidPolicyEmpty(t *testing.T) {

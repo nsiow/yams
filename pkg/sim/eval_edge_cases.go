@@ -36,6 +36,10 @@ func evalResourceAccessAllowsExplicitPrincipal(s *subject) bool {
 	s.trc.Push("evaluating whether the resource allows the principal explicitly")
 	defer s.trc.Pop()
 
+	if s.auth.Resource == nil {
+		return false
+	}
+
 	if evalIsSameAccount(s) && !s.auth.Resource.Policy.Empty() {
 		subDecision := evalPolicy(s, s.auth.Resource.Policy,
 			evalStatementMatchesAction,

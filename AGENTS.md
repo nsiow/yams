@@ -16,18 +16,22 @@
 
 ## Development Rules (All)
 * **Git:** Use Conventional Commits (e.g., `feat:`, `fix:`, `docs:`).
+* **Precommit:** Run `make precommit` before any git commit or push operations.
+* **Pull Requests:** Always confirm PR titles and descriptions with the user before creating. Do not include test plans.
 * **Comments:** Keep comments concise, and use them to summarize what is happening in "paragraphs"
   of code. Avoid stream-of-consciousness comments and overly verbose language.
 
 ---
 
 ## Development Rules (Backend)
+* **Dependencies:** Avoid use of any external/third-party libraries unless explicitly asked to use
+  them.
 * **Style:** Simple, imperative Go. Avoid syntax that is difficult to understand. Keep the code DRY.
-* **Dependencies:** Avoid use of any external dependencies other than the AWS SDK for Go.
 * **Test style:** Where possible for Go tests, use the TDT pattern implemented in
   `testlib.RunTestSuite`
 * **Test data:** Use `testdata/` directories for any file/data type content used in tests. There are many such directories within the repo.
 * **Yams server:** When starting a one-off yams server for testing, use a non-default port (e.g., `-a :9999`) since port 8888 is typically already in use during development.
+* **Test coverage:** Use `make cov-report` as the source of coverage data. This generates a function-level coverage report.
 
 ---
 

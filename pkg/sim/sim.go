@@ -198,7 +198,7 @@ func (s *Simulator) SimulateByArnWithOptions(
 	// Locate Resource (if needed)
 	if ac.Action.HasTargets() {
 		_, ok := s.Universe.Resource(resourceArn)
-		if !ok && strings.HasPrefix(ac.Action.Name, "Create") || ac.Action.Name == "RunInstances" {
+		if !ok && (strings.HasPrefix(ac.Action.Name, "Create") || ac.Action.Name == "RunInstances") {
 			// Handle case where API call DOES have targets but those targets shouldn't exist yet. It's
 			// really just targeted Create* calls
 			// TODO(nsiow) revisit this

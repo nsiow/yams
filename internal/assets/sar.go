@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"compress/gzip"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
 	"sync"
 
+	json "github.com/bytedance/sonic"
 	"github.com/nsiow/yams/pkg/aws/sar/types"
 )
 

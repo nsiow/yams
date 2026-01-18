@@ -40,7 +40,6 @@ func ResourceSegment(arn string) string {
 	return Component(arn, 5)
 }
 
-// TODO(nsiow) this is very incomplete
 func ResourcePath(arn string) string {
 	seg := ResourceSegment(arn)
 
@@ -58,7 +57,6 @@ func ResourcePath(arn string) string {
 	}
 }
 
-// TODO(nsiow) this is very incomplete
 func ResourceId(arn string) string {
 	seg := ResourceSegment(arn)
 
