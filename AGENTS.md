@@ -17,6 +17,7 @@
 ## Development Rules (All)
 * **Git:** Use Conventional Commits (e.g., `feat:`, `fix:`, `docs:`).
 * **Precommit:** Run `make precommit` before any git commit or push operations.
+* **Pull Requests:** Always confirm PR titles and descriptions with the user before creating.
 * **Comments:** Keep comments concise, and use them to summarize what is happening in "paragraphs"
   of code. Avoid stream-of-consciousness comments and overly verbose language.
 
