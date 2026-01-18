@@ -2,8 +2,8 @@ package entities
 
 import (
 	"iter"
-	"maps"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 
@@ -129,7 +129,14 @@ func (u *Universe) NumAccounts() int {
 
 // Accounts returns an iterator over all the Account entities known to the universe
 func (u *Universe) Accounts() iter.Seq[*Account] {
-	return maps.Values(u.accounts)
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
+	snapshot := make([]*Account, 0, len(u.accounts))
+	for _, a := range u.accounts {
+		snapshot = append(snapshot, a)
+	}
+	return slices.Values(snapshot)
 }
 
 // HasAccount returns whether or not the specified account exists in the universe
@@ -140,6 +147,8 @@ func (u *Universe) HasAccount(id string) bool {
 
 // Account attempts to retrieve the account based on its id
 func (u *Universe) Account(id string) (*Account, bool) {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	a, ok := u.accounts[id]
 	return a, ok
 }
@@ -186,7 +195,14 @@ func (u *Universe) NumGroups() int {
 
 // Groups returns an iterator over all the Group entities known to the universe
 func (u *Universe) Groups() iter.Seq[*Group] {
-	return maps.Values(u.groups)
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
+	snapshot := make([]*Group, 0, len(u.groups))
+	for _, g := range u.groups {
+		snapshot = append(snapshot, g)
+	}
+	return slices.Values(snapshot)
 }
 
 // GroupArns returns a slice containing the ARNs of all known Groups
@@ -209,6 +225,8 @@ func (u *Universe) HasGroup(arn Arn) bool {
 
 // Group attempts to retrieve the group based on its ARN
 func (u *Universe) Group(arn Arn) (*Group, bool) {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	arn = normalizeGroupArn(arn)
 	g, ok := u.groups[arn]
 	return g, ok
@@ -276,7 +294,14 @@ func (u *Universe) NumPolicies() int {
 // This includes any policy with an ARN, e.g. managed policies, SCPs, etc. It does not include
 // inline Principal or Resource policies
 func (u *Universe) Policies() iter.Seq[*ManagedPolicy] {
-	return maps.Values(u.policies)
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
+	snapshot := make([]*ManagedPolicy, 0, len(u.policies))
+	for _, p := range u.policies {
+		snapshot = append(snapshot, p)
+	}
+	return slices.Values(snapshot)
 }
 
 // PolicyArns returns a slice containing the ARNs of all known Policies
@@ -299,6 +324,8 @@ func (u *Universe) HasPolicy(arn Arn) bool {
 
 // Policy attempts to retrieve the policy based on its ARN
 func (u *Universe) Policy(arn Arn) (*ManagedPolicy, bool) {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	p, ok := u.policies[arn]
 	return p, ok
 }
@@ -336,7 +363,14 @@ func (u *Universe) NumPrincipals() int {
 
 // Principals returns an iterator over all the Principal entities known to the universe
 func (u *Universe) Principals() iter.Seq[*Principal] {
-	return maps.Values(u.principals)
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
+	snapshot := make([]*Principal, 0, len(u.principals))
+	for _, p := range u.principals {
+		snapshot = append(snapshot, p)
+	}
+	return slices.Values(snapshot)
 }
 
 // PrincipalArns returns a slice containing the ARNs of all known Principals
@@ -359,6 +393,8 @@ func (u *Universe) HasPrincipal(arn Arn) bool {
 
 // Principal attempts to retrieve the principal based on its ARN
 func (u *Universe) Principal(arn Arn) (*Principal, bool) {
+	u.mut.RLock()
+	defer u.mut.RUnlock()
 	p, ok := u.principals[arn]
 	return p, ok
 }
@@ -408,7 +444,14 @@ func (u *Universe) subresource(arn Arn) (string, string) {
 
 // Resources returns an iterator over all the Resource entities known to the universe
 func (u *Universe) Resources() iter.Seq[*Resource] {
-	return maps.Values(u.resources)
+	u.mut.RLock()
+	defer u.mut.RUnlock()
+
+	snapshot := make([]*Resource, 0, len(u.resources))
+	for _, r := range u.resources {
+		snapshot = append(snapshot, r)
+	}
+	return slices.Values(snapshot)
 }
 
 // ResourceArns returns a slice containing the ARNs of all known Resources
@@ -433,7 +476,10 @@ func (u *Universe) HasResource(arn Arn) bool {
 func (u *Universe) Resource(arn Arn) (*Resource, bool) {
 	arn, path := u.subresource(arn)
 
+	u.mut.RLock()
 	r, ok := u.resources[arn]
+	u.mut.RUnlock()
+
 	if !ok {
 		return nil, ok
 	}
