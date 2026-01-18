@@ -10,7 +10,7 @@ import (
 )
 
 func GetReq(url string) {
-	slog.Debug("making request")
+	slog.Debug("making request", "url", url)
 	resp, err := http.Get(url)
 	if err != nil {
 		Fail("error retrieving URL '%s': %v", url, err)
