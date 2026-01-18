@@ -16,6 +16,7 @@
 
 ## Development Rules (All)
 * **Git:** Use Conventional Commits (e.g., `feat:`, `fix:`, `docs:`).
+* **Precommit:** Run `make precommit` before any git commit or push operations.
 * **Comments:** Keep comments concise, and use them to summarize what is happening in "paragraphs"
   of code. Avoid stream-of-consciousness comments and overly verbose language.
 
@@ -27,6 +28,7 @@
 * **Test style:** Where possible for Go tests, use the TDT pattern implemented in
   `testlib.RunTestSuite`
 * **Test data:** Use `testdata/` directories for any file/data type content used in tests. There are many such directories within the repo.
+* **Test coverage:** Use `make cov-report` as the source of coverage data. This generates a function-level coverage report.
 
 ---
 

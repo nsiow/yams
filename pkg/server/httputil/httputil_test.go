@@ -197,3 +197,16 @@ func TestWriteJsonResponse_MarshalError(t *testing.T) {
 		t.Errorf("WriteJsonResponse with unmarshalable object status = %d, want %d", w.Code, http.StatusInternalServerError)
 	}
 }
+
+func TestWriteJsonResponse_MarshalAndWriteError(t *testing.T) {
+	req := httptest.NewRequest("GET", "/test", nil)
+	w := &errWriter{}
+
+	// Create an object that can't be marshaled (channel).
+	// Combined with errWriter, this covers the error path at line 38-40
+	// where both marshal fails and the subsequent write of the error response fails.
+	obj := make(chan int)
+
+	// This should not panic, just log both errors
+	WriteJsonResponse(w, req, obj)
+}

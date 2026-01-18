@@ -158,3 +158,25 @@ func TestTargets_CustomHandling(t *testing.T) {
 		return action.Targets(arn), nil
 	})
 }
+
+func TestTargets_UnknownCustomHandling(t *testing.T) {
+	action := Action{
+		Service: "s3",
+		Name:    "TestAction",
+		Resources: []Resource{
+			{
+				Name:           "bucket",
+				ARNFormats:     []string{"arn:aws:s3:::*"},
+				CustomHandling: []string{"UnknownHandling"},
+			},
+		},
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic for unknown custom handling but did not panic")
+		}
+	}()
+
+	action.Targets("arn:aws:s3:::mybucket")
+}

@@ -369,3 +369,115 @@ func TestFreeze_MissingUniverse(t *testing.T) {
 		t.Fatalf("should have failed on group with missing universe")
 	}
 }
+
+func TestFreeze_NonStrict(t *testing.T) {
+	// Test non-strict freeze where policies and groups are missing - should create empty versions
+	uv := NewBuilder().
+		WithPrincipals(
+			Principal{
+				Arn:       "arn:aws:iam::88888:user/testuser",
+				AccountId: "88888",
+				AttachedPolicies: []Arn{
+					"arn:aws:iam::88888:policy/missing-policy",
+				},
+				Groups: []Arn{
+					"arn:aws:iam::88888:group/missing-group",
+				},
+				PermissionsBoundary: "arn:aws:iam::88888:policy/missing-boundary",
+			},
+		).
+		WithAccounts(
+			Account{
+				Id: "88888",
+				OrgNodes: []OrgNode{
+					{
+						SCPs: []Arn{
+							"arn:aws:organizations::88888:policy/o-123/service_control_policy/missing-scp",
+						},
+						RCPs: []Arn{
+							"arn:aws:organizations::88888:policy/o-123/resource_control_policy/missing-rcp",
+						},
+					},
+				},
+			},
+		).
+		Build()
+
+	// Non-strict freeze should succeed and create empty policies/groups
+	fps, err := uv.FrozenPrincipals(false, nil)
+	if err != nil {
+		t.Fatalf("non-strict freeze should not fail: %v", err)
+	}
+
+	if len(fps) != 1 {
+		t.Fatalf("expected 1 frozen principal, got %d", len(fps))
+	}
+
+	fp := fps[0]
+
+	// Verify attached policies were created as empty
+	if len(fp.AttachedPolicies) != 1 {
+		t.Fatalf("expected 1 attached policy, got %d", len(fp.AttachedPolicies))
+	}
+	if fp.AttachedPolicies[0].Arn != "arn:aws:iam::88888:policy/missing-policy" {
+		t.Errorf("expected policy ARN to be preserved")
+	}
+
+	// Verify groups were created as empty
+	if len(fp.Groups) != 1 {
+		t.Fatalf("expected 1 group, got %d", len(fp.Groups))
+	}
+	if fp.Groups[0].Arn != "arn:aws:iam::88888:group/missing-group" {
+		t.Errorf("expected group ARN to be preserved")
+	}
+
+	// Verify permission boundary was created as empty
+	if fp.PermissionBoundary.Arn != "arn:aws:iam::88888:policy/missing-boundary" {
+		t.Errorf("expected permission boundary ARN to be preserved")
+	}
+
+	// Verify account SCPs/RCPs were created as empty
+	if len(fp.Account.OrgNodes) != 1 {
+		t.Fatalf("expected 1 org node, got %d", len(fp.Account.OrgNodes))
+	}
+	if len(fp.Account.OrgNodes[0].SCPs) != 1 {
+		t.Fatalf("expected 1 SCP, got %d", len(fp.Account.OrgNodes[0].SCPs))
+	}
+	if len(fp.Account.OrgNodes[0].RCPs) != 1 {
+		t.Fatalf("expected 1 RCP, got %d", len(fp.Account.OrgNodes[0].RCPs))
+	}
+}
+
+func TestFreeze_NonStrictResources(t *testing.T) {
+	// Test non-strict freeze for resources with missing account policies
+	uv := NewBuilder().
+		WithResources(
+			Resource{
+				Arn:       "arn:aws:s3:::mybucket",
+				AccountId: "88888",
+			},
+		).
+		WithAccounts(
+			Account{
+				Id: "88888",
+				OrgNodes: []OrgNode{
+					{
+						SCPs: []Arn{
+							"arn:aws:organizations::88888:policy/o-123/service_control_policy/missing-scp",
+						},
+					},
+				},
+			},
+		).
+		Build()
+
+	// Non-strict freeze should succeed
+	frs, err := uv.FrozenResources(false, nil)
+	if err != nil {
+		t.Fatalf("non-strict freeze should not fail: %v", err)
+	}
+
+	if len(frs) != 1 {
+		t.Fatalf("expected 1 frozen resource, got %d", len(frs))
+	}
+}

@@ -262,3 +262,50 @@ func TestGzipWriteCloser_CloseWithGzipError(t *testing.T) {
 	}
 }
 
+// mockGzipReader is a mock gzip reader that can return an error on Close
+type mockGzipReader struct {
+	data     *bytes.Buffer
+	closeErr error
+}
+
+func (m *mockGzipReader) Read(p []byte) (int, error) {
+	return m.data.Read(p)
+}
+
+func (m *mockGzipReader) Close() error {
+	return m.closeErr
+}
+
+func TestGzipReadCloser_CloseWithGzipError(t *testing.T) {
+	// Create valid gzipped data
+	var gzippedBuf bytes.Buffer
+	gzWriter := gzip.NewWriter(&gzippedBuf)
+	if _, err := gzWriter.Write([]byte("test content")); err != nil {
+		t.Fatalf("failed to write gzip data: %v", err)
+	}
+	if err := gzWriter.Close(); err != nil {
+		t.Fatalf("failed to close gzip writer: %v", err)
+	}
+
+	rc := newMockReadCloser(gzippedBuf.Bytes())
+	gz, err := NewGzipReadCloser(rc)
+	if err != nil {
+		t.Fatalf("unexpected error creating GzipReadCloser: %v", err)
+	}
+
+	// Replace the gz field with our mock that returns an error on Close
+	gz.gz = &mockGzipReader{
+		data:     bytes.NewBuffer([]byte("test content")),
+		closeErr: errors.New("gzip close error"),
+	}
+
+	// Close should return the gzip close error
+	err = gz.Close()
+	if err == nil {
+		t.Fatal("expected gzip close error but got nil")
+	}
+	if err.Error() != "gzip close error" {
+		t.Fatalf("expected 'gzip close error' but got: %v", err)
+	}
+}
+
