@@ -1,0 +1,773 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActionIcon,
+  Alert,
+  Anchor,
+  Badge,
+  Box,
+  Button,
+  Card,
+  Collapse,
+  Combobox,
+  Grid,
+  Group,
+  Input,
+  InputBase,
+  Loader,
+  ScrollArea,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+  Tooltip,
+  UnstyledButton,
+  useCombobox,
+} from '@mantine/core';
+import { useDebouncedValue } from '@mantine/hooks';
+import {
+  IconChevronDown,
+  IconChevronRight,
+  IconCheck,
+  IconPlus,
+  IconX,
+  IconSearch,
+} from '@tabler/icons-react';
+import { Link } from 'react-router-dom';
+import { yamsApi } from '../../lib/api';
+import type { SimulationResponse } from '../../lib/api';
+
+// Extract service type from ARN (3rd segment)
+function extractService(arn: string): string | null {
+  const parts = arn.split(':');
+  if (parts.length >= 3 && parts[2]) {
+    return parts[2];
+  }
+  return null;
+}
+
+// Tree node for trace visualization
+interface TraceNode {
+  text: string;
+  depth: number;
+  children: TraceNode[];
+  isExpanded?: boolean;
+}
+
+// Parse trace lines into a tree structure based on indentation
+function parseTraceToTree(trace: string[]): TraceNode[] {
+  const root: TraceNode[] = [];
+  const stack: { node: TraceNode; depth: number }[] = [];
+
+  for (const line of trace) {
+    const trimmed = line.trimStart();
+    const depth = line.length - trimmed.length;
+
+    const node: TraceNode = {
+      text: trimmed,
+      depth,
+      children: [],
+      isExpanded: depth < 4,
+    };
+
+    while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
+      stack.pop();
+    }
+
+    if (stack.length === 0) {
+      root.push(node);
+    } else {
+      stack[stack.length - 1].node.children.push(node);
+    }
+
+    stack.push({ node, depth });
+  }
+
+  return root;
+}
+
+// Highlight keywords in explanation text
+function highlightExplanation(text: string): JSX.Element {
+  const keywords = [
+    { pattern: /\[implicit deny\]/gi, color: 'red' },
+    { pattern: /\[explicit deny\]/gi, color: 'red' },
+    { pattern: /\[explicit allow\]/gi, color: 'green' },
+    { pattern: /allow/gi, color: 'green' },
+    { pattern: /deny/gi, color: 'red' },
+    { pattern: /x-account/gi, color: 'orange' },
+    { pattern: /missing/gi, color: 'orange' },
+  ];
+
+  const highlights: { start: number; end: number; color: string }[] = [];
+
+  for (const { pattern, color } of keywords) {
+    let match;
+    const regex = new RegExp(pattern.source, pattern.flags);
+    while ((match = regex.exec(text)) !== null) {
+      highlights.push({ start: match.index, end: match.index + match[0].length, color });
+    }
+  }
+
+  highlights.sort((a, b) => a.start - b.start);
+  const filtered: typeof highlights = [];
+  for (const h of highlights) {
+    if (filtered.length === 0 || h.start >= filtered[filtered.length - 1].end) {
+      filtered.push(h);
+    }
+  }
+
+  if (filtered.length === 0) {
+    return <Text size="sm">{text}</Text>;
+  }
+
+  const parts: JSX.Element[] = [];
+  let lastEnd = 0;
+
+  for (let i = 0; i < filtered.length; i++) {
+    const h = filtered[i];
+    if (h.start > lastEnd) {
+      parts.push(<span key={`text-${i}`}>{text.slice(lastEnd, h.start)}</span>);
+    }
+    parts.push(
+      <Text key={`hl-${i}`} component="span" fw={600} c={h.color}>
+        {text.slice(h.start, h.end)}
+      </Text>
+    );
+    lastEnd = h.end;
+  }
+
+  if (lastEnd < text.length) {
+    parts.push(<span key="text-end">{text.slice(lastEnd)}</span>);
+  }
+
+  return <Text size="sm">{parts}</Text>;
+}
+
+// Linkify policy ARNs in trace text
+function linkifyPolicyArns(text: string): JSX.Element {
+  // Match policy ARNs: arn:aws:iam::account:policy/name or arn:aws:organizations::account:policy/type/id
+  const arnPattern = /arn:aws:(iam|organizations)::[^:\s]+:policy\/[^\s,)]+/g;
+  const matches: { start: number; end: number; arn: string }[] = [];
+
+  let match;
+  while ((match = arnPattern.exec(text)) !== null) {
+    matches.push({ start: match.index, end: match.index + match[0].length, arn: match[0] });
+  }
+
+  if (matches.length === 0) {
+    return <>{text}</>;
+  }
+
+  const parts: JSX.Element[] = [];
+  let lastEnd = 0;
+
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    if (m.start > lastEnd) {
+      parts.push(<span key={`text-${i}`}>{text.slice(lastEnd, m.start)}</span>);
+    }
+    parts.push(
+      <Anchor
+        key={`arn-${i}`}
+        component={Link}
+        to={`/search/policies?q=${encodeURIComponent(m.arn)}`}
+        size="xs"
+        ff="monospace"
+      >
+        {m.arn}
+      </Anchor>
+    );
+    lastEnd = m.end;
+  }
+
+  if (lastEnd < text.length) {
+    parts.push(<span key="text-end">{text.slice(lastEnd)}</span>);
+  }
+
+  return <>{parts}</>;
+}
+
+// Recursive trace tree node component
+function TraceTreeNode({ node, level = 0 }: { node: TraceNode; level?: number }): JSX.Element {
+  const [expanded, setExpanded] = useState(node.isExpanded ?? true);
+  const hasChildren = node.children.length > 0;
+
+  const isBegin = node.text.startsWith('begin:');
+  const isEnd = node.text.startsWith('end:');
+  const isMatch = node.text.includes('match:');
+  const isDeny = node.text.includes('(deny)') || node.text.includes('[implicit deny]') || node.text.includes('does not match');
+  const isAllow = node.text.includes('(allow)');
+
+  let textColor: string | undefined;
+  if (isDeny) textColor = 'red';
+  else if (isAllow) textColor = 'green';
+  else if (isMatch) textColor = 'teal';
+
+  return (
+    <Box>
+      <Group gap={4} wrap="nowrap">
+        {hasChildren ? (
+          <UnstyledButton onClick={() => setExpanded(!expanded)} style={{ lineHeight: 1 }}>
+            {expanded ? (
+              <IconChevronDown size={14} color="var(--mantine-color-dimmed)" />
+            ) : (
+              <IconChevronRight size={14} color="var(--mantine-color-dimmed)" />
+            )}
+          </UnstyledButton>
+        ) : (
+          <Box w={14} />
+        )}
+        <Text
+          size="xs"
+          ff="monospace"
+          c={textColor}
+          fw={isBegin || isEnd ? 500 : undefined}
+          style={{ opacity: isEnd ? 0.6 : 1 }}
+        >
+          {linkifyPolicyArns(node.text)}
+        </Text>
+      </Group>
+      {hasChildren && (
+        <Collapse in={expanded}>
+          <Box pl="md" style={{ borderLeft: '1px solid var(--mantine-color-gray-3)' }}>
+            {node.children.map((child, idx) => (
+              <TraceTreeNode key={idx} node={child} level={level + 1} />
+            ))}
+          </Box>
+        </Collapse>
+      )}
+    </Box>
+  );
+}
+
+// Extract account ID from ARN (5th segment)
+function extractAccountId(arn: string): string | null {
+  const parts = arn.split(':');
+  if (parts.length >= 5 && parts[4]) {
+    return parts[4];
+  }
+  return null;
+}
+
+// Async search select component
+interface AsyncSearchSelectProps {
+  label: string;
+  placeholder: string;
+  value: string | null;
+  onChange: (value: string | null) => void;
+  onSearch: (query: string) => Promise<string[]>;
+  formatLabel?: (value: string) => string;
+  accountNames?: Record<string, string>;
+  resourceAccounts?: Record<string, string>;
+  showAccountName?: boolean;
+  showResourceType?: boolean;
+}
+
+function AsyncSearchSelect({
+  label,
+  placeholder,
+  value,
+  onChange,
+  onSearch,
+  formatLabel,
+  accountNames,
+  resourceAccounts,
+  showAccountName,
+  showResourceType,
+}: AsyncSearchSelectProps): JSX.Element {
+  const combobox = useCombobox({
+    onDropdownClose: () => combobox.resetSelectedOption(),
+  });
+
+  const [search, setSearch] = useState('');
+  const [debouncedSearch] = useDebouncedValue(search, 300);
+  const [loading, setLoading] = useState(false);
+  const [options, setOptions] = useState<string[]>([]);
+
+  // Search when debounced value changes
+  useEffect(() => {
+    if (debouncedSearch.length < 2) {
+      setOptions([]);
+      return;
+    }
+
+    setLoading(true);
+    onSearch(debouncedSearch)
+      .then((results) => {
+        setOptions(results.slice(0, 100)); // Limit to 100 results
+      })
+      .catch((err) => {
+        console.error('Search failed:', err);
+        setOptions([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [debouncedSearch, onSearch]);
+
+  const displayValue = value ? (formatLabel ? formatLabel(value) : value) : '';
+
+  const handleClear = (e: React.MouseEvent): void => {
+    e.stopPropagation();
+    onChange(null);
+    setSearch('');
+  };
+
+  return (
+    <Combobox
+      store={combobox}
+      onOptionSubmit={(val) => {
+        onChange(val);
+        setSearch('');
+        combobox.closeDropdown();
+      }}
+    >
+      <Combobox.Target>
+        <Input.Wrapper label={label}>
+          {value && !combobox.dropdownOpened ? (
+            (() => {
+              // Try ARN extraction first, then fall back to resourceAccounts mapping
+              const accountId = showAccountName
+                ? (extractAccountId(value) || (resourceAccounts ? resourceAccounts[value] : null))
+                : null;
+              const accountName = accountId && accountNames ? accountNames[accountId] : null;
+              const service = showResourceType ? extractService(value) : null;
+              return (
+                <Tooltip label={value} multiline maw={400} openDelay={500}>
+                  <Group
+                    gap="xs"
+                    justify="space-between"
+                    wrap="nowrap"
+                    onClick={() => combobox.openDropdown()}
+                    style={{
+                      border: '1px solid var(--mantine-color-gray-4)',
+                      borderRadius: 'var(--mantine-radius-sm)',
+                      padding: '8px 12px',
+                      minHeight: '50px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Box style={{ overflow: 'hidden', flex: 1 }}>
+                      <Text size="sm" truncate>
+                        {displayValue}
+                      </Text>
+                      {showResourceType && (accountName || service) && (
+                        <Text size="xs" c="dimmed" truncate>
+                          {[accountName ? `${accountName} (${accountId})` : accountId, service].filter(Boolean).join(' · ')}
+                        </Text>
+                      )}
+                      {showAccountName && !showResourceType && accountName && (
+                        <Text size="xs" c="dimmed" truncate>
+                          {accountName} ({accountId})
+                        </Text>
+                      )}
+                      {!showAccountName && !showResourceType && formatLabel && (
+                        <Text size="xs" c="dimmed" truncate>
+                          {value}
+                        </Text>
+                      )}
+                    </Box>
+                    <ActionIcon
+                      size="sm"
+                      variant="subtle"
+                      color="gray"
+                      onClick={handleClear}
+                      aria-label="Clear selection"
+                    >
+                      <IconX size={14} />
+                    </ActionIcon>
+                  </Group>
+                </Tooltip>
+              );
+            })()
+          ) : (
+            <InputBase
+              size="lg"
+              rightSection={loading ? <Loader size={18} /> : <IconSearch size={18} color="var(--mantine-color-dimmed)" />}
+              value={search}
+              onChange={(event) => {
+                setSearch(event.currentTarget.value);
+                combobox.openDropdown();
+                combobox.updateSelectedOptionIndex();
+              }}
+              onClick={() => combobox.openDropdown()}
+              onFocus={() => combobox.openDropdown()}
+              onBlur={() => {
+                combobox.closeDropdown();
+                setSearch('');
+              }}
+              placeholder={placeholder}
+              rightSectionPointerEvents="none"
+            />
+          )}
+        </Input.Wrapper>
+      </Combobox.Target>
+
+      <Combobox.Dropdown>
+        <Combobox.Options>
+          <ScrollArea.Autosize mah={300} type="scroll">
+            {loading ? (
+              <Combobox.Empty>Searching...</Combobox.Empty>
+            ) : options.length === 0 ? (
+              <Combobox.Empty>
+                {debouncedSearch.length < 2 ? 'Type at least 2 characters to search' : 'No results found'}
+              </Combobox.Empty>
+            ) : (
+              options.map((option) => {
+                // Try ARN extraction first, then fall back to resourceAccounts mapping
+                const accountId = showAccountName
+                  ? (extractAccountId(option) || (resourceAccounts ? resourceAccounts[option] : null))
+                  : null;
+                const accountName = accountId && accountNames ? accountNames[accountId] : null;
+                const service = showResourceType ? extractService(option) : null;
+                return (
+                  <Combobox.Option value={option} key={option}>
+                    <Text size="sm" truncate>
+                      {formatLabel ? formatLabel(option) : option}
+                    </Text>
+                    {showResourceType && (accountName || service) && (
+                      <Text size="xs" c="dimmed" truncate>
+                        {[accountName ? `${accountName} (${accountId})` : accountId, service].filter(Boolean).join(' · ')}
+                      </Text>
+                    )}
+                    {showAccountName && !showResourceType && accountName && (
+                      <Text size="xs" c="dimmed" truncate>
+                        {accountName} ({accountId})
+                      </Text>
+                    )}
+                    {!showAccountName && !showResourceType && formatLabel && (
+                      <Text size="xs" c="dimmed" truncate>
+                        {option}
+                      </Text>
+                    )}
+                  </Combobox.Option>
+                );
+              })
+            )}
+          </ScrollArea.Autosize>
+        </Combobox.Options>
+      </Combobox.Dropdown>
+    </Combobox>
+  );
+}
+
+// Extract display name from principal ARN
+function formatPrincipalLabel(arn: string): string {
+  const parts = arn.split('/');
+  return parts[parts.length - 1];
+}
+
+// Extract display name from resource ARN
+function formatResourceLabel(arn: string): string {
+  const parts = arn.split(':');
+  return parts.slice(5).join(':') || arn;
+}
+
+export function AccessCheckPage(): JSX.Element {
+  // Selection states
+  const [selectedPrincipal, setSelectedPrincipal] = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  const [selectedResource, setSelectedResource] = useState<string | null>(null);
+
+  // Account names and resource-to-account mapping for display
+  const [accountNames, setAccountNames] = useState<Record<string, string>>({});
+  const [resourceAccounts, setResourceAccounts] = useState<Record<string, string>>({});
+
+  // Request context variables
+  const [contextVars, setContextVars] = useState<Array<{ key: string; value: string }>>([]);
+
+  // Simulation states
+  const [simulating, setSimulating] = useState(false);
+  const [result, setResult] = useState<SimulationResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch account names and resource accounts on mount
+  useEffect(() => {
+    yamsApi.accountNames()
+      .then(setAccountNames)
+      .catch((err) => console.error('Failed to fetch account names:', err));
+    yamsApi.resourceAccounts()
+      .then(setResourceAccounts)
+      .catch((err) => console.error('Failed to fetch resource accounts:', err));
+  }, []);
+
+  // Search functions
+  const searchPrincipals = useCallback((query: string) => yamsApi.searchPrincipals(query), []);
+  const searchActions = useCallback((query: string) => yamsApi.searchActions(query), []);
+  const searchResources = useCallback((query: string) => yamsApi.searchResources(query), []);
+
+  // Use ref to access context vars without triggering re-renders
+  const contextVarsRef = useRef(contextVars);
+  contextVarsRef.current = contextVars;
+
+  // Build context object from key-value pairs
+  const buildContext = (): Record<string, string> | undefined => {
+    const validPairs = contextVarsRef.current.filter((cv) => cv.key.trim() && cv.value.trim());
+    if (validPairs.length === 0) return undefined;
+    return Object.fromEntries(validPairs.map((cv) => [cv.key.trim(), cv.value.trim()]));
+  };
+
+  // Run simulation when all 3 are selected
+  const runSimulation = useCallback(async (): Promise<void> => {
+    if (!selectedPrincipal || !selectedAction || !selectedResource) return;
+
+    setSimulating(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await yamsApi.simulate({
+        principal: selectedPrincipal,
+        action: selectedAction,
+        resource: selectedResource,
+        context: buildContext(),
+        explain: true,
+        trace: true,
+      });
+      setResult(response);
+    } catch (err) {
+      console.error('Simulation failed:', err);
+      setError(err instanceof Error ? err.message : 'Simulation failed');
+    } finally {
+      setSimulating(false);
+    }
+  }, [selectedPrincipal, selectedAction, selectedResource]);
+
+  // Auto-run simulation when all selections change
+  useEffect(() => {
+    if (selectedPrincipal && selectedAction && selectedResource) {
+      runSimulation();
+    } else {
+      setResult(null);
+      setError(null);
+    }
+  }, [selectedPrincipal, selectedAction, selectedResource, runSimulation]);
+
+  // Parse trace into tree
+  const traceTree = useMemo(() => {
+    if (!result?.trace) return [];
+    return parseTraceToTree(result.trace);
+  }, [result?.trace]);
+
+  // Context variable helpers
+  const addContextVar = (): void => {
+    setContextVars([...contextVars, { key: '', value: '' }]);
+  };
+
+  const removeContextVar = (index: number): void => {
+    setContextVars(contextVars.filter((_, i) => i !== index));
+  };
+
+  const updateContextVar = (index: number, field: 'key' | 'value', val: string): void => {
+    setContextVars(contextVars.map((cv, i) => (i === index ? { ...cv, [field]: val } : cv)));
+  };
+
+  const allSelected = selectedPrincipal && selectedAction && selectedResource;
+
+  return (
+    <Box p="md">
+      <Stack gap="lg">
+        {/* Page header */}
+        <Box>
+          <Title order={3} mb={4}>Access Check</Title>
+          <Text size="sm" c="dimmed">
+            Test whether a <Text component="span" fw={500} c="purple.6">principal</Text> can
+            perform an <Text component="span" fw={500} c="purple.6">action</Text> on
+            a <Text component="span" fw={500} c="purple.6">resource</Text>.
+          </Text>
+        </Box>
+
+        {/* Selection dropdowns */}
+        <Card withBorder p="lg">
+          <Grid gutter="md">
+            <Grid.Col span={4}>
+              <AsyncSearchSelect
+                label="Principal"
+                placeholder="Search principals..."
+                value={selectedPrincipal}
+                onChange={setSelectedPrincipal}
+                onSearch={searchPrincipals}
+                formatLabel={formatPrincipalLabel}
+                accountNames={accountNames}
+                showAccountName
+              />
+            </Grid.Col>
+            <Grid.Col span={4}>
+              <AsyncSearchSelect
+                label="Action"
+                placeholder="Search actions..."
+                value={selectedAction}
+                onChange={setSelectedAction}
+                onSearch={searchActions}
+              />
+            </Grid.Col>
+            <Grid.Col span={4}>
+              <AsyncSearchSelect
+                label="Resource"
+                placeholder="Search resources..."
+                value={selectedResource}
+                onChange={setSelectedResource}
+                onSearch={searchResources}
+                formatLabel={formatResourceLabel}
+                accountNames={accountNames}
+                resourceAccounts={resourceAccounts}
+                showAccountName
+                showResourceType
+              />
+            </Grid.Col>
+          </Grid>
+        </Card>
+
+        {/* Request context variables */}
+        <Card withBorder p="lg">
+          <Group justify="space-between" mb={contextVars.length > 0 ? 'md' : undefined}>
+            <Title order={5}>Request Context</Title>
+            <Button
+              variant="subtle"
+              size="xs"
+              leftSection={<IconPlus size={14} />}
+              onClick={addContextVar}
+            >
+              Add Variable
+            </Button>
+          </Group>
+          {contextVars.length > 0 && (
+            <Stack gap="xs">
+              {contextVars.map((cv, idx) => (
+                <Group key={idx} gap="xs" wrap="nowrap">
+                  <TextInput
+                    placeholder="Key (e.g., aws:SourceIp)"
+                    value={cv.key}
+                    onChange={(e) => updateContextVar(idx, 'key', e.currentTarget.value)}
+                    style={{ flex: 1 }}
+                    size="sm"
+                  />
+                  <TextInput
+                    placeholder="Value"
+                    value={cv.value}
+                    onChange={(e) => updateContextVar(idx, 'value', e.currentTarget.value)}
+                    style={{ flex: 1 }}
+                    size="sm"
+                  />
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    onClick={() => removeContextVar(idx)}
+                    aria-label="Remove variable"
+                  >
+                    <IconX size={16} />
+                  </ActionIcon>
+                </Group>
+              ))}
+              {allSelected && (
+                <Button size="xs" variant="light" onClick={runSimulation} mt="xs">
+                  Re-run Simulation
+                </Button>
+              )}
+            </Stack>
+          )}
+          {contextVars.length === 0 && (
+            <Text size="sm" c="dimmed">
+              Add context variables to test conditions like aws:SourceIp, aws:RequestTag/*, etc.
+            </Text>
+          )}
+        </Card>
+
+        {/* Results section */}
+        {simulating && (
+          <Card withBorder p="lg">
+            <Group justify="center" p="xl">
+              <Loader size="md" />
+              <Text c="dimmed">Running simulation...</Text>
+            </Group>
+          </Card>
+        )}
+
+        {error && (
+          <Alert color="red" title="Error" icon={<IconX size={16} />}>
+            {error}
+          </Alert>
+        )}
+
+        {result && !simulating && (
+          <Stack gap="md">
+            {/* Input section */}
+            <Card withBorder p="lg">
+              <Title order={4} mb="md">Input</Title>
+              <Group gap="xl">
+                <div>
+                  <Text size="sm" c="dimmed">Principal</Text>
+                  <Anchor component={Link} to={`/search/principals?q=${encodeURIComponent(result.principal)}`} size="sm" ff="monospace">
+                    {result.principal}
+                  </Anchor>
+                </div>
+                <div>
+                  <Text size="sm" c="dimmed">Action</Text>
+                  <Anchor component={Link} to={`/search/actions?q=${encodeURIComponent(result.action)}`} size="sm" ff="monospace">
+                    {result.action}
+                  </Anchor>
+                </div>
+                <div>
+                  <Text size="sm" c="dimmed">Resource</Text>
+                  <Anchor component={Link} to={`/search/resources?q=${encodeURIComponent(result.resource)}`} size="sm" ff="monospace">
+                    {result.resource}
+                  </Anchor>
+                </div>
+              </Group>
+            </Card>
+
+            {/* Result section */}
+            <Card withBorder p="lg">
+              <Title order={4} mb="md">Result</Title>
+              {result.result === 'ALLOW' ? (
+                <Badge size="xl" color="green" leftSection={<IconCheck size={14} />}>
+                  ALLOW
+                </Badge>
+              ) : (
+                <Badge size="xl" color="red" leftSection={<IconX size={14} />}>
+                  DENY
+                </Badge>
+              )}
+            </Card>
+
+            {/* Explanation */}
+            {result.explain && result.explain.length > 0 && (
+              <Card withBorder p="lg">
+                <Title order={4} mb="md">Explanation</Title>
+                <Stack gap="xs">
+                  {result.explain.map((line, idx) => (
+                    <Box key={idx}>{highlightExplanation(line)}</Box>
+                  ))}
+                </Stack>
+              </Card>
+            )}
+
+            {/* Trace tree */}
+            {traceTree.length > 0 && (
+              <Card withBorder p="lg">
+                <Title order={4} mb="md">Evaluation Trace</Title>
+                <Box
+                  p="md"
+                  bg="gray.0"
+                  style={{ borderRadius: 'var(--mantine-radius-sm)', overflow: 'auto', maxHeight: '500px' }}
+                >
+                  {traceTree.map((node, idx) => (
+                    <TraceTreeNode key={idx} node={node} />
+                  ))}
+                </Box>
+              </Card>
+            )}
+          </Stack>
+        )}
+
+        {/* Prompt when not all selected */}
+        {!allSelected && !simulating && !result && (
+          <Card withBorder p="xl">
+            <Text ta="center" c="dimmed" size="lg">
+              Search and select a principal, action, and resource to run an access check simulation.
+            </Text>
+          </Card>
+        )}
+      </Stack>
+    </Box>
+  );
+}

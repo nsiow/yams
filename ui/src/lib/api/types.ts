@@ -109,7 +109,10 @@ export interface SimulationRequest {
   principal: string;
   action: string;
   resource: string;
+  context?: Record<string, string>;
+  fuzzy?: boolean;
   explain?: boolean;
+  trace?: boolean;
   overlay?: SimulationOverlay;
 }
 
@@ -122,19 +125,12 @@ export interface SimulationOverlay {
 }
 
 export interface SimulationResponse {
-  decision: 'Allow' | 'Deny';
-  explanation?: SimulationExplanation;
-}
-
-export interface SimulationExplanation {
-  matchedStatements: MatchedStatement[];
-  reason: string;
-}
-
-export interface MatchedStatement {
-  policyArn: string;
-  statementId?: string;
-  effect: 'Allow' | 'Deny';
+  result: 'ALLOW' | 'DENY';
+  principal: string;
+  action: string;
+  resource?: string;
+  explain?: string[];
+  trace?: string[];
 }
 
 export interface WhichPrincipalsRequest {

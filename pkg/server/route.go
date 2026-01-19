@@ -45,4 +45,8 @@ func (s *Server) addV1Routes(v1 *v1.API) {
 	s.mux.HandleFunc("POST /api/v1/sim/whichPrincipals", v1.WhichPrincipals)
 	s.mux.HandleFunc("POST /api/v1/sim/whichActions", v1.WhichActions)
 	s.mux.HandleFunc("POST /api/v1/sim/whichResources", v1.WhichResources)
+
+	// utils
+	s.mux.HandleFunc("GET /api/v1/utils/accounts/names", v1.UtilAccountNames)
+	s.mux.HandleFunc("GET /api/v1/utils/resources/accounts", v1.UtilResourceAccounts)
 }

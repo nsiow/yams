@@ -38,7 +38,6 @@ const navSections: NavSection[] = [
     title: 'Simulate',
     items: [
       { label: 'Access Check', path: '/simulate/access' },
-      { label: 'Policy Evaluation', path: '/simulate/policy' },
     ],
   },
 ];

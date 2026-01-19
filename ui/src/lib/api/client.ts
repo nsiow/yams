@@ -172,8 +172,14 @@ export class YamsClient {
     );
   }
 
+  // Utils
+
   async accountNames(): Promise<Record<string, string>> {
-    return this.fetch<Record<string, string>>('/accounts/names');
+    return this.fetch<Record<string, string>>('/utils/accounts/names');
+  }
+
+  async resourceAccounts(): Promise<Record<string, string>> {
+    return this.fetch<Record<string, string>>('/utils/resources/accounts');
   }
 
   // Simulation

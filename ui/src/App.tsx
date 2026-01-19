@@ -7,6 +7,7 @@ import { PrincipalsPage } from './pages/search/principals';
 import { ResourcesPage } from './pages/search/resources';
 import { PoliciesPage } from './pages/search/policies';
 import { ActionsPage } from './pages/search/actions';
+import { AccessCheckPage } from './pages/simulate/access';
 
 export function App(): JSX.Element {
   return (
@@ -24,6 +25,7 @@ export function App(): JSX.Element {
         <Route path="/search/policies/*" element={<PoliciesPage />} />
         <Route path="/search/actions" element={<ActionsPage />} />
         <Route path="/search/actions/*" element={<ActionsPage />} />
+        <Route path="/simulate/access" element={<AccessCheckPage />} />
       </Route>
     </Routes>
   );
