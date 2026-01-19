@@ -10,6 +10,14 @@ YAMS_INSTALL_DIR ?= /usr/local/bin/
 GO_FILES = $(shell find . -type f -name '*.go')
 GO_BUILDER ?= go build
 
+# Version injection via ldflags
+VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+GIT_COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+LDFLAGS    := -X 'github.com/nsiow/yams/cmd/yams/cli.Version=$(VERSION)'
+LDFLAGS    += -X 'github.com/nsiow/yams/cmd/yams/cli.GitCommit=$(GIT_COMMIT)'
+LDFLAGS    += -X 'github.com/nsiow/yams/cmd/yams/cli.BuildDate=$(BUILD_DATE)'
+
 .PHONY: build
 build:
 	go build ./...
@@ -18,7 +26,7 @@ build:
 cli: $(CLI)
 
 $(CLI): $(GO_FILES)
-	go build ./cmd/yams
+	go build -ldflags "$(LDFLAGS)" ./cmd/yams
 
 .PHONY: install
 install: $(CLI)

@@ -47,12 +47,30 @@ yams server \
 
 ### Configuring the CLI
 
-There are two options for pointing the **yams** CLI at the desired server:
+There are multiple ways to configure the **yams** CLI (in order of priority):
 
-- via the `-s/--server` flag for individual invocations
-- via the `YAMS_SERVER_ADDRESS` environment variable
+1. **Environment variable**: `YAMS_SERVER_ADDRESS`
+2. **Config file**: `~/.config/yams/config.json`
+3. **Command-line flag**: `-s/--server` for individual invocations
 
-Once set, you should be able to confirm connectivity using the `status` subcommand:
+#### Config File
+
+Create a config file at `~/.config/yams/config.json`:
+```json
+{
+  "server": "localhost:8888",
+  "format": "table"
+}
+```
+
+Supported config options:
+
+- `server`: Default server address
+- `format`: Default output format (`json` or `table`)
+
+#### Verifying Connectivity
+
+Once configured, confirm connectivity using the `status` subcommand:
 ```shell
 yams status
 ```
@@ -76,3 +94,27 @@ yams status
   ]
 }
 ```
+
+### Shell Completion
+
+**yams** supports shell completion for bash and zsh. To enable:
+
+**Bash**:
+```shell
+# Add to ~/.bashrc
+eval "$(yams completion bash)"
+```
+
+**Zsh**:
+```shell
+# Add to ~/.zshrc
+eval "$(yams completion zsh)"
+```
+
+### Global Flags
+
+The following flags can be used with any command:
+
+- `-h, --help`: Show help
+- `-v, --version`: Show version information
+- `-V, --verbose`: Enable debug logging

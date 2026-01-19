@@ -8,6 +8,15 @@ These simulation APIs revolve around four key inputs we will designate as the `P
 - `Resource`: the target of the AWS API call
 - `Context`: any additional request context (IP, User-Agent, etc)
 
+Context can be provided in two formats:
+```shell
+# Key=value format (multiple flags)
+yams sim -p ... -a ... -r ... -c aws:SourceIp=10.0.0.1 -c aws:UserAgent=MyApp
+
+# JSON format (single flag)
+yams sim -p ... -a ... -r ... -c '{"aws:SourceIp": "10.0.0.1", "aws:UserAgent": "MyApp"}'
+```
+
 ### Basic Simulation
 
 The most straightforward type of simulation is for a single request, providing all aspects of

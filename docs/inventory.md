@@ -18,6 +18,41 @@ The inventorying commands for each **Entity** type follow the same common patter
 - `yams <type> -k/-key <name/ARN>` will look up the **Entity** by its primary ID (typically ARN,
   name, or ID); exact match
 
+### Command Aliases
+
+For convenience, inventory commands support short aliases:
+
+| Command | Alias |
+|---------|-------|
+| `principals` | `p` |
+| `resources` | `r` |
+| `actions` | `a` |
+| `accounts` | `acc` |
+| `policies` | `pol` |
+
+### Output Formats
+
+By default, inventory commands output JSON. For human-readable output, use `--format table`:
+
+```shell
+yams principals --format table
+```
+```
+TYPE           NAME       ACCOUNT       ARN
+------------   --------   -----------   --------------------------------------------
+AWS::IAM::Role LionRole   213308312933  arn:aws:iam::213308312933:role/LionRole
+AWS::IAM::Role MouseRole  213308312933  arn:aws:iam::213308312933:role/MouseRole
+AWS::IAM::User CatUser    213308312933  arn:aws:iam::213308312933:user/CatUser
+...
+```
+
+You can set the default format in your config file (`~/.config/yams/config.json`):
+```json
+{
+  "format": "table"
+}
+```
+
 ### AWS API Actions
 
 ##### List
