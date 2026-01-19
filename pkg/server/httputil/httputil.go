@@ -8,14 +8,21 @@ import (
 )
 
 func Error(w http.ResponseWriter, req *http.Request, statusCode int, err error) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
 	wrapper := map[string]string{
 		"error": err.Error(),
 	}
 
-	WriteJsonResponse(w, req, wrapper)
+	jsonBytes, jsonErr := json.MarshalIndent(wrapper, "", "  ")
+	if jsonErr != nil {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"internal server error"}` + "\n"))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(statusCode)
+	w.Write(append(jsonBytes, '\n'))
 }
 
 func ClientError(w http.ResponseWriter, req *http.Request, err error) {

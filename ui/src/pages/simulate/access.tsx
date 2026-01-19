@@ -28,11 +28,12 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconCheck,
+  IconOctagonFilled,
   IconPlus,
   IconX,
   IconSearch,
 } from '@tabler/icons-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { yamsApi } from '../../lib/api';
 import type { SimulationResponse } from '../../lib/api';
 
@@ -463,10 +464,38 @@ function formatResourceLabel(arn: string): string {
 }
 
 export function AccessCheckPage(): JSX.Element {
-  // Selection states
-  const [selectedPrincipal, setSelectedPrincipal] = useState<string | null>(null);
-  const [selectedAction, setSelectedAction] = useState<string | null>(null);
-  const [selectedResource, setSelectedResource] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Initialize state from URL params
+  const [selectedPrincipal, setSelectedPrincipal] = useState<string | null>(
+    searchParams.get('principal')
+  );
+  const [selectedAction, setSelectedAction] = useState<string | null>(
+    searchParams.get('action')
+  );
+  const [selectedResource, setSelectedResource] = useState<string | null>(
+    searchParams.get('resource')
+  );
+
+  // Update URL when selections change
+  const updateSelection = useCallback(
+    (key: 'principal' | 'action' | 'resource', value: string | null): void => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (value) {
+          next.set(key, value);
+        } else {
+          next.delete(key);
+        }
+        return next;
+      }, { replace: true });
+
+      if (key === 'principal') setSelectedPrincipal(value);
+      else if (key === 'action') setSelectedAction(value);
+      else if (key === 'resource') setSelectedResource(value);
+    },
+    [setSearchParams]
+  );
 
   // Account names and resource-to-account mapping for display
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
@@ -584,7 +613,7 @@ export function AccessCheckPage(): JSX.Element {
                 label="Principal"
                 placeholder="Search principals..."
                 value={selectedPrincipal}
-                onChange={setSelectedPrincipal}
+                onChange={(v) => updateSelection('principal', v)}
                 onSearch={searchPrincipals}
                 formatLabel={formatPrincipalLabel}
                 accountNames={accountNames}
@@ -596,7 +625,7 @@ export function AccessCheckPage(): JSX.Element {
                 label="Action"
                 placeholder="Search actions..."
                 value={selectedAction}
-                onChange={setSelectedAction}
+                onChange={(v) => updateSelection('action', v)}
                 onSearch={searchActions}
               />
             </Grid.Col>
@@ -605,7 +634,7 @@ export function AccessCheckPage(): JSX.Element {
                 label="Resource"
                 placeholder="Search resources..."
                 value={selectedResource}
-                onChange={setSelectedResource}
+                onChange={(v) => updateSelection('resource', v)}
                 onSearch={searchResources}
                 formatLabel={formatResourceLabel}
                 accountNames={accountNames}
@@ -723,7 +752,7 @@ export function AccessCheckPage(): JSX.Element {
                   ALLOW
                 </Badge>
               ) : (
-                <Badge size="xl" color="red" leftSection={<IconX size={14} />}>
+                <Badge size="xl" color="red" leftSection={<IconOctagonFilled size={14} />}>
                   DENY
                 </Badge>
               )}
