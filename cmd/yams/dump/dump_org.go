@@ -23,27 +23,41 @@ import (
 
 func Org(_ *cli.Flags) (string, error) {
 	ctx := context.Background()
+
+	progress := cli.NewProgress("Connecting to AWS Organizations...")
+	progress.Start()
+
 	client, err := orgClient(ctx)
 	if err != nil {
+		progress.Stop()
 		return "", fmt.Errorf("error creating org client: %w", err)
 	}
 
 	cache := make(map[string]any)
 
+	progress.Update("Walking organization tree...")
 	accounts, err := walk(ctx, client, cache)
 	if err != nil {
+		progress.Stop()
 		return "", fmt.Errorf("error walking accounts: %w", err)
 	}
 
+	progress.Update("Fetching Service Control Policies...")
 	scps, err := describeScps(ctx, client, cache)
 	if err != nil {
+		progress.Stop()
 		return "", fmt.Errorf("error walking SCPs: %w", err)
 	}
 
+	progress.Update("Fetching Resource Control Policies...")
 	rcps, err := describeRcps(ctx, client, cache)
 	if err != nil {
+		progress.Stop()
 		return "", fmt.Errorf("error walking RCPs: %w", err)
 	}
+
+	progress.StopWithMessage(fmt.Sprintf("Found %d accounts, %d SCPs, %d RCPs",
+		len(accounts), len(scps), len(rcps)))
 
 	var orgEntities []any
 	for _, entity := range accounts {

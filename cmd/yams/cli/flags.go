@@ -43,6 +43,7 @@ type Flags struct {
 	Out           string
 	Aggregator    string
 	ResourceTypes MultiString
+	DryRun        bool
 
 	// server
 	Addr    string
@@ -55,6 +56,7 @@ type Flags struct {
 	Key    string
 	Query  string
 	Freeze bool
+	Format string
 
 	// sim
 	Principal    string
@@ -77,12 +79,30 @@ func Parse() (*Flags, error) {
 	var args []string
 	var err error
 
+	// Handle version and completion commands early
+	if len(os.Args) >= 2 {
+		switch os.Args[1] {
+		case "version", "-v", "--version":
+			PrintVersion()
+			os.Exit(0)
+		case "completion":
+			shell := "bash"
+			if len(os.Args) >= 3 {
+				shell = os.Args[2]
+			}
+			PrintCompletion(shell)
+			os.Exit(0)
+		}
+	}
+
 	// Check for subcommand
 	if len(os.Args) < 2 || os.Args[1] == "-h" || os.Args[1] == "--help" {
-		fmt.Printf("\navailable commands:\n\t%s\n", strings.Join(RUN_MODES, "\n\t"))
+		PrintHelp()
 		os.Exit(0)
 	}
-	opts.Mode = os.Args[1]
+
+	// Resolve command alias
+	opts.Mode = ResolveAlias(os.Args[1])
 	slog.Debug("parsed mode", "mode", opts.Mode)
 
 	// Parse options specific to subcommand
@@ -93,6 +113,8 @@ func Parse() (*Flags, error) {
 
 		fs.StringVar(&opts.Server, "s", "", "alias for -server")
 		fs.StringVar(&opts.Server, "server", ":8888", "address of yams server to use for connection")
+
+		fs.StringVar(&opts.Format, "format", "json", "output format: json or table")
 
 		err = fs.Parse(os.Args[2:])
 		args = fs.Args()
@@ -112,6 +134,9 @@ func Parse() (*Flags, error) {
 
 		fs.Var(&opts.ResourceTypes, "r", "alias for -rtype")
 		fs.Var(&opts.ResourceTypes, "rtype", "resource type(s) to dump, e.g. 'AWS::SQS::Queue'")
+
+		fs.BoolVar(&opts.DryRun, "n", false, "alias for -dry-run")
+		fs.BoolVar(&opts.DryRun, "dry-run", false, "show what would be done without executing")
 
 		err = fs.Parse(os.Args[2:])
 		args = fs.Args()
@@ -166,6 +191,8 @@ func Parse() (*Flags, error) {
 			fs.BoolVar(&opts.Freeze, "f", false, "alias for -freeze")
 			fs.BoolVar(&opts.Freeze, "freeze", false,
 				"freeze the entity if applicable, resolving all references to a snapshotted state")
+
+			fs.StringVar(&opts.Format, "format", "json", "output format: json or table")
 		}
 
 		err = fs.Parse(os.Args[2:])
@@ -217,7 +244,21 @@ func Parse() (*Flags, error) {
 		return nil, fmt.Errorf("unknown argument: %s", args[0])
 	}
 
-	// Allow address override via environment
+	// Apply config file defaults (only if values weren't explicitly set)
+	if cfg := LoadConfig(); cfg != nil {
+		if opts.Server == "" || opts.Server == ":8888" {
+			if cfg.Server != "" {
+				opts.Server = cfg.Server
+			}
+		}
+		if opts.Format == "" || opts.Format == "json" {
+			if cfg.Format != "" {
+				opts.Format = cfg.Format
+			}
+		}
+	}
+
+	// Allow address override via environment (highest priority)
 	envserver := os.Getenv("YAMS_SERVER_ADDRESS")
 	if len(envserver) > 0 {
 		opts.Server = envserver
