@@ -121,6 +121,8 @@ export function OverlaysPage(): JSX.Element {
   const fetchOverlays = useCallback(async (): Promise<void> => {
     try {
       const list = await yamsApi.listOverlays();
+      // Sort by createdAt descending (newest first)
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setOverlays(list);
       setError(null);
     } catch (err) {

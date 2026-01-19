@@ -18,37 +18,72 @@ import {
   Stack,
   Tabs,
   Text,
-  Textarea,
   TextInput,
-  Title,
   useCombobox,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useDisclosure } from '@mantine/hooks';
-import { CodeHighlight } from '@mantine/code-highlight';
 import {
   IconChevronRight,
-  IconEdit,
   IconPlus,
-  IconTrash,
   IconDeviceFloppy,
   IconUser,
   IconDatabase,
   IconShield,
   IconBuilding,
+  IconSearch,
+  IconX,
 } from '@tabler/icons-react';
 import { yamsApi } from '../../lib/api';
-import type { OverlayData, OverlaySummary } from '../../lib/api';
-import { IconSearch } from '@tabler/icons-react';
-import {
-  CopyButton,
-  EmptyState,
-  DetailSkeleton,
-} from '../../components';
+import type { OverlayData, OverlaySummary, Principal, Resource, Policy, Account } from '../../lib/api';
+import { EmptyState, DetailSkeleton } from '../../components';
+import { EntityListItem, EntityDetailPanel } from './components';
 
-import '@mantine/code-highlight/styles.css';
+// Entity type union
+type EntityType = 'principal' | 'resource' | 'policy' | 'account';
+type EntityUnion = Principal | Resource | Policy | Account;
 
-// Extract account ID from ARN (5th segment)
+// Format relative time for dates
+function formatRelativeTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffWeeks = Math.floor(diffDays / 7);
+  const diffMonths = Math.floor(diffDays / 30);
+  const diffYears = Math.floor(diffDays / 365);
+
+  if (diffSecs < 60) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffWeeks < 5) return `${diffWeeks}w ago`;
+  if (diffMonths < 12) return `${diffMonths}mo ago`;
+  return `${diffYears}y ago`;
+}
+
+// Format entity counts in a readable way
+function formatEntityCounts(overlay: OverlaySummary): string {
+  const parts: string[] = [];
+  if (overlay.numPrincipals > 0) {
+    parts.push(`${overlay.numPrincipals} principal${overlay.numPrincipals !== 1 ? 's' : ''}`);
+  }
+  if (overlay.numResources > 0) {
+    parts.push(`${overlay.numResources} resource${overlay.numResources !== 1 ? 's' : ''}`);
+  }
+  if (overlay.numPolicies > 0) {
+    parts.push(`${overlay.numPolicies} ${overlay.numPolicies !== 1 ? 'policies' : 'policy'}`);
+  }
+  if (overlay.numAccounts > 0) {
+    parts.push(`${overlay.numAccounts} account${overlay.numAccounts !== 1 ? 's' : ''}`);
+  }
+  return parts.length > 0 ? parts.join(', ') : 'empty';
+}
+
+// Extract account ID from ARN
 function extractAccountId(arn: string): string | null {
   const parts = arn.split(':');
   if (parts.length >= 5 && parts[4]) {
@@ -57,7 +92,7 @@ function extractAccountId(arn: string): string | null {
   return null;
 }
 
-// Extract service type from ARN (3rd segment)
+// Extract service type from ARN
 function extractService(arn: string): string | null {
   const parts = arn.split(':');
   if (parts.length >= 3 && parts[2]) {
@@ -72,10 +107,11 @@ function formatArnLabel(arn: string): string {
   return parts[parts.length - 1] || arn;
 }
 
+// Add entity modal for searching and adding entities
 interface AddEntityModalProps {
   opened: boolean;
   onClose: () => void;
-  entityType: 'principal' | 'resource' | 'policy' | 'account' | 'group';
+  entityType: EntityType;
   onAdd: (arns: string[]) => void;
   existingArns: string[];
 }
@@ -259,147 +295,232 @@ function AddEntityModal({ opened, onClose, entityType, onAdd, existingArns }: Ad
   );
 }
 
-// Edit entity modal for modifying entity properties
-interface EditEntityModalProps {
-  opened: boolean;
-  onClose: () => void;
-  entityType: 'principal' | 'resource' | 'policy' | 'account';
-  entity: unknown | null;
-  onSave: (updated: unknown) => void;
-}
-
-function EditEntityModal({ opened, onClose, entityType, entity, onSave }: EditEntityModalProps): JSX.Element {
-  const [jsonValue, setJsonValue] = useState('');
-  const [parseError, setParseError] = useState<string | null>(null);
-
-  // Reset when modal opens with new entity
-  useEffect(() => {
-    if (opened && entity) {
-      setJsonValue(JSON.stringify(entity, null, 2));
-      setParseError(null);
-    }
-  }, [opened, entity]);
-
-  const handleSave = (): void => {
-    try {
-      const parsed = JSON.parse(jsonValue);
-      setParseError(null);
-      onSave(parsed);
-      onClose();
-    } catch {
-      setParseError('Invalid JSON format');
-    }
-  };
-
-  return (
-    <Modal opened={opened} onClose={onClose} title={`Edit ${entityType}`} size="lg">
-      <Stack gap="md">
-        <Text size="sm" c="dimmed">
-          Edit the JSON representation of this {entityType}. Changes will be applied to the overlay.
-        </Text>
-        <Textarea
-          value={jsonValue}
-          onChange={(e) => {
-            setJsonValue(e.currentTarget.value);
-            setParseError(null);
-          }}
-          minRows={15}
-          maxRows={20}
-          autosize
-          ff="monospace"
-          styles={{ input: { fontSize: '12px' } }}
-          error={parseError}
-        />
-        <Group justify="flex-end" gap="sm">
-          <Button variant="default" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>Save Changes</Button>
-        </Group>
-      </Stack>
-    </Modal>
-  );
-}
-
-// Overlay name input with autocomplete for existing overlays
-interface OverlayNameInputProps {
-  value: string;
-  onChange: (value: string) => void;
+// Overlay selector - search existing or create new
+interface OverlaySelectorProps {
   overlays: OverlaySummary[];
-  error?: string;
   currentOverlayId?: string;
+  selectedOverlayId: string | null;
+  onSelectOverlay: (overlay: OverlaySummary | null) => void;
+  confirmedNewName: string;
+  onConfirmNewName: (name: string) => void;
+  onClearNewName: () => void;
+  error?: string;
 }
 
-function OverlayNameInput({ value, onChange, overlays, error, currentOverlayId }: OverlayNameInputProps): JSX.Element {
+function OverlaySelector({
+  overlays,
+  currentOverlayId,
+  selectedOverlayId,
+  onSelectOverlay,
+  confirmedNewName,
+  onConfirmNewName,
+  onClearNewName,
+  error,
+}: OverlaySelectorProps): JSX.Element {
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
   });
-  const [search, setSearch] = useState(value);
+  const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebouncedValue(search, 150);
+  const [newNameInput, setNewNameInput] = useState('');
 
-  // Filter overlays by search, excluding current overlay
+  const selectedOverlay = selectedOverlayId ? overlays.find((o) => o.id === selectedOverlayId) : null;
+
   const filteredOverlays = overlays.filter(
     (o) => o.id !== currentOverlayId && o.name.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
 
-  // Sync external value changes
-  useEffect(() => {
-    setSearch(value);
-  }, [value]);
-
-  const handleSelect = (overlayName: string): void => {
-    onChange(overlayName);
-    setSearch(overlayName);
+  const handleSelect = (overlayId: string): void => {
+    const overlay = overlays.find((o) => o.id === overlayId);
+    if (overlay) {
+      onSelectOverlay(overlay);
+      onClearNewName();
+      setNewNameInput('');
+    }
     combobox.closeDropdown();
   };
 
-  return (
-    <Combobox
-      store={combobox}
-      onOptionSubmit={(val) => handleSelect(val)}
-    >
-      <Combobox.Target>
-        <Input.Wrapper label="Overlay Name" error={error}>
-          <InputBase
-            value={search}
-            onChange={(e) => {
-              const newValue = e.currentTarget.value;
-              setSearch(newValue);
-              onChange(newValue);
-              combobox.openDropdown();
-              combobox.updateSelectedOptionIndex();
-            }}
-            onClick={() => combobox.openDropdown()}
-            onFocus={() => combobox.openDropdown()}
-            onBlur={() => combobox.closeDropdown()}
-            placeholder="Enter overlay name or search existing..."
-            rightSection={<IconSearch size={16} color="var(--mantine-color-dimmed)" />}
-            rightSectionPointerEvents="none"
-          />
-        </Input.Wrapper>
-      </Combobox.Target>
+  const handleClearExisting = (e: React.MouseEvent): void => {
+    e.stopPropagation();
+    onSelectOverlay(null);
+    setSearch('');
+  };
 
-      <Combobox.Dropdown>
-        <Combobox.Options>
-          <ScrollArea.Autosize mah={200} type="scroll">
-            {filteredOverlays.length === 0 ? (
-              <Combobox.Empty>
-                {debouncedSearch ? 'No matching overlays - this will create a new one' : 'Type to search or enter a new name'}
-              </Combobox.Empty>
-            ) : (
-              filteredOverlays.slice(0, 10).map((overlay) => (
-                <Combobox.Option value={overlay.name} key={overlay.id}>
-                  <Group gap="xs">
-                    <Text size="sm" fw={500}>{overlay.name}</Text>
-                    <Text size="xs" c="dimmed">
-                      {overlay.numPrincipals}P · {overlay.numResources}R · {overlay.numPolicies}Po
+  const handleNewNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Enter' && newNameInput.trim()) {
+      onConfirmNewName(newNameInput.trim());
+      onSelectOverlay(null);
+      setSearch('');
+    }
+  };
+
+  const handleClearNewName = (e: React.MouseEvent): void => {
+    e.stopPropagation();
+    onClearNewName();
+    setNewNameInput('');
+  };
+
+  return (
+    <Group gap="md" align="flex-start" wrap="nowrap">
+      {/* Search existing overlays */}
+      <Box style={{ flex: 1 }}>
+        <Combobox
+          store={combobox}
+          onOptionSubmit={(val) => handleSelect(val)}
+          styles={{
+            dropdown: {
+              border: '2px solid var(--mantine-color-gray-4)',
+              boxShadow: 'var(--mantine-shadow-md)',
+            },
+            option: {
+              '&[data-combobox-selected]': {
+                backgroundColor: 'var(--mantine-color-violet-light)',
+              },
+              '&:hover': {
+                backgroundColor: 'var(--mantine-color-violet-light)',
+              },
+            },
+          }}
+        >
+          <Combobox.Target>
+            <Input.Wrapper label="Select Existing Overlay">
+              {selectedOverlay && !combobox.dropdownOpened ? (
+                <Group
+                  gap="xs"
+                  justify="space-between"
+                  wrap="nowrap"
+                  onClick={() => combobox.openDropdown()}
+                  style={{
+                    border: '1px solid var(--mantine-color-gray-4)',
+                    borderRadius: 'var(--mantine-radius-sm)',
+                    padding: '8px 12px',
+                    minHeight: '36px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Box style={{ overflow: 'hidden', flex: 1 }}>
+                    <Group gap="xs" justify="space-between">
+                      <Text size="sm" fw={500} truncate>{selectedOverlay.name}</Text>
+                      <Text size="xs" c="dimmed">{formatRelativeTime(selectedOverlay.createdAt)}</Text>
+                    </Group>
+                    <Text size="xs" c="dimmed" ff="monospace" truncate>
+                      {selectedOverlay.id}
                     </Text>
-                  </Group>
-                </Combobox.Option>
-              ))
-            )}
-          </ScrollArea.Autosize>
-        </Combobox.Options>
-      </Combobox.Dropdown>
-    </Combobox>
+                    <Text size="xs" c="dimmed">
+                      {formatEntityCounts(selectedOverlay)}
+                    </Text>
+                  </Box>
+                  <ActionIcon
+                    size="sm"
+                    variant="subtle"
+                    color="gray"
+                    onClick={handleClearExisting}
+                    aria-label="Clear selection"
+                  >
+                    <IconX size={14} />
+                  </ActionIcon>
+                </Group>
+              ) : (
+                <InputBase
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.currentTarget.value);
+                    combobox.openDropdown();
+                    combobox.updateSelectedOptionIndex();
+                  }}
+                  onClick={() => combobox.openDropdown()}
+                  onFocus={() => combobox.openDropdown()}
+                  onBlur={() => {
+                    setTimeout(() => combobox.closeDropdown(), 150);
+                  }}
+                  placeholder="Search existing overlays..."
+                  rightSection={<IconSearch size={16} color="var(--mantine-color-dimmed)" />}
+                  rightSectionPointerEvents="none"
+                  disabled={!!confirmedNewName}
+                />
+              )}
+            </Input.Wrapper>
+          </Combobox.Target>
+
+          <Combobox.Dropdown>
+            <Combobox.Options>
+              <ScrollArea.Autosize mah={200} type="scroll">
+                {filteredOverlays.length === 0 ? (
+                  <Combobox.Empty>
+                    {debouncedSearch ? 'No matching overlays found' : 'Type to search overlays'}
+                  </Combobox.Empty>
+                ) : (
+                  filteredOverlays.slice(0, 10).map((ov) => (
+                    <Combobox.Option value={ov.id} key={ov.id}>
+                      <Box>
+                        <Group gap="xs" justify="space-between">
+                          <Text size="sm" fw={500}>{ov.name}</Text>
+                          <Text size="xs" c="dimmed">{formatRelativeTime(ov.createdAt)}</Text>
+                        </Group>
+                        <Text size="xs" c="dimmed" ff="monospace" truncate>
+                          {ov.id}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          {formatEntityCounts(ov)}
+                        </Text>
+                      </Box>
+                    </Combobox.Option>
+                  ))
+                )}
+              </ScrollArea.Autosize>
+            </Combobox.Options>
+          </Combobox.Dropdown>
+        </Combobox>
+      </Box>
+
+      {/* OR divider - vertical */}
+      <Stack gap={0} align="center" justify="center" style={{ alignSelf: 'stretch', paddingTop: 24 }}>
+        <Box style={{ width: 1, flex: 1, backgroundColor: 'var(--mantine-color-gray-3)' }} />
+        <Text size="xs" c="dimmed" fw={500} py="xs">OR</Text>
+        <Box style={{ width: 1, flex: 1, backgroundColor: 'var(--mantine-color-gray-3)' }} />
+      </Stack>
+
+      {/* Create new overlay */}
+      <Box style={{ flex: 1 }}>
+        <Input.Wrapper label="Create New Overlay" error={error}>
+          {confirmedNewName ? (
+            <Group
+              gap="xs"
+              justify="space-between"
+              wrap="nowrap"
+              style={{
+                border: '1px solid var(--mantine-color-gray-4)',
+                borderRadius: 'var(--mantine-radius-sm)',
+                padding: '8px 12px',
+                minHeight: '36px',
+              }}
+            >
+              <Box style={{ overflow: 'hidden', flex: 1 }}>
+                <Text size="sm" fw={500} truncate>{confirmedNewName}</Text>
+                <Text size="xs" c="dimmed">New overlay (unsaved)</Text>
+              </Box>
+              <ActionIcon
+                size="sm"
+                variant="subtle"
+                color="gray"
+                onClick={handleClearNewName}
+                aria-label="Clear new overlay name"
+              >
+                <IconX size={14} />
+              </ActionIcon>
+            </Group>
+          ) : (
+            <TextInput
+              value={newNameInput}
+              onChange={(e) => setNewNameInput(e.currentTarget.value)}
+              onKeyDown={handleNewNameKeyDown}
+              placeholder="Type a name and press Enter"
+              disabled={!!selectedOverlayId}
+            />
+          )}
+        </Input.Wrapper>
+      </Box>
+    </Group>
   );
 }
 
@@ -418,23 +539,33 @@ export function OverlayEditorPage(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [existingOverlays, setExistingOverlays] = useState<OverlaySummary[]>([]);
+  const [accountNames, setAccountNames] = useState<Record<string, string>>({});
+  const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
+  const [confirmedNewName, setConfirmedNewName] = useState<string>('');
 
-  // Fetch existing overlays for name autocomplete
-  useEffect(() => {
-    yamsApi.listOverlays()
-      .then(setExistingOverlays)
-      .catch((err) => console.error('Failed to fetch overlays:', err));
-  }, []);
+  // Selected entity state
+  const [selectedEntityType, setSelectedEntityType] = useState<EntityType | null>(null);
+  const [selectedEntityIndex, setSelectedEntityIndex] = useState<number>(-1);
+  const [editingEntity, setEditingEntity] = useState<EntityUnion | null>(null);
+  const [entityDirty, setEntityDirty] = useState(false);
 
   // Add modal state
   const [addModalOpened, { open: openAddModal, close: closeAddModal }] = useDisclosure(false);
-  const [addEntityType, setAddEntityType] = useState<'principal' | 'resource' | 'policy' | 'account' | 'group'>('principal');
+  const [addEntityType, setAddEntityType] = useState<EntityType>('principal');
 
-  // Edit modal state
-  const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
-  const [editEntityType, setEditEntityType] = useState<'principal' | 'resource' | 'policy' | 'account'>('principal');
-  const [editingEntity, setEditingEntity] = useState<unknown | null>(null);
-  const [editingEntityIndex, setEditingEntityIndex] = useState<number>(-1);
+  // Fetch existing overlays and account names
+  useEffect(() => {
+    yamsApi.listOverlays()
+      .then((list) => {
+        // Sort by createdAt descending (newest first)
+        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setExistingOverlays(list);
+      })
+      .catch((err) => console.error('Failed to fetch overlays:', err));
+    yamsApi.accountNames()
+      .then(setAccountNames)
+      .catch((err) => console.error('Failed to fetch account names:', err));
+  }, []);
 
   const fetchOverlay = useCallback(async (): Promise<void> => {
     if (!id || isNew) return;
@@ -455,11 +586,83 @@ export function OverlayEditorPage(): JSX.Element {
     fetchOverlay();
   }, [fetchOverlay]);
 
-  const handleOpenAddModal = (type: 'principal' | 'resource' | 'policy' | 'account' | 'group'): void => {
+  // Get entity list for a type
+  const getEntityList = (type: EntityType): EntityUnion[] => {
+    if (!overlay) return [];
+    switch (type) {
+      case 'principal': return overlay.principals || [];
+      case 'resource': return overlay.resources || [];
+      case 'policy': return overlay.policies || [];
+      case 'account': return overlay.accounts || [];
+    }
+  };
+
+  // Get entity ID
+  const getEntityId = (entity: EntityUnion, type: EntityType): string => {
+    if (type === 'account') {
+      return (entity as Account).Id;
+    }
+    return (entity as Principal | Resource | Policy).Arn;
+  };
+
+  // Select an entity for editing
+  const handleSelectEntity = (type: EntityType, index: number): void => {
+    const list = getEntityList(type);
+    if (index >= 0 && index < list.length) {
+      // Deep clone to avoid direct mutation
+      setEditingEntity(JSON.parse(JSON.stringify(list[index])));
+      setSelectedEntityType(type);
+      setSelectedEntityIndex(index);
+      setEntityDirty(false);
+    }
+  };
+
+  // Update the editing entity
+  const handleEntityChange = (updated: EntityUnion): void => {
+    setEditingEntity(updated);
+    setEntityDirty(true);
+  };
+
+  // Save entity changes back to overlay
+  const handleSaveEntity = (): void => {
+    if (!overlay || !editingEntity || selectedEntityType === null || selectedEntityIndex < 0) return;
+
+    const updatedOverlay = { ...overlay };
+    switch (selectedEntityType) {
+      case 'principal':
+        updatedOverlay.principals = (overlay.principals || []).map((p, i) =>
+          i === selectedEntityIndex ? (editingEntity as Principal) : p
+        );
+        break;
+      case 'resource':
+        updatedOverlay.resources = (overlay.resources || []).map((r, i) =>
+          i === selectedEntityIndex ? (editingEntity as Resource) : r
+        );
+        break;
+      case 'policy':
+        updatedOverlay.policies = (overlay.policies || []).map((p, i) =>
+          i === selectedEntityIndex ? (editingEntity as Policy) : p
+        );
+        break;
+      case 'account':
+        updatedOverlay.accounts = (overlay.accounts || []).map((a, i) =>
+          i === selectedEntityIndex ? (editingEntity as Account) : a
+        );
+        break;
+    }
+
+    setOverlay(updatedOverlay);
+    setHasChanges(true);
+    setEntityDirty(false);
+  };
+
+  // Open add modal
+  const handleOpenAddModal = (type: EntityType): void => {
     setAddEntityType(type);
     openAddModal();
   };
 
+  // Add entities from search
   const handleAddEntities = async (arns: string[]): Promise<void> => {
     if (!overlay || arns.length === 0) return;
 
@@ -504,96 +707,72 @@ export function OverlayEditorPage(): JSX.Element {
     }
   };
 
-  const handleRemovePrincipal = (arn: string): void => {
+  // Remove entity handlers
+  const handleRemoveEntity = (type: EntityType, id: string): void => {
     if (!overlay) return;
-    setOverlay({
-      ...overlay,
-      principals: overlay.principals?.filter(p => p.Arn !== arn),
-    });
-    setHasChanges(true);
-  };
 
-  const handleRemoveResource = (arn: string): void => {
-    if (!overlay) return;
-    setOverlay({
-      ...overlay,
-      resources: overlay.resources?.filter(r => r.Arn !== arn),
-    });
-    setHasChanges(true);
-  };
+    // Clear selection if removing the selected entity
+    if (selectedEntityType === type) {
+      const list = getEntityList(type);
+      const removingIndex = list.findIndex((e) => getEntityId(e, type) === id);
+      if (removingIndex === selectedEntityIndex) {
+        setSelectedEntityType(null);
+        setSelectedEntityIndex(-1);
+        setEditingEntity(null);
+        setEntityDirty(false);
+      } else if (removingIndex < selectedEntityIndex) {
+        setSelectedEntityIndex(selectedEntityIndex - 1);
+      }
+    }
 
-  const handleRemovePolicy = (arn: string): void => {
-    if (!overlay) return;
-    setOverlay({
-      ...overlay,
-      policies: overlay.policies?.filter(p => p.Arn !== arn),
-    });
-    setHasChanges(true);
-  };
-
-  const handleRemoveAccount = (accountId: string): void => {
-    if (!overlay) return;
-    setOverlay({
-      ...overlay,
-      accounts: overlay.accounts?.filter(a => a.Id !== accountId),
-    });
-    setHasChanges(true);
-  };
-
-  // Edit handlers
-  const handleOpenEditModal = (type: 'principal' | 'resource' | 'policy' | 'account', entity: unknown, index: number): void => {
-    setEditEntityType(type);
-    setEditingEntity(entity);
-    setEditingEntityIndex(index);
-    openEditModal();
-  };
-
-  const handleSaveEditedEntity = (updated: unknown): void => {
-    if (!overlay || editingEntityIndex < 0) return;
-
-    switch (editEntityType) {
+    switch (type) {
       case 'principal':
         setOverlay({
           ...overlay,
-          principals: overlay.principals?.map((p, i) => (i === editingEntityIndex ? updated : p)) as typeof overlay.principals,
+          principals: overlay.principals?.filter(p => p.Arn !== id),
         });
         break;
       case 'resource':
         setOverlay({
           ...overlay,
-          resources: overlay.resources?.map((r, i) => (i === editingEntityIndex ? updated : r)) as typeof overlay.resources,
+          resources: overlay.resources?.filter(r => r.Arn !== id),
         });
         break;
       case 'policy':
         setOverlay({
           ...overlay,
-          policies: overlay.policies?.map((p, i) => (i === editingEntityIndex ? updated : p)) as typeof overlay.policies,
+          policies: overlay.policies?.filter(p => p.Arn !== id),
         });
         break;
       case 'account':
         setOverlay({
           ...overlay,
-          accounts: overlay.accounts?.map((a, i) => (i === editingEntityIndex ? updated : a)) as typeof overlay.accounts,
+          accounts: overlay.accounts?.filter(a => a.Id !== id),
         });
         break;
     }
     setHasChanges(true);
-    setEditingEntity(null);
-    setEditingEntityIndex(-1);
   };
 
+  // Save overlay
   const handleSave = async (): Promise<void> => {
     if (!overlay) return;
-    if (!overlay.name.trim()) {
+
+    // Determine if we're creating new or updating existing
+    const isCreatingNew = isNew && !selectedOverlayId;
+    const overlayIdToUpdate = selectedOverlayId || id;
+    const nameToUse = isCreatingNew ? confirmedNewName : overlay.name;
+
+    if (!nameToUse.trim()) {
       setError('Overlay name is required');
       return;
     }
     setSaving(true);
     setError(null);
     try {
-      if (isNew) {
+      if (isCreatingNew) {
         const created = await yamsApi.createOverlay({
-          name: overlay.name,
+          name: confirmedNewName,
           principals: overlay.principals,
           resources: overlay.resources,
           policies: overlay.policies,
@@ -602,7 +781,7 @@ export function OverlayEditorPage(): JSX.Element {
         });
         navigate(`/overlays/${created.id}/edit`, { replace: true });
       } else {
-        await yamsApi.updateOverlay(id!, {
+        await yamsApi.updateOverlay(overlayIdToUpdate!, {
           name: overlay.name,
           principals: overlay.principals,
           resources: overlay.resources,
@@ -620,14 +799,28 @@ export function OverlayEditorPage(): JSX.Element {
     }
   };
 
-  const breadcrumbItems = (isNew
+  // Determine breadcrumb title based on current state
+  const getBreadcrumbTitle = (): string => {
+    if (selectedOverlayId && overlay) {
+      return overlay.name;
+    }
+    if (confirmedNewName) {
+      return confirmedNewName;
+    }
+    if (!isNew && overlay) {
+      return overlay.name;
+    }
+    return 'New Overlay';
+  };
+
+  const breadcrumbItems = (isNew && !selectedOverlayId
     ? [
         { title: 'Overlays', href: '/overlays' },
-        { title: 'New Overlay', href: '' },
+        { title: getBreadcrumbTitle(), href: '' },
       ]
     : [
         { title: 'Overlays', href: '/overlays' },
-        { title: overlay?.name || 'Loading...', href: `/overlays/${id}` },
+        { title: getBreadcrumbTitle() || 'Loading...', href: selectedOverlayId ? `/overlays/${selectedOverlayId}` : `/overlays/${id}` },
         { title: 'Edit', href: '' },
       ]
   ).map((item, index, arr) => {
@@ -642,7 +835,7 @@ export function OverlayEditorPage(): JSX.Element {
     );
   });
 
-  if (error) {
+  if (error && !overlay) {
     return (
       <Box p="md">
         <EmptyState variant="error" message={error} />
@@ -674,37 +867,117 @@ export function OverlayEditorPage(): JSX.Element {
     ...(overlay.groups?.map(g => g.Arn) || []),
   ];
 
+  // Render entity list for a tab
+  const renderEntityList = (type: EntityType): JSX.Element => {
+    const list = getEntityList(type);
+
+    return (
+      <Stack gap="md" p="md" h="100%">
+        <Button
+          variant="light"
+          leftSection={<IconPlus size={16} />}
+          onClick={() => handleOpenAddModal(type)}
+        >
+          Add {type.charAt(0).toUpperCase() + type.slice(1)}
+        </Button>
+        <ScrollArea style={{ flex: 1 }}>
+          {list.length === 0 ? (
+            <Text c="dimmed" ta="center" py="xl">
+              No {type}s in overlay
+            </Text>
+          ) : (
+            <Stack gap="xs">
+              {list.map((entity, idx) => (
+                <EntityListItem
+                  key={getEntityId(entity, type)}
+                  entity={entity}
+                  type={type}
+                  isSelected={selectedEntityType === type && selectedEntityIndex === idx}
+                  onClick={() => handleSelectEntity(type, idx)}
+                  onDelete={() => handleRemoveEntity(type, getEntityId(entity, type))}
+                  accountNames={accountNames}
+                />
+              ))}
+            </Stack>
+          )}
+        </ScrollArea>
+      </Stack>
+    );
+  };
+
   return (
     <Box p="md" h="100%">
-      <Grid gutter="md" h="100%">
-        {/* Left column - Entity list */}
-        <Grid.Col span={6}>
-          <Stack gap="md" h="100%">
-            <Breadcrumbs separator={<IconChevronRight size={14} />}>{breadcrumbItems}</Breadcrumbs>
-            <Group justify="space-between" align="flex-end">
-              <Box style={{ flex: 1, maxWidth: 400 }}>
-                <OverlayNameInput
-                  value={overlay.name}
-                  onChange={(name) => {
-                    setOverlay({ ...overlay, name });
-                    setHasChanges(true);
-                  }}
-                  overlays={existingOverlays}
-                  currentOverlayId={isNew ? undefined : id}
-                  error={error && !overlay.name.trim() ? 'Name is required' : undefined}
-                />
-              </Box>
+      <Stack gap="md" h="100%">
+        {/* Header row */}
+        <Box>
+          <Breadcrumbs separator={<IconChevronRight size={14} />} mb="md">{breadcrumbItems}</Breadcrumbs>
+
+          {/* Overlay selector row */}
+          <Card withBorder p="md">
+            <Stack gap="md">
+              <OverlaySelector
+                overlays={existingOverlays}
+                currentOverlayId={isNew ? undefined : id}
+                selectedOverlayId={selectedOverlayId}
+                onSelectOverlay={async (selected) => {
+                  if (selected) {
+                    // Load the selected overlay's data without navigating
+                    // Don't set loading state to avoid full page flicker
+                    setSelectedOverlayId(selected.id);
+                    setConfirmedNewName('');
+                    // Clear entity selection
+                    setSelectedEntityType(null);
+                    setSelectedEntityIndex(-1);
+                    setEditingEntity(null);
+                    setEntityDirty(false);
+                    try {
+                      const data = await yamsApi.getOverlay(selected.id);
+                      setOverlay(data);
+                      setHasChanges(false);
+                      setError(null);
+                    } catch (err) {
+                      console.error('Failed to load overlay:', err);
+                      setError(err instanceof Error ? err.message : 'Failed to load overlay');
+                    }
+                  } else {
+                    setSelectedOverlayId(null);
+                  }
+                }}
+                confirmedNewName={confirmedNewName}
+                onConfirmNewName={(name) => {
+                  setConfirmedNewName(name);
+                  setOverlay({ ...overlay, name });
+                  setHasChanges(true);
+                }}
+                onClearNewName={() => {
+                  setConfirmedNewName('');
+                  setOverlay({ ...overlay, name: '' });
+                  setHasChanges(false);
+                }}
+                error={error && !confirmedNewName && !selectedOverlayId ? 'Name is required' : undefined}
+              />
               <Button
                 leftSection={<IconDeviceFloppy size={16} />}
                 onClick={handleSave}
                 loading={saving}
-                disabled={!overlay.name.trim() || (!hasChanges && !isNew)}
+                disabled={
+                  isNew && !selectedOverlayId
+                    ? !confirmedNewName
+                    : !hasChanges
+                }
+                fullWidth
               >
-                {isNew ? 'Create Overlay' : 'Save Changes'}
+                {isNew && !selectedOverlayId ? 'Create Overlay' : 'Save Changes'}
               </Button>
-            </Group>
+            </Stack>
+          </Card>
+        </Box>
 
-            <Card withBorder style={{ flex: 1, overflow: 'hidden' }}>
+        {/* Master/detail row */}
+        <Grid gutter="md" style={{ flex: 1, minHeight: 0 }}>
+          {/* Left column - Entity list */}
+          <Grid.Col span={6} h="100%">
+            <Card withBorder h="100%" style={{ overflow: 'hidden' }}>
               <Tabs defaultValue="principals" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <Tabs.List>
                   <Tabs.Tab value="principals" leftSection={<IconUser size={14} />}>
@@ -722,161 +995,38 @@ export function OverlayEditorPage(): JSX.Element {
                 </Tabs.List>
 
                 <Tabs.Panel value="principals" style={{ flex: 1, overflow: 'hidden' }}>
-                  <Stack gap="md" p="md" h="100%">
-                    <Button
-                      variant="light"
-                      leftSection={<IconPlus size={16} />}
-                      onClick={() => handleOpenAddModal('principal')}
-                    >
-                      Add Principal
-                    </Button>
-                    <ScrollArea style={{ flex: 1 }}>
-                      {overlay.principals?.length === 0 ? (
-                        <Text c="dimmed" ta="center" py="xl">No principals in overlay</Text>
-                      ) : (
-                        <Stack gap="xs">
-                          {overlay.principals?.map((p, idx) => (
-                            <Group key={p.Arn} gap="xs" p="xs" style={{ border: '1px solid var(--mantine-color-default-border)', borderRadius: 4 }}>
-                              <Text size="sm" ff="monospace" style={{ flex: 1, wordBreak: 'break-all' }}>
-                                {p.Arn}
-                              </Text>
-                              <CopyButton value={p.Arn} />
-                              <ActionIcon variant="light" onClick={() => handleOpenEditModal('principal', p, idx)}>
-                                <IconEdit size={14} />
-                              </ActionIcon>
-                              <ActionIcon variant="light" color="red" onClick={() => handleRemovePrincipal(p.Arn)}>
-                                <IconTrash size={14} />
-                              </ActionIcon>
-                            </Group>
-                          ))}
-                        </Stack>
-                      )}
-                    </ScrollArea>
-                  </Stack>
+                  {renderEntityList('principal')}
                 </Tabs.Panel>
 
                 <Tabs.Panel value="resources" style={{ flex: 1, overflow: 'hidden' }}>
-                  <Stack gap="md" p="md" h="100%">
-                    <Button
-                      variant="light"
-                      leftSection={<IconPlus size={16} />}
-                      onClick={() => handleOpenAddModal('resource')}
-                    >
-                      Add Resource
-                    </Button>
-                    <ScrollArea style={{ flex: 1 }}>
-                      {overlay.resources?.length === 0 ? (
-                        <Text c="dimmed" ta="center" py="xl">No resources in overlay</Text>
-                      ) : (
-                        <Stack gap="xs">
-                          {overlay.resources?.map((r, idx) => (
-                            <Group key={r.Arn} gap="xs" p="xs" style={{ border: '1px solid var(--mantine-color-default-border)', borderRadius: 4 }}>
-                              <Text size="sm" ff="monospace" style={{ flex: 1, wordBreak: 'break-all' }}>
-                                {r.Arn}
-                              </Text>
-                              <CopyButton value={r.Arn} />
-                              <ActionIcon variant="light" onClick={() => handleOpenEditModal('resource', r, idx)}>
-                                <IconEdit size={14} />
-                              </ActionIcon>
-                              <ActionIcon variant="light" color="red" onClick={() => handleRemoveResource(r.Arn)}>
-                                <IconTrash size={14} />
-                              </ActionIcon>
-                            </Group>
-                          ))}
-                        </Stack>
-                      )}
-                    </ScrollArea>
-                  </Stack>
+                  {renderEntityList('resource')}
                 </Tabs.Panel>
 
                 <Tabs.Panel value="policies" style={{ flex: 1, overflow: 'hidden' }}>
-                  <Stack gap="md" p="md" h="100%">
-                    <Button
-                      variant="light"
-                      leftSection={<IconPlus size={16} />}
-                      onClick={() => handleOpenAddModal('policy')}
-                    >
-                      Add Policy
-                    </Button>
-                    <ScrollArea style={{ flex: 1 }}>
-                      {overlay.policies?.length === 0 ? (
-                        <Text c="dimmed" ta="center" py="xl">No policies in overlay</Text>
-                      ) : (
-                        <Stack gap="xs">
-                          {overlay.policies?.map((p, idx) => (
-                            <Group key={p.Arn} gap="xs" p="xs" style={{ border: '1px solid var(--mantine-color-default-border)', borderRadius: 4 }}>
-                              <Text size="sm" ff="monospace" style={{ flex: 1, wordBreak: 'break-all' }}>
-                                {p.Arn}
-                              </Text>
-                              <CopyButton value={p.Arn} />
-                              <ActionIcon variant="light" onClick={() => handleOpenEditModal('policy', p, idx)}>
-                                <IconEdit size={14} />
-                              </ActionIcon>
-                              <ActionIcon variant="light" color="red" onClick={() => handleRemovePolicy(p.Arn)}>
-                                <IconTrash size={14} />
-                              </ActionIcon>
-                            </Group>
-                          ))}
-                        </Stack>
-                      )}
-                    </ScrollArea>
-                  </Stack>
+                  {renderEntityList('policy')}
                 </Tabs.Panel>
 
                 <Tabs.Panel value="accounts" style={{ flex: 1, overflow: 'hidden' }}>
-                  <Stack gap="md" p="md" h="100%">
-                    <Button
-                      variant="light"
-                      leftSection={<IconPlus size={16} />}
-                      onClick={() => handleOpenAddModal('account')}
-                    >
-                      Add Account
-                    </Button>
-                    <ScrollArea style={{ flex: 1 }}>
-                      {overlay.accounts?.length === 0 ? (
-                        <Text c="dimmed" ta="center" py="xl">No accounts in overlay</Text>
-                      ) : (
-                        <Stack gap="xs">
-                          {overlay.accounts?.map((a, idx) => (
-                            <Group key={a.Id} gap="xs" p="xs" style={{ border: '1px solid var(--mantine-color-default-border)', borderRadius: 4 }}>
-                              <Text size="sm" ff="monospace" style={{ flex: 1 }}>
-                                {a.Name} ({a.Id})
-                              </Text>
-                              <CopyButton value={a.Id} />
-                              <ActionIcon variant="light" onClick={() => handleOpenEditModal('account', a, idx)}>
-                                <IconEdit size={14} />
-                              </ActionIcon>
-                              <ActionIcon variant="light" color="red" onClick={() => handleRemoveAccount(a.Id)}>
-                                <IconTrash size={14} />
-                              </ActionIcon>
-                            </Group>
-                          ))}
-                        </Stack>
-                      )}
-                    </ScrollArea>
-                  </Stack>
+                  {renderEntityList('account')}
                 </Tabs.Panel>
               </Tabs>
             </Card>
-          </Stack>
-        </Grid.Col>
+          </Grid.Col>
 
-        {/* Right column - JSON preview */}
-        <Grid.Col span={6}>
-          <Card withBorder h="100%" p="md">
-            <Stack gap="md" h="100%">
-              <Title order={4}>JSON Preview</Title>
-              <ScrollArea style={{ flex: 1 }}>
-                <CodeHighlight
-                  code={JSON.stringify(overlay, null, 2)}
-                  language="json"
-                  withCopyButton
-                />
-              </ScrollArea>
-            </Stack>
-          </Card>
-        </Grid.Col>
-      </Grid>
+          {/* Right column - Entity detail/edit panel */}
+          <Grid.Col span={6} h="100%">
+            <Card withBorder h="100%" p="md">
+              <EntityDetailPanel
+                entity={editingEntity}
+                type={selectedEntityType}
+                onChange={handleEntityChange}
+                onSave={handleSaveEntity}
+                isDirty={entityDirty}
+              />
+            </Card>
+          </Grid.Col>
+        </Grid>
+      </Stack>
 
       <AddEntityModal
         opened={addModalOpened}
@@ -884,14 +1034,6 @@ export function OverlayEditorPage(): JSX.Element {
         entityType={addEntityType}
         onAdd={handleAddEntities}
         existingArns={existingArns}
-      />
-
-      <EditEntityModal
-        opened={editModalOpened}
-        onClose={closeEditModal}
-        entityType={editEntityType}
-        entity={editingEntity}
-        onSave={handleSaveEditedEntity}
       />
     </Box>
   );

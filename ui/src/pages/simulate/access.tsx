@@ -669,7 +669,11 @@ export function AccessCheckPage(): JSX.Element {
       .then(setActionAccessLevels)
       .catch((err) => console.error('Failed to fetch action access levels:', err));
     yamsApi.listOverlays()
-      .then(setOverlays)
+      .then((list) => {
+        // Sort by createdAt descending (newest first)
+        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setOverlays(list);
+      })
       .catch((err) => console.error('Failed to fetch overlays:', err));
   }, []);
 
