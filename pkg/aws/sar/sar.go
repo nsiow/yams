@@ -138,6 +138,13 @@ func (q *Query) WithSearch(substr string) *Query {
 	})
 }
 
+// WithResourceless adds a filter to only include actions that don't require a resource
+func (q *Query) WithResourceless() *Query {
+	return q.add("resourceless", "true", func(a types.Action) bool {
+		return !a.HasTargets()
+	})
+}
+
 // Results executes the query and returns all matching API calls
 func (q *Query) Results() (results []types.Action) {
 	for _, service := range sar() {

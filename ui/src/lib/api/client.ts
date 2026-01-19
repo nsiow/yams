@@ -182,6 +182,10 @@ export class YamsClient {
     return this.fetch<Record<string, string>>('/utils/resources/accounts');
   }
 
+  async resourcelessActions(): Promise<string[]> {
+    return this.fetch<string[]>('/utils/actions/resourceless');
+  }
+
   // Simulation
 
   async simulate(request: SimulationRequest): Promise<SimulationResponse> {

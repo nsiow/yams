@@ -88,18 +88,34 @@ function parseTraceToTree(trace: string[]): TraceNode[] {
 
 // Highlight keywords in explanation text
 function highlightExplanation(text: string): JSX.Element {
+  // Decision badges - these get rendered as Badge components
+  const decisions = [
+    { pattern: /\[implicit deny\]/gi, color: 'red', label: 'IMPLICIT DENY' },
+    { pattern: /\[explicit deny\]/gi, color: 'red', label: 'EXPLICIT DENY' },
+    { pattern: /\[allow\]/gi, color: 'green', label: 'ALLOW' },
+    { pattern: /\[deny\]/gi, color: 'red', label: 'DENY' },
+  ];
+
+  // Regular keyword highlights
   const keywords = [
-    { pattern: /\[implicit deny\]/gi, color: 'red' },
-    { pattern: /\[explicit deny\]/gi, color: 'red' },
-    { pattern: /\[explicit allow\]/gi, color: 'green' },
     { pattern: /allow/gi, color: 'green' },
     { pattern: /deny/gi, color: 'red' },
     { pattern: /x-account/gi, color: 'orange' },
     { pattern: /missing/gi, color: 'orange' },
   ];
 
-  const highlights: { start: number; end: number; color: string }[] = [];
+  const highlights: { start: number; end: number; color: string; badge?: string }[] = [];
 
+  // Find decision badges first (higher priority)
+  for (const { pattern, color, label } of decisions) {
+    let match;
+    const regex = new RegExp(pattern.source, pattern.flags);
+    while ((match = regex.exec(text)) !== null) {
+      highlights.push({ start: match.index, end: match.index + match[0].length, color, badge: label });
+    }
+  }
+
+  // Find keyword highlights
   for (const { pattern, color } of keywords) {
     let match;
     const regex = new RegExp(pattern.source, pattern.flags);
@@ -128,11 +144,19 @@ function highlightExplanation(text: string): JSX.Element {
     if (h.start > lastEnd) {
       parts.push(<span key={`text-${i}`}>{text.slice(lastEnd, h.start)}</span>);
     }
-    parts.push(
-      <Text key={`hl-${i}`} component="span" fw={600} c={h.color}>
-        {text.slice(h.start, h.end)}
-      </Text>
-    );
+    if (h.badge) {
+      parts.push(
+        <Badge key={`hl-${i}`} color={h.color} size="sm" variant="filled" style={{ verticalAlign: 'middle' }}>
+          {h.badge}
+        </Badge>
+      );
+    } else {
+      parts.push(
+        <Text key={`hl-${i}`} component="span" fw={600} c={h.color}>
+          {text.slice(h.start, h.end)}
+        </Text>
+      );
+    }
     lastEnd = h.end;
   }
 
@@ -261,6 +285,8 @@ interface AsyncSearchSelectProps {
   resourceAccounts?: Record<string, string>;
   showAccountName?: boolean;
   showResourceType?: boolean;
+  disabled?: boolean;
+  disabledMessage?: string;
 }
 
 function AsyncSearchSelect({
@@ -274,6 +300,8 @@ function AsyncSearchSelect({
   resourceAccounts,
   showAccountName,
   showResourceType,
+  disabled,
+  disabledMessage,
 }: AsyncSearchSelectProps): JSX.Element {
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
@@ -312,6 +340,28 @@ function AsyncSearchSelect({
     onChange(null);
     setSearch('');
   };
+
+  // Render disabled state
+  if (disabled) {
+    return (
+      <Input.Wrapper label={label}>
+        <Box
+          style={{
+            border: '1px solid var(--mantine-color-gray-3)',
+            borderRadius: 'var(--mantine-radius-sm)',
+            padding: '12px',
+            minHeight: '50px',
+            backgroundColor: 'var(--mantine-color-gray-1)',
+            cursor: 'not-allowed',
+          }}
+        >
+          <Text size="sm" c="dimmed">
+            {disabledMessage || 'Not available'}
+          </Text>
+        </Box>
+      </Input.Wrapper>
+    );
+  }
 
   return (
     <Combobox
@@ -501,6 +551,9 @@ export function AccessCheckPage(): JSX.Element {
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [resourceAccounts, setResourceAccounts] = useState<Record<string, string>>({});
 
+  // Resourceless actions - actions that don't require a resource
+  const [resourcelessActions, setResourcelessActions] = useState<Set<string>>(new Set());
+
   // Request context variables
   const [contextVars, setContextVars] = useState<Array<{ key: string; value: string }>>([]);
 
@@ -509,7 +562,7 @@ export function AccessCheckPage(): JSX.Element {
   const [result, setResult] = useState<SimulationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch account names and resource accounts on mount
+  // Fetch account names, resource accounts, and resourceless actions on mount
   useEffect(() => {
     yamsApi.accountNames()
       .then(setAccountNames)
@@ -517,7 +570,23 @@ export function AccessCheckPage(): JSX.Element {
     yamsApi.resourceAccounts()
       .then(setResourceAccounts)
       .catch((err) => console.error('Failed to fetch resource accounts:', err));
+    yamsApi.resourcelessActions()
+      .then((actions) => setResourcelessActions(new Set(actions)))
+      .catch((err) => console.error('Failed to fetch resourceless actions:', err));
   }, []);
+
+  // Check if current action is resourceless
+  const isActionResourceless = useMemo(() => {
+    if (!selectedAction) return false;
+    return resourcelessActions.has(selectedAction);
+  }, [selectedAction, resourcelessActions]);
+
+  // Clear resource when selecting a resourceless action
+  useEffect(() => {
+    if (isActionResourceless && selectedResource) {
+      updateSelection('resource', null);
+    }
+  }, [isActionResourceless, selectedResource, updateSelection]);
 
   // Search functions
   const searchPrincipals = useCallback((query: string) => yamsApi.searchPrincipals(query), []);
@@ -535,9 +604,12 @@ export function AccessCheckPage(): JSX.Element {
     return Object.fromEntries(validPairs.map((cv) => [cv.key.trim(), cv.value.trim()]));
   };
 
-  // Run simulation when all 3 are selected
+  // Run simulation when required inputs are selected
   const runSimulation = useCallback(async (): Promise<void> => {
-    if (!selectedPrincipal || !selectedAction || !selectedResource) return;
+    // For resourceless actions, we only need principal and action
+    const needsResource = !resourcelessActions.has(selectedAction ?? '');
+    if (!selectedPrincipal || !selectedAction) return;
+    if (needsResource && !selectedResource) return;
 
     setSimulating(true);
     setError(null);
@@ -547,7 +619,7 @@ export function AccessCheckPage(): JSX.Element {
       const response = await yamsApi.simulate({
         principal: selectedPrincipal,
         action: selectedAction,
-        resource: selectedResource,
+        resource: needsResource ? selectedResource! : '*',
         context: buildContext(),
         explain: true,
         trace: true,
@@ -559,17 +631,19 @@ export function AccessCheckPage(): JSX.Element {
     } finally {
       setSimulating(false);
     }
-  }, [selectedPrincipal, selectedAction, selectedResource]);
+  }, [selectedPrincipal, selectedAction, selectedResource, resourcelessActions]);
 
-  // Auto-run simulation when all selections change
+  // Auto-run simulation when required selections change
   useEffect(() => {
-    if (selectedPrincipal && selectedAction && selectedResource) {
+    const needsResource = !resourcelessActions.has(selectedAction ?? '');
+    const hasRequiredInputs = selectedPrincipal && selectedAction && (needsResource ? selectedResource : true);
+    if (hasRequiredInputs) {
       runSimulation();
     } else {
       setResult(null);
       setError(null);
     }
-  }, [selectedPrincipal, selectedAction, selectedResource, runSimulation]);
+  }, [selectedPrincipal, selectedAction, selectedResource, resourcelessActions, runSimulation]);
 
   // Parse trace into tree
   const traceTree = useMemo(() => {
@@ -590,20 +664,41 @@ export function AccessCheckPage(): JSX.Element {
     setContextVars(contextVars.map((cv, i) => (i === index ? { ...cv, [field]: val } : cv)));
   };
 
-  const allSelected = selectedPrincipal && selectedAction && selectedResource;
+  const allSelected = selectedPrincipal && selectedAction && (isActionResourceless || selectedResource);
+  const hasAnySelection = selectedPrincipal || selectedAction || selectedResource;
+
+  const clearAll = (): void => {
+    updateSelection('principal', null);
+    updateSelection('action', null);
+    updateSelection('resource', null);
+    setContextVars([]);
+  };
 
   return (
     <Box p="md">
       <Stack gap="lg">
         {/* Page header */}
-        <Box>
-          <Title order={3} mb={4}>Access Check</Title>
-          <Text size="sm" c="dimmed">
-            Test whether a <Text component="span" fw={500} c="purple.6">principal</Text> can
-            perform an <Text component="span" fw={500} c="purple.6">action</Text> on
-            a <Text component="span" fw={500} c="purple.6">resource</Text>.
-          </Text>
-        </Box>
+        <Group justify="space-between" align="center">
+          <Box>
+            <Title order={3} mb={4}>Access Check</Title>
+            <Text size="sm" c="dimmed">
+              Test whether a <Text component="span" fw={500} c="purple.6">principal</Text> can
+              perform an <Text component="span" fw={500} c="purple.6">action</Text> on
+              a <Text component="span" fw={500} c="purple.6">resource</Text>.
+            </Text>
+          </Box>
+          {hasAnySelection && (
+            <Button
+              variant="subtle"
+              color="gray"
+              size="xs"
+              leftSection={<IconX size={14} />}
+              onClick={clearAll}
+            >
+              Clear All
+            </Button>
+          )}
+        </Group>
 
         {/* Selection dropdowns */}
         <Card withBorder p="lg">
@@ -641,6 +736,8 @@ export function AccessCheckPage(): JSX.Element {
                 resourceAccounts={resourceAccounts}
                 showAccountName
                 showResourceType
+                disabled={isActionResourceless}
+                disabledMessage="Not required for this action"
               />
             </Grid.Col>
           </Grid>
@@ -737,9 +834,15 @@ export function AccessCheckPage(): JSX.Element {
                 </div>
                 <div>
                   <Text size="sm" c="dimmed">Resource</Text>
-                  <Anchor component={Link} to={`/search/resources?q=${encodeURIComponent(result.resource)}`} size="sm" ff="monospace">
-                    {result.resource}
-                  </Anchor>
+                  {!result.resource || result.resource === '*' ? (
+                    <Text size="sm" c="dimmed" ff="monospace" fs="italic">
+                      N/A (resourceless action)
+                    </Text>
+                  ) : (
+                    <Anchor component={Link} to={`/search/resources?q=${encodeURIComponent(result.resource)}`} size="sm" ff="monospace">
+                      {result.resource}
+                    </Anchor>
+                  )}
                 </div>
               </Group>
             </Card>

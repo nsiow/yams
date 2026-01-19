@@ -202,3 +202,52 @@ func TestIsGlobalNamespaceType(t *testing.T) {
 		})
 	}
 }
+
+func TestAPI_UtilResourcelessActions(t *testing.T) {
+	api := newTestAPI(t)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/utils/actions/resourceless", nil)
+
+	api.UtilResourcelessActions(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("UtilResourcelessActions() status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var actions []string
+	if err := json.Unmarshal(w.Body.Bytes(), &actions); err != nil {
+		t.Fatalf("UtilResourcelessActions() invalid JSON: %v", err)
+	}
+
+	// Should return a non-empty list of resourceless actions
+	if len(actions) == 0 {
+		t.Error("UtilResourcelessActions() returned empty list, expected resourceless actions")
+	}
+
+	// Verify some known resourceless actions are present
+	knownResourceless := map[string]bool{
+		"s3:ListAllMyBuckets": false, // Note: s3:ListBuckets doesn't exist in SAR
+		"ec2:DescribeRegions": false,
+		"iam:ListUsers":       false,
+	}
+
+	for _, action := range actions {
+		if _, ok := knownResourceless[action]; ok {
+			knownResourceless[action] = true
+		}
+	}
+
+	for action, found := range knownResourceless {
+		if !found {
+			t.Errorf("UtilResourcelessActions() missing expected action: %s", action)
+		}
+	}
+
+	// Verify the list is sorted
+	for i := 1; i < len(actions); i++ {
+		if actions[i] < actions[i-1] {
+			t.Errorf("UtilResourcelessActions() list is not sorted: %s comes after %s", actions[i], actions[i-1])
+			break
+		}
+	}
+}

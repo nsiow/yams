@@ -2,8 +2,12 @@ package v1
 
 import (
 	"net/http"
+	"slices"
 	"strings"
 
+	"github.com/nsiow/yams/internal/common"
+	"github.com/nsiow/yams/pkg/aws/sar"
+	"github.com/nsiow/yams/pkg/aws/sar/types"
 	"github.com/nsiow/yams/pkg/server/httputil"
 )
 
@@ -44,4 +48,15 @@ func isGlobalNamespaceType(resourceType string) bool {
 		}
 	}
 	return false
+}
+
+// UtilResourcelessActions returns a sorted list of action names that don't require a resource.
+// These are typically List*, Describe*, and other read-only operations that operate at
+// the service level rather than on specific resources.
+// GET /api/v1/utils/actions/resourceless
+func (api *API) UtilResourcelessActions(w http.ResponseWriter, req *http.Request) {
+	results := sar.NewQuery().WithResourceless().Results()
+	actions := common.Map(results, func(in types.Action) string { return in.ShortName() })
+	slices.Sort(actions)
+	httputil.WriteJsonResponse(w, req, actions)
 }

@@ -16,13 +16,17 @@ func Error(w http.ResponseWriter, req *http.Request, statusCode int, err error) 
 	if jsonErr != nil {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"internal server error"}` + "\n"))
+		if _, writeErr := w.Write([]byte(`{"error":"internal server error"}` + "\n")); writeErr != nil {
+			slog.Error("error writing error response", "error", writeErr)
+		}
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(statusCode)
-	w.Write(append(jsonBytes, '\n'))
+	if _, writeErr := w.Write(append(jsonBytes, '\n')); writeErr != nil {
+		slog.Error("error writing error response", "error", writeErr)
+	}
 }
 
 func ClientError(w http.ResponseWriter, req *http.Request, err error) {
