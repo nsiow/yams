@@ -118,11 +118,11 @@ export interface SimulationRequest {
 }
 
 export interface SimulationOverlay {
-  principal?: {
-    tags?: Record<string, string>;
-    inlinePolicies?: Record<string, PolicyDocument>;
-    attachedPolicies?: string[];
-  };
+  accounts?: Account[];
+  groups?: Group[];
+  policies?: Policy[];
+  principals?: Principal[];
+  resources?: Resource[];
 }
 
 export interface SimulationResponse {
@@ -162,6 +162,56 @@ export interface WhichResourcesResponse {
 
 export interface WhichActionsResponse {
   actions: string[];
+}
+
+// Overlay Types
+
+export interface OverlaySummary {
+  name: string;
+  id: string;
+  createdAt: string;
+  numPrincipals: number;
+  numResources: number;
+  numPolicies: number;
+  numAccounts: number;
+  numGroups: number;
+}
+
+export interface OverlayData {
+  name: string;
+  id: string;
+  createdAt: string;
+  accounts?: Account[];
+  groups?: Group[];
+  policies?: Policy[];
+  principals?: Principal[];
+  resources?: Resource[];
+}
+
+export interface CreateOverlayRequest {
+  name: string;
+  accounts?: Account[];
+  groups?: Group[];
+  policies?: Policy[];
+  principals?: Principal[];
+  resources?: Resource[];
+}
+
+export interface UpdateOverlayRequest {
+  name?: string;
+  accounts?: Account[];
+  groups?: Group[];
+  policies?: Policy[];
+  principals?: Principal[];
+  resources?: Resource[];
+}
+
+export interface Group {
+  Type?: string;
+  AccountId?: string;
+  Arn: string;
+  InlinePolicies?: PolicyDocument[];
+  AttachedPolicies?: string[];
 }
 
 // API Error

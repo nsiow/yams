@@ -45,11 +45,12 @@ type Flags struct {
 	ResourceTypes MultiString
 
 	// server
-	Addr    string
-	Sources MultiString
-	Refresh int
-	Debug   bool
-	Env     MultiString
+	Addr         string
+	Sources      MultiString
+	Refresh      int
+	Debug        bool
+	Env          MultiString
+	OverlayStore string
 
 	// inventory
 	Key    string
@@ -131,6 +132,9 @@ func Parse() (*Flags, error) {
 
 		fs.Var(&opts.Env, "e", "alias for -env")
 		fs.Var(&opts.Env, "env", "environment variables to report in /status endpoint")
+
+		fs.StringVar(&opts.OverlayStore, "overlay", "",
+			"overlay store backend: 'memory' (default) or 'ddb://<table-name>'")
 
 		err = fs.Parse(os.Args[2:])
 		args = fs.Args()

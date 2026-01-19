@@ -14,6 +14,10 @@ import type {
   WhichActionsRequest,
   WhichActionsResponse,
   ApiError,
+  OverlaySummary,
+  OverlayData,
+  CreateOverlayRequest,
+  UpdateOverlayRequest,
 } from './types';
 
 export class YamsApiError extends Error {
@@ -223,6 +227,40 @@ export class YamsClient {
     return this.fetch<WhichActionsResponse>('/sim/whichActions', {
       method: 'POST',
       body: JSON.stringify(request),
+    });
+  }
+
+  // Overlays
+
+  async listOverlays(query?: string): Promise<OverlaySummary[]> {
+    const params = query ? `?q=${encodeURIComponent(query)}` : '';
+    return this.fetch<OverlaySummary[]>(`/overlays${params}`);
+  }
+
+  async getOverlay(id: string): Promise<OverlayData> {
+    return this.fetch<OverlayData>(`/overlays/${encodeURIComponent(id)}`);
+  }
+
+  async createOverlay(request: CreateOverlayRequest): Promise<OverlayData> {
+    return this.fetch<OverlayData>('/overlays', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async updateOverlay(
+    id: string,
+    request: UpdateOverlayRequest
+  ): Promise<OverlayData> {
+    return this.fetch<OverlayData>(`/overlays/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async deleteOverlay(id: string): Promise<void> {
+    await this.fetch<void>(`/overlays/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
     });
   }
 }

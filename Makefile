@@ -216,7 +216,7 @@ ui-deps:
 	cd $(UI_DIR) && npm install
 
 .PHONY: ui-dev
-ui-dev:
+ui-dev: ui-clean ui-deps
 	cd $(UI_DIR) && npm run dev
 
 .PHONY: ui-build

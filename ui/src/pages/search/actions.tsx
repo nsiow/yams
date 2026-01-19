@@ -66,20 +66,26 @@ export function ActionsPage(): JSX.Element {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [debouncedSearch] = useDebouncedValue(searchQuery, 200);
   const [serviceFilter, setServiceFilter] = useState<string | null>(searchParams.get('service'));
+  const [accessLevelFilter, setAccessLevelFilter] = useState<string | null>(searchParams.get('level'));
+
+  // Access levels for filtering and display
+  const [accessLevels, setAccessLevels] = useState<Record<string, string>>({});
 
   // Sync filters to URL
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('q', searchQuery);
     if (serviceFilter) params.set('service', serviceFilter);
+    if (accessLevelFilter) params.set('level', accessLevelFilter);
     setSearchParams(params, { replace: true });
-  }, [searchQuery, serviceFilter, setSearchParams]);
+  }, [searchQuery, serviceFilter, accessLevelFilter, setSearchParams]);
 
-  const hasActiveFilters = Boolean(searchQuery || serviceFilter);
+  const hasActiveFilters = Boolean(searchQuery || serviceFilter || accessLevelFilter);
 
   const clearAllFilters = (): void => {
     setSearchQuery('');
     setServiceFilter(null);
+    setAccessLevelFilter(null);
   };
 
   // Parse all action keys into list items
@@ -93,24 +99,35 @@ export function ActionsPage(): JSX.Element {
     return Array.from(services).sort().map(s => ({ value: s, label: s }));
   }, [actionList]);
 
+  // Extract unique access levels for filter dropdown
+  const accessLevelOptions = useMemo(() => {
+    const levels = new Set(Object.values(accessLevels));
+    return Array.from(levels).sort().map(l => ({ value: l, label: l }));
+  }, [accessLevels]);
+
   // Filter actions based on search and filters
   const filteredActions = useMemo(() => {
     return actionList.filter(a => {
       if (serviceFilter && a.service !== serviceFilter) return false;
+      if (accessLevelFilter && accessLevels[a.key] !== accessLevelFilter) return false;
       if (debouncedSearch) {
         const query = debouncedSearch.toLowerCase();
         return a.name.toLowerCase().includes(query) || a.key.toLowerCase().includes(query);
       }
       return true;
     });
-  }, [actionList, serviceFilter, debouncedSearch]);
+  }, [actionList, serviceFilter, accessLevelFilter, accessLevels, debouncedSearch]);
 
-  // Fetch all action keys on mount
+  // Fetch all action keys and access levels on mount
   useEffect(() => {
     async function fetchData(): Promise<void> {
       try {
-        const keys = await yamsApi.listActions();
+        const [keys, levels] = await Promise.all([
+          yamsApi.listActions(),
+          yamsApi.actionAccessLevels(),
+        ]);
         setActionKeys(keys);
+        setAccessLevels(levels);
         setError(null);
       } catch (err) {
         console.error('Failed to fetch data:', err);
@@ -158,7 +175,7 @@ export function ActionsPage(): JSX.Element {
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, serviceFilter]);
+  }, [debouncedSearch, serviceFilter, accessLevelFilter]);
 
   const paginatedActions = useMemo(() => {
     const start = (page - 1) * itemsPerPage;
@@ -217,6 +234,15 @@ export function ActionsPage(): JSX.Element {
                 searchable
                 style={{ flex: 1 }}
               />
+              <Select
+                placeholder="All access levels"
+                size="sm"
+                data={accessLevelOptions}
+                value={accessLevelFilter}
+                onChange={setAccessLevelFilter}
+                clearable
+                style={{ flex: 1 }}
+              />
             </FilterBar>
 
             <Text size="sm" c="dimmed">
@@ -267,7 +293,15 @@ export function ActionsPage(): JSX.Element {
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <Text size="sm" fw={500} truncate>{a.name}</Text>
-                        <Text size="xs" c="dimmed" truncate>{a.service}</Text>
+                        <Group gap="xs">
+                          <Text size="xs" c="dimmed" truncate>{a.service}</Text>
+                          {accessLevels[a.key] && (
+                            <>
+                              <Text size="xs" c="dimmed">·</Text>
+                              <Text size="xs" c="dimmed">{accessLevels[a.key]}</Text>
+                            </>
+                          )}
+                        </Group>
                       </div>
                     </div>
                   ))
@@ -312,6 +346,12 @@ export function ActionsPage(): JSX.Element {
                         <Text size="sm" fw={600} c="dimmed" w={100}>Service:</Text>
                         <Text size="sm" ff="monospace">{selectedAction.Service}</Text>
                       </Group>
+                      {accessLevels[`${selectedAction.Service}:${selectedAction.Name}`] && (
+                        <Group gap="xs">
+                          <Text size="sm" fw={600} c="dimmed" w={100}>Access Level:</Text>
+                          <Badge variant="light">{accessLevels[`${selectedAction.Service}:${selectedAction.Name}`]}</Badge>
+                        </Group>
+                      )}
                     </Stack>
                   </CollapsibleCard>
 

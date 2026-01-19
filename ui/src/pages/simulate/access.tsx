@@ -7,6 +7,7 @@ import {
   Box,
   Button,
   Card,
+  Checkbox,
   Collapse,
   Combobox,
   Grid,
@@ -14,8 +15,10 @@ import {
   Input,
   InputBase,
   Loader,
+  Pagination,
   ScrollArea,
   Stack,
+  Table,
   Text,
   TextInput,
   Title,
@@ -32,10 +35,11 @@ import {
   IconPlus,
   IconX,
   IconSearch,
+  IconLayersLinked,
 } from '@tabler/icons-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { yamsApi } from '../../lib/api';
-import type { SimulationResponse } from '../../lib/api';
+import type { SimulationResponse, OverlaySummary, OverlayData, SimulationOverlay } from '../../lib/api';
 
 // Extract service type from ARN (3rd segment)
 function extractService(arn: string): string | null {
@@ -262,6 +266,28 @@ function TraceTreeNode({ node, level = 0 }: { node: TraceNode; level?: number })
       )}
     </Box>
   );
+}
+
+// Format relative time for dates
+function formatRelativeTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffWeeks = Math.floor(diffDays / 7);
+  const diffMonths = Math.floor(diffDays / 30);
+  const diffYears = Math.floor(diffDays / 365);
+
+  if (diffSecs < 60) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffWeeks < 5) return `${diffWeeks}w ago`;
+  if (diffMonths < 12) return `${diffMonths}mo ago`;
+  return `${diffYears}y ago`;
 }
 
 // Extract account ID from ARN (5th segment)
@@ -615,12 +641,20 @@ export function AccessCheckPage(): JSX.Element {
   // Request context variables
   const [contextVars, setContextVars] = useState<Array<{ key: string; value: string }>>([]);
 
+  // Overlay selection
+  const [overlays, setOverlays] = useState<OverlaySummary[]>([]);
+  const [selectedOverlayIds, setSelectedOverlayIds] = useState<Set<string>>(new Set());
+  const [loadedOverlays, setLoadedOverlays] = useState<Map<string, OverlayData>>(new Map());
+  const [showOverlaySelector, setShowOverlaySelector] = useState(false);
+  const [overlaySearchQuery, setOverlaySearchQuery] = useState('');
+  const [overlayPage, setOverlayPage] = useState(1);
+
   // Simulation states
   const [simulating, setSimulating] = useState(false);
   const [result, setResult] = useState<SimulationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch account names, resource accounts, resourceless actions, and access levels on mount
+  // Fetch account names, resource accounts, resourceless actions, access levels, and overlays on mount
   useEffect(() => {
     yamsApi.accountNames()
       .then(setAccountNames)
@@ -634,6 +668,9 @@ export function AccessCheckPage(): JSX.Element {
     yamsApi.actionAccessLevels()
       .then(setActionAccessLevels)
       .catch((err) => console.error('Failed to fetch action access levels:', err));
+    yamsApi.listOverlays()
+      .then(setOverlays)
+      .catch((err) => console.error('Failed to fetch overlays:', err));
   }, []);
 
   // Check if current action is resourceless
@@ -642,12 +679,92 @@ export function AccessCheckPage(): JSX.Element {
     return resourcelessActions.has(selectedAction);
   }, [selectedAction, resourcelessActions]);
 
+  // Overlay filtering and pagination
+  const [debouncedOverlaySearch] = useDebouncedValue(overlaySearchQuery, 200);
+  const OVERLAYS_PER_PAGE = 5;
+
+  const filteredOverlays = useMemo(() => {
+    if (!debouncedOverlaySearch) return overlays;
+    const query = debouncedOverlaySearch.toLowerCase();
+    return overlays.filter(
+      (o) => o.name.toLowerCase().includes(query) || o.id.toLowerCase().includes(query)
+    );
+  }, [overlays, debouncedOverlaySearch]);
+
+  const totalOverlayPages = Math.ceil(filteredOverlays.length / OVERLAYS_PER_PAGE);
+
+  const paginatedOverlays = useMemo(() => {
+    const start = (overlayPage - 1) * OVERLAYS_PER_PAGE;
+    return filteredOverlays.slice(start, start + OVERLAYS_PER_PAGE);
+  }, [filteredOverlays, overlayPage]);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setOverlayPage(1);
+  }, [debouncedOverlaySearch]);
+
   // Clear resource when selecting a resourceless action
   useEffect(() => {
     if (isActionResourceless && selectedResource) {
       updateSelection('resource', null);
     }
   }, [isActionResourceless, selectedResource, updateSelection]);
+
+  // Load overlay data when selection changes
+  useEffect(() => {
+    const loadMissingOverlays = async (): Promise<void> => {
+      const toLoad = Array.from(selectedOverlayIds).filter((id) => !loadedOverlays.has(id));
+      if (toLoad.length === 0) return;
+
+      const loaded = new Map(loadedOverlays);
+      await Promise.all(
+        toLoad.map(async (id) => {
+          try {
+            const data = await yamsApi.getOverlay(id);
+            loaded.set(id, data);
+          } catch (err) {
+            console.error(`Failed to load overlay ${id}:`, err);
+          }
+        })
+      );
+      setLoadedOverlays(loaded);
+    };
+    loadMissingOverlays();
+  }, [selectedOverlayIds, loadedOverlays]);
+
+  // Build combined overlay from selected overlays
+  const buildCombinedOverlay = useCallback((): SimulationOverlay | undefined => {
+    if (selectedOverlayIds.size === 0) return undefined;
+
+    const combined: SimulationOverlay = {
+      accounts: [],
+      groups: [],
+      policies: [],
+      principals: [],
+      resources: [],
+    };
+
+    for (const id of selectedOverlayIds) {
+      const data = loadedOverlays.get(id);
+      if (!data) continue;
+
+      if (data.accounts) combined.accounts!.push(...data.accounts);
+      if (data.groups) combined.groups!.push(...data.groups);
+      if (data.policies) combined.policies!.push(...data.policies);
+      if (data.principals) combined.principals!.push(...data.principals);
+      if (data.resources) combined.resources!.push(...data.resources);
+    }
+
+    // Return undefined if all arrays are empty
+    const hasData =
+      combined.accounts!.length > 0 ||
+      combined.groups!.length > 0 ||
+      combined.policies!.length > 0 ||
+      combined.principals!.length > 0 ||
+      combined.resources!.length > 0;
+
+    return hasData ? combined : undefined;
+  }, [selectedOverlayIds, loadedOverlays]);
 
   // Search functions
   const searchPrincipals = useCallback((query: string) => yamsApi.searchPrincipals(query), []);
@@ -684,6 +801,7 @@ export function AccessCheckPage(): JSX.Element {
         context: buildContext(),
         explain: true,
         trace: true,
+        overlay: buildCombinedOverlay(),
       });
       setResult(response);
     } catch (err) {
@@ -692,9 +810,9 @@ export function AccessCheckPage(): JSX.Element {
     } finally {
       setSimulating(false);
     }
-  }, [selectedPrincipal, selectedAction, selectedResource, resourcelessActions]);
+  }, [selectedPrincipal, selectedAction, selectedResource, resourcelessActions, buildCombinedOverlay]);
 
-  // Auto-run simulation when required selections change
+  // Auto-run simulation when required selections or overlays change
   useEffect(() => {
     const needsResource = !resourcelessActions.has(selectedAction ?? '');
     const hasRequiredInputs = selectedPrincipal && selectedAction && (needsResource ? selectedResource : true);
@@ -704,7 +822,7 @@ export function AccessCheckPage(): JSX.Element {
       setResult(null);
       setError(null);
     }
-  }, [selectedPrincipal, selectedAction, selectedResource, resourcelessActions, runSimulation]);
+  }, [selectedPrincipal, selectedAction, selectedResource, resourcelessActions, runSimulation, selectedOverlayIds, loadedOverlays]);
 
   // Parse trace into tree
   const traceTree = useMemo(() => {
@@ -726,13 +844,26 @@ export function AccessCheckPage(): JSX.Element {
   };
 
   const allSelected = selectedPrincipal && selectedAction && (isActionResourceless || selectedResource);
-  const hasAnySelection = selectedPrincipal || selectedAction || selectedResource;
+  const hasAnySelection = selectedPrincipal || selectedAction || selectedResource || selectedOverlayIds.size > 0;
+
+  const toggleOverlay = (id: string): void => {
+    setSelectedOverlayIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   const clearAll = (): void => {
     updateSelection('principal', null);
     updateSelection('action', null);
     updateSelection('resource', null);
     setContextVars([]);
+    setSelectedOverlayIds(new Set());
   };
 
   return (
@@ -804,6 +935,173 @@ export function AccessCheckPage(): JSX.Element {
               />
             </Grid.Col>
           </Grid>
+        </Card>
+
+        {/* Overlay selection */}
+        <Card withBorder p="lg">
+          <Group justify="space-between" mb={showOverlaySelector || selectedOverlayIds.size > 0 ? 'md' : undefined}>
+            <Group gap="xs">
+              <Title order={5}>Overlays</Title>
+              {selectedOverlayIds.size > 0 && (
+                <Badge size="sm" variant="light" color="violet">
+                  {selectedOverlayIds.size} selected
+                </Badge>
+              )}
+            </Group>
+            {!showOverlaySelector && overlays.length > 0 && (
+              <Button
+                variant="subtle"
+                size="xs"
+                leftSection={<IconPlus size={14} />}
+                onClick={() => setShowOverlaySelector(true)}
+              >
+                Add Overlay
+              </Button>
+            )}
+          </Group>
+
+          {/* Selected overlays summary */}
+          {selectedOverlayIds.size > 0 && !showOverlaySelector && (
+            <Stack gap="xs" mb="md">
+              {Array.from(selectedOverlayIds).map((id) => {
+                const overlay = overlays.find((o) => o.id === id);
+                if (!overlay) return null;
+                return (
+                  <Group key={id} gap="xs" justify="space-between" p="xs" style={{ backgroundColor: 'var(--mantine-color-violet-0)', borderRadius: 'var(--mantine-radius-sm)' }}>
+                    <Group gap="xs">
+                      <IconLayersLinked size={14} color="var(--mantine-color-violet-6)" />
+                      <Text size="sm" fw={500}>{overlay.name}</Text>
+                      <Text size="xs" c="dimmed">
+                        {overlay.numPrincipals}P · {overlay.numResources}R · {overlay.numPolicies}Po
+                      </Text>
+                    </Group>
+                    <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => toggleOverlay(id)}>
+                      <IconX size={14} />
+                    </ActionIcon>
+                  </Group>
+                );
+              })}
+              <Button
+                variant="subtle"
+                size="xs"
+                leftSection={<IconPlus size={14} />}
+                onClick={() => setShowOverlaySelector(true)}
+                style={{ alignSelf: 'flex-start' }}
+              >
+                Add More
+              </Button>
+            </Stack>
+          )}
+
+          {/* Overlay selector table */}
+          {showOverlaySelector && (
+            <Stack gap="sm">
+              <Group justify="space-between">
+                <TextInput
+                  placeholder="Search overlays..."
+                  leftSection={<IconSearch size={14} />}
+                  size="sm"
+                  value={overlaySearchQuery}
+                  onChange={(e) => setOverlaySearchQuery(e.currentTarget.value)}
+                  style={{ flex: 1, maxWidth: 300 }}
+                />
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  color="gray"
+                  onClick={() => {
+                    setShowOverlaySelector(false);
+                    setOverlaySearchQuery('');
+                    setOverlayPage(1);
+                  }}
+                >
+                  Done
+                </Button>
+              </Group>
+
+              {filteredOverlays.length === 0 ? (
+                <Text size="sm" c="dimmed" ta="center" py="md">
+                  {overlaySearchQuery ? 'No overlays match your search' : 'No overlays available'}
+                </Text>
+              ) : (
+                <>
+                  <Table striped highlightOnHover>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th style={{ width: 40 }}></Table.Th>
+                        <Table.Th>Name</Table.Th>
+                        <Table.Th style={{ width: 220 }}>ID</Table.Th>
+                        <Table.Th style={{ width: 90 }}>Created</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {paginatedOverlays.map((overlay) => {
+                        const isSelected = selectedOverlayIds.has(overlay.id);
+                        return (
+                          <Table.Tr
+                            key={overlay.id}
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => toggleOverlay(overlay.id)}
+                          >
+                            <Table.Td>
+                              <Checkbox
+                                checked={isSelected}
+                                onChange={() => toggleOverlay(overlay.id)}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </Table.Td>
+                            <Table.Td>
+                              <Group gap="xs" wrap="nowrap">
+                                <IconLayersLinked size={14} color="var(--mantine-color-violet-6)" style={{ flexShrink: 0 }} />
+                                <Text size="sm" fw={500} truncate style={{ maxWidth: 200 }}>
+                                  {overlay.name}
+                                </Text>
+                              </Group>
+                            </Table.Td>
+                            <Table.Td>
+                              <Tooltip label={overlay.id} openDelay={300}>
+                                <Text size="xs" ff="monospace" c="dimmed" truncate style={{ maxWidth: 200 }}>
+                                  {overlay.id}
+                                </Text>
+                              </Tooltip>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="xs" c="dimmed">
+                                {formatRelativeTime(overlay.createdAt)}
+                              </Text>
+                            </Table.Td>
+                          </Table.Tr>
+                        );
+                      })}
+                    </Table.Tbody>
+                  </Table>
+
+                  {totalOverlayPages > 1 && (
+                    <Group justify="space-between" align="center">
+                      <Text size="xs" c="dimmed">
+                        {filteredOverlays.length} overlay{filteredOverlays.length !== 1 ? 's' : ''}
+                      </Text>
+                      <Pagination
+                        value={overlayPage}
+                        onChange={setOverlayPage}
+                        total={totalOverlayPages}
+                        size="sm"
+                      />
+                    </Group>
+                  )}
+                </>
+              )}
+            </Stack>
+          )}
+
+          {/* Empty state when no overlays and selector not shown */}
+          {!showOverlaySelector && selectedOverlayIds.size === 0 && (
+            <Text size="sm" c="dimmed">
+              {overlays.length === 0
+                ? 'No overlays available. Create overlays to test against hypothetical environments.'
+                : 'Add overlays to test against hypothetical environments.'}
+            </Text>
+          )}
         </Card>
 
         {/* Request context variables */}

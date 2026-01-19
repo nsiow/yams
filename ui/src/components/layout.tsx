@@ -25,7 +25,13 @@ interface NavSection {
 
 const navSections: NavSection[] = [
   {
-    title: 'Search',
+    title: 'Server',
+    items: [
+      { label: 'Status', path: '/' },
+    ],
+  },
+  {
+    title: 'Explore',
     items: [
       { label: 'Accounts', path: '/search/accounts' },
       { label: 'Principals', path: '/search/principals' },
@@ -38,6 +44,13 @@ const navSections: NavSection[] = [
     title: 'Simulate',
     items: [
       { label: 'Access Check', path: '/simulate/access' },
+    ],
+  },
+  {
+    title: 'Overlays',
+    items: [
+      { label: 'Manage', path: '/overlays' },
+      { label: 'Editor', path: '/overlays/new/edit' },
     ],
   },
 ];
@@ -59,7 +72,12 @@ export function Layout(): JSX.Element {
             <Title order={3} c="white" ff="'Urbanist', sans-serif" fz="xl" style={{ letterSpacing: '0.15em' }}>
               yams
             </Title>
-            <Badge color="pink" variant="filled">
+            <Badge
+              color="pink"
+              variant="filled"
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate('/preview')}
+            >
               UI Preview
             </Badge>
           </Group>
@@ -82,28 +100,31 @@ export function Layout(): JSX.Element {
 
       <AppShell.Navbar p="md">
         <Stack gap="lg">
-          <Box
-            py={8}
-            px="sm"
-            style={{ borderRadius: 6, cursor: 'pointer' }}
-            bg={location.pathname === '/' ? 'purple.1' : undefined}
-            onClick={() => navigate('/')}
-          >
-            <Text
-              size="sm"
-              c={location.pathname === '/' ? 'purple.8' : undefined}
-              fw={location.pathname === '/' ? 600 : undefined}
-            >
-              Home
-            </Text>
-          </Box>
           {navSections.map((section) => (
             <div key={section.title}>
               <Text size="xs" c="dimmed" tt="uppercase" fw={700} mb="xs">
                 {section.title}
               </Text>
               {section.items.map((item) => {
-                const isActive = location.pathname.startsWith(item.path);
+                // Special handling: any /overlays/*/edit path should highlight Editor
+                const isOverlayEditor = /^\/overlays\/[^/]+\/edit$/.test(location.pathname);
+                const isEditorItem = item.path === '/overlays/new/edit';
+
+                // Find the best matching path in this section (longest match wins)
+                const matchingPaths = section.items
+                  .filter(i => {
+                    // Editor item matches any overlay edit path
+                    if (i.path === '/overlays/new/edit' && isOverlayEditor) return true;
+                    if (i.path === '/') return location.pathname === '/';
+                    return location.pathname === i.path || location.pathname.startsWith(i.path + '/');
+                  })
+                  .sort((a, b) => b.path.length - a.path.length);
+                const bestMatch = matchingPaths[0]?.path;
+                let isActive = item.path === bestMatch;
+
+                // Override: Editor always wins when on any overlay edit path
+                if (isOverlayEditor && isEditorItem) isActive = true;
+                if (isOverlayEditor && item.path === '/overlays' && !isEditorItem) isActive = false;
                 return (
                   <Box
                     key={item.path}

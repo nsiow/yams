@@ -7,6 +7,7 @@ import (
 
 	"github.com/nsiow/yams/cmd/yams/cli"
 	"github.com/nsiow/yams/internal/middleware"
+	"github.com/nsiow/yams/pkg/overlay"
 	v1 "github.com/nsiow/yams/pkg/server/api/v1"
 	"github.com/nsiow/yams/pkg/sim"
 )
@@ -15,9 +16,10 @@ type Server struct {
 	*http.Server
 	mux *http.ServeMux
 
-	Sources   []*Source
-	Simulator *sim.Simulator
-	Opts      *cli.Flags
+	Sources      []*Source
+	Simulator    *sim.Simulator
+	OverlayStore overlay.Store
+	Opts         *cli.Flags
 }
 
 func NewServer(opts *cli.Flags) (*Server, error) {
@@ -43,8 +45,18 @@ func NewServer(opts *cli.Flags) (*Server, error) {
 	}
 	server.Simulator = sim
 
+	// Create overlay store
+	overlayStore, err := overlay.NewStore(opts.OverlayStore)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create overlay store: %w", err)
+	}
+	server.OverlayStore = overlayStore
+
 	// routes routes routes
-	server.addV1Routes(&v1.API{Simulator: server.Simulator})
+	server.addV1Routes(
+		&v1.API{Simulator: server.Simulator},
+		&v1.OverlayAPI{Store: server.OverlayStore},
+	)
 
 	return &server, nil
 }
