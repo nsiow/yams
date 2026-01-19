@@ -60,3 +60,14 @@ func (api *API) UtilResourcelessActions(w http.ResponseWriter, req *http.Request
 	slices.Sort(actions)
 	httputil.WriteJsonResponse(w, req, actions)
 }
+
+// UtilActionAccessLevels returns a mapping of action names to their access levels.
+// Access levels are: Read, List, Write, Tagging, Permissions management
+// GET /api/v1/utils/actions/accesslevels
+func (api *API) UtilActionAccessLevels(w http.ResponseWriter, req *http.Request) {
+	mapping := make(map[string]string)
+	for _, action := range sar.AllActions() {
+		mapping[action.ShortName()] = action.AccessLevel
+	}
+	httputil.WriteJsonResponse(w, req, mapping)
+}

@@ -19,6 +19,7 @@ type Service struct {
 type Action struct {
 	Name                string
 	Service             string // technically doesn't exist, but we add this
+	AccessLevel         string
 	ActionConditionKeys []string
 	Resources           []Resource `json:"ResolvedResources"`
 }

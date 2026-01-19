@@ -25,6 +25,7 @@ export interface ActionResource {
 export interface Action {
   Name: string;
   Service: string;
+  AccessLevel?: string;
   ActionConditionKeys?: string[];
   ResolvedResources?: ActionResource[];
 }

@@ -18,6 +18,15 @@ var sar = assets.SAR
 // sarIndex is a local alias hiding the asset implementation of the SAR index
 var sarIndex = assets.SARIndex
 
+// AllActions returns all actions from all services
+func AllActions() []types.Action {
+	var actions []types.Action
+	for _, service := range sar() {
+		actions = append(actions, service.Actions...)
+	}
+	return actions
+}
+
 // Lookup allows for querying a specific api call based on service + action name
 func Lookup(service, action string) (*types.Action, bool) {
 	// SAR index uses lower-case keys

@@ -273,6 +273,42 @@ function extractAccountId(arn: string): string | null {
   return null;
 }
 
+// Highlight matching text in search results
+function highlightMatch(text: string, search: string): JSX.Element {
+  if (!search || search.length < 2) {
+    return <>{text}</>;
+  }
+
+  const parts: JSX.Element[] = [];
+  const lowerText = text.toLowerCase();
+  const lowerSearch = search.toLowerCase();
+  let lastIndex = 0;
+  let matchIndex = lowerText.indexOf(lowerSearch);
+  let keyIndex = 0;
+
+  while (matchIndex !== -1) {
+    // Add text before match
+    if (matchIndex > lastIndex) {
+      parts.push(<span key={keyIndex++}>{text.slice(lastIndex, matchIndex)}</span>);
+    }
+    // Add matched text in bold
+    parts.push(
+      <Text key={keyIndex++} component="span" fw={700}>
+        {text.slice(matchIndex, matchIndex + search.length)}
+      </Text>
+    );
+    lastIndex = matchIndex + search.length;
+    matchIndex = lowerText.indexOf(lowerSearch, lastIndex);
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(<span key={keyIndex}>{text.slice(lastIndex)}</span>);
+  }
+
+  return <>{parts}</>;
+}
+
 // Async search select component
 interface AsyncSearchSelectProps {
   label: string;
@@ -283,8 +319,10 @@ interface AsyncSearchSelectProps {
   formatLabel?: (value: string) => string;
   accountNames?: Record<string, string>;
   resourceAccounts?: Record<string, string>;
+  accessLevels?: Record<string, string>;
   showAccountName?: boolean;
   showResourceType?: boolean;
+  showAccessLevel?: boolean;
   disabled?: boolean;
   disabledMessage?: string;
 }
@@ -298,8 +336,10 @@ function AsyncSearchSelect({
   formatLabel,
   accountNames,
   resourceAccounts,
+  accessLevels,
   showAccountName,
   showResourceType,
+  showAccessLevel,
   disabled,
   disabledMessage,
 }: AsyncSearchSelectProps): JSX.Element {
@@ -350,7 +390,9 @@ function AsyncSearchSelect({
             border: '1px solid var(--mantine-color-gray-3)',
             borderRadius: 'var(--mantine-radius-sm)',
             padding: '12px',
-            minHeight: '50px',
+            height: '58px',
+            display: 'flex',
+            alignItems: 'center',
             backgroundColor: 'var(--mantine-color-gray-1)',
             cursor: 'not-allowed',
           }}
@@ -382,6 +424,7 @@ function AsyncSearchSelect({
                 : null;
               const accountName = accountId && accountNames ? accountNames[accountId] : null;
               const service = showResourceType ? extractService(value) : null;
+              const accessLevel = showAccessLevel && accessLevels ? accessLevels[value] : null;
               return (
                 <Tooltip label={value} multiline maw={400} openDelay={500}>
                   <Group
@@ -393,7 +436,7 @@ function AsyncSearchSelect({
                       border: '1px solid var(--mantine-color-gray-4)',
                       borderRadius: 'var(--mantine-radius-sm)',
                       padding: '8px 12px',
-                      minHeight: '50px',
+                      height: '58px',
                       cursor: 'pointer',
                     }}
                   >
@@ -411,7 +454,12 @@ function AsyncSearchSelect({
                           {accountName} ({accountId})
                         </Text>
                       )}
-                      {!showAccountName && !showResourceType && formatLabel && (
+                      {showAccessLevel && accessLevel && (
+                        <Text size="xs" c="dimmed" truncate>
+                          {accessLevel}
+                        </Text>
+                      )}
+                      {!showAccountName && !showResourceType && !showAccessLevel && formatLabel && (
                         <Text size="xs" c="dimmed" truncate>
                           {value}
                         </Text>
@@ -447,6 +495,7 @@ function AsyncSearchSelect({
                 setSearch('');
               }}
               placeholder={placeholder}
+              styles={{ input: { height: '58px' } }}
               rightSectionPointerEvents="none"
             />
           )}
@@ -470,10 +519,11 @@ function AsyncSearchSelect({
                   : null;
                 const accountName = accountId && accountNames ? accountNames[accountId] : null;
                 const service = showResourceType ? extractService(option) : null;
+                const accessLevel = showAccessLevel && accessLevels ? accessLevels[option] : null;
                 return (
                   <Combobox.Option value={option} key={option}>
                     <Text size="sm" truncate>
-                      {formatLabel ? formatLabel(option) : option}
+                      {highlightMatch(formatLabel ? formatLabel(option) : option, debouncedSearch)}
                     </Text>
                     {showResourceType && (accountName || service) && (
                       <Text size="xs" c="dimmed" truncate>
@@ -485,7 +535,12 @@ function AsyncSearchSelect({
                         {accountName} ({accountId})
                       </Text>
                     )}
-                    {!showAccountName && !showResourceType && formatLabel && (
+                    {showAccessLevel && accessLevel && (
+                      <Text size="xs" c="dimmed" truncate>
+                        {accessLevel}
+                      </Text>
+                    )}
+                    {!showAccountName && !showResourceType && !showAccessLevel && formatLabel && (
                       <Text size="xs" c="dimmed" truncate>
                         {option}
                       </Text>
@@ -554,6 +609,9 @@ export function AccessCheckPage(): JSX.Element {
   // Resourceless actions - actions that don't require a resource
   const [resourcelessActions, setResourcelessActions] = useState<Set<string>>(new Set());
 
+  // Action access levels for display
+  const [actionAccessLevels, setActionAccessLevels] = useState<Record<string, string>>({});
+
   // Request context variables
   const [contextVars, setContextVars] = useState<Array<{ key: string; value: string }>>([]);
 
@@ -562,7 +620,7 @@ export function AccessCheckPage(): JSX.Element {
   const [result, setResult] = useState<SimulationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch account names, resource accounts, and resourceless actions on mount
+  // Fetch account names, resource accounts, resourceless actions, and access levels on mount
   useEffect(() => {
     yamsApi.accountNames()
       .then(setAccountNames)
@@ -573,6 +631,9 @@ export function AccessCheckPage(): JSX.Element {
     yamsApi.resourcelessActions()
       .then((actions) => setResourcelessActions(new Set(actions)))
       .catch((err) => console.error('Failed to fetch resourceless actions:', err));
+    yamsApi.actionAccessLevels()
+      .then(setActionAccessLevels)
+      .catch((err) => console.error('Failed to fetch action access levels:', err));
   }, []);
 
   // Check if current action is resourceless
@@ -722,6 +783,8 @@ export function AccessCheckPage(): JSX.Element {
                 value={selectedAction}
                 onChange={(v) => updateSelection('action', v)}
                 onSearch={searchActions}
+                accessLevels={actionAccessLevels}
+                showAccessLevel
               />
             </Grid.Col>
             <Grid.Col span={4}>

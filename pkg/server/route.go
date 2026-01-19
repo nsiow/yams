@@ -50,4 +50,5 @@ func (s *Server) addV1Routes(v1 *v1.API) {
 	s.mux.HandleFunc("GET /api/v1/utils/accounts/names", v1.UtilAccountNames)
 	s.mux.HandleFunc("GET /api/v1/utils/resources/accounts", v1.UtilResourceAccounts)
 	s.mux.HandleFunc("GET /api/v1/utils/actions/resourceless", v1.UtilResourcelessActions)
+	s.mux.HandleFunc("GET /api/v1/utils/actions/accesslevels", v1.UtilActionAccessLevels)
 }

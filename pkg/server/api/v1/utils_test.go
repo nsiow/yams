@@ -251,3 +251,42 @@ func TestAPI_UtilResourcelessActions(t *testing.T) {
 		}
 	}
 }
+
+func TestAPI_UtilActionAccessLevels(t *testing.T) {
+	api := newTestAPI(t)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/utils/actions/accesslevels", nil)
+
+	api.UtilActionAccessLevels(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("UtilActionAccessLevels() status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var levels map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &levels); err != nil {
+		t.Fatalf("UtilActionAccessLevels() invalid JSON: %v", err)
+	}
+
+	// Should return a non-empty map
+	if len(levels) == 0 {
+		t.Error("UtilActionAccessLevels() returned empty map")
+	}
+
+	// Verify some known access levels
+	expectedLevels := map[string]string{
+		"s3:GetObject":         "Read",
+		"s3:ListAllMyBuckets":  "List",
+		"s3:PutObject":         "Write",
+		"s3:PutBucketTagging":  "Tagging",
+		"iam:DeleteRolePolicy": "Permissions management",
+	}
+
+	for action, expectedLevel := range expectedLevels {
+		if level, ok := levels[action]; !ok {
+			t.Errorf("UtilActionAccessLevels() missing action: %s", action)
+		} else if level != expectedLevel {
+			t.Errorf("UtilActionAccessLevels() %s = %q, want %q", action, level, expectedLevel)
+		}
+	}
+}
