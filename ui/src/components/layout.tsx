@@ -68,10 +68,12 @@ export function Layout(): JSX.Element {
       <AppShell.Header bg="purple.6">
         <Group h="100%" px="md" justify="space-between">
           <Group>
-            <Image src="/apple-touch-icon.png" w={44} h={44} />
-            <Title order={3} c="white" ff="'Urbanist', sans-serif" fz="xl" style={{ letterSpacing: '0.15em' }}>
-              yams
-            </Title>
+            <Group gap="sm" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
+              <Image src="/apple-touch-icon.png" w={44} h={44} />
+              <Title order={3} c="white" ff="'Urbanist', sans-serif" fz="xl" style={{ letterSpacing: '0.15em' }}>
+                yams
+              </Title>
+            </Group>
             <Badge
               color="pink"
               variant="filled"
