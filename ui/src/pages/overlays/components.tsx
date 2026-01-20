@@ -342,11 +342,26 @@ export function StringListEditor({
   );
 }
 
+// Helper to extract account ID from policy ARN
+function extractPolicyAccountId(arn: string): string | null {
+  // AWS managed policies: arn:aws:iam::aws:policy/...
+  if (arn.includes(':aws:policy/')) {
+    return 'aws';
+  }
+  // Customer managed policies: arn:aws:iam::ACCOUNT_ID:policy/...
+  const parts = arn.split(':');
+  if (parts.length >= 5 && parts[4]) {
+    return parts[4];
+  }
+  return null;
+}
+
 // Policy selector for AttachedPolicies and PermissionsBoundary
 interface PolicySelectorProps {
   value: string | null;
   onChange: (value: string | null) => void;
   overlayPolicies: string[];
+  accountId: string;
   placeholder?: string;
   disabled?: boolean;
 }
@@ -355,6 +370,7 @@ function PolicySelector({
   value,
   onChange,
   overlayPolicies,
+  accountId,
   placeholder = 'Search policies...',
   disabled,
 }: PolicySelectorProps): JSX.Element {
@@ -366,6 +382,14 @@ function PolicySelector({
   const [universePolicies, setUniversePolicies] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Filter to only include policies from the same account or AWS managed policies
+  const filterByAccount = useCallback((policies: string[]): string[] => {
+    return policies.filter((arn) => {
+      const policyAccountId = extractPolicyAccountId(arn);
+      return policyAccountId === accountId || policyAccountId === 'aws';
+    });
+  }, [accountId]);
+
   // Fetch policies from universe when searching
   useEffect(() => {
     if (!debouncedSearch) {
@@ -374,16 +398,17 @@ function PolicySelector({
     }
     setLoading(true);
     yamsApi.searchPolicies(debouncedSearch)
-      .then((results) => setUniversePolicies(results.slice(0, 20)))
+      .then((results) => setUniversePolicies(filterByAccount(results).slice(0, 20)))
       .catch(() => setUniversePolicies([]))
       .finally(() => setLoading(false));
-  }, [debouncedSearch]);
+  }, [debouncedSearch, filterByAccount]);
 
-  // Combine overlay policies and universe policies, deduplicated
-  const allPolicies = Array.from(new Set([...overlayPolicies, ...universePolicies]));
+  // Combine overlay policies and universe policies, deduplicated, filtered by account
+  const sameAccountOverlayPolicies = filterByAccount(overlayPolicies);
+  const allPolicies = Array.from(new Set([...sameAccountOverlayPolicies, ...universePolicies]));
   const filteredPolicies = debouncedSearch
     ? allPolicies.filter((p) => p.toLowerCase().includes(debouncedSearch.toLowerCase()))
-    : overlayPolicies;
+    : sameAccountOverlayPolicies;
 
   const handleSelect = (arn: string): void => {
     onChange(arn);
@@ -494,6 +519,7 @@ interface MultiPolicySelectorProps {
   values: string[] | undefined | null;
   onChange: (values: string[]) => void;
   overlayPolicies: string[];
+  accountId: string;
   disabled?: boolean;
 }
 
@@ -501,6 +527,7 @@ function MultiPolicySelector({
   values,
   onChange,
   overlayPolicies,
+  accountId,
   disabled,
 }: MultiPolicySelectorProps): JSX.Element {
   const list = values || [];
@@ -542,6 +569,7 @@ function MultiPolicySelector({
         value={null}
         onChange={(arn) => arn && addPolicy(arn)}
         overlayPolicies={overlayPolicies.filter((p) => !list.includes(p))}
+        accountId={accountId}
         placeholder="Add policy..."
         disabled={disabled}
       />
@@ -849,6 +877,7 @@ function PrincipalFields({ entity, onChange, overlayPolicies }: PrincipalFieldsP
             value={entity.PermissionsBoundary || null}
             onChange={(val) => update('PermissionsBoundary', val || undefined)}
             overlayPolicies={overlayPolicies}
+            accountId={entity.AccountId}
             placeholder="Select permissions boundary..."
           />
         </Box>
@@ -862,6 +891,7 @@ function PrincipalFields({ entity, onChange, overlayPolicies }: PrincipalFieldsP
             values={entity.AttachedPolicies}
             onChange={(values) => update('AttachedPolicies', values)}
             overlayPolicies={overlayPolicies}
+            accountId={entity.AccountId}
           />
         </Box>
       </Box>
