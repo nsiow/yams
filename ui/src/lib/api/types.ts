@@ -136,33 +136,32 @@ export interface SimulationResponse {
 
 export interface WhichPrincipalsRequest {
   action: string;
-  resource: string;
-  explain?: boolean;
+  resource?: string;
+  context?: Record<string, string>;
+  overlay?: SimulationOverlay;
+  fuzzy?: boolean;
 }
 
 export interface WhichResourcesRequest {
   principal: string;
-  action: string;
-  explain?: boolean;
+  action?: string;
+  context?: Record<string, string>;
+  overlay?: SimulationOverlay;
+  fuzzy?: boolean;
 }
 
 export interface WhichActionsRequest {
   principal: string;
   resource: string;
-  explain?: boolean;
+  context?: Record<string, string>;
+  overlay?: SimulationOverlay;
+  fuzzy?: boolean;
 }
 
-export interface WhichPrincipalsResponse {
-  principals: string[];
-}
-
-export interface WhichResourcesResponse {
-  resources: string[];
-}
-
-export interface WhichActionsResponse {
-  actions: string[];
-}
+// Server returns bare arrays for which-* endpoints
+export type WhichPrincipalsResponse = string[];
+export type WhichResourcesResponse = string[];
+export type WhichActionsResponse = string[];
 
 // Overlay Types
 

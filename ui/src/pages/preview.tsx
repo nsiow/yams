@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ActionIcon,
+  Anchor,
   Badge,
   Box,
   Button,
@@ -14,25 +15,37 @@ import {
   ScrollArea,
   SegmentedControl,
   Stack,
+  Table,
   Tabs,
   Text,
   TextInput,
   Title,
+  Tooltip,
   UnstyledButton,
 } from '@mantine/core';
 import {
+  IconArrowRight,
+  IconCheck,
   IconChevronDown,
   IconChevronRight,
   IconDeviceFloppy,
+  IconExternalLink,
+  IconFlask,
   IconGripVertical,
+  IconPlayerPlay,
   IconPlus,
   IconSearch,
+  IconTestPipe,
   IconTrash,
   IconUser,
   IconDatabase,
   IconShield,
   IconBuilding,
   IconX,
+  IconZoomCheck,
+  IconEye,
+  IconFocus2,
+  IconAnalyze,
 } from '@tabler/icons-react';
 
 // Sample data for editor previews
@@ -196,6 +209,383 @@ function DesignSidebar(): JSX.Element {
     </Card>
   );
 }
+
+// Sample data for simulation results table previews
+const sampleResults = [
+  { arn: 'arn:aws:iam::123456789012:role/AdminRole', account: 'Production', accountId: '123456789012' },
+  { arn: 'arn:aws:iam::123456789012:role/DevRole', account: 'Production', accountId: '123456789012' },
+  { arn: 'arn:aws:iam::987654321098:user/alice', account: 'Development', accountId: '987654321098' },
+  { arn: 'arn:aws:iam::555555555555:role/ReadOnlyRole', account: 'Staging', accountId: '555555555555' },
+  { arn: 'arn:aws:iam::123456789012:user/bob', account: 'Production', accountId: '123456789012' },
+];
+
+// Simulation results table designs - focused on density and formatting
+interface TableDesignOption {
+  name: string;
+  label: string;
+  description: string;
+  render: () => JSX.Element;
+}
+
+function TableDesignExpandable(): JSX.Element {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  return (
+    <Table striped highlightOnHover>
+      <Table.Thead>
+        <Table.Tr>
+          <Table.Th style={{ width: 32 }}></Table.Th>
+          <Table.Th>Principal</Table.Th>
+          <Table.Th style={{ width: 120 }}>Account</Table.Th>
+          <Table.Th style={{ width: 100 }}>Actions</Table.Th>
+        </Table.Tr>
+      </Table.Thead>
+      <Table.Tbody>
+        {sampleResults.slice(0, 3).map((r) => (
+          <>
+            <Table.Tr key={r.arn}>
+              <Table.Td>
+                <UnstyledButton onClick={() => setExpanded(expanded === r.arn ? null : r.arn)}>
+                  {expanded === r.arn ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+                </UnstyledButton>
+              </Table.Td>
+              <Table.Td>
+                <Anchor size="sm">{r.arn.split('/').pop()}</Anchor>
+                <Text size="xs" c="dimmed" ff="monospace" truncate style={{ maxWidth: 300 }}>{r.arn}</Text>
+              </Table.Td>
+              <Table.Td>
+                <Text size="sm">{r.account}</Text>
+              </Table.Td>
+              <Table.Td>
+                <Anchor size="xs"><Group gap={4}><IconExternalLink size={12} />Check</Group></Anchor>
+              </Table.Td>
+            </Table.Tr>
+            {expanded === r.arn && (
+              <Table.Tr key={`${r.arn}-exp`}>
+                <Table.Td colSpan={4} p={0}>
+                  <Box p="sm" bg="gray.0">
+                    <Group gap="xs" mb="xs">
+                      <Badge color="green" size="sm" leftSection={<IconCheck size={10} />}>ALLOW</Badge>
+                    </Group>
+                    <Text size="xs" c="dimmed">Access granted via attached policy AmazonS3FullAccess</Text>
+                  </Box>
+                </Table.Td>
+              </Table.Tr>
+            )}
+          </>
+        ))}
+      </Table.Tbody>
+    </Table>
+  );
+}
+
+const tableDesigns: TableDesignOption[] = [
+  {
+    name: '1',
+    label: 'Compact Single-Line',
+    description: 'Dense layout showing only essential info. Good for scanning many results quickly.',
+    render: () => (
+      <Table>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Principal</Table.Th>
+            <Table.Th style={{ width: 100 }}>Account</Table.Th>
+            <Table.Th style={{ width: 80 }}></Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {sampleResults.map((r) => (
+            <Table.Tr key={r.arn}>
+              <Table.Td py={4}>
+                <Text size="xs" ff="monospace" truncate style={{ maxWidth: 350 }}>{r.arn}</Text>
+              </Table.Td>
+              <Table.Td py={4}>
+                <Text size="xs" c="dimmed">{r.accountId}</Text>
+              </Table.Td>
+              <Table.Td py={4}>
+                <Anchor size="xs">Check →</Anchor>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    ),
+  },
+  {
+    name: '2',
+    label: 'Two-Line with Name',
+    description: 'Shows friendly name prominently with full ARN below. Balanced density.',
+    render: () => (
+      <Table striped>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Principal</Table.Th>
+            <Table.Th style={{ width: 130 }}>Account</Table.Th>
+            <Table.Th style={{ width: 100 }}>Actions</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {sampleResults.map((r) => (
+            <Table.Tr key={r.arn}>
+              <Table.Td>
+                <Text size="sm" fw={500}>{r.arn.split('/').pop()}</Text>
+                <Text size="xs" c="dimmed" ff="monospace">{r.arn}</Text>
+              </Table.Td>
+              <Table.Td>
+                <Text size="sm">{r.account}</Text>
+                <Text size="xs" c="dimmed">{r.accountId}</Text>
+              </Table.Td>
+              <Table.Td>
+                <Anchor size="xs"><Group gap={4}><IconExternalLink size={12} />Access Check</Group></Anchor>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    ),
+  },
+  {
+    name: '3',
+    label: 'Linked Name Only',
+    description: 'Minimal view with clickable names. ARN shown on hover.',
+    render: () => (
+      <Table highlightOnHover>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Principal</Table.Th>
+            <Table.Th style={{ width: 120 }}>Account</Table.Th>
+            <Table.Th style={{ width: 80 }}></Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {sampleResults.map((r) => (
+            <Table.Tr key={r.arn}>
+              <Table.Td>
+                <Tooltip label={r.arn} multiline maw={400}>
+                  <Anchor size="sm">{r.arn.split('/').pop()}</Anchor>
+                </Tooltip>
+              </Table.Td>
+              <Table.Td>
+                <Text size="sm" c="dimmed">{r.account}</Text>
+              </Table.Td>
+              <Table.Td>
+                <Anchor size="xs">Check</Anchor>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    ),
+  },
+  {
+    name: '4',
+    label: 'Expandable Rows',
+    description: 'Click to expand and see simulation details inline. Interactive exploration.',
+    render: () => <TableDesignExpandable />,
+  },
+  {
+    name: '5',
+    label: 'Badge Account Tags',
+    description: 'Account shown as colored badge. Visual grouping by account.',
+    render: () => (
+      <Table striped>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Principal</Table.Th>
+            <Table.Th style={{ width: 130 }}>Account</Table.Th>
+            <Table.Th style={{ width: 100 }}></Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {sampleResults.map((r, i) => (
+            <Table.Tr key={r.arn}>
+              <Table.Td>
+                <Text size="sm">{r.arn.split('/').pop()}</Text>
+                <Text size="xs" c="dimmed" ff="monospace">{r.arn}</Text>
+              </Table.Td>
+              <Table.Td>
+                <Badge size="sm" variant="light" color={['blue', 'green', 'orange', 'violet', 'cyan'][i % 5]}>
+                  {r.account}
+                </Badge>
+              </Table.Td>
+              <Table.Td>
+                <Anchor size="xs"><IconExternalLink size={12} /></Anchor>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    ),
+  },
+  {
+    name: '6',
+    label: 'Very Compact',
+    description: 'Maximum density. Monospace font, minimal padding. For power users.',
+    render: () => (
+      <Table style={{ fontSize: 11 }}>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th py={2}>ARN</Table.Th>
+            <Table.Th py={2} style={{ width: 80 }}>Acct</Table.Th>
+            <Table.Th py={2} style={{ width: 40 }}></Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {sampleResults.map((r) => (
+            <Table.Tr key={r.arn}>
+              <Table.Td py={2} ff="monospace" style={{ fontSize: 10 }}>
+                {r.arn}
+              </Table.Td>
+              <Table.Td py={2} c="dimmed" style={{ fontSize: 10 }}>
+                {r.accountId.slice(0, 6)}...
+              </Table.Td>
+              <Table.Td py={2}>
+                <Anchor size="xs">→</Anchor>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    ),
+  },
+  {
+    name: '7',
+    label: 'Spacious with Icons',
+    description: 'More breathing room. Icons indicate principal type. Clear visual hierarchy.',
+    render: () => (
+      <Table>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Principal</Table.Th>
+            <Table.Th style={{ width: 150 }}>Account</Table.Th>
+            <Table.Th style={{ width: 120 }}>Actions</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {sampleResults.map((r) => (
+            <Table.Tr key={r.arn}>
+              <Table.Td py="md">
+                <Group gap="sm">
+                  <IconUser size={18} color="var(--mantine-color-blue-6)" />
+                  <Box>
+                    <Anchor size="sm" fw={500}>{r.arn.split('/').pop()}</Anchor>
+                    <Text size="xs" c="dimmed" ff="monospace">{r.arn}</Text>
+                  </Box>
+                </Group>
+              </Table.Td>
+              <Table.Td py="md">
+                <Text size="sm" fw={500}>{r.account}</Text>
+                <Text size="xs" c="dimmed">{r.accountId}</Text>
+              </Table.Td>
+              <Table.Td py="md">
+                <Button size="xs" variant="light">Access Check</Button>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    ),
+  },
+  {
+    name: '8',
+    label: 'Card-Style Rows',
+    description: 'Each row as a mini-card with border. Clear separation between items.',
+    render: () => (
+      <Stack gap="xs">
+        {sampleResults.slice(0, 4).map((r) => (
+          <Paper key={r.arn} withBorder p="sm">
+            <Group justify="space-between">
+              <Box>
+                <Group gap="xs">
+                  <Anchor size="sm" fw={500}>{r.arn.split('/').pop()}</Anchor>
+                  <Badge size="xs" variant="light">{r.account}</Badge>
+                </Group>
+                <Text size="xs" c="dimmed" ff="monospace">{r.arn}</Text>
+              </Box>
+              <Anchor size="xs"><IconExternalLink size={14} /> Check</Anchor>
+            </Group>
+          </Paper>
+        ))}
+      </Stack>
+    ),
+  },
+  {
+    name: '9',
+    label: 'Horizontal Scroll',
+    description: 'Fixed columns with scroll for long ARNs. Prevents layout shift.',
+    render: () => (
+      <ScrollArea>
+        <Table style={{ minWidth: 600 }}>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th style={{ width: 150 }}>Name</Table.Th>
+              <Table.Th style={{ minWidth: 350 }}>Full ARN</Table.Th>
+              <Table.Th style={{ width: 100 }}>Account</Table.Th>
+              <Table.Th style={{ width: 80 }}></Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {sampleResults.map((r) => (
+              <Table.Tr key={r.arn}>
+                <Table.Td>
+                  <Anchor size="sm">{r.arn.split('/').pop()}</Anchor>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="xs" ff="monospace">{r.arn}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm" c="dimmed">{r.account}</Text>
+                </Table.Td>
+                <Table.Td>
+                  <Anchor size="xs">Check</Anchor>
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </ScrollArea>
+    ),
+  },
+  {
+    name: '10',
+    label: 'Grouped by Account',
+    description: 'Results grouped under account headers. Good for cross-account results.',
+    render: () => {
+      const grouped: Record<string, typeof sampleResults> = {};
+      sampleResults.forEach((r) => {
+        if (!grouped[r.account]) grouped[r.account] = [];
+        grouped[r.account].push(r);
+      });
+      return (
+        <Stack gap="md">
+          {Object.entries(grouped).map(([account, items]) => (
+            <Box key={account}>
+              <Group gap="xs" mb="xs">
+                <IconBuilding size={14} color="var(--mantine-color-violet-6)" />
+                <Text size="sm" fw={600}>{account}</Text>
+                <Text size="xs" c="dimmed">({items.length})</Text>
+              </Group>
+              <Table>
+                <Table.Tbody>
+                  {items.map((r) => (
+                    <Table.Tr key={r.arn}>
+                      <Table.Td>
+                        <Text size="sm">{r.arn.split('/').pop()}</Text>
+                        <Text size="xs" c="dimmed" ff="monospace">{r.arn}</Text>
+                      </Table.Td>
+                      <Table.Td style={{ width: 80 }}>
+                        <Anchor size="xs">Check</Anchor>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </Box>
+          ))}
+        </Stack>
+      );
+    },
+  },
+];
 
 const designs: DesignOption[] = [
   {
@@ -490,10 +880,101 @@ const designs: DesignOption[] = [
   },
 ];
 
+// Icon options for the Simulate column
+const simulateIconOptions = [
+  { name: 'PlayerPlay', icon: IconPlayerPlay, description: 'Play button - indicates running/executing' },
+  { name: 'ArrowRight', icon: IconArrowRight, description: 'Arrow - indicates navigation' },
+  { name: 'ExternalLink', icon: IconExternalLink, description: 'External link - indicates opening elsewhere' },
+  { name: 'Flask', icon: IconFlask, description: 'Flask - science/experiment theme' },
+  { name: 'TestPipe', icon: IconTestPipe, description: 'Test tube - testing theme' },
+  { name: 'ZoomCheck', icon: IconZoomCheck, description: 'Magnify with check - inspection/verification' },
+  { name: 'Eye', icon: IconEye, description: 'Eye - view/inspect' },
+  { name: 'Focus2', icon: IconFocus2, description: 'Focus/target - precision analysis' },
+  { name: 'Analyze', icon: IconAnalyze, description: 'Analyze - data analysis theme' },
+];
+
 export function PreviewPage(): JSX.Element {
   return (
     <Container size="xl" py="xl">
       <Stack gap="xl">
+        {/* Simulate Icon Options */}
+        <div>
+          <Title order={1} mb="xs">Simulate Column Icon Options</Title>
+          <Text c="dimmed" mb="md">
+            Choose an icon for the "Simulate" column that links to Access Check.
+          </Text>
+          <Card withBorder p="lg">
+            <Table>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th style={{ width: 60 }}>Icon</Table.Th>
+                  <Table.Th style={{ width: 120 }}>Name</Table.Th>
+                  <Table.Th>Description</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {simulateIconOptions.map((opt) => (
+                  <Table.Tr key={opt.name}>
+                    <Table.Td>
+                      <Anchor>
+                        <opt.icon size={20} />
+                      </Anchor>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" ff="monospace">{opt.name}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c="dimmed">{opt.description}</Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Card>
+        </div>
+
+        <Divider />
+
+        {/* Simulation Results Table Designs */}
+        <div>
+          <Title order={1} mb="xs">Simulation Results Table Designs</Title>
+          <Text c="dimmed">
+            Choose a table style for displaying which-principals, which-actions, and which-resources results.
+            Focus on density and formatting for scanning large result sets.
+          </Text>
+        </div>
+
+        <Stack gap="xl">
+          {tableDesigns.map((design) => (
+            <Card key={design.name} padding="lg" withBorder>
+              <Stack gap="md">
+                <Group justify="space-between">
+                  <div>
+                    <Group gap="xs">
+                      <Badge size="lg" variant="filled" color="blue">{design.name}</Badge>
+                      <Text fw={700} size="lg">{design.label}</Text>
+                    </Group>
+                    <Text size="sm" c="dimmed" mt={4}>{design.description}</Text>
+                  </div>
+                </Group>
+                <Box
+                  p="md"
+                  style={{
+                    border: '1px solid var(--mantine-color-gray-3)',
+                    borderRadius: 8,
+                    backgroundColor: 'var(--mantine-color-gray-0)',
+                  }}
+                >
+                  {design.render()}
+                </Box>
+              </Stack>
+            </Card>
+          ))}
+        </Stack>
+
+        <Divider my="xl" />
+
+        {/* Overlay Editor Designs */}
         <div>
           <Title order={1} mb="xs">Overlay Editor Designs</Title>
           <Text c="dimmed">
