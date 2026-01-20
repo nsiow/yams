@@ -361,12 +361,7 @@ export function WhichActionsPage(): JSX.Element {
                     <Table.Th style={{ width: 50 }}></Table.Th>
                     <Table.Th>Action</Table.Th>
                     <Table.Th style={{ width: 120 }}>Access Level</Table.Th>
-                    <Table.Th style={{ width: 130 }}>
-                      <Group gap={4} wrap="nowrap">
-                        Go to Simulation
-                        <IconArrowUpRight size={14} />
-                      </Group>
-                    </Table.Th>
+                    <Table.Th style={{ width: 130 }}>Go to Simulation</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>

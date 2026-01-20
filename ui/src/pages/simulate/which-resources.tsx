@@ -360,12 +360,7 @@ export function WhichResourcesPage(): JSX.Element {
                     <Table.Th>Resource</Table.Th>
                     <Table.Th style={{ width: 100 }}>Service</Table.Th>
                     <Table.Th style={{ width: 130 }}>Account</Table.Th>
-                    <Table.Th style={{ width: 130 }}>
-                      <Group gap={4} wrap="nowrap">
-                        Go to Simulation
-                        <IconArrowUpRight size={14} />
-                      </Group>
-                    </Table.Th>
+                    <Table.Th style={{ width: 130 }}>Go to Simulation</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
