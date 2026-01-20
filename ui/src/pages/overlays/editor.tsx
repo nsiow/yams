@@ -1022,6 +1022,7 @@ export function OverlayEditorPage(): JSX.Element {
                 onChange={handleEntityChange}
                 onSave={handleSaveEntity}
                 isDirty={entityDirty}
+                overlayPolicies={overlay?.policies?.map(p => p.Arn) || []}
               />
             </Card>
           </Grid.Col>

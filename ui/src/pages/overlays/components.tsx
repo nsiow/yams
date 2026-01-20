@@ -4,13 +4,19 @@ import {
   Badge,
   Box,
   Button,
+  Combobox,
+  Divider,
   Group,
+  InputBase,
   ScrollArea,
   Stack,
   Text,
   TextInput,
+  Title,
   Tooltip,
+  useCombobox,
 } from '@mantine/core';
+import { useDebouncedValue } from '@mantine/hooks';
 import {
   IconPlus,
   IconTrash,
@@ -19,11 +25,40 @@ import {
   IconDatabase,
   IconShield,
   IconBuilding,
+  IconSearch,
+  IconX,
 } from '@tabler/icons-react';
 import CodeMirror from '@uiw/react-codemirror';
 import { json } from '@codemirror/lang-json';
 import type { Principal, Resource, Policy, Account, PolicyDocument, PrincipalTag, ResourceTag } from '../../lib/api';
+import { yamsApi } from '../../lib/api';
 import { CopyButton } from '../../components';
+
+// Section heading component for consistent styling
+interface SectionHeadingProps {
+  title: string;
+  children?: React.ReactNode;
+}
+
+function SectionHeading({ title, children }: SectionHeadingProps): JSX.Element {
+  return (
+    <Box
+      p="sm"
+      style={{
+        backgroundColor: 'var(--mantine-color-gray-1)',
+        borderRadius: 'var(--mantine-radius-sm)',
+        borderLeft: '3px solid var(--mantine-color-violet-5)',
+      }}
+    >
+      <Group justify="space-between" wrap="nowrap">
+        <Title order={6} fw={600} c="dark">
+          {title}
+        </Title>
+        {children}
+      </Group>
+    </Box>
+  );
+}
 
 // Helper functions for ARN parsing
 function extractAccountId(arn: string): string | null {
@@ -241,7 +276,7 @@ export function TagEditor({ tags, onChange, disabled }: TagEditorProps): JSX.Ele
   );
 }
 
-// String list editor for AttachedPolicies, Groups, etc.
+// String list editor for Groups, etc.
 interface StringListEditorProps {
   label: string;
   values: string[] | undefined | null;
@@ -303,6 +338,213 @@ export function StringListEditor({
       >
         Add {label}
       </Button>
+    </Stack>
+  );
+}
+
+// Policy selector for AttachedPolicies and PermissionsBoundary
+interface PolicySelectorProps {
+  value: string | null;
+  onChange: (value: string | null) => void;
+  overlayPolicies: string[];
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+function PolicySelector({
+  value,
+  onChange,
+  overlayPolicies,
+  placeholder = 'Search policies...',
+  disabled,
+}: PolicySelectorProps): JSX.Element {
+  const combobox = useCombobox({
+    onDropdownClose: () => combobox.resetSelectedOption(),
+  });
+  const [search, setSearch] = useState('');
+  const [debouncedSearch] = useDebouncedValue(search, 200);
+  const [universePolicies, setUniversePolicies] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch policies from universe when searching
+  useEffect(() => {
+    if (!debouncedSearch) {
+      setUniversePolicies([]);
+      return;
+    }
+    setLoading(true);
+    yamsApi.searchPolicies(debouncedSearch)
+      .then((results) => setUniversePolicies(results.slice(0, 20)))
+      .catch(() => setUniversePolicies([]))
+      .finally(() => setLoading(false));
+  }, [debouncedSearch]);
+
+  // Combine overlay policies and universe policies, deduplicated
+  const allPolicies = Array.from(new Set([...overlayPolicies, ...universePolicies]));
+  const filteredPolicies = debouncedSearch
+    ? allPolicies.filter((p) => p.toLowerCase().includes(debouncedSearch.toLowerCase()))
+    : overlayPolicies;
+
+  const handleSelect = (arn: string): void => {
+    onChange(arn);
+    setSearch('');
+    combobox.closeDropdown();
+  };
+
+  const handleClear = (): void => {
+    onChange(null);
+    setSearch('');
+  };
+
+  return (
+    <Combobox
+      store={combobox}
+      onOptionSubmit={handleSelect}
+      styles={{
+        dropdown: {
+          border: '2px solid var(--mantine-color-gray-4)',
+          boxShadow: 'var(--mantine-shadow-md)',
+        },
+      }}
+    >
+      <Combobox.Target>
+        {value ? (
+          <Group
+            gap="xs"
+            justify="space-between"
+            wrap="nowrap"
+            style={{
+              border: '1px solid var(--mantine-color-gray-4)',
+              borderRadius: 'var(--mantine-radius-sm)',
+              padding: '6px 10px',
+              minHeight: '34px',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              backgroundColor: disabled ? 'var(--mantine-color-gray-1)' : undefined,
+            }}
+            onClick={() => !disabled && combobox.openDropdown()}
+          >
+            <Text size="sm" ff="monospace" truncate style={{ flex: 1 }}>
+              {extractName(value)}
+            </Text>
+            {!disabled && (
+              <ActionIcon
+                size="xs"
+                variant="subtle"
+                color="gray"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClear();
+                }}
+              >
+                <IconX size={12} />
+              </ActionIcon>
+            )}
+          </Group>
+        ) : (
+          <InputBase
+            value={search}
+            onChange={(e) => {
+              setSearch(e.currentTarget.value);
+              combobox.openDropdown();
+            }}
+            onClick={() => combobox.openDropdown()}
+            onFocus={() => combobox.openDropdown()}
+            onBlur={() => setTimeout(() => combobox.closeDropdown(), 150)}
+            placeholder={placeholder}
+            rightSection={loading ? null : <IconSearch size={14} color="var(--mantine-color-dimmed)" />}
+            size="sm"
+            disabled={disabled}
+          />
+        )}
+      </Combobox.Target>
+
+      <Combobox.Dropdown>
+        <Combobox.Options>
+          <ScrollArea.Autosize mah={200} type="scroll">
+            {filteredPolicies.length === 0 ? (
+              <Combobox.Empty>
+                {loading ? 'Searching...' : debouncedSearch ? 'No policies found' : 'Type to search'}
+              </Combobox.Empty>
+            ) : (
+              filteredPolicies.map((arn) => (
+                <Combobox.Option value={arn} key={arn}>
+                  <Box>
+                    <Text size="sm" fw={500}>{extractName(arn)}</Text>
+                    <Text size="xs" c="dimmed" ff="monospace" truncate>
+                      {arn}
+                    </Text>
+                    {overlayPolicies.includes(arn) && (
+                      <Badge size="xs" variant="light" color="violet" mt={2}>
+                        in overlay
+                      </Badge>
+                    )}
+                  </Box>
+                </Combobox.Option>
+              ))
+            )}
+          </ScrollArea.Autosize>
+        </Combobox.Options>
+      </Combobox.Dropdown>
+    </Combobox>
+  );
+}
+
+// Multi-policy selector for AttachedPolicies
+interface MultiPolicySelectorProps {
+  values: string[] | undefined | null;
+  onChange: (values: string[]) => void;
+  overlayPolicies: string[];
+  disabled?: boolean;
+}
+
+function MultiPolicySelector({
+  values,
+  onChange,
+  overlayPolicies,
+  disabled,
+}: MultiPolicySelectorProps): JSX.Element {
+  const list = values || [];
+
+  const addPolicy = (arn: string): void => {
+    if (!list.includes(arn)) {
+      onChange([...list, arn]);
+    }
+  };
+
+  const removePolicy = (index: number): void => {
+    onChange(list.filter((_, i) => i !== index));
+  };
+
+  return (
+    <Stack gap="xs">
+      {list.map((arn, idx) => (
+        <Group key={arn} gap="xs" wrap="nowrap" p="xs" style={{
+          border: '1px solid var(--mantine-color-gray-3)',
+          borderRadius: 'var(--mantine-radius-sm)',
+          backgroundColor: 'var(--mantine-color-gray-0)',
+        }}>
+          <Box style={{ flex: 1, minWidth: 0 }}>
+            <Text size="sm" fw={500} truncate>{extractName(arn)}</Text>
+            <Text size="xs" c="dimmed" ff="monospace" truncate>{arn}</Text>
+          </Box>
+          <ActionIcon
+            variant="subtle"
+            color="red"
+            size="sm"
+            onClick={() => removePolicy(idx)}
+            disabled={disabled}
+          >
+            <IconTrash size={14} />
+          </ActionIcon>
+        </Group>
+      ))}
+      <PolicySelector
+        value={null}
+        onChange={(arn) => arn && addPolicy(arn)}
+        overlayPolicies={overlayPolicies.filter((p) => !list.includes(p))}
+        placeholder="Add policy..."
+        disabled={disabled}
+      />
     </Stack>
   );
 }
@@ -458,6 +700,7 @@ interface EntityDetailPanelProps {
   onChange: (entity: Principal | Resource | Policy | Account) => void;
   onSave: () => void;
   isDirty: boolean;
+  overlayPolicies?: string[];
 }
 
 export function EntityDetailPanel({
@@ -466,6 +709,7 @@ export function EntityDetailPanel({
   onChange,
   onSave,
   isDirty,
+  overlayPolicies = [],
 }: EntityDetailPanelProps): JSX.Element {
   if (!entity || !type) {
     return (
@@ -493,7 +737,7 @@ export function EntityDetailPanel({
   const renderFields = (): JSX.Element => {
     switch (type) {
       case 'principal':
-        return <PrincipalFields entity={entity as Principal} onChange={onChange} />;
+        return <PrincipalFields entity={entity as Principal} onChange={onChange} overlayPolicies={overlayPolicies} />;
       case 'resource':
         return <ResourceFields entity={entity as Resource} onChange={onChange} />;
       case 'policy':
@@ -535,9 +779,11 @@ export function EntityDetailPanel({
         </Group>
       </Group>
 
+      <Divider />
+
       {/* Fields */}
       <ScrollArea style={{ flex: 1 }}>
-        <Stack gap="md" pr="sm">
+        <Stack gap="lg" pr="sm">
           {renderFields()}
         </Stack>
       </ScrollArea>
@@ -549,83 +795,110 @@ export function EntityDetailPanel({
 interface PrincipalFieldsProps {
   entity: Principal;
   onChange: (entity: Principal) => void;
+  overlayPolicies: string[];
 }
 
-function PrincipalFields({ entity, onChange }: PrincipalFieldsProps): JSX.Element {
+function PrincipalFields({ entity, onChange, overlayPolicies }: PrincipalFieldsProps): JSX.Element {
   const update = <K extends keyof Principal>(field: K, value: Principal[K]): void => {
     onChange({ ...entity, [field]: value });
   };
 
   return (
     <>
-      <TextInput
-        label="ARN"
-        value={entity.Arn}
-        onChange={(e) => update('Arn', e.currentTarget.value)}
-        ff="monospace"
-        size="sm"
-      />
-      <TextInput
-        label="Name"
-        value={entity.Name}
-        onChange={(e) => update('Name', e.currentTarget.value)}
-        size="sm"
-      />
-      <Group grow>
-        <TextInput
-          label="Type"
-          value={entity.Type}
-          readOnly
-          size="sm"
-          styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
-        />
-        <TextInput
-          label="Account ID"
-          value={entity.AccountId}
-          readOnly
-          size="sm"
-          styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
-        />
-      </Group>
-      <TextInput
-        label="Permissions Boundary"
-        value={entity.PermissionsBoundary || ''}
-        onChange={(e) => update('PermissionsBoundary', e.currentTarget.value || undefined)}
-        placeholder="arn:aws:iam::..."
-        ff="monospace"
-        size="sm"
-      />
+      {/* Identity Section */}
       <Box>
-        <Text size="sm" fw={500} mb="xs">Tags</Text>
-        <TagEditor
-          tags={entity.Tags}
-          onChange={(tags) => update('Tags', tags as PrincipalTag[])}
-        />
+        <SectionHeading title="Identity" />
+        <Stack gap="sm" mt="sm">
+          <TextInput
+            label="ARN"
+            value={entity.Arn}
+            onChange={(e) => update('Arn', e.currentTarget.value)}
+            ff="monospace"
+            size="sm"
+          />
+          <TextInput
+            label="Name"
+            value={entity.Name}
+            onChange={(e) => update('Name', e.currentTarget.value)}
+            size="sm"
+          />
+          <Group grow>
+            <TextInput
+              label="Type"
+              value={entity.Type}
+              readOnly
+              size="sm"
+              styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
+            />
+            <TextInput
+              label="Account ID"
+              value={entity.AccountId}
+              readOnly
+              size="sm"
+              styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
+            />
+          </Group>
+        </Stack>
       </Box>
+
+      {/* Permissions Boundary Section */}
       <Box>
-        <Text size="sm" fw={500} mb="xs">Attached Policies</Text>
-        <StringListEditor
-          label="Policy"
-          values={entity.AttachedPolicies}
-          onChange={(values) => update('AttachedPolicies', values)}
-          placeholder="arn:aws:iam::..."
-        />
+        <SectionHeading title="Permissions Boundary" />
+        <Box mt="sm">
+          <PolicySelector
+            value={entity.PermissionsBoundary || null}
+            onChange={(val) => update('PermissionsBoundary', val || undefined)}
+            overlayPolicies={overlayPolicies}
+            placeholder="Select permissions boundary..."
+          />
+        </Box>
       </Box>
+
+      {/* Attached Policies Section */}
       <Box>
-        <Text size="sm" fw={500} mb="xs">Groups</Text>
-        <StringListEditor
-          label="Group"
-          values={entity.Groups}
-          onChange={(values) => update('Groups', values)}
-          placeholder="group-name"
-        />
+        <SectionHeading title="Attached Policies" />
+        <Box mt="sm">
+          <MultiPolicySelector
+            values={entity.AttachedPolicies}
+            onChange={(values) => update('AttachedPolicies', values)}
+            overlayPolicies={overlayPolicies}
+          />
+        </Box>
       </Box>
+
+      {/* Groups Section */}
       <Box>
-        <Text size="sm" fw={500} mb="xs">Inline Policies</Text>
-        <InlinePoliciesEditor
-          policies={entity.InlinePolicies}
-          onChange={(policies) => update('InlinePolicies', policies)}
-        />
+        <SectionHeading title="Groups" />
+        <Box mt="sm">
+          <StringListEditor
+            label="Group"
+            values={entity.Groups}
+            onChange={(values) => update('Groups', values)}
+            placeholder="group-name"
+          />
+        </Box>
+      </Box>
+
+      {/* Tags Section */}
+      <Box>
+        <SectionHeading title="Tags" />
+        <Box mt="sm">
+          <TagEditor
+            tags={entity.Tags}
+            onChange={(tags) => update('Tags', tags as PrincipalTag[])}
+          />
+        </Box>
+      </Box>
+
+      {/* Inline Policies Section */}
+      <Box>
+        <SectionHeading title="Inline Policies" />
+        <Box mt="sm">
+          <InlinePoliciesEditor
+            policies={entity.InlinePolicies}
+            onChange={(policies) => update('InlinePolicies', policies)}
+          />
+        </Box>
       </Box>
     </>
   );
@@ -644,54 +917,68 @@ function ResourceFields({ entity, onChange }: ResourceFieldsProps): JSX.Element 
 
   return (
     <>
-      <TextInput
-        label="ARN"
-        value={entity.Arn}
-        onChange={(e) => update('Arn', e.currentTarget.value)}
-        ff="monospace"
-        size="sm"
-      />
-      <TextInput
-        label="Name"
-        value={entity.Name}
-        onChange={(e) => update('Name', e.currentTarget.value)}
-        size="sm"
-      />
-      <Group grow>
-        <TextInput
-          label="Type"
-          value={entity.Type}
-          onChange={(e) => update('Type', e.currentTarget.value)}
-          size="sm"
-        />
-        <TextInput
-          label="Region"
-          value={entity.Region}
-          onChange={(e) => update('Region', e.currentTarget.value)}
-          size="sm"
-        />
-      </Group>
-      <TextInput
-        label="Account ID"
-        value={entity.AccountId}
-        readOnly
-        size="sm"
-        styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
-      />
+      {/* Identity Section */}
       <Box>
-        <Text size="sm" fw={500} mb="xs">Tags</Text>
-        <TagEditor
-          tags={entity.Tags}
-          onChange={(tags) => update('Tags', tags as ResourceTag[])}
-        />
+        <SectionHeading title="Identity" />
+        <Stack gap="sm" mt="sm">
+          <TextInput
+            label="ARN"
+            value={entity.Arn}
+            onChange={(e) => update('Arn', e.currentTarget.value)}
+            ff="monospace"
+            size="sm"
+          />
+          <TextInput
+            label="Name"
+            value={entity.Name}
+            onChange={(e) => update('Name', e.currentTarget.value)}
+            size="sm"
+          />
+          <Group grow>
+            <TextInput
+              label="Type"
+              value={entity.Type}
+              onChange={(e) => update('Type', e.currentTarget.value)}
+              size="sm"
+            />
+            <TextInput
+              label="Region"
+              value={entity.Region}
+              onChange={(e) => update('Region', e.currentTarget.value)}
+              size="sm"
+            />
+          </Group>
+          <TextInput
+            label="Account ID"
+            value={entity.AccountId}
+            readOnly
+            size="sm"
+            styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
+          />
+        </Stack>
       </Box>
+
+      {/* Tags Section */}
       <Box>
-        <Text size="sm" fw={500} mb="xs">Resource Policy</Text>
-        <PolicyEditor
-          value={entity.Policy}
-          onChange={(policy) => update('Policy', policy)}
-          height="300px"
-        />
+        <SectionHeading title="Tags" />
+        <Box mt="sm">
+          <TagEditor
+            tags={entity.Tags}
+            onChange={(tags) => update('Tags', tags as ResourceTag[])}
+          />
+        </Box>
+      </Box>
+
+      {/* Resource Policy Section */}
+      <Box>
+        <SectionHeading title="Resource Policy" />
+        <Box mt="sm">
+          <PolicyEditor
+            value={entity.Policy}
+            onChange={(policy) => update('Policy', policy)}
+            height="300px"
+          />
+        </Box>
       </Box>
     </>
   );
@@ -710,42 +997,52 @@ function PolicyFields({ entity, onChange }: PolicyFieldsProps): JSX.Element {
 
   return (
     <>
-      <TextInput
-        label="ARN"
-        value={entity.Arn}
-        onChange={(e) => update('Arn', e.currentTarget.value)}
-        ff="monospace"
-        size="sm"
-      />
-      <TextInput
-        label="Name"
-        value={entity.Name}
-        onChange={(e) => update('Name', e.currentTarget.value)}
-        size="sm"
-      />
-      <Group grow>
-        <TextInput
-          label="Type"
-          value={entity.Type}
-          readOnly
-          size="sm"
-          styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
-        />
-        <TextInput
-          label="Account ID"
-          value={entity.AccountId}
-          readOnly
-          size="sm"
-          styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
-        />
-      </Group>
+      {/* Identity Section */}
       <Box>
-        <Text size="sm" fw={500} mb="xs">Policy Document</Text>
-        <PolicyEditor
-          value={entity.Policy}
-          onChange={(policy) => update('Policy', policy!)}
-          height="400px"
-        />
+        <SectionHeading title="Identity" />
+        <Stack gap="sm" mt="sm">
+          <TextInput
+            label="ARN"
+            value={entity.Arn}
+            onChange={(e) => update('Arn', e.currentTarget.value)}
+            ff="monospace"
+            size="sm"
+          />
+          <TextInput
+            label="Name"
+            value={entity.Name}
+            onChange={(e) => update('Name', e.currentTarget.value)}
+            size="sm"
+          />
+          <Group grow>
+            <TextInput
+              label="Type"
+              value={entity.Type}
+              readOnly
+              size="sm"
+              styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
+            />
+            <TextInput
+              label="Account ID"
+              value={entity.AccountId}
+              readOnly
+              size="sm"
+              styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
+            />
+          </Group>
+        </Stack>
+      </Box>
+
+      {/* Policy Document Section */}
+      <Box>
+        <SectionHeading title="Policy Document" />
+        <Box mt="sm">
+          <PolicyEditor
+            value={entity.Policy}
+            onChange={(policy) => update('Policy', policy!)}
+            height="400px"
+          />
+        </Box>
       </Box>
     </>
   );
@@ -764,31 +1061,39 @@ function AccountFields({ entity, onChange }: AccountFieldsProps): JSX.Element {
 
   return (
     <>
-      <TextInput
-        label="Account ID"
-        value={entity.Id}
-        readOnly
-        ff="monospace"
-        size="sm"
-        styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
-      />
-      <TextInput
-        label="Name"
-        value={entity.Name}
-        onChange={(e) => update('Name', e.currentTarget.value)}
-        size="sm"
-      />
-      <TextInput
-        label="Organization ID"
-        value={entity.OrgId || ''}
-        readOnly
-        size="sm"
-        styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
-      />
+      {/* Identity Section */}
+      <Box>
+        <SectionHeading title="Identity" />
+        <Stack gap="sm" mt="sm">
+          <TextInput
+            label="Account ID"
+            value={entity.Id}
+            readOnly
+            ff="monospace"
+            size="sm"
+            styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
+          />
+          <TextInput
+            label="Name"
+            value={entity.Name}
+            onChange={(e) => update('Name', e.currentTarget.value)}
+            size="sm"
+          />
+          <TextInput
+            label="Organization ID"
+            value={entity.OrgId || ''}
+            readOnly
+            size="sm"
+            styles={{ input: { backgroundColor: 'var(--mantine-color-gray-1)' } }}
+          />
+        </Stack>
+      </Box>
+
+      {/* Organization Paths Section */}
       {entity.OrgPaths && entity.OrgPaths.length > 0 && (
         <Box>
-          <Text size="sm" fw={500} mb="xs">Organization Paths</Text>
-          <Stack gap="xs">
+          <SectionHeading title="Organization Paths" />
+          <Stack gap="xs" mt="sm">
             {entity.OrgPaths.map((path, idx) => (
               <Text key={idx} size="xs" ff="monospace" c="dimmed">
                 {path}
@@ -797,10 +1102,12 @@ function AccountFields({ entity, onChange }: AccountFieldsProps): JSX.Element {
           </Stack>
         </Box>
       )}
+
+      {/* Organization Nodes Section */}
       {entity.OrgNodes && entity.OrgNodes.length > 0 && (
         <Box>
-          <Text size="sm" fw={500} mb="xs">Organization Nodes</Text>
-          <Stack gap="xs">
+          <SectionHeading title="Organization Nodes" />
+          <Stack gap="xs" mt="sm">
             {entity.OrgNodes.map((node, idx) => (
               <Box key={idx} p="xs" style={{ backgroundColor: 'var(--mantine-color-gray-0)', borderRadius: 'var(--mantine-radius-sm)' }}>
                 <Text size="sm" fw={500}>{node.Name}</Text>
