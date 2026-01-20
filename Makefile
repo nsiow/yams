@@ -90,7 +90,7 @@ cov-missing: coverage.out
 cov-html: coverage.html
 
 .PHONY: precommit
-precommit: clean test lint cov-report ui-lint
+precommit: clean test lint cov-report ui-lint ui-test
 
 coverage.out: $(GO_FILES)
 	GO_TEST_FLAGS='-coverprofile=$@' make test
@@ -226,6 +226,10 @@ ui-build:
 .PHONY: ui-lint
 ui-lint:
 	cd $(UI_DIR) && npm run lint
+
+.PHONY: ui-test
+ui-test:
+	cd $(UI_DIR) && npm test
 
 .PHONY: ui-preview
 ui-preview:

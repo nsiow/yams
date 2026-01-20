@@ -89,3 +89,67 @@ Primary palette from https://coolors.co/6e44ff-b892ff-ffc2e2-ff90b3-ef7a85:
 ## Pull Requests
 * **PR body:** Keep concise. Include a brief summary only. Do not include test plans, commit lists, or AI attribution.
 * **Commit messages:** Keep short and use conventional commit format.
+
+---
+
+## UI Testing Guidelines
+
+When writing or modifying UI tests:
+
+### Avoid Circular Tests
+Do not write tests that simply verify the test setup rather than actual behavior:
+```tsx
+// BAD: Circular test - just verifies the mock
+it('returns mocked data', () => {
+  vi.mocked(api.getData).mockReturnValue('test');
+  expect(api.getData()).toBe('test'); // This tests nothing useful
+});
+```
+
+### Avoid Useless Tests
+Do not write tests that provide no meaningful coverage:
+```tsx
+// BAD: Tests implementation detail, not behavior
+it('calls useState', () => {
+  render(<Component />);
+  expect(React.useState).toHaveBeenCalled();
+});
+
+// BAD: Tests that a component renders without testing anything specific
+it('renders', () => {
+  render(<Component />);
+  // No assertions about what was rendered
+});
+```
+
+### Good Test Patterns
+- Test user-visible behavior and interactions
+- Test error states and edge cases
+- Test that correct data is displayed
+- Test that user actions trigger expected effects
+
+```tsx
+// GOOD: Tests actual user behavior
+it('displays error when API fails', async () => {
+  vi.mocked(api.getData).mockRejectedValue(new Error('Network error'));
+  render(<Component />);
+  await waitFor(() => {
+    expect(screen.getByText('Network error')).toBeInTheDocument();
+  });
+});
+
+// GOOD: Tests user interaction
+it('submits form when button clicked', async () => {
+  const user = userEvent.setup();
+  render(<Form />);
+  await user.type(screen.getByLabelText('Name'), 'Test');
+  await user.click(screen.getByRole('button', { name: /submit/i }));
+  expect(api.submitForm).toHaveBeenCalledWith({ name: 'Test' });
+});
+```
+
+### Test Organization
+- Group related tests in `describe` blocks
+- Use clear, descriptive test names
+- Keep tests focused on single behaviors
+- Prefer testing public API over implementation details
