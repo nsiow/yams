@@ -142,7 +142,7 @@ export function OverlaySelector({
                   <IconLayersLinked size={14} color="var(--mantine-color-violet-6)" />
                   <Text size="sm" fw={500}>{overlay.name}</Text>
                   <Text size="xs" c="dimmed">
-                    {overlay.numPrincipals} Principals · {overlay.numResources} Resources · {overlay.numPolicies} Policies
+                    {overlay.numPrincipals} {overlay.numPrincipals === 1 ? 'Principal' : 'Principals'} · {overlay.numResources} {overlay.numResources === 1 ? 'Resource' : 'Resources'} · {overlay.numPolicies} {overlay.numPolicies === 1 ? 'Policy' : 'Policies'}
                   </Text>
                 </Group>
                 <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => toggleOverlay(id)}>
