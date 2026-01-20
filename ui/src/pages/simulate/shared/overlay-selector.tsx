@@ -17,7 +17,7 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
-import { IconLayersLinked, IconPlus, IconSearch, IconX } from '@tabler/icons-react';
+import { IconCheck, IconLayersLinked, IconPlus, IconSearch, IconX } from '@tabler/icons-react';
 import { yamsApi } from '../../../lib/api';
 import type { OverlaySummary, OverlayData, SimulationOverlay } from '../../../lib/api';
 import { formatRelativeTime } from './utils';
@@ -179,6 +179,7 @@ export function OverlaySelector({
               variant="subtle"
               size="xs"
               color="gray"
+              leftSection={<IconCheck size={14} />}
               onClick={() => {
                 setShowOverlaySelector(false);
                 setOverlaySearchQuery('');

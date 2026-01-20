@@ -76,6 +76,7 @@ function formatTimestamp(timestamp: string): string {
 export function HomePage(): JSX.Element {
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [healthy, setHealthy] = useState<boolean | null>(null);
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -90,6 +91,7 @@ export function HomePage(): JSX.Element {
         .then(() => true)
         .catch(() => false);
       setHealthy(healthResult);
+      setLastChecked(new Date());
 
       // Then fetch status
       const statusResult = await yamsApi.status();
@@ -99,6 +101,7 @@ export function HomePage(): JSX.Element {
       console.error('Failed to fetch status:', err);
       setError(err instanceof Error ? err.message : 'Failed to connect to server');
       setHealthy(false);
+      setLastChecked(new Date());
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -141,7 +144,7 @@ export function HomePage(): JSX.Element {
   return (
     <Container size="md" py="xl">
       <Stack gap="lg">
-        <Group justify="space-between" align="center">
+        <Group justify="space-between" align="flex-start">
           <Group>
             <Title order={1}>Dashboard</Title>
             <Tooltip label="Refresh">
@@ -155,7 +158,14 @@ export function HomePage(): JSX.Element {
               </ActionIcon>
             </Tooltip>
           </Group>
-          <StatusIndicator healthy={healthy ?? false} />
+          <Stack align="flex-end" gap={4}>
+            <StatusIndicator healthy={healthy ?? false} />
+            {lastChecked && (
+              <Text size="xs" c="dimmed">
+                Last checked: {lastChecked.toLocaleTimeString()}
+              </Text>
+            )}
+          </Stack>
         </Group>
 
         <Text c="dimmed">

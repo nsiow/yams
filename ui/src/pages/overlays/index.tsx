@@ -24,12 +24,14 @@ import { useDisclosure } from '@mantine/hooks';
 import { useDebouncedValue } from '@mantine/hooks';
 import { CodeHighlight } from '@mantine/code-highlight';
 import {
-  IconSearch,
-  IconLayersLinked,
+  IconCheck,
   IconChevronRight,
-  IconPlus,
-  IconTrash,
   IconEdit,
+  IconLayersLinked,
+  IconPlus,
+  IconSearch,
+  IconTrash,
+  IconX,
 } from '@tabler/icons-react';
 import { yamsApi } from '../../lib/api';
 import type { OverlaySummary, OverlayData } from '../../lib/api';
@@ -499,11 +501,12 @@ export function OverlaysPage(): JSX.Element {
             data-autofocus
           />
           <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={closeCreateModal}>Cancel</Button>
+            <Button variant="default" onClick={closeCreateModal} leftSection={<IconX size={16} />}>Cancel</Button>
             <Button
               onClick={handleCreateOverlay}
               loading={creating}
               disabled={!newOverlayName.trim()}
+              leftSection={<IconCheck size={16} />}
             >
               Create
             </Button>
@@ -516,8 +519,8 @@ export function OverlaysPage(): JSX.Element {
         <Stack gap="md">
           <Text>Are you sure you want to delete "{overlayToDelete?.name}"? This action cannot be undone.</Text>
           <Group justify="flex-end" gap="sm">
-            <Button variant="default" onClick={closeDeleteModal}>Cancel</Button>
-            <Button color="red" onClick={handleDeleteOverlay} loading={deleting}>
+            <Button variant="default" onClick={closeDeleteModal} leftSection={<IconX size={16} />}>Cancel</Button>
+            <Button color="red" onClick={handleDeleteOverlay} loading={deleting} leftSection={<IconTrash size={16} />}>
               Delete
             </Button>
           </Group>

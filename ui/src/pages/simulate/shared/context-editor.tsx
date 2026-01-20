@@ -10,7 +10,7 @@ import {
   TextInput,
   Title,
 } from '@mantine/core';
-import { IconPlus, IconX } from '@tabler/icons-react';
+import { IconPlus, IconPlayerPlay, IconX } from '@tabler/icons-react';
 
 export interface ContextVariable {
   key: string;
@@ -84,7 +84,7 @@ export function ContextEditor({
             </Group>
           ))}
           {showRerunButton && onRerun && (
-            <Button size="xs" variant="light" onClick={onRerun} mt="xs">
+            <Button size="xs" variant="light" onClick={onRerun} mt="xs" leftSection={<IconPlayerPlay size={14} />}>
               Re-run Simulation
             </Button>
           )}

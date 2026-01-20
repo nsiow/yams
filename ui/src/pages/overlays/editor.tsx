@@ -26,14 +26,15 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { useDisclosure } from '@mantine/hooks';
 import {
   IconAlertCircle,
-  IconChevronRight,
-  IconPlus,
-  IconDeviceFloppy,
-  IconUser,
-  IconDatabase,
-  IconShield,
   IconBuilding,
+  IconCheck,
+  IconChevronRight,
+  IconDatabase,
+  IconDeviceFloppy,
+  IconPlus,
   IconSearch,
+  IconShield,
+  IconUser,
   IconX,
 } from '@tabler/icons-react';
 import { yamsApi } from '../../lib/api';
@@ -286,8 +287,8 @@ function AddEntityModal({ opened, onClose, entityType, onAdd, existingArns }: Ad
             {selectedArns.size} selected
           </Text>
           <Group gap="sm">
-            <Button variant="default" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleAdd} disabled={selectedArns.size === 0}>
+            <Button variant="default" onClick={onClose} leftSection={<IconX size={16} />}>Cancel</Button>
+            <Button onClick={handleAdd} disabled={selectedArns.size === 0} leftSection={<IconCheck size={16} />}>
               Add {selectedArns.size > 0 ? `(${selectedArns.size})` : ''}
             </Button>
           </Group>

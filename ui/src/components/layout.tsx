@@ -9,8 +9,15 @@ import {
   Stack,
   Text,
   Title,
+  useMantineColorScheme,
 } from '@mantine/core';
-import { IconChevronDown } from '@tabler/icons-react';
+import {
+  IconChevronDown,
+  IconFlask,
+  IconLayersSubtract,
+  IconSearch,
+  IconServer,
+} from '@tabler/icons-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 interface NavItem {
@@ -20,18 +27,21 @@ interface NavItem {
 
 interface NavSection {
   title: string;
+  icon: React.ComponentType<{ size?: number | string }>;
   items: NavItem[];
 }
 
 const navSections: NavSection[] = [
   {
     title: 'Server',
+    icon: IconServer,
     items: [
       { label: 'Status', path: '/' },
     ],
   },
   {
     title: 'Explore',
+    icon: IconSearch,
     items: [
       { label: 'Accounts', path: '/search/accounts' },
       { label: 'Principals', path: '/search/principals' },
@@ -42,6 +52,7 @@ const navSections: NavSection[] = [
   },
   {
     title: 'Simulate',
+    icon: IconFlask,
     items: [
       { label: 'Access Check', path: '/simulate/access' },
       { label: 'Which Principals', path: '/simulate/which-principals' },
@@ -51,6 +62,7 @@ const navSections: NavSection[] = [
   },
   {
     title: 'Overlays',
+    icon: IconLayersSubtract,
     items: [
       { label: 'Manage', path: '/overlays' },
       { label: 'Editor', path: '/overlays/new/edit' },
@@ -61,6 +73,7 @@ const navSections: NavSection[] = [
 export function Layout(): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
+  const { setColorScheme } = useMantineColorScheme();
 
   return (
     <AppShell
@@ -86,20 +99,42 @@ export function Layout(): JSX.Element {
               UI Preview
             </Badge>
           </Group>
-          <Menu shadow="md" width={200}>
-            <Menu.Target>
-              <Button variant="subtle" c="white" rightSection={<IconChevronDown size={16} />}>Docs</Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item
-                component="a"
-                href="https://nsiow.github.io/yams/"
-                target="_blank"
-              >
-                API Documentation
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
+          <Group gap="md" align="center">
+            <Group gap="xs" align="center">
+              <Badge color="green" size="xs" circle />
+              <Text size="sm" c="white" ff="monospace" style={{ opacity: 0.9 }}>localhost:8888</Text>
+            </Group>
+            <Menu shadow="md" width={150}>
+              <Menu.Target>
+                <Button variant="subtle" c="white" rightSection={<IconChevronDown size={16} />}>Theme</Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item onClick={() => setColorScheme('light')}>
+                  Light
+                </Menu.Item>
+                <Menu.Item onClick={() => setColorScheme('dark')}>
+                  Dark
+                </Menu.Item>
+                <Menu.Item onClick={() => setColorScheme('auto')}>
+                  System
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+            <Menu shadow="md" width={200}>
+              <Menu.Target>
+                <Button variant="subtle" c="white" rightSection={<IconChevronDown size={16} />}>Docs</Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  component="a"
+                  href="https://nsiow.github.io/yams/"
+                  target="_blank"
+                >
+                  API Documentation
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
         </Group>
       </AppShell.Header>
 
@@ -107,9 +142,14 @@ export function Layout(): JSX.Element {
         <Stack gap="lg">
           {navSections.map((section) => (
             <div key={section.title}>
-              <Text size="xs" c="dimmed" tt="uppercase" fw={700} mb="xs">
-                {section.title}
-              </Text>
+              <Group gap={6} mb="xs">
+                <Box style={{ opacity: 0.6 }}>
+                  <section.icon size={14} />
+                </Box>
+                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+                  {section.title}
+                </Text>
+              </Group>
               {section.items.map((item) => {
                 // Special handling: any /overlays/*/edit path should highlight Editor
                 const isOverlayEditor = /^\/overlays\/[^/]+\/edit$/.test(location.pathname);

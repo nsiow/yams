@@ -11,6 +11,9 @@ import {
   Divider,
   Grid,
   Group,
+  Image,
+  Indicator,
+  Menu,
   Paper,
   ScrollArea,
   SegmentedControl,
@@ -25,16 +28,26 @@ import {
 } from '@mantine/core';
 import {
   IconArrowRight,
+  IconBell,
   IconCheck,
   IconChevronDown,
   IconChevronRight,
+  IconCircleCheck,
+  IconCircleX,
+  IconClock,
   IconDeviceFloppy,
   IconExternalLink,
   IconFlask,
   IconGripVertical,
+  IconLayersSubtract,
+  IconMoon,
   IconPlayerPlay,
   IconPlus,
+  IconRefresh,
   IconSearch,
+  IconServer,
+  IconShieldCheck,
+  IconShieldX,
   IconTestPipe,
   IconTrash,
   IconUser,
@@ -46,6 +59,7 @@ import {
   IconEye,
   IconFocus2,
   IconAnalyze,
+  IconAlertTriangle,
 } from '@tabler/icons-react';
 
 // Sample data for editor previews
@@ -893,10 +907,618 @@ const simulateIconOptions = [
   { name: 'Analyze', icon: IconAnalyze, description: 'Analyze - data analysis theme' },
 ];
 
+// Topbar preview components
+interface TopbarPreview {
+  name: string;
+  label: string;
+  description: string;
+  render: () => JSX.Element;
+}
+
+function TopbarBase({ children, rightSection }: { children?: React.ReactNode; rightSection?: React.ReactNode }): JSX.Element {
+  return (
+    <Box bg="purple.6" p="md" style={{ borderRadius: 8 }}>
+      <Group h={44} justify="space-between">
+        <Group>
+          <Group gap="sm">
+            <Image src="/apple-touch-icon.png" w={44} h={44} />
+            <Title order={3} c="white" ff="'Urbanist', sans-serif" fz="xl" style={{ letterSpacing: '0.15em' }}>
+              yams
+            </Title>
+          </Group>
+          {children}
+        </Group>
+        <Group gap="md">
+          {rightSection}
+          <Menu shadow="md" width={200}>
+            <Menu.Target>
+              <Button variant="subtle" c="white" rightSection={<IconChevronDown size={16} />}>Docs</Button>
+            </Menu.Target>
+          </Menu>
+        </Group>
+      </Group>
+    </Box>
+  );
+}
+
+const topbarPreviews: TopbarPreview[] = [
+  {
+    name: '1',
+    label: 'Health Indicator',
+    description: 'Simple green/red dot showing server connection status. Minimal and unobtrusive.',
+    render: () => (
+      <TopbarBase rightSection={
+        <Tooltip label="Server healthy">
+          <Badge color="green" variant="dot" size="lg" c="white">Connected</Badge>
+        </Tooltip>
+      } />
+    ),
+  },
+  {
+    name: '2',
+    label: 'Entity Counts',
+    description: 'Quick overview of loaded data. Helps users know data is loaded without visiting dashboard.',
+    render: () => (
+      <TopbarBase rightSection={
+        <Group gap="xs">
+          <Badge variant="light" color="gray" size="sm">20 principals</Badge>
+          <Badge variant="light" color="gray" size="sm">53 resources</Badge>
+          <Badge variant="light" color="gray" size="sm">4 accounts</Badge>
+        </Group>
+      } />
+    ),
+  },
+  {
+    name: '3',
+    label: 'Global Search',
+    description: 'Search across all entity types from anywhere. Power user feature for quick navigation.',
+    render: () => (
+      <TopbarBase>
+        <TextInput
+          placeholder="Search principals, resources, policies..."
+          leftSection={<IconSearch size={16} />}
+          size="sm"
+          w={300}
+          styles={{ input: { backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', '::placeholder': { color: 'rgba(255,255,255,0.6)' } } }}
+        />
+      </TopbarBase>
+    ),
+  },
+  {
+    name: '4',
+    label: 'Active Overlay Badge',
+    description: 'Show when an overlay is active for simulations. Important context for "what-if" scenarios.',
+    render: () => (
+      <TopbarBase>
+        <Badge
+          color="pink"
+          variant="filled"
+          leftSection={<IconLayersSubtract size={12} />}
+          style={{ cursor: 'pointer' }}
+        >
+          Overlay: My Test Scenario
+        </Badge>
+      </TopbarBase>
+    ),
+  },
+  {
+    name: '5',
+    label: 'Quick Simulation Button',
+    description: 'One-click access to start a new simulation. Reduces navigation for common workflow.',
+    render: () => (
+      <TopbarBase rightSection={
+        <Button variant="white" color="purple" size="sm" leftSection={<IconFlask size={16} />}>
+          New Simulation
+        </Button>
+      } />
+    ),
+  },
+  {
+    name: '6',
+    label: 'Theme Toggle',
+    description: 'Dark/light mode switch. Good for users working in different environments.',
+    render: () => (
+      <TopbarBase rightSection={
+        <ActionIcon variant="subtle" c="white" size="lg">
+          <IconMoon size={20} />
+        </ActionIcon>
+      } />
+    ),
+  },
+  {
+    name: '7',
+    label: 'Notifications Bell',
+    description: 'Alert users to stale data sources or other issues. Proactive problem awareness.',
+    render: () => (
+      <TopbarBase rightSection={
+        <Indicator color="red" size={8} offset={4}>
+          <ActionIcon variant="subtle" c="white" size="lg">
+            <IconBell size={20} />
+          </ActionIcon>
+        </Indicator>
+      } />
+    ),
+  },
+  {
+    name: '8',
+    label: 'Server Address',
+    description: 'Show connected server address. Useful when working with multiple environments.',
+    render: () => (
+      <TopbarBase rightSection={
+        <Group gap="xs">
+          <IconServer size={16} color="white" />
+          <Text size="sm" c="white" ff="monospace">localhost:8888</Text>
+          <Badge color="green" size="xs">●</Badge>
+        </Group>
+      } />
+    ),
+  },
+  {
+    name: '9',
+    label: 'Combo: Health + Overlay',
+    description: 'Combined view showing both connection status and active overlay context.',
+    render: () => (
+      <TopbarBase rightSection={
+        <Group gap="md">
+          <Badge
+            color="pink"
+            variant="filled"
+            leftSection={<IconLayersSubtract size={12} />}
+            rightSection={<IconX size={10} style={{ cursor: 'pointer' }} />}
+          >
+            Test Overlay
+          </Badge>
+          <Tooltip label="Server healthy • 3 sources loaded">
+            <Badge color="green" variant="dot" size="lg" c="white">
+              <IconCircleCheck size={14} />
+            </Badge>
+          </Tooltip>
+        </Group>
+      } />
+    ),
+  },
+  {
+    name: '10',
+    label: 'Combo: Search + Status',
+    description: 'Global search with compact status indicator. Balanced utility and information.',
+    render: () => (
+      <TopbarBase>
+        <TextInput
+          placeholder="Search..."
+          leftSection={<IconSearch size={16} />}
+          size="sm"
+          w={250}
+          styles={{ input: { backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white' } }}
+        />
+        <Group gap="xs" ml="md">
+          <Badge size="xs" variant="light" color="gray">20P</Badge>
+          <Badge size="xs" variant="light" color="gray">53R</Badge>
+        </Group>
+      </TopbarBase>
+    ),
+  },
+  {
+    name: '11',
+    label: 'Combo: Full Featured',
+    description: 'Everything: search, overlay status, notifications, and settings. Maximum functionality.',
+    render: () => (
+      <TopbarBase>
+        <TextInput
+          placeholder="Search..."
+          leftSection={<IconSearch size={16} />}
+          size="sm"
+          w={200}
+          styles={{ input: { backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white' } }}
+        />
+        <Badge color="pink" variant="filled" size="sm" ml="sm" leftSection={<IconLayersSubtract size={10} />}>
+          Overlay Active
+        </Badge>
+      </TopbarBase>
+      ),
+  },
+  {
+    name: '12',
+    label: 'Stale Data Warning',
+    description: 'Prominent warning when data sources are stale. Prevents decisions based on outdated info.',
+    render: () => (
+      <TopbarBase rightSection={
+        <Tooltip label="2 data sources are more than 1 hour old">
+          <Badge color="yellow" variant="filled" leftSection={<IconAlertTriangle size={12} />}>
+            Stale Data
+          </Badge>
+        </Tooltip>
+      } />
+    ),
+  },
+];
+
 export function PreviewPage(): JSX.Element {
   return (
     <Container size="xl" py="xl">
       <Stack gap="xl">
+        {/* Topbar Enhancement Options */}
+        <div>
+          <Title order={1} mb="xs">Topbar Enhancement Options</Title>
+          <Text c="dimmed" mb="md">
+            Ideas for what could be added to the topbar. These can be combined or used individually.
+          </Text>
+        </div>
+
+        <Stack gap="xl">
+          {topbarPreviews.map((preview) => (
+            <Card key={preview.name} padding="lg" withBorder>
+              <Stack gap="md">
+                <Group justify="space-between">
+                  <div>
+                    <Group gap="xs">
+                      <Badge size="lg" variant="filled" color="grape">{preview.name}</Badge>
+                      <Text fw={700} size="lg">{preview.label}</Text>
+                    </Group>
+                    <Text size="sm" c="dimmed" mt={4}>{preview.description}</Text>
+                  </div>
+                </Group>
+                <Box>
+                  {preview.render()}
+                </Box>
+              </Stack>
+            </Card>
+          ))}
+        </Stack>
+
+        <Divider my="xl" />
+
+        {/* Status Pill Styles */}
+        <div>
+          <Title order={1} mb="xs">Status Pill Styles</Title>
+          <Text c="dimmed" mb="md">
+            Different visual styles for status indicators: Healthy/Unhealthy, Fresh/Stale, Allow/Deny.
+          </Text>
+        </div>
+
+        <Stack gap="xl">
+          {/* Style 1: Filled Badges (Current) */}
+          <Card padding="lg" withBorder>
+            <Stack gap="md">
+              <Group gap="xs">
+                <Badge size="lg" variant="filled" color="teal">1</Badge>
+                <Text fw={700} size="lg">Filled Badges (Current)</Text>
+              </Group>
+              <Text size="sm" c="dimmed">Solid background with white text. High contrast and visibility.</Text>
+              <Group gap="xl">
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Health</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="filled" size="lg">Healthy</Badge>
+                    <Badge color="red" variant="filled" size="lg">Unhealthy</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Data Freshness</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="filled" size="lg">Fresh</Badge>
+                    <Badge color="yellow" variant="filled" size="lg">Stale</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Simulation Result</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="filled" size="lg">ALLOW</Badge>
+                    <Badge color="red" variant="filled" size="lg">DENY</Badge>
+                  </Group>
+                </Stack>
+              </Group>
+            </Stack>
+          </Card>
+
+          {/* Style 2: Light/Subtle Badges */}
+          <Card padding="lg" withBorder>
+            <Stack gap="md">
+              <Group gap="xs">
+                <Badge size="lg" variant="filled" color="teal">2</Badge>
+                <Text fw={700} size="lg">Light/Subtle Badges</Text>
+              </Group>
+              <Text size="sm" c="dimmed">Tinted background with colored text. Softer, less aggressive.</Text>
+              <Group gap="xl">
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Health</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="light" size="lg">Healthy</Badge>
+                    <Badge color="red" variant="light" size="lg">Unhealthy</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Data Freshness</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="light" size="lg">Fresh</Badge>
+                    <Badge color="yellow" variant="light" size="lg">Stale</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Simulation Result</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="light" size="lg">ALLOW</Badge>
+                    <Badge color="red" variant="light" size="lg">DENY</Badge>
+                  </Group>
+                </Stack>
+              </Group>
+            </Stack>
+          </Card>
+
+          {/* Style 3: Outline Badges */}
+          <Card padding="lg" withBorder>
+            <Stack gap="md">
+              <Group gap="xs">
+                <Badge size="lg" variant="filled" color="teal">3</Badge>
+                <Text fw={700} size="lg">Outline Badges</Text>
+              </Group>
+              <Text size="sm" c="dimmed">Colored border with colored text. Minimal, clean look.</Text>
+              <Group gap="xl">
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Health</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="outline" size="lg">Healthy</Badge>
+                    <Badge color="red" variant="outline" size="lg">Unhealthy</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Data Freshness</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="outline" size="lg">Fresh</Badge>
+                    <Badge color="orange" variant="outline" size="lg">Stale</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Simulation Result</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="outline" size="lg">ALLOW</Badge>
+                    <Badge color="red" variant="outline" size="lg">DENY</Badge>
+                  </Group>
+                </Stack>
+              </Group>
+            </Stack>
+          </Card>
+
+          {/* Style 4: Dot Indicator */}
+          <Card padding="lg" withBorder>
+            <Stack gap="md">
+              <Group gap="xs">
+                <Badge size="lg" variant="filled" color="teal">4</Badge>
+                <Text fw={700} size="lg">Dot Indicator</Text>
+              </Group>
+              <Text size="sm" c="dimmed">Small colored dot next to text. Compact and unobtrusive.</Text>
+              <Group gap="xl">
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Health</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="dot" size="lg">Healthy</Badge>
+                    <Badge color="red" variant="dot" size="lg">Unhealthy</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Data Freshness</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="dot" size="lg">Fresh</Badge>
+                    <Badge color="yellow" variant="dot" size="lg">Stale</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Simulation Result</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="dot" size="lg">ALLOW</Badge>
+                    <Badge color="red" variant="dot" size="lg">DENY</Badge>
+                  </Group>
+                </Stack>
+              </Group>
+            </Stack>
+          </Card>
+
+          {/* Style 5: Icon + Text */}
+          <Card padding="lg" withBorder>
+            <Stack gap="md">
+              <Group gap="xs">
+                <Badge size="lg" variant="filled" color="teal">5</Badge>
+                <Text fw={700} size="lg">Icon + Text</Text>
+              </Group>
+              <Text size="sm" c="dimmed">Icon reinforces meaning. Good for quick scanning.</Text>
+              <Group gap="xl">
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Health</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="filled" size="lg" leftSection={<IconCircleCheck size={14} />}>Healthy</Badge>
+                    <Badge color="red" variant="filled" size="lg" leftSection={<IconCircleX size={14} />}>Unhealthy</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Data Freshness</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="filled" size="lg" leftSection={<IconCheck size={14} />}>Fresh</Badge>
+                    <Badge color="yellow" variant="filled" size="lg" leftSection={<IconClock size={14} />}>Stale</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Simulation Result</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="filled" size="lg" leftSection={<IconShieldCheck size={14} />}>ALLOW</Badge>
+                    <Badge color="red" variant="filled" size="lg" leftSection={<IconShieldX size={14} />}>DENY</Badge>
+                  </Group>
+                </Stack>
+              </Group>
+            </Stack>
+          </Card>
+
+          {/* Style 6: Icon Only */}
+          <Card padding="lg" withBorder>
+            <Stack gap="md">
+              <Group gap="xs">
+                <Badge size="lg" variant="filled" color="teal">6</Badge>
+                <Text fw={700} size="lg">Icon Only</Text>
+              </Group>
+              <Text size="sm" c="dimmed">Just icons, maximum density. Tooltip for details.</Text>
+              <Group gap="xl">
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Health</Text>
+                  <Group gap="sm">
+                    <Tooltip label="Healthy"><Box><IconCircleCheck size={24} color="var(--mantine-color-green-6)" /></Box></Tooltip>
+                    <Tooltip label="Unhealthy"><Box><IconCircleX size={24} color="var(--mantine-color-red-6)" /></Box></Tooltip>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Data Freshness</Text>
+                  <Group gap="sm">
+                    <Tooltip label="Fresh"><Box><IconRefresh size={24} color="var(--mantine-color-green-6)" /></Box></Tooltip>
+                    <Tooltip label="Stale"><Box><IconClock size={24} color="var(--mantine-color-yellow-6)" /></Box></Tooltip>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Simulation Result</Text>
+                  <Group gap="sm">
+                    <Tooltip label="ALLOW"><Box><IconShieldCheck size={24} color="var(--mantine-color-green-6)" /></Box></Tooltip>
+                    <Tooltip label="DENY"><Box><IconShieldX size={24} color="var(--mantine-color-red-6)" /></Box></Tooltip>
+                  </Group>
+                </Stack>
+              </Group>
+            </Stack>
+          </Card>
+
+          {/* Style 7: Pill with Glow */}
+          <Card padding="lg" withBorder>
+            <Stack gap="md">
+              <Group gap="xs">
+                <Badge size="lg" variant="filled" color="teal">7</Badge>
+                <Text fw={700} size="lg">Pill with Glow/Shadow</Text>
+              </Group>
+              <Text size="sm" c="dimmed">Subtle shadow/glow effect. Adds depth and emphasis.</Text>
+              <Group gap="xl">
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Health</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="filled" size="lg" style={{ boxShadow: '0 0 8px var(--mantine-color-green-4)' }}>Healthy</Badge>
+                    <Badge color="red" variant="filled" size="lg" style={{ boxShadow: '0 0 8px var(--mantine-color-red-4)' }}>Unhealthy</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Data Freshness</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="filled" size="lg" style={{ boxShadow: '0 0 8px var(--mantine-color-green-4)' }}>Fresh</Badge>
+                    <Badge color="yellow" variant="filled" size="lg" style={{ boxShadow: '0 0 8px var(--mantine-color-yellow-4)' }}>Stale</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Simulation Result</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="filled" size="lg" style={{ boxShadow: '0 0 8px var(--mantine-color-green-4)' }}>ALLOW</Badge>
+                    <Badge color="red" variant="filled" size="lg" style={{ boxShadow: '0 0 8px var(--mantine-color-red-4)' }}>DENY</Badge>
+                  </Group>
+                </Stack>
+              </Group>
+            </Stack>
+          </Card>
+
+          {/* Style 8: Rounded Square */}
+          <Card padding="lg" withBorder>
+            <Stack gap="md">
+              <Group gap="xs">
+                <Badge size="lg" variant="filled" color="teal">8</Badge>
+                <Text fw={700} size="lg">Rounded Square</Text>
+              </Group>
+              <Text size="sm" c="dimmed">Less rounded corners for a more modern/sharp look.</Text>
+              <Group gap="xl">
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Health</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="filled" size="lg" radius="sm">Healthy</Badge>
+                    <Badge color="red" variant="filled" size="lg" radius="sm">Unhealthy</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Data Freshness</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="filled" size="lg" radius="sm">Fresh</Badge>
+                    <Badge color="yellow" variant="filled" size="lg" radius="sm">Stale</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Simulation Result</Text>
+                  <Group gap="sm">
+                    <Badge color="green" variant="filled" size="lg" radius="sm">ALLOW</Badge>
+                    <Badge color="red" variant="filled" size="lg" radius="sm">DENY</Badge>
+                  </Group>
+                </Stack>
+              </Group>
+            </Stack>
+          </Card>
+
+          {/* Style 9: Text with Background Block */}
+          <Card padding="lg" withBorder>
+            <Stack gap="md">
+              <Group gap="xs">
+                <Badge size="lg" variant="filled" color="teal">9</Badge>
+                <Text fw={700} size="lg">Text Block</Text>
+              </Group>
+              <Text size="sm" c="dimmed">Plain text with colored background block. Simple and direct.</Text>
+              <Group gap="xl">
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Health</Text>
+                  <Group gap="sm">
+                    <Box px="md" py={4} bg="green.1" style={{ borderRadius: 4 }}><Text size="sm" fw={600} c="green.8">Healthy</Text></Box>
+                    <Box px="md" py={4} bg="red.1" style={{ borderRadius: 4 }}><Text size="sm" fw={600} c="red.8">Unhealthy</Text></Box>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Data Freshness</Text>
+                  <Group gap="sm">
+                    <Box px="md" py={4} bg="green.1" style={{ borderRadius: 4 }}><Text size="sm" fw={600} c="green.8">Fresh</Text></Box>
+                    <Box px="md" py={4} bg="yellow.1" style={{ borderRadius: 4 }}><Text size="sm" fw={600} c="yellow.8">Stale</Text></Box>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Simulation Result</Text>
+                  <Group gap="sm">
+                    <Box px="md" py={4} bg="green.1" style={{ borderRadius: 4 }}><Text size="sm" fw={600} c="green.8">ALLOW</Text></Box>
+                    <Box px="md" py={4} bg="red.1" style={{ borderRadius: 4 }}><Text size="sm" fw={600} c="red.8">DENY</Text></Box>
+                  </Group>
+                </Stack>
+              </Group>
+            </Stack>
+          </Card>
+
+          {/* Style 10: Gradient Badge */}
+          <Card padding="lg" withBorder>
+            <Stack gap="md">
+              <Group gap="xs">
+                <Badge size="lg" variant="filled" color="teal">10</Badge>
+                <Text fw={700} size="lg">Gradient Badge</Text>
+              </Group>
+              <Text size="sm" c="dimmed">Gradient background for a more dynamic look. Eye-catching.</Text>
+              <Group gap="xl">
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Health</Text>
+                  <Group gap="sm">
+                    <Badge size="lg" variant="gradient" gradient={{ from: 'teal', to: 'green', deg: 90 }}>Healthy</Badge>
+                    <Badge size="lg" variant="gradient" gradient={{ from: 'orange', to: 'red', deg: 90 }}>Unhealthy</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Data Freshness</Text>
+                  <Group gap="sm">
+                    <Badge size="lg" variant="gradient" gradient={{ from: 'teal', to: 'green', deg: 90 }}>Fresh</Badge>
+                    <Badge size="lg" variant="gradient" gradient={{ from: 'yellow', to: 'orange', deg: 90 }}>Stale</Badge>
+                  </Group>
+                </Stack>
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed" tt="uppercase" fw={600}>Simulation Result</Text>
+                  <Group gap="sm">
+                    <Badge size="lg" variant="gradient" gradient={{ from: 'teal', to: 'lime', deg: 90 }}>ALLOW</Badge>
+                    <Badge size="lg" variant="gradient" gradient={{ from: 'pink', to: 'red', deg: 90 }}>DENY</Badge>
+                  </Group>
+                </Stack>
+              </Group>
+            </Stack>
+          </Card>
+        </Stack>
+
+        <Divider my="xl" />
+
         {/* Simulate Icon Options */}
         <div>
           <Title order={1} mb="xs">Simulate Column Icon Options</Title>

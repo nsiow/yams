@@ -32,6 +32,7 @@ import {
   IconChevronRight,
   IconCheck,
   IconOctagonFilled,
+  IconPlayerPlay,
   IconPlus,
   IconX,
   IconSearch,
@@ -1016,6 +1017,7 @@ export function AccessCheckPage(): JSX.Element {
                   variant="subtle"
                   size="xs"
                   color="gray"
+                  leftSection={<IconCheck size={14} />}
                   onClick={() => {
                     setShowOverlaySelector(false);
                     setOverlaySearchQuery('');
@@ -1153,7 +1155,7 @@ export function AccessCheckPage(): JSX.Element {
                 </Group>
               ))}
               {allSelected && (
-                <Button size="xs" variant="light" onClick={runSimulation} mt="xs">
+                <Button size="xs" variant="light" onClick={runSimulation} mt="xs" leftSection={<IconPlayerPlay size={14} />}>
                   Re-run Simulation
                 </Button>
               )}

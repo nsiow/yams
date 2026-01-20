@@ -9,7 +9,7 @@ import { theme } from './theme';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <MantineProvider theme={theme}>
+      <MantineProvider theme={theme} defaultColorScheme="light">
         <App />
       </MantineProvider>
     </BrowserRouter>

@@ -37,4 +37,21 @@ export const theme = createTheme({
   headings: {
     fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
+  components: {
+    Button: {
+      defaultProps: {
+        radius: 'sm',
+      },
+    },
+    ActionIcon: {
+      defaultProps: {
+        radius: 'sm',
+      },
+    },
+    Badge: {
+      defaultProps: {
+        radius: 'sm',
+      },
+    },
+  },
 });
