@@ -14,6 +14,8 @@ import (
 
 // Logic for the "sim" subcommand
 func Run(opts *cli.Flags) {
+	cli.RequireServer(opts.Server)
+
 	havePrincipal := opts.Principal != ""
 	haveAction := opts.Action != ""
 	haveResource := opts.Resource != ""
