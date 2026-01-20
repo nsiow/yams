@@ -358,7 +358,7 @@ export function WhichActionsPage(): JSX.Element {
               <Table striped highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th style={{ width: 40 }}></Table.Th>
+                    <Table.Th style={{ width: 60 }}></Table.Th>
                     <Table.Th>Action</Table.Th>
                     <Table.Th style={{ width: 120 }}>Access Level</Table.Th>
                     <Table.Th style={{ width: 70 }}>Simulate</Table.Th>
@@ -374,15 +374,16 @@ export function WhichActionsPage(): JSX.Element {
                       <>
                         <Table.Tr key={action}>
                           <Table.Td>
-                            <Tooltip label={isExpanded ? 'Hide result' : 'Show simulation result'} openDelay={300}>
-                              <UnstyledButton onClick={() => toggleRow(action)}>
+                            <UnstyledButton onClick={() => toggleRow(action)}>
+                              <Group gap={4} wrap="nowrap">
                                 {isExpanded ? (
-                                  <IconChevronDown size={16} color="var(--mantine-color-dimmed)" />
+                                  <IconChevronDown size={14} color="var(--mantine-color-dimmed)" />
                                 ) : (
-                                  <IconChevronRight size={16} color="var(--mantine-color-dimmed)" />
+                                  <IconChevronRight size={14} color="var(--mantine-color-dimmed)" />
                                 )}
-                              </UnstyledButton>
-                            </Tooltip>
+                                <Text size="xs" c="dimmed">{isExpanded ? 'Hide' : 'Test'}</Text>
+                              </Group>
+                            </UnstyledButton>
                           </Table.Td>
                           <Table.Td>
                             <Anchor
