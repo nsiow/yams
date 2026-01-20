@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ActionIcon,
+  Alert,
   Anchor,
   Box,
   Breadcrumbs,
@@ -24,6 +25,7 @@ import {
 import { useDebouncedValue } from '@mantine/hooks';
 import { useDisclosure } from '@mantine/hooks';
 import {
+  IconAlertCircle,
   IconChevronRight,
   IconPlus,
   IconDeviceFloppy,
@@ -911,6 +913,19 @@ export function OverlayEditorPage(): JSX.Element {
         {/* Header row */}
         <Box>
           <Breadcrumbs separator={<IconChevronRight size={14} />} mb="md">{breadcrumbItems}</Breadcrumbs>
+
+          {/* Error alert */}
+          {error && (
+            <Alert
+              icon={<IconAlertCircle size={16} />}
+              color="red"
+              mb="md"
+              withCloseButton
+              onClose={() => setError(null)}
+            >
+              {error}
+            </Alert>
+          )}
 
           {/* Overlay selector row */}
           <Card withBorder p="md">

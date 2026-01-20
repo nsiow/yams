@@ -816,7 +816,10 @@ export function AccessCheckPage(): JSX.Element {
     }
   }, [selectedPrincipal, selectedAction, selectedResource, resourcelessActions, buildCombinedOverlay]);
 
-  // Auto-run simulation when required selections or overlays change
+  // Stable reference for context vars to include in dependency array
+  const contextVarsJson = JSON.stringify(contextVars);
+
+  // Auto-run simulation when required selections, overlays, or context vars change
   useEffect(() => {
     const needsResource = !resourcelessActions.has(selectedAction ?? '');
     const hasRequiredInputs = selectedPrincipal && selectedAction && (needsResource ? selectedResource : true);
@@ -826,7 +829,7 @@ export function AccessCheckPage(): JSX.Element {
       setResult(null);
       setError(null);
     }
-  }, [selectedPrincipal, selectedAction, selectedResource, resourcelessActions, runSimulation, selectedOverlayIds, loadedOverlays]);
+  }, [selectedPrincipal, selectedAction, selectedResource, resourcelessActions, runSimulation, selectedOverlayIds, loadedOverlays, contextVarsJson]);
 
   // Parse trace into tree
   const traceTree = useMemo(() => {

@@ -1069,7 +1069,7 @@ function PolicyFields({ entity, onChange }: PolicyFieldsProps): JSX.Element {
         <Box mt="sm">
           <PolicyEditor
             value={entity.Policy}
-            onChange={(policy) => update('Policy', policy!)}
+            onChange={(policy) => update('Policy', policy ?? { Version: '2012-10-17', Statement: [] })}
             height="400px"
           />
         </Box>
