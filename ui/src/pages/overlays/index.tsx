@@ -30,7 +30,6 @@ import {
   IconPlus,
   IconTrash,
   IconEdit,
-  IconEye,
 } from '@tabler/icons-react';
 import { yamsApi } from '../../lib/api';
 import type { OverlaySummary, OverlayData } from '../../lib/api';
@@ -100,6 +99,7 @@ export function OverlaysPage(): JSX.Element {
   // Delete confirmation modal
   const [deleteModalOpened, { open: openDeleteModal, close: closeDeleteModal }] = useDisclosure(false);
   const [deleting, setDeleting] = useState(false);
+  const [overlayToDelete, setOverlayToDelete] = useState<OverlaySummary | null>(null);
 
   // Search
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -180,15 +180,19 @@ export function OverlaysPage(): JSX.Element {
   };
 
   const handleDeleteOverlay = async (): Promise<void> => {
-    if (!selectedId) return;
+    if (!overlayToDelete) return;
     setDeleting(true);
     try {
-      await yamsApi.deleteOverlay(selectedId);
+      await yamsApi.deleteOverlay(overlayToDelete.id);
       await fetchOverlays();
-      setSelectedId(null);
-      setSelectedOverlay(null);
-      navigate('/overlays', { replace: true });
+      // Clear selection if the deleted overlay was selected
+      if (selectedId === overlayToDelete.id) {
+        setSelectedId(null);
+        setSelectedOverlay(null);
+        navigate('/overlays', { replace: true });
+      }
       closeDeleteModal();
+      setOverlayToDelete(null);
     } catch (err) {
       console.error('Failed to delete overlay:', err);
     } finally {
@@ -287,7 +291,7 @@ export function OverlaysPage(): JSX.Element {
                           <Table.Th style={{ width: 70, textAlign: 'center' }}>Resources</Table.Th>
                           <Table.Th style={{ width: 70, textAlign: 'center' }}>Policies</Table.Th>
                           <Table.Th style={{ width: 110 }}>Created</Table.Th>
-                          <Table.Th style={{ width: 90 }}>Actions</Table.Th>
+                          <Table.Th style={{ width: 50 }}></Table.Th>
                         </Table.Tr>
                       </Table.Thead>
                       <Table.Tbody>
@@ -321,40 +325,20 @@ export function OverlaysPage(): JSX.Element {
                               </Tooltip>
                             </Table.Td>
                             <Table.Td>
-                              <Group gap={4} wrap="nowrap" onClick={(e) => e.stopPropagation()}>
-                                <Tooltip label="View">
-                                  <ActionIcon
-                                    variant="subtle"
-                                    size="sm"
-                                    onClick={() => handleSelectOverlay(o.id)}
-                                  >
-                                    <IconEye size={14} />
-                                  </ActionIcon>
-                                </Tooltip>
-                                <Tooltip label="Edit">
-                                  <ActionIcon
-                                    variant="subtle"
-                                    size="sm"
-                                    onClick={() => navigate(`/overlays/${o.id}/edit`)}
-                                  >
-                                    <IconEdit size={14} />
-                                  </ActionIcon>
-                                </Tooltip>
-                                <Tooltip label="Delete">
-                                  <ActionIcon
-                                    variant="subtle"
-                                    color="red"
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedId(o.id);
-                                      setSelectedOverlay({ ...o, id: o.id, createdAt: o.createdAt } as OverlayData);
-                                      openDeleteModal();
-                                    }}
-                                  >
-                                    <IconTrash size={14} />
-                                  </ActionIcon>
-                                </Tooltip>
-                              </Group>
+                              <Tooltip label="Delete">
+                                <ActionIcon
+                                  variant="subtle"
+                                  color="red"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOverlayToDelete(o);
+                                    openDeleteModal();
+                                  }}
+                                >
+                                  <IconTrash size={14} />
+                                </ActionIcon>
+                              </Tooltip>
                             </Table.Td>
                           </Table.Tr>
                         ))}
@@ -530,7 +514,7 @@ export function OverlaysPage(): JSX.Element {
       {/* Delete Modal */}
       <Modal opened={deleteModalOpened} onClose={closeDeleteModal} title="Delete Overlay">
         <Stack gap="md">
-          <Text>Are you sure you want to delete "{selectedOverlay?.name}"? This action cannot be undone.</Text>
+          <Text>Are you sure you want to delete "{overlayToDelete?.name}"? This action cannot be undone.</Text>
           <Group justify="flex-end" gap="sm">
             <Button variant="default" onClick={closeDeleteModal}>Cancel</Button>
             <Button color="red" onClick={handleDeleteOverlay} loading={deleting}>
