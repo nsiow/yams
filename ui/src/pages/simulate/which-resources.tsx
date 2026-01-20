@@ -392,7 +392,7 @@ export function WhichResourcesPage(): JSX.Element {
                             >
                               {formatResourceLabel(resource)}
                             </Anchor>
-                            <Text size="xs" c="dimmed" ff="monospace" truncate style={{ maxWidth: 350 }}>
+                            <Text size="xs" c="dimmed" truncate style={{ maxWidth: 350 }}>
                               {resource}
                             </Text>
                           </Table.Td>

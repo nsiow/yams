@@ -396,7 +396,7 @@ export function WhichPrincipalsPage(): JSX.Element {
                                 {accountName} ({accountId})
                               </Text>
                             )}
-                            <Text size="xs" c="dimmed" ff="monospace" truncate style={{ maxWidth: 500 }}>
+                            <Text size="xs" c="dimmed" truncate style={{ maxWidth: 500 }}>
                               {principal}
                             </Text>
                           </Table.Td>
