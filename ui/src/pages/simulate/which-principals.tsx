@@ -391,14 +391,14 @@ export function WhichPrincipalsPage(): JSX.Element {
                             >
                               {formatPrincipalLabel(principal)}
                             </Anchor>
-                            <Text size="xs" c="dimmed" ff="monospace" truncate style={{ maxWidth: 500 }}>
-                              {principal}
-                            </Text>
                             {accountName && (
                               <Text size="xs" c="dimmed">
                                 {accountName} ({accountId})
                               </Text>
                             )}
+                            <Text size="xs" c="dimmed" ff="monospace" truncate style={{ maxWidth: 500 }}>
+                              {principal}
+                            </Text>
                           </Table.Td>
                           <Table.Td>
                             <Tooltip label="Simulate in Access Check">
