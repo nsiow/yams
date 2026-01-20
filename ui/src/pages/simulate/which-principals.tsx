@@ -17,14 +17,14 @@ import {
   Text,
   TextInput,
   Title,
-  Tooltip,
   UnstyledButton,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import {
+  IconArrowUpRight,
   IconCheck,
   IconChevronDown,
-  IconChevronRight,
+  IconChevronUp,
   IconFlask,
   IconOctagonFilled,
   IconSearch,
@@ -357,9 +357,14 @@ export function WhichPrincipalsPage(): JSX.Element {
               <Table striped highlightOnHover>
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th style={{ width: 60 }}></Table.Th>
+                    <Table.Th style={{ width: 50 }}></Table.Th>
                     <Table.Th>Principal</Table.Th>
-                    <Table.Th style={{ width: 70 }}>Simulate</Table.Th>
+                    <Table.Th style={{ width: 130 }}>
+                      <Group gap={4} wrap="nowrap">
+                        Go to Simulation
+                        <IconArrowUpRight size={14} />
+                      </Group>
+                    </Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -374,13 +379,13 @@ export function WhichPrincipalsPage(): JSX.Element {
                         <Table.Tr key={principal}>
                           <Table.Td>
                             <UnstyledButton onClick={() => toggleRow(principal)}>
-                              <Group gap={4} wrap="nowrap">
+                              <Group gap={2} wrap="nowrap">
                                 {isExpanded ? (
-                                  <IconChevronDown size={14} color="var(--mantine-color-dimmed)" />
+                                  <IconChevronUp size={14} color="var(--mantine-color-dimmed)" />
                                 ) : (
-                                  <IconChevronRight size={14} color="var(--mantine-color-dimmed)" />
+                                  <IconChevronDown size={14} color="var(--mantine-color-dimmed)" />
                                 )}
-                                <Text size="xs" c="dimmed">{isExpanded ? 'Hide' : 'Test'}</Text>
+                                <IconFlask size={14} color="var(--mantine-color-dimmed)" />
                               </Group>
                             </UnstyledButton>
                           </Table.Td>
@@ -402,18 +407,20 @@ export function WhichPrincipalsPage(): JSX.Element {
                             </Text>
                           </Table.Td>
                           <Table.Td>
-                            <Tooltip label="Simulate in Access Check">
-                              <Anchor
-                                component={Link}
-                                to={buildAccessCheckUrl({
-                                  principal,
-                                  action: selectedAction || undefined,
-                                  resource: selectedResource || undefined,
-                                })}
-                              >
-                                <IconFlask size={18} />
-                              </Anchor>
-                            </Tooltip>
+                            <Anchor
+                              component={Link}
+                              to={buildAccessCheckUrl({
+                                principal,
+                                action: selectedAction || undefined,
+                                resource: selectedResource || undefined,
+                              })}
+                              size="sm"
+                            >
+                              <Group gap={4} wrap="nowrap">
+                                Open
+                                <IconArrowUpRight size={14} />
+                              </Group>
+                            </Anchor>
                           </Table.Td>
                         </Table.Tr>
                         {isExpanded && (
