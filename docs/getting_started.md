@@ -42,6 +42,14 @@ yams server \
   -source testdata/real-world/org.jsonl
 ```
 
+Server options:
+
+- `-a/-addr`: Address and port to listen on (default: `:8888`)
+- `-s/-source`: Data source(s) to load (supports multiple)
+- `-r/-refresh`: Refresh interval in seconds for reloading sources (default: no refresh)
+- `-e/-env`: Environment variables to report in the `/status` endpoint
+- `-overlay`: Overlay store backend: `memory` (default) or `ddb://<table-name>` for DynamoDB
+
 - For information about configuring sources, see [Data Sources](./data_sources.md)
 - For information about generating data, see [Generating Data](./generating_data.md)
 

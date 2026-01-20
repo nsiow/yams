@@ -17,6 +17,8 @@ The inventorying commands for each **Entity** type follow the same common patter
   that Entity type
 - `yams <type> -k/-key <name/ARN>` will look up the **Entity** by its primary ID (typically ARN,
   name, or ID); exact match
+- `yams <type> -k <key> -f/-freeze` will resolve all references (e.g., attached policies) to a
+  snapshotted state, useful for creating overlays
 
 ### Command Aliases
 

@@ -24,6 +24,8 @@ both:
 
 - `-a/-aggregator` the name of the AWS Config aggregator to use
 - `-r/-rtype` the AWS Config resource type(s) that you would like to dump (allows multiple!)
+- `-o/-out` the output destination (file path or `s3://` URI)
+- `-n/-dry-run` show what would be done without executing
 
 
 ###### Examples

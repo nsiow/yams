@@ -227,6 +227,16 @@ ARN fragments into full **entity** ARNs.
 - If a single match is found, that ARN will be used
 - If multiple matches are found, **yams** will return an error
 
+To disable this behavior and require exact ARN matches, use the `-x/--exact` flag:
+
+```shell
+yams sim \
+  -p arn:aws:iam::777583092761:role/BlueRole \
+  -a sns.publish \
+  -r arn:aws:sns:us-east-1:213308312933:LemurTopic \
+  -x
+```
+
 The return value of the simulation will echo the full **Principal** and **Resource** ARNs used.
 
 **Example: Successful Autocomplete**
