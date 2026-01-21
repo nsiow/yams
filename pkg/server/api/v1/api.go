@@ -2,7 +2,10 @@ package v1
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/nsiow/yams/internal/common"
 	"github.com/nsiow/yams/pkg/aws/sar"
@@ -72,7 +75,14 @@ func (api *API) ListPrincipals(w http.ResponseWriter, req *http.Request) {
 }
 
 func (api *API) ListResources(w http.ResponseWriter, req *http.Request) {
-	List(w, req, api.Simulator.Universe.Resources)
+	keys := []string{}
+	for entity := range api.Simulator.Universe.Resources() {
+		keys = append(keys, entity.Key())
+	}
+	keys = expandS3Buckets(keys)
+	slog.Debug("serving up resources", "count", len(keys))
+	slices.Sort(keys)
+	httputil.WriteJsonResponse(w, req, keys)
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -96,7 +106,40 @@ func (api *API) SearchPrincipals(w http.ResponseWriter, req *http.Request) {
 }
 
 func (api *API) SearchResources(w http.ResponseWriter, req *http.Request) {
-	Search(w, req, api.Simulator.Universe.Resources)
+	search := strings.ToLower(req.PathValue("search"))
+	actionFilter := req.URL.Query().Get("action")
+
+	// Look up action for filtering if specified
+	var action *types.Action
+	if actionFilter != "" {
+		if a, ok := sar.LookupString(actionFilter); ok {
+			action = a
+		}
+	}
+
+	keys := []string{}
+	for entity := range api.Simulator.Universe.Resources() {
+		key := entity.Key()
+		if strings.Contains(strings.ToLower(key), search) {
+			keys = append(keys, key)
+		}
+	}
+	keys = expandS3Buckets(keys)
+
+	// Filter by action targeting if action was specified
+	if action != nil {
+		filtered := []string{}
+		for _, key := range keys {
+			if action.Targets(key) {
+				filtered = append(filtered, key)
+			}
+		}
+		keys = filtered
+	}
+
+	slog.Debug("serving up resources", "count", len(keys))
+	slices.Sort(keys)
+	httputil.WriteJsonResponse(w, req, keys)
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -129,4 +172,19 @@ func (api *API) SearchActions(w http.ResponseWriter, req *http.Request) {
 	actions := common.Map(results, func(in types.Action) string { return in.ShortName() })
 
 	httputil.WriteJsonResponse(w, req, actions)
+}
+
+// expandS3Buckets takes a list of resource ARNs and expands S3 bucket ARNs to include
+// a synthetic S3 object ARN. This enables simulating S3 object operations on buckets.
+func expandS3Buckets(keys []string) []string {
+	expanded := make([]string, 0, len(keys)*2)
+	for _, key := range keys {
+		expanded = append(expanded, key)
+		// S3 bucket ARNs: arn:aws:s3:::bucket-name (no slash)
+		// S3 object ARNs: arn:aws:s3:::bucket-name/key (has slash)
+		if strings.HasPrefix(key, "arn:aws:s3:::") && !strings.Contains(key, "/") {
+			expanded = append(expanded, key+"/object.txt")
+		}
+	}
+	return expanded
 }

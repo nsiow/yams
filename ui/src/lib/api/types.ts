@@ -213,6 +213,15 @@ export interface Group {
   AttachedPolicies?: string[];
 }
 
+// Action Targeting
+
+export interface ActionTargeting {
+  action: string;
+  arnFormats: string[];
+  customHandling?: string[];
+  hasTargets: boolean;
+}
+
 // API Error
 
 export interface ApiError {

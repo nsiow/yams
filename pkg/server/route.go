@@ -51,6 +51,7 @@ func (s *Server) addV1Routes(api *v1.API, overlayAPI *v1.OverlayAPI) {
 	s.mux.HandleFunc("GET /api/v1/utils/resources/accounts", api.UtilResourceAccounts)
 	s.mux.HandleFunc("GET /api/v1/utils/actions/resourceless", api.UtilResourcelessActions)
 	s.mux.HandleFunc("GET /api/v1/utils/actions/accesslevels", api.UtilActionAccessLevels)
+	s.mux.HandleFunc("GET /api/v1/utils/actions/targeting", api.UtilActionTargeting)
 
 	// overlays
 	s.mux.HandleFunc("GET /api/v1/overlays", overlayAPI.ListOverlays)

@@ -95,7 +95,7 @@ describe('WhichPrincipalsPage', () => {
     await user.type(resourceInput, 'bucket');
 
     await waitFor(() => {
-      expect(yamsApi.searchResources).toHaveBeenCalledWith('bucket');
+      expect(yamsApi.searchResources).toHaveBeenCalledWith('bucket', undefined);
     });
   });
 

@@ -43,7 +43,9 @@ import {
   formatResourceLabel,
   extractAccountId,
   buildAccessCheckUrl,
+  getSubresourceConfig,
 } from './shared';
+import { SubresourceEditor } from './shared/subresource-editor';
 import type { ContextVariable } from './shared';
 
 const RESULTS_PER_PAGE = 20;
@@ -129,7 +131,12 @@ export function WhichPrincipalsPage(): JSX.Element {
 
   // Search functions
   const searchActions = useCallback((query: string) => yamsApi.searchActions(query), []);
-  const searchResources = useCallback((query: string) => yamsApi.searchResources(query), []);
+  const searchResources = useCallback(
+    async (query: string): Promise<string[]> => {
+      return yamsApi.searchResources(query, selectedAction ?? undefined);
+    },
+    [selectedAction]
+  );
 
   // Run query when both action and resource are selected
   const runQuery = useCallback(async (): Promise<void> => {
@@ -298,6 +305,12 @@ export function WhichPrincipalsPage(): JSX.Element {
                 showAccountName
                 showResourceType
               />
+              {selectedResource && getSubresourceConfig(selectedResource) && (
+                <SubresourceEditor
+                  arn={selectedResource}
+                  onArnChange={(newArn) => updateSelection('resource', newArn)}
+                />
+              )}
             </Grid.Col>
           </Grid>
         </Card>

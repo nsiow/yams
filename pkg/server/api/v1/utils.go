@@ -71,3 +71,33 @@ func (api *API) UtilActionAccessLevels(w http.ResponseWriter, req *http.Request)
 	}
 	httputil.WriteJsonResponse(w, req, mapping)
 }
+
+// ActionTargeting contains information about what resources an action can target.
+type ActionTargeting struct {
+	Action         string   `json:"action"`
+	ARNFormats     []string `json:"arnFormats"`
+	CustomHandling []string `json:"customHandling,omitempty"`
+	HasTargets     bool     `json:"hasTargets"`
+}
+
+// UtilActionTargeting returns targeting information for all actions.
+// This includes ARN formats and custom handling rules from SAR data.
+// GET /api/v1/utils/actions/targeting
+func (api *API) UtilActionTargeting(w http.ResponseWriter, req *http.Request) {
+	results := []ActionTargeting{}
+	for _, action := range sar.AllActions() {
+		at := ActionTargeting{
+			Action:     action.ShortName(),
+			HasTargets: action.HasTargets(),
+		}
+		for _, resource := range action.Resources {
+			at.ARNFormats = append(at.ARNFormats, resource.ARNFormats...)
+			at.CustomHandling = append(at.CustomHandling, resource.CustomHandling...)
+		}
+		results = append(results, at)
+	}
+	slices.SortFunc(results, func(a, b ActionTargeting) int {
+		return strings.Compare(a.Action, b.Action)
+	})
+	httputil.WriteJsonResponse(w, req, results)
+}

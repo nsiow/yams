@@ -10,6 +10,26 @@ export function extractService(arn: string): string | null {
   return null;
 }
 
+// S3 type detection functions
+
+export function isS3Object(arn: string): boolean {
+  return arn.startsWith('arn:aws:s3:::') && arn.includes('/');
+}
+
+export function isS3Bucket(arn: string): boolean {
+  return arn.startsWith('arn:aws:s3:::') && !arn.includes('/');
+}
+
+export function getS3BucketFromObject(objectArn: string): string {
+  const idx = objectArn.indexOf('/');
+  return idx > -1 ? objectArn.substring(0, idx) : objectArn;
+}
+
+export function getS3ObjectPath(objectArn: string): string {
+  const idx = objectArn.indexOf('/');
+  return idx > -1 ? objectArn.substring(idx + 1) : '';
+}
+
 // Extract account ID from ARN (5th segment)
 export function extractAccountId(arn: string): string | null {
   const parts = arn.split(':');

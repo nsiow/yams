@@ -41,6 +41,8 @@ import {
 import { Link, useSearchParams } from 'react-router-dom';
 import { yamsApi } from '../../lib/api';
 import type { SimulationResponse, OverlaySummary, OverlayData, SimulationOverlay } from '../../lib/api';
+import { getSubresourceConfig } from './shared';
+import { SubresourceEditor } from './shared/subresource-editor';
 
 // Extract service type from ARN (3rd segment)
 function extractService(arn: string): string | null {
@@ -774,7 +776,12 @@ export function AccessCheckPage(): JSX.Element {
   // Search functions
   const searchPrincipals = useCallback((query: string) => yamsApi.searchPrincipals(query), []);
   const searchActions = useCallback((query: string) => yamsApi.searchActions(query), []);
-  const searchResources = useCallback((query: string) => yamsApi.searchResources(query), []);
+  const searchResources = useCallback(
+    async (query: string): Promise<string[]> => {
+      return yamsApi.searchResources(query, selectedAction ?? undefined);
+    },
+    [selectedAction]
+  );
 
   // Use ref to access context vars without triggering re-renders
   const contextVarsRef = useRef(contextVars);
@@ -941,6 +948,12 @@ export function AccessCheckPage(): JSX.Element {
                 disabled={isActionResourceless}
                 disabledMessage="Not required for this action"
               />
+              {selectedResource && getSubresourceConfig(selectedResource) && (
+                <SubresourceEditor
+                  arn={selectedResource}
+                  onArnChange={(newArn) => updateSelection('resource', newArn)}
+                />
+              )}
             </Grid.Col>
           </Grid>
         </Card>

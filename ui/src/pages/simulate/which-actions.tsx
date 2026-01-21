@@ -42,7 +42,9 @@ import {
   formatPrincipalLabel,
   formatResourceLabel,
   buildAccessCheckUrl,
+  getSubresourceConfig,
 } from './shared';
+import { SubresourceEditor } from './shared/subresource-editor';
 import type { ContextVariable } from './shared';
 
 const RESULTS_PER_PAGE = 20;
@@ -299,6 +301,12 @@ export function WhichActionsPage(): JSX.Element {
                 showAccountName
                 showResourceType
               />
+              {selectedResource && getSubresourceConfig(selectedResource) && (
+                <SubresourceEditor
+                  arn={selectedResource}
+                  onArnChange={(newArn) => updateSelection('resource', newArn)}
+                />
+              )}
             </Grid.Col>
           </Grid>
         </Card>

@@ -1,6 +1,7 @@
 import type {
   StatusResponse,
   Action,
+  ActionTargeting,
   Principal,
   Resource,
   Policy,
@@ -138,10 +139,12 @@ export class YamsClient {
     return this.fetch<Resource>(`/resources/${encodeURIComponent(arn)}`);
   }
 
-  async searchResources(query: string): Promise<string[]> {
-    return this.fetch<string[]>(
-      `/resources/search/${encodeURIComponent(query)}`
-    );
+  async searchResources(query: string, action?: string): Promise<string[]> {
+    let url = `/resources/search/${encodeURIComponent(query)}`;
+    if (action) {
+      url += `?action=${encodeURIComponent(action)}`;
+    }
+    return this.fetch<string[]>(url);
   }
 
   // Policies
@@ -192,6 +195,10 @@ export class YamsClient {
 
   async actionAccessLevels(): Promise<Record<string, string>> {
     return this.fetch<Record<string, string>>('/utils/actions/accesslevels');
+  }
+
+  async actionTargeting(): Promise<ActionTargeting[]> {
+    return this.fetch<ActionTargeting[]>('/utils/actions/targeting');
   }
 
   // Simulation

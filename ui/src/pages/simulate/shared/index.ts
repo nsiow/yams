@@ -12,4 +12,17 @@ export {
   formatRelativeTime,
   highlightMatch,
   buildAccessCheckUrl,
+  isS3Object,
+  isS3Bucket,
+  getS3BucketFromObject,
+  getS3ObjectPath,
 } from './utils.tsx';
+export {
+  getSubresourceConfig,
+  getBaseArn,
+  getSubresourcePath,
+  buildArnWithPath,
+  SUBRESOURCE_TYPES,
+} from './subresource-config';
+export type { SubresourceConfig } from './subresource-config';
+export { SubresourceEditor } from './subresource-editor';
