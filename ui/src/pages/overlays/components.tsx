@@ -801,7 +801,7 @@ export function EntityDetailPanel({
               disabled={!isDirty}
               onClick={onSave}
             >
-              Save
+              Save Entity
             </Button>
           </Tooltip>
         </Group>

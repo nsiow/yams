@@ -983,7 +983,7 @@ export function OverlayEditorPage(): JSX.Element {
                 }
                 fullWidth
               >
-                {isNew && !selectedOverlayId ? 'Create Overlay' : 'Save Changes'}
+                {isNew && !selectedOverlayId ? 'Create Overlay' : 'Save Overlay'}
               </Button>
             </Stack>
           </Card>
