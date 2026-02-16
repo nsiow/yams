@@ -44,6 +44,8 @@ import {
   extractAccountId,
   buildAccessCheckUrl,
   getSubresourceConfig,
+  isResourceCreationAction,
+  ArnEditor,
 } from './shared';
 import { SubresourceEditor } from './shared/subresource-editor';
 import type { ContextVariable } from './shared';
@@ -128,6 +130,12 @@ export function WhichPrincipalsPage(): JSX.Element {
   // Use ref for context vars to avoid triggering effect
   const contextVarsRef = useRef(contextVars);
   contextVarsRef.current = contextVars;
+
+  // Check if current action is a resource creation action
+  const isCreationAction = useMemo(() => {
+    if (!selectedAction) return false;
+    return isResourceCreationAction(selectedAction);
+  }, [selectedAction]);
 
   // Search functions
   const searchActions = useCallback((query: string) => yamsApi.searchActions(query), []);
@@ -293,23 +301,34 @@ export function WhichPrincipalsPage(): JSX.Element {
               />
             </Grid.Col>
             <Grid.Col span={6}>
-              <AsyncSearchSelect
-                label="Resource (required)"
-                placeholder="Search resources..."
-                value={selectedResource}
-                onChange={(v) => updateSelection('resource', v)}
-                onSearch={searchResources}
-                formatLabel={formatResourceLabel}
-                accountNames={accountNames}
-                resourceAccounts={resourceAccounts}
-                showAccountName
-                showResourceType
-              />
-              {selectedResource && getSubresourceConfig(selectedResource) && (
-                <SubresourceEditor
-                  arn={selectedResource}
-                  onArnChange={(newArn) => updateSelection('resource', newArn)}
+              {isCreationAction ? (
+                <ArnEditor
+                  action={selectedAction!}
+                  value={selectedResource}
+                  onChange={(v) => updateSelection('resource', v)}
+                  label="Resource (required)"
                 />
+              ) : (
+                <>
+                  <AsyncSearchSelect
+                    label="Resource (required)"
+                    placeholder="Search resources..."
+                    value={selectedResource}
+                    onChange={(v) => updateSelection('resource', v)}
+                    onSearch={searchResources}
+                    formatLabel={formatResourceLabel}
+                    accountNames={accountNames}
+                    resourceAccounts={resourceAccounts}
+                    showAccountName
+                    showResourceType
+                  />
+                  {selectedResource && getSubresourceConfig(selectedResource) && (
+                    <SubresourceEditor
+                      arn={selectedResource}
+                      onArnChange={(newArn) => updateSelection('resource', newArn)}
+                    />
+                  )}
+                </>
               )}
             </Grid.Col>
           </Grid>

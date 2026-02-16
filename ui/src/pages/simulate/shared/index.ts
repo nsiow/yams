@@ -26,3 +26,12 @@ export {
 } from './subresource-config';
 export type { SubresourceConfig } from './subresource-config';
 export { SubresourceEditor } from './subresource-editor';
+export {
+  isResourceCreationAction,
+  findPrimaryResource,
+  formatArnWithDefaults,
+  getDefaultArnForAction,
+  PLACEHOLDER_ACCOUNT_ID,
+} from './resource-creation';
+export { ArnEditor } from './arn-editor';
+export type { ArnEditorProps } from './arn-editor';

@@ -177,7 +177,7 @@ describe('OverlayEditorPage', () => {
       renderWithRouter('overlay-1');
 
       await waitFor(() => {
-        const saveButton = screen.getByRole('button', { name: /save changes/i });
+        const saveButton = screen.getByRole('button', { name: /save overlay/i });
         expect(saveButton).toBeDisabled();
       });
     });

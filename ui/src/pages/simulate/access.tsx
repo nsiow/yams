@@ -41,7 +41,7 @@ import {
 import { Link, useSearchParams } from 'react-router-dom';
 import { yamsApi } from '../../lib/api';
 import type { SimulationResponse, OverlaySummary, OverlayData, SimulationOverlay } from '../../lib/api';
-import { getSubresourceConfig } from './shared';
+import { getSubresourceConfig, isResourceCreationAction, ArnEditor, extractAccountId as extractAccountIdUtil } from './shared';
 import { SubresourceEditor } from './shared/subresource-editor';
 
 // Extract service type from ARN (3rd segment)
@@ -686,6 +686,18 @@ export function AccessCheckPage(): JSX.Element {
     return resourcelessActions.has(selectedAction);
   }, [selectedAction, resourcelessActions]);
 
+  // Check if current action is a resource creation action
+  const isCreationAction = useMemo(() => {
+    if (!selectedAction) return false;
+    return isResourceCreationAction(selectedAction);
+  }, [selectedAction]);
+
+  // Extract account ID from selected principal for ARN editor
+  const principalAccountId = useMemo(() => {
+    if (!selectedPrincipal) return undefined;
+    return extractAccountIdUtil(selectedPrincipal) || undefined;
+  }, [selectedPrincipal]);
+
   // Overlay filtering and pagination
   const [debouncedOverlaySearch] = useDebouncedValue(overlaySearchQuery, 200);
   const OVERLAYS_PER_PAGE = 5;
@@ -934,25 +946,37 @@ export function AccessCheckPage(): JSX.Element {
               />
             </Grid.Col>
             <Grid.Col span={4}>
-              <AsyncSearchSelect
-                label="Resource"
-                placeholder="Search resources..."
-                value={selectedResource}
-                onChange={(v) => updateSelection('resource', v)}
-                onSearch={searchResources}
-                formatLabel={formatResourceLabel}
-                accountNames={accountNames}
-                resourceAccounts={resourceAccounts}
-                showAccountName
-                showResourceType
-                disabled={isActionResourceless}
-                disabledMessage="Not required for this action"
-              />
-              {selectedResource && getSubresourceConfig(selectedResource) && (
-                <SubresourceEditor
-                  arn={selectedResource}
-                  onArnChange={(newArn) => updateSelection('resource', newArn)}
+              {isCreationAction ? (
+                <ArnEditor
+                  action={selectedAction!}
+                  value={selectedResource}
+                  onChange={(v) => updateSelection('resource', v)}
+                  accountId={principalAccountId}
+                  label="Resource"
                 />
+              ) : (
+                <>
+                  <AsyncSearchSelect
+                    label="Resource"
+                    placeholder="Search resources..."
+                    value={selectedResource}
+                    onChange={(v) => updateSelection('resource', v)}
+                    onSearch={searchResources}
+                    formatLabel={formatResourceLabel}
+                    accountNames={accountNames}
+                    resourceAccounts={resourceAccounts}
+                    showAccountName
+                    showResourceType
+                    disabled={isActionResourceless}
+                    disabledMessage="Not required for this action"
+                  />
+                  {selectedResource && getSubresourceConfig(selectedResource) && (
+                    <SubresourceEditor
+                      arn={selectedResource}
+                      onArnChange={(newArn) => updateSelection('resource', newArn)}
+                    />
+                  )}
+                </>
               )}
             </Grid.Col>
           </Grid>
