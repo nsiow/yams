@@ -102,21 +102,56 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
 	return _gate.Apply(false)
 }
 
-// evalStatementMatchesPrincipalExact computes whether the Statement matches the AuthContext's
-// Principal using an exact-match criteria (no wildcards)
-func evalStatementMatchesPrincipalExact(s *subject, stmt *policy.Statement) bool {
+// evalStatementIsDelegated determines whether a statement's principal matching is via delegation
+// (account-ID or account-root syntax) rather than granting access directly.
+//
+// Delegation means the resource policy trusts the account to manage access via identity policies,
+// whereas a direct grant (Principal=*, exact ARN, etc.) gives the principal access regardless.
+func evalStatementIsDelegated(s *subject, stmt *policy.Statement) bool {
 
-	s.trc.Push("evaluating Principal exact-match case")
+	s.trc.Push("evaluating whether principal match is delegated")
 	defer s.trc.Pop()
 
 	if s.auth.Principal == nil {
-		s.trc.Log("AuthContext missing Principal")
 		return false
 	}
 
-	result := stmt.Principal.AWS.Contains(s.auth.Principal.Arn)
-	s.trc.Log("result: %v", result)
-	return result
+	// Principal: "*" grants access directly, not via delegation
+	if stmt.Principal.All {
+		s.trc.Log("not delegated: Principal=*")
+		return false
+	}
+
+	// NotPrincipal statements are exclusions, not grants or delegations
+	if stmt.Principal.Empty() {
+		s.trc.Log("not delegated: using NotPrincipal block")
+		return false
+	}
+
+	// Check whether the matching principal entries are exclusively delegation-based. If any
+	// entry is a direct grant (exact ARN, "*"), the statement is not delegated.
+	delegationMatch := false
+	for _, p := range stmt.Principal.AWS {
+		if isAccountRootMatch(p, s.auth.Principal.AccountId) {
+			delegationMatch = true
+			continue
+		}
+		if wildcard.MatchAllOrNothing(p, s.auth.Principal.Arn) {
+			s.trc.Log("not delegated: direct grant via %s", p)
+			return false
+		}
+	}
+
+	if delegationMatch {
+		s.trc.Log("delegated: matched via account-root only")
+	}
+	return delegationMatch
+}
+
+// evalStatementIsNotDelegated is the inverse of evalStatementIsDelegated, for use as an
+// evalFunction in evalPolicy chains
+func evalStatementIsNotDelegated(s *subject, stmt *policy.Statement) bool {
+	return !evalStatementIsDelegated(s, stmt)
 }
 
 // evalStatementMatchesResource computes whether the Statement matches the AuthContext's Resource

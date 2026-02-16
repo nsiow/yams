@@ -383,136 +383,139 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 	})
 }
 
-func TestStatementMatchesPrincipalExact(t *testing.T) {
+func TestStatementIsDelegated(t *testing.T) {
 	type input struct {
 		ac   AuthContext
 		stmt policy.Statement
 	}
 
 	tests := []testlib.TestCase[input, bool]{
-		// Missing
+		// Missing principal
 		{
 			Name: "missing_principal",
 			Input: input{
 				ac:   AuthContext{},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"88888"}}},
+			},
+			Want: false,
+		},
+
+		// Delegated (account-root) cases
+		{
+			Name: "delegated_account_id",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.FrozenPrincipal{
+						Arn:       "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+					},
+				},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"88888"}}},
+			},
+			Want: true,
+		},
+		{
+			Name: "delegated_account_root_arn",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.FrozenPrincipal{
+						Arn:       "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+					},
+				},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:root"}}},
+			},
+			Want: true,
+		},
+
+		// Not delegated (direct grant) cases
+		{
+			Name: "not_delegated_exact_arn",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.FrozenPrincipal{
+						Arn:       "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+					},
+				},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerole"}}},
+			},
+			Want: false,
+		},
+		{
+			Name: "not_delegated_star_in_aws",
+			Input: input{
+				ac: AuthContext{
+					Principal: &entities.FrozenPrincipal{
+						Arn:       "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
+					},
+				},
 				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"*"}}},
 			},
 			Want: false,
 		},
-		// Principal
 		{
-			Name: "simple_direct_match",
+			Name: "not_delegated_principal_all",
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						Arn:       "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
 					},
 				},
-
-				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerole"}}},
-			},
-			Want: true,
-		},
-		{
-			Name: "other_principal",
-			Input: input{
-				ac: AuthContext{
-					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
-					},
-				},
-
-				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerandomrole"}}},
-			},
-			Want: false,
-		},
-		{
-			Name: "two_principals",
-			Input: input{
-				ac: AuthContext{
-					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/secondrole",
-					},
-				},
-
-				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{
-					"arn:aws:iam::88888:role/firstrole",
-					"arn:aws:iam::88888:role/secondrole"}}}},
-			Want: true,
-		},
-		{
-			Name: "special_principal_star",
-			Input: input{
-				ac: AuthContext{
-					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
-					},
-				},
-
 				stmt: policy.Statement{Principal: policy.Principal{All: true}},
 			},
 			Want: false,
 		},
-
-		// NotPrincipal
 		{
-			Name: "notprincipal_simple_wildcard",
+			Name: "not_delegated_mixed_delegation_and_arn",
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						Arn:       "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
 					},
 				},
-
-				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"*"}}},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{
+					"88888",
+					"arn:aws:iam::88888:role/somerole"}}},
 			},
 			Want: false,
 		},
 		{
-			Name: "notprincipal_simple_direct_match",
+			Name: "not_delegated_non_matching_principal",
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						Arn:       "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
 					},
 				},
-
-				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerole"}}},
+				stmt: policy.Statement{Principal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/otherrole"}}},
 			},
 			Want: false,
 		},
+
+		// NotPrincipal is never considered delegation
 		{
-			Name: "notprincipal_other_principal",
+			Name: "not_delegated_notprincipal",
 			Input: input{
 				ac: AuthContext{
 					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/somerole",
+						Arn:       "arn:aws:iam::88888:role/somerole",
+						AccountId: "88888",
 					},
 				},
-
-				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"arn:aws:iam::88888:role/somerandomrole"}}},
+				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{"88888"}}},
 			},
-			Want: false,
-		},
-		{
-			Name: "notprincipal_two_principals",
-			Input: input{
-				ac: AuthContext{
-					Principal: &entities.FrozenPrincipal{
-						Arn: "arn:aws:iam::88888:role/secondrole",
-					},
-				},
-
-				stmt: policy.Statement{NotPrincipal: policy.Principal{AWS: []string{
-					"arn:aws:iam::88888:role/firstrole",
-					"arn:aws:iam::88888:role/secondrole"}}}},
 			Want: false,
 		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesPrincipalExact(subj, &i.stmt), nil
+		return evalStatementIsDelegated(subj, &i.stmt), nil
 	})
 }
 

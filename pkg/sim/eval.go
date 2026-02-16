@@ -75,9 +75,10 @@ func evalOverallAccess(s *subject) *SimResult {
 
 	// If same account, access is granted if the Principal has access
 	if evalIsSameAccount(s) {
-		// Same-account-explicit-principal edge case
-		if s.extra.ResourceAllowsExplicitPrincipal {
-			s.trc.Allowed("[allow] access granted via same-account explicit-principal case")
+		// Same-account resource-grants-principal edge case: the resource policy directly grants
+		// the principal access (not via delegation), so identity policy is not required
+		if s.extra.ResourceGrantsPrincipalAccess {
+			s.trc.Allowed("[allow] access granted via same-account resource grant")
 			return &SimResult{Trace: &s.trc, IsAllowed: true}
 		}
 

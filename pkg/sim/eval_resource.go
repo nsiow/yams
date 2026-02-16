@@ -18,9 +18,9 @@ func evalResourceAccess(s *subject) Decision {
 		evalStatementMatchesCondition,
 	)
 
-	// If the Principal and Resource are the same account, check for the explicit-principal edge
-	// case before returning
-	s.extra.ResourceAllowsExplicitPrincipal = evalResourceAccessAllowsExplicitPrincipal(s)
+	// If the Principal and Resource are the same account, check whether the resource grants
+	// access directly (vs delegating to the account) before returning
+	s.extra.ResourceGrantsPrincipalAccess = evalResourceAccessGrantsPrincipal(s)
 
 	return decision
 }
