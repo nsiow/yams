@@ -46,12 +46,13 @@ type Flags struct {
 	DryRun        bool
 
 	// server
-	Addr         string
-	Sources      MultiString
-	Refresh      int
-	Debug        bool
-	Env          MultiString
-	OverlayStore string
+	Addr          string
+	Sources       MultiString
+	Refresh       int
+	Debug         bool
+	Env           MultiString
+	OverlayStore  string
+	SharedContext MapString
 
 	// inventory
 	Key    string
@@ -160,6 +161,9 @@ func Parse() (*Flags, error) {
 
 		fs.StringVar(&opts.OverlayStore, "overlay", "",
 			"overlay store backend: 'memory' (default) or 'ddb://<table-name>'")
+
+		fs.Var(&opts.SharedContext, "c", "alias for -context")
+		fs.Var(&opts.SharedContext, "context", "shared request context key=value pairs")
 
 		err = fs.Parse(os.Args[2:])
 		args = fs.Args()

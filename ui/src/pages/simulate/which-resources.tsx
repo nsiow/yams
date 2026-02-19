@@ -45,6 +45,7 @@ import {
   extractAccountId,
   extractService,
   buildAccessCheckUrl,
+  useSharedContext,
 } from './shared';
 import type { ContextVariable } from './shared';
 
@@ -57,6 +58,7 @@ interface ExpandedRowData {
 }
 
 export function WhichResourcesPage(): JSX.Element {
+  const sharedContextVars = useSharedContext();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Initialize state from URL params
@@ -125,9 +127,11 @@ export function WhichResourcesPage(): JSX.Element {
       .catch((err) => console.error('Failed to fetch action access levels:', err));
   }, []);
 
-  // Use ref for context vars to avoid triggering effect
+  // Use refs for context vars to avoid triggering effect
   const contextVarsRef = useRef(contextVars);
   contextVarsRef.current = contextVars;
+  const sharedContextRef = useRef(sharedContextVars);
+  sharedContextRef.current = sharedContextVars;
 
   // Search functions
   const searchPrincipals = useCallback((query: string) => yamsApi.searchPrincipals(query), []);
@@ -146,7 +150,7 @@ export function WhichResourcesPage(): JSX.Element {
 
     try {
       const overlay = buildCombinedOverlay(selectedOverlayIds, loadedOverlays);
-      const context = buildContext(contextVarsRef.current);
+      const context = buildContext(contextVarsRef.current, sharedContextRef.current);
 
       const response = await yamsApi.whichResources({
         principal: selectedPrincipal,
@@ -216,7 +220,7 @@ export function WhichResourcesPage(): JSX.Element {
 
     try {
       const overlay = buildCombinedOverlay(selectedOverlayIds, loadedOverlays);
-      const context = buildContext(contextVarsRef.current);
+      const context = buildContext(contextVarsRef.current, sharedContextRef.current);
 
       const response = await yamsApi.simulate({
         principal: selectedPrincipal!,
@@ -315,6 +319,7 @@ export function WhichResourcesPage(): JSX.Element {
           onChange={setContextVars}
           onRerun={runQuery}
           showRerunButton={!!selectedPrincipal}
+          sharedContextVars={sharedContextVars}
         />
 
         {/* Results section */}

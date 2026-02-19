@@ -35,3 +35,4 @@ export {
 } from './resource-creation';
 export { ArnEditor } from './arn-editor';
 export type { ArnEditorProps } from './arn-editor';
+export { useSharedContext } from './use-shared-context';

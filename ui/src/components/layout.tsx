@@ -37,6 +37,7 @@ const navSections: NavSection[] = [
     icon: IconServer,
     items: [
       { label: 'Status', path: '/' },
+      { label: 'Shared Variables', path: '/shared-variables' },
     ],
   },
   {
@@ -90,6 +91,10 @@ export function Layout(): JSX.Element {
                 yams
               </Title>
             </Group>
+            <Group gap="xs" align="center">
+              <Badge color="green" size="xs" circle />
+              <Text size="sm" c="white" ff="monospace" style={{ opacity: 0.9 }}>localhost:8888</Text>
+            </Group>
             <Badge
               color="pink"
               variant="filled"
@@ -99,11 +104,7 @@ export function Layout(): JSX.Element {
               UI Preview
             </Badge>
           </Group>
-          <Group gap="md" align="center">
-            <Group gap="xs" align="center">
-              <Badge color="green" size="xs" circle />
-              <Text size="sm" c="white" ff="monospace" style={{ opacity: 0.9 }}>localhost:8888</Text>
-            </Group>
+          <Group gap={4} align="center">
             <Menu shadow="md" width={150}>
               <Menu.Target>
                 <Button variant="subtle" c="white" rightSection={<IconChevronDown size={16} />}>Theme</Button>
@@ -134,6 +135,13 @@ export function Layout(): JSX.Element {
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
+            <Button
+              variant="subtle"
+              c="white"
+              onClick={() => navigate('/config')}
+            >
+              Config
+            </Button>
           </Group>
         </Group>
       </AppShell.Header>

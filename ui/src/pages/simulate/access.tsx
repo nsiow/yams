@@ -41,7 +41,7 @@ import {
 import { Link, useSearchParams } from 'react-router-dom';
 import { yamsApi } from '../../lib/api';
 import type { SimulationResponse, OverlaySummary, OverlayData, SimulationOverlay } from '../../lib/api';
-import { getSubresourceConfig, isResourceCreationAction, ArnEditor, extractAccountId as extractAccountIdUtil } from './shared';
+import { getSubresourceConfig, isResourceCreationAction, ArnEditor, extractAccountId as extractAccountIdUtil, useSharedContext } from './shared';
 import { SubresourceEditor } from './shared/subresource-editor';
 
 // Extract service type from ARN (3rd segment)
@@ -598,6 +598,7 @@ function formatResourceLabel(arn: string): string {
 }
 
 export function AccessCheckPage(): JSX.Element {
+  const sharedContextVars = useSharedContext();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Initialize state from URL params
@@ -799,11 +800,29 @@ export function AccessCheckPage(): JSX.Element {
   const contextVarsRef = useRef(contextVars);
   contextVarsRef.current = contextVars;
 
-  // Build context object from key-value pairs
+  // Build context object from key-value pairs, merging shared context
+  const sharedContextRef = useRef(sharedContextVars);
+  sharedContextRef.current = sharedContextVars;
+
   const buildContext = (): Record<string, string> | undefined => {
-    const validPairs = contextVarsRef.current.filter((cv) => cv.key.trim() && cv.value.trim());
-    if (validPairs.length === 0) return undefined;
-    return Object.fromEntries(validPairs.map((cv) => [cv.key.trim(), cv.value.trim()]));
+    const result: Record<string, string> = {};
+
+    // Shared vars first
+    for (const cv of sharedContextRef.current) {
+      const k = cv.key.trim();
+      const v = cv.value.trim();
+      if (k && v) result[k] = v;
+    }
+
+    // User vars override
+    for (const cv of contextVarsRef.current) {
+      const k = cv.key.trim();
+      const v = cv.value.trim();
+      if (k && v) result[k] = v;
+    }
+
+    if (Object.keys(result).length === 0) return undefined;
+    return result;
   };
 
   // Run simulation when required inputs are selected
@@ -1152,7 +1171,7 @@ export function AccessCheckPage(): JSX.Element {
 
         {/* Request context variables */}
         <Card withBorder p="lg">
-          <Group justify="space-between" mb={contextVars.length > 0 ? 'md' : undefined}>
+          <Group justify="space-between" mb={(contextVars.length > 0 || sharedContextVars.length > 0) ? 'md' : undefined}>
             <Title order={5}>Request Context</Title>
             <Button
               variant="subtle"
@@ -1163,6 +1182,36 @@ export function AccessCheckPage(): JSX.Element {
               Add Variable
             </Button>
           </Group>
+
+          {/* Shared context variables (read-only) */}
+          {sharedContextVars.length > 0 && (
+            <Stack gap="xs" mb={contextVars.length > 0 ? 'sm' : undefined}>
+              {sharedContextVars.map((cv, idx) => (
+                <Group key={`shared-${idx}`} gap="xs" wrap="nowrap">
+                  <TextInput
+                    value={cv.key}
+                    readOnly
+                    style={{ flex: 1 }}
+                    size="sm"
+                    styles={{ input: { backgroundColor: 'var(--mantine-color-violet-0)', color: 'var(--mantine-color-violet-7)' } }}
+                  />
+                  <TextInput
+                    value={cv.value}
+                    readOnly
+                    style={{ flex: 1 }}
+                    size="sm"
+                    styles={{ input: { backgroundColor: 'var(--mantine-color-violet-0)', color: 'var(--mantine-color-violet-7)' } }}
+                  />
+                  <Box w={28} style={{ flexShrink: 0 }}>
+                    <Text size="xs" c="dimmed" ta="center">&nbsp;</Text>
+                  </Box>
+                </Group>
+              ))}
+              <Text size="xs" c="dimmed" fs="italic">Shared request context</Text>
+            </Stack>
+          )}
+
+          {/* User-defined context variables */}
           {contextVars.length > 0 && (
             <Stack gap="xs">
               {contextVars.map((cv, idx) => (
@@ -1198,7 +1247,7 @@ export function AccessCheckPage(): JSX.Element {
               )}
             </Stack>
           )}
-          {contextVars.length === 0 && (
+          {contextVars.length === 0 && sharedContextVars.length === 0 && (
             <Text size="sm" c="dimmed">
               Add context variables to test conditions like aws:SourceIp, aws:RequestTag/*, etc.
             </Text>

@@ -80,6 +80,16 @@ type ActionTargeting struct {
 	HasTargets     bool     `json:"hasTargets"`
 }
 
+// UtilSharedContext returns the server's shared request context key-value pairs.
+// GET /api/v1/utils/context
+func (api *API) UtilSharedContext(w http.ResponseWriter, req *http.Request) {
+	ctx := api.SharedContext
+	if ctx == nil {
+		ctx = map[string]string{}
+	}
+	httputil.WriteJsonResponse(w, req, ctx)
+}
+
 // UtilActionTargeting returns targeting information for all actions.
 // This includes ARN formats and custom handling rules from SAR data.
 // GET /api/v1/utils/actions/targeting

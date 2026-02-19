@@ -46,6 +46,7 @@ import {
   getSubresourceConfig,
   isResourceCreationAction,
   ArnEditor,
+  useSharedContext,
 } from './shared';
 import { SubresourceEditor } from './shared/subresource-editor';
 import type { ContextVariable } from './shared';
@@ -59,6 +60,7 @@ interface ExpandedRowData {
 }
 
 export function WhichPrincipalsPage(): JSX.Element {
+  const sharedContextVars = useSharedContext();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Initialize state from URL params
@@ -127,9 +129,11 @@ export function WhichPrincipalsPage(): JSX.Element {
       .catch((err) => console.error('Failed to fetch action access levels:', err));
   }, []);
 
-  // Use ref for context vars to avoid triggering effect
+  // Use refs for context vars to avoid triggering effect
   const contextVarsRef = useRef(contextVars);
   contextVarsRef.current = contextVars;
+  const sharedContextRef = useRef(sharedContextVars);
+  sharedContextRef.current = sharedContextVars;
 
   // Check if current action is a resource creation action
   const isCreationAction = useMemo(() => {
@@ -159,7 +163,7 @@ export function WhichPrincipalsPage(): JSX.Element {
 
     try {
       const overlay = buildCombinedOverlay(selectedOverlayIds, loadedOverlays);
-      const context = buildContext(contextVarsRef.current);
+      const context = buildContext(contextVarsRef.current, sharedContextRef.current);
 
       const response = await yamsApi.whichPrincipals({
         action: selectedAction,
@@ -229,7 +233,7 @@ export function WhichPrincipalsPage(): JSX.Element {
 
     try {
       const overlay = buildCombinedOverlay(selectedOverlayIds, loadedOverlays);
-      const context = buildContext(contextVarsRef.current);
+      const context = buildContext(contextVarsRef.current, sharedContextRef.current);
 
       const response = await yamsApi.simulate({
         principal,
@@ -348,6 +352,7 @@ export function WhichPrincipalsPage(): JSX.Element {
           onChange={setContextVars}
           onRerun={runQuery}
           showRerunButton={!!allSelected}
+          sharedContextVars={sharedContextVars}
         />
 
         {/* Results section */}

@@ -54,7 +54,10 @@ func NewServer(opts *cli.Flags) (*Server, error) {
 
 	// routes routes routes
 	server.addV1Routes(
-		&v1.API{Simulator: server.Simulator},
+		&v1.API{
+			Simulator:     server.Simulator,
+			SharedContext: map[string]string(opts.SharedContext),
+		},
 		&v1.OverlayAPI{Store: server.OverlayStore},
 	)
 

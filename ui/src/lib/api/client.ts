@@ -201,6 +201,10 @@ export class YamsClient {
     return this.fetch<ActionTargeting[]>('/utils/actions/targeting');
   }
 
+  async sharedContext(): Promise<Record<string, string>> {
+    return this.fetch<Record<string, string>>('/utils/context');
+  }
+
   // Simulation
 
   async simulate(request: SimulationRequest): Promise<SimulationResponse> {

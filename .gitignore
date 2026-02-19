@@ -18,6 +18,9 @@ local/
 # Local notes
 notes/
 
+# ui stuff
+node_modules/
+
 # slop
 .claude/settings.local.json
 

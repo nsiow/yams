@@ -13,12 +13,15 @@ import { WhichActionsPage } from './pages/simulate/which-actions';
 import { WhichResourcesPage } from './pages/simulate/which-resources';
 import { OverlaysPage } from './pages/overlays';
 import { OverlayEditorPage } from './pages/overlays/editor';
+import { ConfigPage } from './pages/config';
+import { SharedVariablesPage } from './pages/shared-variables';
 
 export function App(): JSX.Element {
   return (
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/shared-variables" element={<SharedVariablesPage />} />
         <Route path="/preview" element={<PreviewPage />} />
         <Route path="/search/accounts" element={<AccountsPage />} />
         <Route path="/search/accounts/*" element={<AccountsPage />} />
@@ -34,6 +37,7 @@ export function App(): JSX.Element {
         <Route path="/simulate/which-principals" element={<WhichPrincipalsPage />} />
         <Route path="/simulate/which-actions" element={<WhichActionsPage />} />
         <Route path="/simulate/which-resources" element={<WhichResourcesPage />} />
+        <Route path="/config" element={<ConfigPage />} />
         <Route path="/overlays" element={<OverlaysPage />} />
         <Route path="/overlays/:id/edit" element={<OverlayEditorPage />} />
         <Route path="/overlays/*" element={<OverlaysPage />} />
