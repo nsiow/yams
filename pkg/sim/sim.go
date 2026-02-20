@@ -108,6 +108,12 @@ func (s *Simulator) resolveResource(arn string, opts Options) (*entities.FrozenR
 	return nil, fmt.Errorf("no resource with arn: %s", arn)
 }
 
+// ExpandResources takes the provided list of Resource ARNs and performs any required expansion of
+// Resources into Sub-resources (e.g. S3 bucket → object)
+func (s *Simulator) ExpandResources(arns []string, opts Options) ([]string, error) {
+	return s.expandResources(arns, opts)
+}
+
 // expandResources takes the provided list of Resource ARNs and specified options, and performs any
 // required expansion of Resources into Sub-resources. For example, expanding a resource set with
 // a non-empty value for DefaultS3Key will add a new Resource to the set for each S3 bucket.

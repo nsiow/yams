@@ -20,6 +20,7 @@ const (
 	RUN_MODE_PRINCIPALS = "principals"
 	RUN_MODE_POLICIES   = "policies"
 	RUN_MODE_SIM        = "sim"
+	RUN_MODE_AUDIT      = "audit"
 )
 
 var RUN_MODES = []string{
@@ -32,6 +33,7 @@ var RUN_MODES = []string{
 	RUN_MODE_PRINCIPALS,
 	RUN_MODE_POLICIES,
 	RUN_MODE_SIM,
+	RUN_MODE_AUDIT,
 }
 
 // Flags is a struct containing all flags/options related to CLI behavior
@@ -59,6 +61,9 @@ type Flags struct {
 	Query  string
 	Freeze bool
 	Format string
+
+	// audit
+	Config string
 
 	// sim
 	Principal    string
@@ -237,6 +242,26 @@ func Parse() (*Flags, error) {
 		fs.BoolVar(&opts.Trace, "t", false, "alias for -trace")
 		fs.BoolVar(&opts.Trace, "trace", false,
 			"provide full evaluation context on how the decision was reached")
+
+		err = fs.Parse(os.Args[2:])
+		args = fs.Args()
+
+	case RUN_MODE_AUDIT:
+		fs := flag.NewFlagSet("audit", flag.ExitOnError)
+
+		fs.Var(&opts.Sources, "s", "alias for -source")
+		fs.Var(&opts.Sources, "source", "list of sources to use for data (supports multiple)")
+
+		fs.StringVar(&opts.Config, "f", "", "alias for -config")
+		fs.StringVar(&opts.Config, "config", "", "path to audit config JSON file")
+
+		fs.StringVar(&opts.Out, "o", "", "alias for -out")
+		fs.StringVar(&opts.Out, "out", "", "destination for CSV output")
+
+		fs.Var(&opts.Context, "c", "alias for -context")
+		fs.Var(&opts.Context, "context", "additional request-context key=value pairs")
+
+		fs.Var(&opts.OverlayFiles, "overlay", "entity definition file for overrides")
 
 		err = fs.Parse(os.Args[2:])
 		args = fs.Args()

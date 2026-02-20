@@ -25,6 +25,7 @@ var Commands = []CommandInfo{
 	{Name: "server", Description: "Start the yams API server"},
 	{Name: "dump", Description: "Export AWS organization or config data"},
 	{Name: "sim", Description: "Simulate IAM permission checks"},
+	{Name: "audit", Description: "Generate access summary CSV"},
 	{Name: "principals", Description: "List or search IAM principals (roles, users)", Aliases: []string{"p"}},
 	{Name: "resources", Description: "List or search AWS resources", Aliases: []string{"r"}},
 	{Name: "actions", Description: "List or search IAM actions", Aliases: []string{"a"}},
