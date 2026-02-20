@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"sync/atomic"
+	"sync"
 	"time"
 
 	"github.com/nsiow/yams/internal/common"
@@ -355,102 +355,185 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 		fas = append(fas, fa)
 	}
 
-	var fps []*entities.FrozenPrincipal
-	for _, p := range ps {
-		fp, err := s.resolvePrincipal(p, opts)
-		if err != nil {
-			return nil, fmt.Errorf("unable to resolve principal '%s' for simulation: %w", p, err)
-		}
-		fps = append(fps, fp)
+	fps, err := s.FreezePrincipals(ps, opts)
+	if err != nil {
+		return nil, err
 	}
 
-	var frs []*entities.FrozenResource
-	for _, r := range rs {
-		fr, err := s.resolveResource(r, opts)
-		if err != nil {
-			return nil, fmt.Errorf("unable to resolve resource '%s' for simulation: %w", r, err)
-		}
-		frs = append(frs, fr)
+	frs, err := s.FreezeResources(rs, opts)
+	if err != nil {
+		return nil, err
 	}
 
 	slog.Debug("froze entities",
 		"sim_id", simId)
 
-	var submitted int32
-	var done atomic.Int32
-	var sent atomic.Int32
-	finished := make(chan simOut, s.Pool.NumWorkers())
-	batch := simBatch{Jobs: []simIn{}, Finished: finished, Done: &done, Sent: &sent}
+	return s.runProduct(fps, fas, frs, opts)
+}
 
-	for _, p := range fps {
-		for _, a := range fas {
-			for _, r := range frs {
-				// Skip invalid combinations
-				if !a.Targets(r.Arn) {
-					continue
-				}
+// FreezePrincipals resolves and freezes all the provided principal ARNs. This allows callers to
+// freeze once and reuse across multiple Product calls.
+func (s *Simulator) FreezePrincipals(arns []string, opts Options) ([]*entities.FrozenPrincipal, error) {
+	fps := make([]*entities.FrozenPrincipal, 0, len(arns))
+	for _, p := range arns {
+		fp, err := s.resolvePrincipal(p, opts)
+		if err != nil {
+			return nil, fmt.Errorf("unable to resolve principal '%s': %w", p, err)
+		}
+		fps = append(fps, fp)
+	}
+	return fps, nil
+}
 
-				job := simIn{
-					AuthContext{
-						Action:     a,
-						Principal:  p,
-						Resource:   r,
-						Properties: opts.Context,
-					},
-					opts,
-				}
-				batch.Jobs = append(batch.Jobs, job)
-				submitted++
+// FreezeResources resolves and freezes all the provided resource ARNs
+func (s *Simulator) FreezeResources(arns []string, opts Options) ([]*entities.FrozenResource, error) {
+	frs := make([]*entities.FrozenResource, 0, len(arns))
+	for _, r := range arns {
+		fr, err := s.resolveResource(r, opts)
+		if err != nil {
+			return nil, fmt.Errorf("unable to resolve resource '%s': %w", r, err)
+		}
+		frs = append(frs, fr)
+	}
+	return frs, nil
+}
 
-				if len(batch.Jobs) == s.Pool.BatchSize() {
-					s.Pool.Submit(batch)
-					batch = simBatch{Jobs: []simIn{}, Finished: finished, Done: &done, Sent: &sent}
+// ProductFrozenStreaming runs the cartesian product simulation with pre-frozen entities and streams
+// allowed results to the onResult callback instead of collecting them in memory
+func (s *Simulator) ProductFrozenStreaming(
+	fps []*entities.FrozenPrincipal,
+	actions []string,
+	frs []*entities.FrozenResource,
+	opts Options,
+	onResult func(AccessTuple),
+) error {
+	var fas []*types.Action
+	for _, a := range actions {
+		fa, ok := sar.LookupString(a)
+		if !ok {
+			return fmt.Errorf("unknown action: %s", a)
+		}
+		fas = append(fas, fa)
+	}
+
+	var simErr error
+	s.streamProduct(fps, fas, frs, opts, onResult, func(err error) {
+		simErr = err
+	})
+	return simErr
+}
+
+// runProduct submits simulation work to the pool and collects allowed results
+func (s *Simulator) runProduct(
+	fps []*entities.FrozenPrincipal,
+	fas []*types.Action,
+	frs []*entities.FrozenResource,
+	opts Options,
+) ([]AccessTuple, error) {
+	var matrix []AccessTuple
+	var collectErr error
+
+	s.streamProduct(fps, fas, frs, opts, func(t AccessTuple) {
+		matrix = append(matrix, t)
+	}, func(err error) {
+		collectErr = err
+	})
+
+	return matrix, collectErr
+}
+
+// streamProduct is the core simulation engine. It submits work concurrently while streaming
+// results to onResult. Submission and consumption run concurrently to avoid channel backpressure
+// deadlocks. A context is used to cancel in-flight work on error.
+func (s *Simulator) streamProduct(
+	fps []*entities.FrozenPrincipal,
+	fas []*types.Action,
+	frs []*entities.FrozenResource,
+	opts Options,
+	onResult func(AccessTuple),
+	onError func(error),
+) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	finished := make(chan simOut, s.Pool.NumWorkers()*s.Pool.BatchSize())
+	var wg sync.WaitGroup
+
+	// Submit work concurrently with consumption to avoid channel backpressure deadlock
+	go func() {
+		defer func() {
+			wg.Wait()
+			close(finished)
+		}()
+
+		newBatch := func() simBatch {
+			return simBatch{
+				Jobs:     make([]simIn, 0, s.Pool.BatchSize()),
+				Finished: finished,
+				Wg:       &wg,
+				Ctx:      ctx,
+			}
+		}
+
+		batch := newBatch()
+		for _, p := range fps {
+			for _, a := range fas {
+				for _, r := range frs {
+					if !a.Targets(r.Arn) {
+						continue
+					}
+
+					batch.Jobs = append(batch.Jobs, simIn{
+						AuthContext: AuthContext{
+							Action:     a,
+							Principal:  p,
+							Resource:   r,
+							Properties: opts.Context,
+						},
+						Options: opts,
+					})
+
+					if len(batch.Jobs) == s.Pool.BatchSize() {
+						wg.Add(1)
+						s.Pool.Submit(batch)
+						batch = newBatch()
+					}
 				}
 			}
 		}
-	}
 
-	// leftovers
-	if len(batch.Jobs) > 0 {
-		s.Pool.Submit(batch)
-	}
+		if len(batch.Jobs) > 0 {
+			wg.Add(1)
+			s.Pool.Submit(batch)
+		}
+	}()
 
-	slog.Debug("submitted work",
-		"sim_id", simId,
-		"submitted", submitted)
-
-	var matrix []AccessTuple
-	var received int32
+	// Consume results until all batches are processed and the channel is closed
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	var received int64
 
 	for {
 		select {
-		case job := <-finished:
+		case job, ok := <-finished:
+			if !ok {
+				return
+			}
 			received++
 			if job.Error != nil {
-				return nil, fmt.Errorf("simulation error: %w", job.Error)
+				onError(fmt.Errorf("simulation error: %w", job.Error))
+				return
 			}
-
 			if job.Result.IsAllowed {
-				matrix = append(matrix, AccessTuple{
+				onResult(AccessTuple{
 					Principal: job.Result.Principal,
 					Action:    job.Result.Action,
 					Resource:  job.Result.Resource,
-					Result:    job.Result})
+					Result:    job.Result,
+				})
 			}
-		case <-time.After(time.Second * 1):
-			slog.Debug("simulation in progress",
-				"done", done.Load(),
-				"sent", sent.Load(),
-				"received", received,
-				"out_of", submitted)
-		}
-
-		// Exit when all jobs are processed AND all sent results are received
-		if done.Load() >= submitted && received >= sent.Load() {
-			break
+		case <-ticker.C:
+			slog.Debug("simulation in progress", "received", received)
 		}
 	}
-
-	close(finished)
-	return matrix, nil
 }

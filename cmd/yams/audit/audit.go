@@ -10,6 +10,7 @@ import (
 
 	"github.com/nsiow/yams/cmd/yams/cli"
 	"github.com/nsiow/yams/internal/smartrw"
+	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/server"
 	"github.com/nsiow/yams/pkg/sim"
 )
@@ -29,24 +30,21 @@ func Run(opts *cli.Flags) {
 		cli.Fail("error: -f/-config is required")
 	}
 
-	// Load audit config
 	config, err := loadConfig(opts.Config)
 	if err != nil {
 		cli.Fail("error loading config: %v", err)
 	}
 
-	// Build simulator from sources
 	simulator, err := buildSimulator(opts.Sources)
 	if err != nil {
 		cli.Fail("error building simulator: %v", err)
 	}
 
-	// Load overlays if provided
+	// Build simulation options
 	simOpts := []sim.OptionF{}
 	if len(opts.Context) > 0 {
 		simOpts = append(simOpts, sim.WithAdditionalProperties(opts.Context))
 	}
-
 	sopts := sim.NewOptions(simOpts...)
 
 	if len(opts.OverlayFiles) > 0 {
@@ -57,7 +55,16 @@ func Run(opts *cli.Flags) {
 		sopts.Overlay = overlay.Universe()
 	}
 
-	// Open output writer
+	// Pre-freeze all principals once (reused across all config entries)
+	allPrincipalArns := simulator.Universe.PrincipalArns()
+	slog.Info("freezing principals", "count", len(allPrincipalArns))
+
+	frozenPrincipals, err := simulator.FreezePrincipals(allPrincipalArns, sopts)
+	if err != nil {
+		cli.Fail("error freezing principals: %v", err)
+	}
+
+	// Open output
 	w, err := smartrw.NewWriter(opts.Out)
 	if err != nil {
 		cli.Fail("error opening output: %v", err)
@@ -67,20 +74,17 @@ func Run(opts *cli.Flags) {
 	cw := csv.NewWriter(w)
 	defer cw.Flush()
 
-	// Write CSV header
 	if err := cw.Write([]string{"resource", "action", "principal"}); err != nil {
 		cli.Fail("error writing CSV header: %v", err)
 	}
 
-	// Process each config entry
-	allPrincipals := simulator.Universe.PrincipalArns()
 	slog.Info("audit starting",
-		"principals", len(allPrincipals),
+		"principals", len(frozenPrincipals),
 		"entries", len(config))
 
 	var totalRows int
 	for i, entry := range config {
-		n, err := processEntry(simulator, allPrincipals, entry, sopts, cw)
+		n, err := processEntry(simulator, frozenPrincipals, entry, sopts, cw)
 		if err != nil {
 			cli.Fail("error processing entry %d (%s): %v", i, entry.ResourceType, err)
 		}
@@ -146,10 +150,10 @@ func buildSimulator(sources []string) (*sim.Simulator, error) {
 	return simulator, nil
 }
 
-// processEntry runs the audit for a single config entry and writes results to CSV
+// processEntry runs the audit for a single config entry, streaming results directly to CSV
 func processEntry(
 	simulator *sim.Simulator,
-	allPrincipals []string,
+	frozenPrincipals []*entities.FrozenPrincipal,
 	entry ConfigEntry,
 	opts sim.Options,
 	cw *csv.Writer,
@@ -167,40 +171,58 @@ func processEntry(
 		return 0, nil
 	}
 
-	// Expand resources (e.g. S3 bucket → object)
+	// Expand resources (e.g. S3 bucket -> object)
 	expanded, err := simulator.ExpandResources(resourceArns, opts)
 	if err != nil {
 		return 0, fmt.Errorf("unable to expand resources: %w", err)
 	}
 
+	// Freeze resources for this entry
+	frozenResources, err := simulator.FreezeResources(expanded, opts)
+	if err != nil {
+		return 0, fmt.Errorf("unable to freeze resources: %w", err)
+	}
+
 	slog.Info("processing entry",
 		"type", entry.ResourceType,
-		"resources", len(expanded),
+		"resources", len(frozenResources),
 		"actions", len(entry.Actions),
-		"principals", len(allPrincipals))
+		"principals", len(frozenPrincipals))
 
-	// Run cartesian product simulation
-	tuples, err := simulator.Product(allPrincipals, entry.Actions, expanded, opts)
+	// Stream results: dedup and write CSV inline instead of collecting all in memory
+	seen := make(map[string]struct{})
+	var rows int
+	var writeErr error
+
+	err = simulator.ProductFrozenStreaming(
+		frozenPrincipals,
+		entry.Actions,
+		frozenResources,
+		opts,
+		func(t sim.AccessTuple) {
+			if writeErr != nil {
+				return
+			}
+
+			resource := collapseS3Arn(t.Resource)
+			key := resource + "\x00" + t.Action + "\x00" + t.Principal
+			if _, ok := seen[key]; ok {
+				return
+			}
+			seen[key] = struct{}{}
+
+			if err := cw.Write([]string{resource, t.Action, t.Principal}); err != nil {
+				writeErr = fmt.Errorf("error writing CSV row: %w", err)
+				return
+			}
+			rows++
+		},
+	)
 	if err != nil {
 		return 0, fmt.Errorf("simulation error: %w", err)
 	}
-
-	// Collapse S3 ARNs and dedup results
-	seen := make(map[string]struct{})
-	var rows int
-
-	for _, t := range tuples {
-		resource := collapseS3Arn(t.Resource)
-		key := resource + "\x00" + t.Action + "\x00" + t.Principal
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-
-		if err := cw.Write([]string{resource, t.Action, t.Principal}); err != nil {
-			return 0, fmt.Errorf("error writing CSV row: %w", err)
-		}
-		rows++
+	if writeErr != nil {
+		return 0, writeErr
 	}
 
 	slog.Info("entry complete",
