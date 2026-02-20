@@ -442,9 +442,8 @@ func (s *Simulator) runProduct(
 	return matrix, collectErr
 }
 
-// streamProduct is the core simulation engine. It submits work concurrently while streaming
-// results to onResult. Submission and consumption run concurrently to avoid channel backpressure
-// deadlocks. A context is used to cancel in-flight work on error.
+// streamProduct is the core simulation engine. It partitions principals across multiple submission
+// goroutines to keep workers saturated. A context is used to cancel in-flight work on error.
 func (s *Simulator) streamProduct(
 	fps []*entities.FrozenPrincipal,
 	fas []*types.Action,
@@ -459,53 +458,34 @@ func (s *Simulator) streamProduct(
 	finished := make(chan simOut, s.Pool.NumWorkers()*s.Pool.BatchSize())
 	var wg sync.WaitGroup
 
-	// Submit work concurrently with consumption to avoid channel backpressure deadlock
+	// Partition principals across multiple submission goroutines to avoid a single-threaded
+	// submission bottleneck (the Targets() filter in the inner loop is CPU-bound)
+	numSubmitters := s.Pool.NumWorkers()
+	if numSubmitters > len(fps) {
+		numSubmitters = len(fps)
+	}
+	if numSubmitters < 1 {
+		numSubmitters = 1
+	}
+
+	// Coordinator goroutine: waits for all submitters then closes the channel
 	go func() {
-		defer func() {
-			wg.Wait()
-			close(finished)
-		}()
+		var submitters sync.WaitGroup
+		submitters.Add(numSubmitters)
 
-		newBatch := func() simBatch {
-			return simBatch{
-				Jobs:     make([]simIn, 0, s.Pool.BatchSize()),
-				Finished: finished,
-				Wg:       &wg,
-				Ctx:      ctx,
-			}
+		for i := range numSubmitters {
+			start := i * len(fps) / numSubmitters
+			end := (i + 1) * len(fps) / numSubmitters
+
+			go func(principals []*entities.FrozenPrincipal) {
+				defer submitters.Done()
+				s.submitPartition(principals, fas, frs, opts, finished, &wg, ctx)
+			}(fps[start:end])
 		}
 
-		batch := newBatch()
-		for _, p := range fps {
-			for _, a := range fas {
-				for _, r := range frs {
-					if !a.Targets(r.Arn) {
-						continue
-					}
-
-					batch.Jobs = append(batch.Jobs, simIn{
-						AuthContext: AuthContext{
-							Action:     a,
-							Principal:  p,
-							Resource:   r,
-							Properties: opts.Context,
-						},
-						Options: opts,
-					})
-
-					if len(batch.Jobs) == s.Pool.BatchSize() {
-						wg.Add(1)
-						s.Pool.Submit(batch)
-						batch = newBatch()
-					}
-				}
-			}
-		}
-
-		if len(batch.Jobs) > 0 {
-			wg.Add(1)
-			s.Pool.Submit(batch)
-		}
+		submitters.Wait()
+		wg.Wait()
+		close(finished)
 	}()
 
 	// Consume results until all batches are processed and the channel is closed
@@ -535,5 +515,60 @@ func (s *Simulator) streamProduct(
 		case <-ticker.C:
 			slog.Debug("simulation in progress", "received", received)
 		}
+	}
+}
+
+// submitPartition iterates a slice of principals against all actions and resources, building
+// batches and submitting them to the pool
+func (s *Simulator) submitPartition(
+	fps []*entities.FrozenPrincipal,
+	fas []*types.Action,
+	frs []*entities.FrozenResource,
+	opts Options,
+	finished chan simOut,
+	wg *sync.WaitGroup,
+	ctx context.Context,
+) {
+	batch := simBatch{
+		Jobs:     make([]simIn, 0, s.Pool.BatchSize()),
+		Finished: finished,
+		Wg:       wg,
+		Ctx:      ctx,
+	}
+
+	for _, p := range fps {
+		for _, a := range fas {
+			for _, r := range frs {
+				if !a.Targets(r.Arn) {
+					continue
+				}
+
+				batch.Jobs = append(batch.Jobs, simIn{
+					AuthContext: AuthContext{
+						Action:     a,
+						Principal:  p,
+						Resource:   r,
+						Properties: opts.Context,
+					},
+					Options: opts,
+				})
+
+				if len(batch.Jobs) == s.Pool.BatchSize() {
+					wg.Add(1)
+					s.Pool.Submit(batch)
+					batch = simBatch{
+						Jobs:     make([]simIn, 0, s.Pool.BatchSize()),
+						Finished: finished,
+						Wg:       wg,
+						Ctx:      ctx,
+					}
+				}
+			}
+		}
+	}
+
+	if len(batch.Jobs) > 0 {
+		wg.Add(1)
+		s.Pool.Submit(batch)
 	}
 }

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
+	"runtime/pprof"
 	"strings"
 
 	"github.com/nsiow/yams/cmd/yams/cli"
@@ -23,6 +25,22 @@ type ConfigEntry struct {
 
 // Run executes the audit subcommand
 func Run(opts *cli.Flags) {
+	// CPU profiling via env var (CPUPROFILE=/path/to/file)
+	if cpuProfile := os.Getenv("CPUPROFILE"); cpuProfile != "" {
+		f, err := os.Create(cpuProfile)
+		if err != nil {
+			cli.Fail("error creating CPU profile: %v", err)
+		}
+		if err := pprof.StartCPUProfile(f); err != nil {
+			cli.Fail("error starting CPU profile: %v", err)
+		}
+		defer func() {
+			pprof.StopCPUProfile()
+			f.Close()
+			slog.Info("wrote CPU profile", "path", cpuProfile)
+		}()
+	}
+
 	if len(opts.Sources) == 0 {
 		cli.Fail("error: -s/-source is required")
 	}
