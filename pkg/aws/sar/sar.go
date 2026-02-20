@@ -27,6 +27,13 @@ func AllActions() []types.Action {
 	return actions
 }
 
+// ActionsByService returns all actions for the specified service via direct index lookup.
+// The service name is case-insensitive.
+func ActionsByService(service string) []types.Action {
+	service = strings.ToLower(service)
+	return assets.SARByService()[service]
+}
+
 // Lookup allows for querying a specific api call based on service + action name
 func Lookup(service, action string) (*types.Action, bool) {
 	// SAR index uses lower-case keys

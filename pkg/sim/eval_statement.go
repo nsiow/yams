@@ -1,7 +1,6 @@
 package sim
 
 import (
-	"fmt"
 	"slices"
 
 	"github.com/nsiow/yams/pkg/policy"
@@ -230,5 +229,5 @@ func evalStatementMatchesCondition(s *subject, stmt *policy.Statement) bool {
 // isAccountRootMatch handles the unique delegation for account roots in IAM policies
 func isAccountRootMatch(pattern string, principalAccountId string) bool {
 	return pattern == principalAccountId ||
-		pattern == fmt.Sprintf("arn:aws:iam::%s:root", principalAccountId)
+		pattern == "arn:aws:iam::"+principalAccountId+":root"
 }

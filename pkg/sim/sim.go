@@ -247,7 +247,7 @@ func (s *Simulator) WhichPrincipals(action, resource string, opts Options) ([]st
 
 func (s *Simulator) WhichActions(principal, resource string, opts Options) ([]string, error) {
 	svc := arn.Service(resource)
-	actions := sar.NewQuery().WithService(svc).Results()
+	actions := sar.ActionsByService(svc)
 
 	matrix, err := s.Product(
 		[]string{principal},

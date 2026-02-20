@@ -16,7 +16,8 @@ import (
 //go:embed sar.json.gz
 var compressedSarData []byte
 var sarData []types.Service
-var sarIndex map[string]map[string]types.Action // map[service]map[action]action
+var sarIndex map[string]map[string]types.Action   // map[service]map[action]action
+var sarByService map[string][]types.Action        // map[service][]action
 var sarDataLoad sync.Once
 
 // The minimum number of documented services expected; used to detect regressions
@@ -33,6 +34,12 @@ func SAR() []types.Service {
 func SARIndex() map[string]map[string]types.Action {
 	sarDataLoad.Do(func() { loadSAR(compressedSarData) })
 	return sarIndex
+}
+
+// SARByService returns all actions for a given service (lowercase) via direct index lookup
+func SARByService() map[string][]types.Action {
+	sarDataLoad.Do(func() { loadSAR(compressedSarData) })
+	return sarByService
 }
 
 // loadSAR processes the provided raw compressed data into the structured policy set
@@ -56,20 +63,30 @@ func loadSAR(compressedData []byte) {
 			len(newData)))
 	}
 
-	// build the index, once
+	// build the index, once. also precompute cached fields on each action
 	newIndex := make(map[string]map[string]types.Action)
-	for _, service := range newData {
+	for i, service := range newData {
 		serviceName := strings.ToLower(service.Name)
 		if _, exists := newIndex[service.Name]; !exists {
 			newIndex[serviceName] = make(map[string]types.Action)
 		}
 
-		for _, action := range service.Actions {
+		for j := range service.Actions {
+			newData[i].Actions[j].SetShortName()
+			action := newData[i].Actions[j]
 			actionName := strings.ToLower(action.Name)
 			newIndex[serviceName][actionName] = action
 		}
 	}
 
+	// build the service→actions index for fast per-service lookups
+	newByService := make(map[string][]types.Action, len(newData))
+	for _, service := range newData {
+		serviceName := strings.ToLower(service.Name)
+		newByService[serviceName] = service.Actions
+	}
+
 	sarData = newData
 	sarIndex = newIndex
+	sarByService = newByService
 }

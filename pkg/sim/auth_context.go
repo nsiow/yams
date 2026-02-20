@@ -304,32 +304,29 @@ func (ac *AuthContext) now() time.Time {
 
 // normalizeKey performs any required key normalization to process the provided key
 func normalizeKey(key string) string {
-	// TODO(nsiow) this is a rough approximation
-	substr := strings.SplitN(key, "/", 2)
-	switch len(substr) {
-	case 1:
-		return strings.ToLower(key)
-	default:
-		return strings.ToLower(substr[0]) + "/" + substr[1]
+	if i := strings.IndexByte(key, '/'); i >= 0 {
+		return strings.ToLower(key[:i]) + "/" + key[i+1:]
 	}
+	return strings.ToLower(key)
 }
 
 // keyPrefix returns the prefix portion of the condition key, sans any attribute-getters
 // afterwards; e.g. aws:RequestTag/foo becomes aws:RequestTag
 func keyPrefix(key string) string {
-	substr := strings.SplitN(key, "/", 2)
-	return substr[0]
+	if i := strings.IndexByte(key, '/'); i >= 0 {
+		return key[:i]
+	}
+	return key
 }
 
 // extractTag defines how to get the value of the requested tag
 // TODO(nsiow) figure out if slashes are allowed in tag keys
 func (ac *AuthContext) extractTag(key string, tags []entities.Tag) string {
-	// Determine tag key
-	components := strings.SplitN(key, "/", 2)
-	if len(components) != 2 {
+	i := strings.IndexByte(key, '/')
+	if i < 0 {
 		return ""
 	}
-	tagKey := components[1]
+	tagKey := key[i+1:]
 
 	for _, tag := range tags {
 		if tag.Key == tagKey {
