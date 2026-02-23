@@ -112,7 +112,7 @@ func TestStatementMatchesAction(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, Options{})
-		return evalStatementMatchesAction(subj, &i.stmt), nil
+		return evalStatementMatchesAction(&subj, &i.stmt), nil
 	})
 }
 
@@ -379,7 +379,7 @@ func TestStatementMatchesPrincipal(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesPrincipal(subj, &i.stmt), nil
+		return evalStatementMatchesPrincipal(&subj, &i.stmt), nil
 	})
 }
 
@@ -515,7 +515,7 @@ func TestStatementIsDelegated(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementIsDelegated(subj, &i.stmt), nil
+		return evalStatementIsDelegated(&subj, &i.stmt), nil
 	})
 }
 
@@ -671,6 +671,6 @@ func TestStatementMatchesResource(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, NewOptions())
-		return evalStatementMatchesResource(subj, &i.stmt), nil
+		return evalStatementMatchesResource(&subj, &i.stmt), nil
 	})
 }

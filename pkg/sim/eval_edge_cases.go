@@ -37,8 +37,10 @@ func isStrictCall(s *subject) bool {
 // Delegation (account-ID or account-root in the Principal block) is excluded because it just
 // defers access decisions to the account's identity policies.
 func evalResourceAccessGrantsPrincipal(s *subject) bool {
-	s.trc.Push("evaluating whether the resource grants the principal access directly")
-	defer s.trc.Pop()
+	if s.trc.Enabled() {
+		s.trc.Push("evaluating whether the resource grants the principal access directly")
+		defer s.trc.Pop()
+	}
 
 	if s.auth.Resource == nil {
 		return false

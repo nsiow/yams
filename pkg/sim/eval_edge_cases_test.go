@@ -60,7 +60,7 @@ func TestIsStrictCall(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i AuthContext) (bool, error) {
 		subj := newSubject(i, TestingSimulationOptions)
-		return isStrictCall(subj), nil
+		return isStrictCall(&subj), nil
 	})
 }
 
@@ -305,6 +305,6 @@ func TestResourceAccessGrantsPrincipal(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i AuthContext) (bool, error) {
 		subj := newSubject(i, TestingSimulationOptions)
-		return evalResourceAccessGrantsPrincipal(subj), nil
+		return evalResourceAccessGrantsPrincipal(&subj), nil
 	})
 }

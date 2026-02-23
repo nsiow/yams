@@ -181,7 +181,7 @@ func TestPermissionsBoundary(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) (Decision, error) {
 		subj := newSubject(ac, TestingSimulationOptions)
-		decision := evalPermissionsBoundary(subj)
+		decision := evalPermissionsBoundary(&subj)
 		return decision, nil
 	})
 }

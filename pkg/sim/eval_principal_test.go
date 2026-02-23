@@ -246,7 +246,7 @@ func TestPrincipalAccess(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) (Decision, error) {
 		subj := newSubject(ac, TestingSimulationOptions)
-		decision := evalPrincipalAccess(subj)
+		decision := evalPrincipalAccess(&subj)
 		return decision, nil
 	})
 }

@@ -37,7 +37,7 @@ func TestEvalIsSameAccount(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i AuthContext) (bool, error) {
 		subj := newSubject(i, TestingSimulationOptions)
-		return evalIsSameAccount(subj), nil
+		return evalIsSameAccount(&subj), nil
 	})
 }
 
@@ -285,7 +285,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 		}
 
 		subj := newSubject(ac, TestingSimulationOptions)
-		res := evalOverallAccess(subj)
+		res := evalOverallAccess(&subj)
 		return res.IsAllowed, nil
 	})
 }
@@ -1077,7 +1077,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 		}
 
 		subj := newSubject(ac, TestingSimulationOptions)
-		res := evalOverallAccess(subj)
+		res := evalOverallAccess(&subj)
 		return res.IsAllowed, nil
 	})
 }

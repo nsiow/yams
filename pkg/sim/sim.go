@@ -150,7 +150,7 @@ func (s *Simulator) Simulate(ac AuthContext) (*SimResult, error) {
 	return s.SimulateWithOptions(ac, DEFAULT_OPTIONS)
 }
 
-// Simulate determines whether the provided AuthContext would be allowed
+// SimulateWithOptions determines whether the provided AuthContext would be allowed
 func (s *Simulator) SimulateWithOptions(ac AuthContext, opts Options) (*SimResult, error) {
 	if opts.ForceFailure {
 		return nil, fmt.Errorf("error due to forced-failure option")
@@ -161,16 +161,18 @@ func (s *Simulator) SimulateWithOptions(ac AuthContext, opts Options) (*SimResul
 		return nil, err
 	}
 
-	// TODO(nsiow) see if we can add stronger guarantees around P/A/R being set
 	subj := newSubject(ac, opts)
-	result := evalOverallAccess(subj)
+	result := evalOverallAccess(&subj)
 	result.Principal = ac.Principal.Arn
 	result.Action = ac.Action.ShortName()
 	if ac.Resource != nil {
 		result.Resource = ac.Resource.Arn
 	}
+	if opts.EnableTracing {
+		result.Trace = &subj.trc
+	}
 
-	return result, nil
+	return &result, nil
 }
 
 // SimulateByArn determines whether the operation would be allowed between the Principal and
@@ -442,6 +444,31 @@ func (s *Simulator) runProduct(
 	return matrix, collectErr
 }
 
+// actionResources pairs an action with the pre-filtered resources it can target, computed once
+// before the principal loop to avoid redundant Targets() calls per principal
+type actionResources struct {
+	action    *types.Action
+	resources []*entities.FrozenResource
+}
+
+// precomputeTargets builds a filtered mapping of actions to their targeted resources. This moves
+// the Targets() wildcard matching from O(principals × actions × resources) to O(actions × resources).
+func precomputeTargets(fas []*types.Action, frs []*entities.FrozenResource) []actionResources {
+	result := make([]actionResources, 0, len(fas))
+	for _, a := range fas {
+		var matching []*entities.FrozenResource
+		for _, r := range frs {
+			if a.Targets(r.Arn) {
+				matching = append(matching, r)
+			}
+		}
+		if len(matching) > 0 {
+			result = append(result, actionResources{action: a, resources: matching})
+		}
+	}
+	return result
+}
+
 // streamProduct is the core simulation engine. It partitions principals across multiple submission
 // goroutines to keep workers saturated. A context is used to cancel in-flight work on error.
 func (s *Simulator) streamProduct(
@@ -458,8 +485,11 @@ func (s *Simulator) streamProduct(
 	finished := make(chan simOut, s.Pool.NumWorkers()*s.Pool.BatchSize())
 	var wg sync.WaitGroup
 
+	// Pre-compute which resources each action targets to avoid repeated Targets() calls
+	filtered := precomputeTargets(fas, frs)
+
 	// Partition principals across multiple submission goroutines to avoid a single-threaded
-	// submission bottleneck (the Targets() filter in the inner loop is CPU-bound)
+	// submission bottleneck
 	numSubmitters := s.Pool.NumWorkers()
 	if numSubmitters > len(fps) {
 		numSubmitters = len(fps)
@@ -479,7 +509,7 @@ func (s *Simulator) streamProduct(
 
 			go func(principals []*entities.FrozenPrincipal) {
 				defer submitters.Done()
-				s.submitPartition(principals, fas, frs, opts, finished, &wg, ctx)
+				s.submitPartition(principals, filtered, opts, finished, &wg, ctx)
 			}(fps[start:end])
 		}
 
@@ -505,11 +535,12 @@ func (s *Simulator) streamProduct(
 				return
 			}
 			if job.Result.IsAllowed {
+				result := &job.Result
 				onResult(AccessTuple{
-					Principal: job.Result.Principal,
-					Action:    job.Result.Action,
-					Resource:  job.Result.Resource,
-					Result:    job.Result,
+					Principal: result.Principal,
+					Action:    result.Action,
+					Resource:  result.Resource,
+					Result:    result,
 				})
 			}
 		case <-ticker.C:
@@ -518,12 +549,11 @@ func (s *Simulator) streamProduct(
 	}
 }
 
-// submitPartition iterates a slice of principals against all actions and resources, building
-// batches and submitting them to the pool
+// submitPartition iterates a slice of principals against pre-filtered action/resource pairs,
+// building batches and submitting them to the pool
 func (s *Simulator) submitPartition(
 	fps []*entities.FrozenPrincipal,
-	fas []*types.Action,
-	frs []*entities.FrozenResource,
+	filtered []actionResources,
 	opts Options,
 	finished chan simOut,
 	wg *sync.WaitGroup,
@@ -537,15 +567,11 @@ func (s *Simulator) submitPartition(
 	}
 
 	for _, p := range fps {
-		for _, a := range fas {
-			for _, r := range frs {
-				if !a.Targets(r.Arn) {
-					continue
-				}
-
+		for _, ar := range filtered {
+			for _, r := range ar.resources {
 				batch.Jobs = append(batch.Jobs, simIn{
 					AuthContext: AuthContext{
-						Action:     a,
+						Action:     ar.action,
 						Principal:  p,
 						Resource:   r,
 						Properties: opts.Context,

@@ -24,13 +24,17 @@ func evalStatement(s *subject, stmt policy.Statement, funcs []evalFunction) Deci
 
 // evalStatementMatchesAction computes whether the Statement matches the AuthContext's Action
 func evalStatementMatchesAction(s *subject, stmt *policy.Statement) bool {
-
-	s.trc.Push("evaluating Action")
-	defer s.trc.Pop()
+	trc := s.trc.Enabled()
+	if trc {
+		s.trc.Push("evaluating Action")
+		defer s.trc.Pop()
+	}
 
 	// Handle empty Action
 	if s.auth.Action == nil {
-		s.trc.Log("AuthContext missing Action")
+		if trc {
+			s.trc.Log("AuthContext missing Action")
+		}
 		return false
 	}
 
@@ -38,10 +42,14 @@ func evalStatementMatchesAction(s *subject, stmt *policy.Statement) bool {
 	var _gate gate.Gate
 	var action policy.Action
 	if !stmt.Action.Empty() {
-		s.trc.Log("using Action block")
+		if trc {
+			s.trc.Log("using Action block")
+		}
 		action = stmt.Action
 	} else {
-		s.trc.Log("using NotAction block")
+		if trc {
+			s.trc.Log("using NotAction block")
+		}
 		action = stmt.NotAction
 		_gate.Invert()
 	}
@@ -50,23 +58,31 @@ func evalStatementMatchesAction(s *subject, stmt *policy.Statement) bool {
 	for _, a := range action {
 		match := wildcard.MatchSegmentsIgnoreCase(a, shortName)
 		if match {
-			s.trc.Log("match: %s and %s", a, shortName)
+			if trc {
+				s.trc.Log("match: %s and %s", a, shortName)
+			}
 			return _gate.Apply(true)
 		}
 	}
 
-	s.trc.Log("action does not match")
+	if trc {
+		s.trc.Log("action does not match")
+	}
 	return _gate.Apply(false)
 }
 
 // evalStatementMatchesPrincipal computes whether the Statement matches the AuthContext's Principal
 func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
-
-	s.trc.Push("evaluating Principal")
-	defer s.trc.Pop()
+	trc := s.trc.Enabled()
+	if trc {
+		s.trc.Push("evaluating Principal")
+		defer s.trc.Pop()
+	}
 
 	if s.auth.Principal == nil {
-		s.trc.Log("AuthContext missing Principal")
+		if trc {
+			s.trc.Log("AuthContext missing Principal")
+		}
 		return false
 	}
 
@@ -74,16 +90,24 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
 	var principals policy.Principal
 	switch {
 	case stmt.Principal.All:
-		s.trc.Log("saw special Principal=* block")
+		if trc {
+			s.trc.Log("saw special Principal=* block")
+		}
 		return true
 	case stmt.NotPrincipal.All:
-		s.trc.Log("saw special NotPrincipal=* block")
+		if trc {
+			s.trc.Log("saw special NotPrincipal=* block")
+		}
 		return false
 	case !stmt.Principal.Empty():
-		s.trc.Log("using Principal block")
+		if trc {
+			s.trc.Log("using Principal block")
+		}
 		principals = stmt.Principal
 	default:
-		s.trc.Log("using NotPrincipal block")
+		if trc {
+			s.trc.Log("using NotPrincipal block")
+		}
 		principals = stmt.NotPrincipal
 		_gate.Invert()
 	}
@@ -92,12 +116,16 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
 		// Handle account-root syntax
 		if isAccountRootMatch(p, s.auth.Principal.AccountId) ||
 			wildcard.MatchAllOrNothing(p, s.auth.Principal.Arn) {
-			s.trc.Log("match: %s and %s", p, s.auth.Principal.Arn)
+			if trc {
+				s.trc.Log("match: %s and %s", p, s.auth.Principal.Arn)
+			}
 			return _gate.Apply(true)
 		}
 	}
 
-	s.trc.Log("principal does not match")
+	if trc {
+		s.trc.Log("principal does not match")
+	}
 	return _gate.Apply(false)
 }
 
@@ -107,9 +135,11 @@ func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
 // Delegation means the resource policy trusts the account to manage access via identity policies,
 // whereas a direct grant (Principal=*, exact ARN, etc.) gives the principal access regardless.
 func evalStatementIsDelegated(s *subject, stmt *policy.Statement) bool {
-
-	s.trc.Push("evaluating whether principal match is delegated")
-	defer s.trc.Pop()
+	trc := s.trc.Enabled()
+	if trc {
+		s.trc.Push("evaluating whether principal match is delegated")
+		defer s.trc.Pop()
+	}
 
 	if s.auth.Principal == nil {
 		return false
@@ -117,13 +147,17 @@ func evalStatementIsDelegated(s *subject, stmt *policy.Statement) bool {
 
 	// Principal: "*" grants access directly, not via delegation
 	if stmt.Principal.All {
-		s.trc.Log("not delegated: Principal=*")
+		if trc {
+			s.trc.Log("not delegated: Principal=*")
+		}
 		return false
 	}
 
 	// NotPrincipal statements are exclusions, not grants or delegations
 	if stmt.Principal.Empty() {
-		s.trc.Log("not delegated: using NotPrincipal block")
+		if trc {
+			s.trc.Log("not delegated: using NotPrincipal block")
+		}
 		return false
 	}
 
@@ -136,12 +170,14 @@ func evalStatementIsDelegated(s *subject, stmt *policy.Statement) bool {
 			continue
 		}
 		if wildcard.MatchAllOrNothing(p, s.auth.Principal.Arn) {
-			s.trc.Log("not delegated: direct grant via %s", p)
+			if trc {
+				s.trc.Log("not delegated: direct grant via %s", p)
+			}
 			return false
 		}
 	}
 
-	if delegationMatch {
+	if trc && delegationMatch {
 		s.trc.Log("delegated: matched via account-root only")
 	}
 	return delegationMatch
@@ -155,13 +191,17 @@ func evalStatementIsNotDelegated(s *subject, stmt *policy.Statement) bool {
 
 // evalStatementMatchesResource computes whether the Statement matches the AuthContext's Resource
 func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
-
-	s.trc.Push("evaluating Resource")
-	defer s.trc.Pop()
+	trc := s.trc.Enabled()
+	if trc {
+		s.trc.Push("evaluating Resource")
+		defer s.trc.Pop()
+	}
 
 	// Handle empty Resource
 	if s.auth.Resource == nil && s.auth.Action.HasTargets() {
-		s.trc.Log("AuthContext missing Resource")
+		if trc {
+			s.trc.Log("AuthContext missing Resource")
+		}
 		return false
 	}
 
@@ -169,10 +209,14 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
 	var _gate gate.Gate
 	var resources policy.Resource
 	if !stmt.Resource.Empty() {
-		s.trc.Log("using Resource block")
+		if trc {
+			s.trc.Log("using Resource block")
+		}
 		resources = stmt.Resource
 	} else {
-		s.trc.Log("using NotResource block")
+		if trc {
+			s.trc.Log("using NotResource block")
+		}
 		resources = stmt.NotResource
 		_gate.Invert()
 	}
@@ -181,9 +225,6 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
 	if !s.auth.Action.HasTargets() {
 		return _gate.Apply(slices.Contains(resources, "*"))
 	}
-
-	// TODO(nsiow) this may need to change for subresource based operations e.g. s3:getobject
-	// TODO(nsiow) this needs to support variable expansion
 
 	// Use pre-split segments if available, otherwise fall back to regular matching
 	arnSegments := s.auth.Resource.ArnSegments
@@ -195,12 +236,16 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
 			match = wildcard.MatchSegments(r, s.auth.Resource.Arn)
 		}
 		if match {
-			s.trc.Log("match: %s and %s", r, s.auth.Resource.Arn)
+			if trc {
+				s.trc.Log("match: %s and %s", r, s.auth.Resource.Arn)
+			}
 			return _gate.Apply(true)
 		}
 	}
 
-	s.trc.Log("resource does not match")
+	if trc {
+		s.trc.Log("resource does not match")
+	}
 	return _gate.Apply(false)
 }
 
@@ -208,21 +253,30 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
 // provided AuthContext
 func evalStatementMatchesCondition(s *subject, stmt *policy.Statement) bool {
 	if len(stmt.Condition) == 0 {
-		s.trc.Log("skipping condition: none found")
+		if s.trc.Enabled() {
+			s.trc.Log("skipping condition: none found")
+		}
 		return true
 	}
 
-	s.trc.Push("evaluating Condition")
-	defer s.trc.Pop()
+	trc := s.trc.Enabled()
+	if trc {
+		s.trc.Push("evaluating Condition")
+		defer s.trc.Pop()
+	}
 
 	for op, cond := range stmt.Condition {
 		if !evalCheckCondition(s, op, cond) {
-			s.trc.Log("condition evaluated to false")
+			if trc {
+				s.trc.Log("condition evaluated to false")
+			}
 			return false
 		}
 	}
 
-	s.trc.Log("condition evaluated to true")
+	if trc {
+		s.trc.Log("condition evaluated to true")
+	}
 	return true
 }
 

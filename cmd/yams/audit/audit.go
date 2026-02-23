@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"runtime/debug"
 	"runtime/pprof"
 	"strings"
 
@@ -25,6 +26,10 @@ type ConfigEntry struct {
 
 // Run executes the audit subcommand
 func Run(opts *cli.Flags) {
+	// Reduce GC pressure for batch workloads: the default GOGC=100 causes excessive GC when
+	// many goroutines allocate concurrently, wasting ~65% of CPU time on sweep/mark/refill.
+	debug.SetGCPercent(400)
+
 	// CPU profiling via env var (CPUPROFILE=/path/to/file)
 	if cpuProfile := os.Getenv("CPUPROFILE"); cpuProfile != "" {
 		f, err := os.Create(cpuProfile)

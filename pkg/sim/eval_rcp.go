@@ -26,8 +26,11 @@ func supportsRCPs(s *subject) bool {
 // evalRCP assesses the resource control policies of the Resource to determine whether or not it
 // allows the provided AuthContext
 func evalRCP(s *subject) Decision {
-	s.trc.Push("evaluating resource control policies")
-	defer s.trc.Pop()
+	trc := s.trc.Enabled()
+	if trc {
+		s.trc.Push("evaluating resource control policies")
+		defer s.trc.Pop()
+	}
 
 	decision := Decision{}
 
@@ -35,26 +38,33 @@ func evalRCP(s *subject) Decision {
 	if s.auth.Resource == nil ||
 		len(s.auth.Resource.Account.OrgNodes) == 0 ||
 		len(s.auth.Resource.Account.OrgNodes[0].RCPs) == 0 {
-		s.trc.Log("skipping RCPs: none found")
+		if trc {
+			s.trc.Log("skipping RCPs: none found")
+		}
 		decision.Add(policy.EFFECT_ALLOW)
 		return decision
 	}
 
 	// If service does not support RCPs, always allowed
 	if !supportsRCPs(s) {
-		s.trc.Log("action/resource does not support RCPs")
+		if trc {
+			s.trc.Log("action/resource does not support RCPs")
+		}
 		decision.Add(policy.EFFECT_ALLOW)
 		return decision
 	}
 
 	// Iterate through layers of RCP, only continuing if we get an allow result through each layer
 	for _, node := range s.auth.Resource.Account.OrgNodes {
-
-		s.trc.Push("evaluating resource control policies for node: %s of type %s", node.Name, node.Type)
+		if trc {
+			s.trc.Push("evaluating resource control policies for node: %s of type %s", node.Name, node.Type)
+		}
 		layerDecision := Decision{}
 
 		for _, rcp := range node.RCPs {
-			s.trc.Push("evaluating resource control policy: %s", rcp.Name)
+			if trc {
+				s.trc.Push("evaluating resource control policy: %s", rcp.Name)
+			}
 
 			localDecision := evalPolicy(s, rcp.Policy,
 				evalStatementMatchesAction,
@@ -62,24 +72,30 @@ func evalRCP(s *subject) Decision {
 				evalStatementMatchesResource,
 				evalStatementMatchesCondition,
 			)
-			if localDecision.DeniedExplicit() {
+			if trc && localDecision.DeniedExplicit() {
 				s.trc.Denied("explicit deny in resource control policy: %s", rcp.Name)
 			}
 
 			// Calculate access for this layer
 			layerDecision.Merge(localDecision)
 
-			s.trc.Pop()
+			if trc {
+				s.trc.Pop()
+			}
 		}
 
 		if !layerDecision.Allowed() {
-			s.trc.Log("deny due to RCPs for node: %s of type %s", node.Name, node.Type)
-			s.trc.Pop()
+			if trc {
+				s.trc.Log("deny due to RCPs for node: %s of type %s", node.Name, node.Type)
+				s.trc.Pop()
+			}
 			return layerDecision
 		}
 
 		decision.Merge(layerDecision)
-		s.trc.Pop()
+		if trc {
+			s.trc.Pop()
+		}
 	}
 
 	return decision

@@ -2,6 +2,7 @@ package sim
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"runtime"
@@ -20,7 +21,7 @@ type simIn struct {
 }
 
 type simOut struct {
-	Result *SimResult
+	Result SimResult
 	Error  error
 }
 
@@ -138,13 +139,34 @@ func (p *Pool) handleBatch(b simBatch) {
 		default:
 		}
 
-		result, err := p.Simulator.SimulateWithOptions(item.AuthContext, item.Options)
-		if err != nil || result.IsAllowed {
+		// Handle ForceFailure (test-only path)
+		if item.Options.ForceFailure {
 			select {
-			case b.Finished <- simOut{Result: result, Error: err}:
+			case b.Finished <- simOut{Error: fmt.Errorf("error due to forced-failure option")}:
 			case <-b.Ctx.Done():
 				return
 			}
+			continue
+		}
+
+		// Fast path: skip Validate (submitter already filtered via Targets) and avoid heap
+		// allocation by using stack-local subject and value-type SimResult
+		subj := subject{auth: item.AuthContext, opts: item.Options}
+		result := evalOverallAccess(&subj)
+		if !result.IsAllowed {
+			continue
+		}
+
+		result.Principal = item.AuthContext.Principal.Arn
+		result.Action = item.AuthContext.Action.ShortName()
+		if item.AuthContext.Resource != nil {
+			result.Resource = item.AuthContext.Resource.Arn
+		}
+
+		select {
+		case b.Finished <- simOut{Result: result}:
+		case <-b.Ctx.Done():
+			return
 		}
 	}
 }
