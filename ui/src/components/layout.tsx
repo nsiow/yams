@@ -140,7 +140,7 @@ export function Layout(): JSX.Element {
               c="white"
               onClick={() => navigate('/config')}
             >
-              Config
+              Settings
             </Button>
           </Group>
         </Group>

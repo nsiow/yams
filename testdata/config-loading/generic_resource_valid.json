@@ -1,7 +1,7 @@
 [
   {
-    "arn": "arn:aws:lambda:us-west-2:123456789012:function:my-function",
-    "resourceType": "AWS::Lambda::Function",
+    "arn": "arn:aws:ec2:us-west-2:123456789012:instance/i-1234567890abcdef0",
+    "resourceType": "AWS::EC2::Instance",
     "awsRegion": "us-west-2",
     "accountId": "123456789012",
     "configuration": {},

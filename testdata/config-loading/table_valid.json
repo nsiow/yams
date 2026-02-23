@@ -36,6 +36,7 @@
         },
         "continuousBackupsStatus": "ENABLED"
       },
+      "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AllowAccessFromRole\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::000000000000:role/MyAppRole\"},\"Action\":[\"dynamodb:GetItem\",\"dynamodb:Query\"],\"Resource\":\"arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable\"}]}",
       "Tags": []
     },
     "tags": []

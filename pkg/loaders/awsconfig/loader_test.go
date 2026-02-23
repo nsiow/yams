@@ -33,10 +33,10 @@ func TestLoad(t *testing.T) {
 			Want: entities.NewBuilder().
 				WithResources(
 					entities.Resource{
-						Type:      "AWS::Lambda::Function",
+						Type:      "AWS::EC2::Instance",
 						AccountId: "123456789012",
 						Region:    "us-west-2",
-						Arn:       "arn:aws:lambda:us-west-2:123456789012:function:my-function",
+						Arn:       "arn:aws:ec2:us-west-2:123456789012:instance/i-1234567890abcdef0",
 						Tags:      []entities.Tag{},
 					},
 				).
@@ -428,6 +428,27 @@ func TestLoad(t *testing.T) {
 						Region:    "us-east-1",
 						Arn:       "arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable",
 						Tags:      []entities.Tag{},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "AllowAccessFromRole",
+									Effect: "Allow",
+									Principal: policy.Principal{
+										AWS: policy.Value{
+											"arn:aws:iam::000000000000:role/MyAppRole",
+										},
+									},
+									Action: policy.Value{
+										"dynamodb:GetItem",
+										"dynamodb:Query",
+									},
+									Resource: policy.Value{
+										"arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable",
+									},
+								},
+							},
+						},
 					},
 				).
 				Build(),
@@ -513,6 +534,81 @@ func TestLoad(t *testing.T) {
 						AccountId: "999999999999",
 						Region:    "us-west-2",
 						Arn:       "arn:aws:kms:us-west-2:999999999999:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+						Tags:      []entities.Tag{},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "EnableRootAccountAccess",
+									Effect: "Allow",
+									Principal: policy.Principal{
+										AWS: policy.Value{
+											"arn:aws:iam::999999999999:root",
+										},
+									},
+									Action: policy.Value{
+										"kms:*",
+									},
+									Resource: policy.Value{
+										"*",
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "lambda_valid",
+			Input: `../../../testdata/config-loading/lambda_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::Lambda::Function",
+						AccountId: "123456789012",
+						Region:    "us-west-2",
+						Arn:       "arn:aws:lambda:us-west-2:123456789012:function:my-function",
+						Tags:      []entities.Tag{},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "AllowS3Invoke",
+									Effect: "Allow",
+									Principal: policy.Principal{
+										Service: policy.Value{
+											"s3.amazonaws.com",
+										},
+									},
+									Action: policy.Value{
+										"lambda:InvokeFunction",
+									},
+									Resource: policy.Value{
+										"arn:aws:lambda:us-west-2:123456789012:function:my-function",
+									},
+									Condition: policy.ConditionBlock{
+										"StringEquals": {
+											"AWS:SourceAccount": policy.Value{"123456789012"},
+										},
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "lambda_no_policy",
+			Input: `../../../testdata/config-loading/lambda_no_policy.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::Lambda::Function",
+						AccountId: "123456789012",
+						Region:    "us-east-1",
+						Arn:       "arn:aws:lambda:us-east-1:123456789012:function:no-policy-function",
 						Tags:      []entities.Tag{},
 					},
 				).

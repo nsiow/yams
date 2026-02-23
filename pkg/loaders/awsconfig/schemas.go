@@ -262,6 +262,9 @@ func (c *S3Bucket) asResource() entities.Resource {
 
 type DynamodbTable struct {
 	ConfigItem
+	SupplementaryConfiguration struct {
+		Policy EncodedPolicy
+	} `json:"supplementaryConfiguration"`
 }
 
 func (c *DynamodbTable) asResource() entities.Resource {
@@ -272,7 +275,7 @@ func (c *DynamodbTable) asResource() entities.Resource {
 		Region:    c.Region,
 		Arn:       c.Arn,
 		Tags:      c.Tags,
-		Policy:    policy.Policy{}, // TODO(nsiow) DDB table policies: AWS Config does not yet export these
+		Policy:    policy.Policy(c.SupplementaryConfiguration.Policy),
 	}
 }
 
@@ -282,6 +285,9 @@ func (c *DynamodbTable) asResource() entities.Resource {
 
 type KmsKey struct {
 	ConfigItem
+	SupplementaryConfiguration struct {
+		Policy EncodedPolicy
+	} `json:"supplementaryConfiguration"`
 }
 
 func (c *KmsKey) asResource() entities.Resource {
@@ -292,7 +298,30 @@ func (c *KmsKey) asResource() entities.Resource {
 		Region:    c.Region,
 		Arn:       c.Arn,
 		Tags:      c.Tags,
-		Policy:    policy.Policy{}, // TODO(nsiow) KMS key policies: AWS Config does not yet export these
+		Policy:    policy.Policy(c.SupplementaryConfiguration.Policy),
+	}
+}
+
+// -------------------------------------------------------------------------------------------------
+// AWS::Lambda::Function
+// -------------------------------------------------------------------------------------------------
+
+type LambdaFunction struct {
+	ConfigItem
+	SupplementaryConfiguration struct {
+		Policy EncodedPolicy
+	} `json:"supplementaryConfiguration"`
+}
+
+func (c *LambdaFunction) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		Name:      c.Name,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+		Policy:    policy.Policy(c.SupplementaryConfiguration.Policy),
 	}
 }
 
