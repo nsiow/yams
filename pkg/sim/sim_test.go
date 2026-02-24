@@ -380,6 +380,26 @@ func TestWhichPrincipals(t *testing.T) {
 			},
 		},
 		{
+			Name: "create_action_nonexistent_resource",
+			Input: input{
+				uv:       CreateActionTestUniverse,
+				action:   "sqs:createqueue",
+				resource: "arn:aws:sqs:us-east-1:88888:newqueue",
+			},
+			Want: []string{
+				"arn:aws:iam::88888:role/role1",
+			},
+		},
+		{
+			Name: "non_create_action_nonexistent_resource",
+			Input: input{
+				uv:       CreateActionTestUniverse,
+				action:   "sqs:sendmessage",
+				resource: "arn:aws:sqs:us-east-1:88888:nonexistent",
+			},
+			ShouldErr: true,
+		},
+		{
 			Name: "forced_failure",
 			Input: input{
 				uv:       SimpleTestUniverse_1,
@@ -587,6 +607,27 @@ var SimpleTestUniverse_1 = entities.NewBuilder().
 			Arn:       "arn:aws:s3:::bucket3",
 			Type:      "AWS::S3::Bucket",
 			AccountId: "11111",
+		},
+	).
+	Build()
+
+var CreateActionTestUniverse = entities.NewBuilder().
+	WithPrincipals(
+		entities.Principal{
+			Arn:       "arn:aws:iam::88888:role/role1",
+			Type:      "AWS::IAM::Role",
+			AccountId: "88888",
+			InlinePolicies: []policy.Policy{
+				{
+					Statement: []policy.Statement{
+						{
+							Effect:   policy.EFFECT_ALLOW,
+							Action:   []string{"sqs:createqueue", "sqs:sendmessage"},
+							Resource: []string{"*"},
+						},
+					},
+				},
+			},
 		},
 	).
 	Build()

@@ -16,6 +16,24 @@ import (
 	"github.com/nsiow/yams/pkg/entities"
 )
 
+// placeholderAccountId is used for placeholder resources that don't exist yet (Create*/RunInstances)
+const placeholderAccountId = "000000000000"
+
+// isCreateAction returns true for actions that target resources which don't exist yet
+func isCreateAction(a *types.Action) bool {
+	return strings.HasPrefix(a.Name, "Create") || a.Name == "RunInstances"
+}
+
+// allActionsAreCreate returns true if every action in the slice is a create-type action
+func allActionsAreCreate(fas []*types.Action) bool {
+	for _, a := range fas {
+		if !isCreateAction(a) {
+			return false
+		}
+	}
+	return len(fas) > 0
+}
+
 // Simulator provides the ability to simulate IAM policies and the interactions between
 // Principals + Resources
 type Simulator struct {
@@ -206,16 +224,14 @@ func (s *Simulator) SimulateByArnWithOptions(
 	// Locate Resource (if needed)
 	if ac.Action.HasTargets() {
 		_, ok := s.Universe.Resource(resourceArn)
-		if !ok && (strings.HasPrefix(ac.Action.Name, "Create") || ac.Action.Name == "RunInstances") {
-			// Handle case where API call DOES have targets but those targets shouldn't exist yet. It's
-			// really just targeted Create* calls
-			// TODO(nsiow) revisit this
+		if !ok && isCreateAction(ac.Action) {
+			// Create*/RunInstances target resources that don't exist yet — use a placeholder
 			ac.Resource = &entities.FrozenResource{
-				AccountId: fp.AccountId,
-				Arn:       resourceArn,
+				AccountId:   placeholderAccountId,
+				Arn:         resourceArn,
+				ArnSegments: entities.SplitArn(resourceArn),
 			}
 		} else {
-			// Handle normal case where API call does have targets and also those targets should exist
 			fr, err := s.resolveResource(resourceArn, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error resolving resource for simulation: %w", err)
@@ -362,7 +378,7 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 		return nil, err
 	}
 
-	frs, err := s.FreezeResources(rs, opts)
+	frs, err := s.freezeResources(rs, opts, allActionsAreCreate(fas))
 	if err != nil {
 		return nil, err
 	}
@@ -389,11 +405,25 @@ func (s *Simulator) FreezePrincipals(arns []string, opts Options) ([]*entities.F
 
 // FreezeResources resolves and freezes all the provided resource ARNs
 func (s *Simulator) FreezeResources(arns []string, opts Options) ([]*entities.FrozenResource, error) {
+	return s.freezeResources(arns, opts, false)
+}
+
+// freezeResources resolves and freezes resource ARNs. When allowPlaceholders is true (i.e. all
+// actions are Create*/RunInstances), unresolvable ARNs get a minimal placeholder instead of
+// returning an error.
+func (s *Simulator) freezeResources(arns []string, opts Options, allowPlaceholders bool) ([]*entities.FrozenResource, error) {
 	frs := make([]*entities.FrozenResource, 0, len(arns))
 	for _, r := range arns {
 		fr, err := s.resolveResource(r, opts)
 		if err != nil {
-			return nil, fmt.Errorf("unable to resolve resource '%s': %w", r, err)
+			if !allowPlaceholders {
+				return nil, fmt.Errorf("unable to resolve resource '%s': %w", r, err)
+			}
+			fr = &entities.FrozenResource{
+				AccountId:   placeholderAccountId,
+				Arn:         r,
+				ArnSegments: entities.SplitArn(r),
+			}
 		}
 		frs = append(frs, fr)
 	}

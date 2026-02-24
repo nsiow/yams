@@ -8,9 +8,12 @@ import (
 type evalFunction func(*subject, *policy.Statement) bool
 
 // evalIsSameAccount determines whether or not the provided Principal + Resource exist within the
-// same AWS account
+// same AWS account. Create*/RunInstances actions always return true because the target resource
+// doesn't exist yet — cross-account restrictions don't apply.
 func evalIsSameAccount(s *subject) bool {
-	return s.auth.Resource == nil || s.auth.Principal.AccountId == s.auth.Resource.AccountId
+	return s.auth.Resource == nil ||
+		s.auth.Principal.AccountId == s.auth.Resource.AccountId ||
+		(s.auth.Action != nil && isCreateAction(s.auth.Action))
 }
 
 // evalOverallAccess calculates both Principal + Resource access and performs both same-account
