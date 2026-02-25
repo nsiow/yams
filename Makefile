@@ -1,4 +1,4 @@
-.DEFAULT_GOAL = cli
+.DEFAULT_GOAL = binary
 
 # --------------------------------------------------------------------------------
 # Building
@@ -20,13 +20,19 @@ LDFLAGS    += -X 'github.com/nsiow/yams/cmd/yams/cli.BuildDate=$(BUILD_DATE)'
 
 .PHONY: build
 build:
-	go build ./...
+	go build -tags noui ./...
 
-.PHONY: cli
-cli: $(CLI)
+.PHONY: binary
+binary: $(CLI)
 
 $(CLI): $(GO_FILES)
-	go build -ldflags "$(LDFLAGS)" ./cmd/yams
+	$(GO_BUILDER) -tags noui -ldflags "$(LDFLAGS)" -o $(CLI) ./cmd/yams
+
+.PHONY: binary-ui
+binary-ui: ui-build
+	cp -r $(UI_DIR)/dist internal/ui/dist
+	$(GO_BUILDER) -ldflags "$(LDFLAGS)" -o $(CLI) ./cmd/yams
+	rm -rf internal/ui/dist
 
 .PHONY: install
 install: $(CLI)
@@ -37,6 +43,7 @@ clean:
 	rm -f $(CLI)
 	rm -f coverage.*
 	rm -f *.cov
+	rm -rf internal/ui/dist
 	go clean -testcache
 
 # --------------------------------------------------------------------------------
@@ -58,15 +65,15 @@ format:
 
 .PHONY: vet
 vet:
-	go vet ./...
+	go vet -tags noui ./...
 
 .PHONY: lint
 lint:
-	golangci-lint run
+	golangci-lint run --build-tags noui
 
 .PHONY: test
 test:
-	go test $(GO_TEST_FLAGS) ./...
+	go test -tags noui $(GO_TEST_FLAGS) ./...
 
 .PHONY: testv
 testv: GO_TEST_FLAGS+=-v
@@ -211,7 +218,7 @@ real-world-data:
 	
 .PHONY: real-world-org-data
 real-world-org-data:
-	make cli && ./yams dump -target org -out /tmp/org.json && cat /tmp/org.json | jq -c '.[]' > testdata/real-world/org.jsonl
+	make binary && ./yams dump -target org -out /tmp/org.json && cat /tmp/org.json | jq -c '.[]' > testdata/real-world/org.jsonl
 
 # --------------------------------------------------------------------------------
 # UI Development

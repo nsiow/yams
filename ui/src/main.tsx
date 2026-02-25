@@ -8,7 +8,7 @@ import { theme } from './theme';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/ui">
       <MantineProvider theme={theme} defaultColorScheme="light">
         <App />
       </MantineProvider>

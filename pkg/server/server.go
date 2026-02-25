@@ -7,6 +7,7 @@ import (
 
 	"github.com/nsiow/yams/cmd/yams/cli"
 	"github.com/nsiow/yams/internal/middleware"
+	ui "github.com/nsiow/yams/internal/ui"
 	"github.com/nsiow/yams/pkg/overlay"
 	v1 "github.com/nsiow/yams/pkg/server/api/v1"
 	"github.com/nsiow/yams/pkg/sim"
@@ -60,6 +61,7 @@ func NewServer(opts *cli.Flags) (*Server, error) {
 		},
 		&v1.OverlayAPI{Store: server.OverlayStore},
 	)
+	mux.Handle("/ui/", ui.Handler())
 
 	return &server, nil
 }
