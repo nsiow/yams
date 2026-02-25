@@ -14,17 +14,27 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { IconAlertCircle, IconRefresh } from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
 import { yamsApi } from '../lib/api';
 import type { StatusResponse } from '../lib/api';
 
 interface StatCardProps {
   label: string;
   value: number;
+  href?: string;
 }
 
-function StatCard({ label, value }: StatCardProps): JSX.Element {
+function StatCard({ label, value, href }: StatCardProps): JSX.Element {
+  const navigate = useNavigate();
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder>
+    <Card
+      shadow="sm"
+      padding="lg"
+      radius="md"
+      withBorder
+      style={href ? { cursor: 'pointer' } : undefined}
+      onClick={href ? () => navigate(href) : undefined}
+    >
       <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
         {label}
       </Text>
@@ -176,12 +186,12 @@ export function HomePage(): JSX.Element {
           <>
             <Title order={3} mt="md">Entity Counts</Title>
             <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              <StatCard label="Principals" value={status.principals} />
-              <StatCard label="Resources" value={status.resources} />
-              <StatCard label="Policies" value={status.policies} />
-              <StatCard label="Groups" value={status.groups} />
-              <StatCard label="Accounts" value={status.accounts} />
-              <StatCard label="Total Entities" value={status.entities} />
+              <StatCard label="Accounts" value={status.accounts} href="/search/accounts" />
+              <StatCard label="Principals" value={status.principals} href="/search/principals" />
+              <StatCard label="Groups" value={status.groups} href="/search/groups" />
+              <StatCard label="Resources" value={status.resources} href="/search/resources" />
+              <StatCard label="Policies" value={status.policies} href="/search/policies" />
+              <StatCard label="Actions" value={status.actions} href="/search/actions" />
             </SimpleGrid>
 
             <Title order={3} mt="xl">Data Sources</Title>

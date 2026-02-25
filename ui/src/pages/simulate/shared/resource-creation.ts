@@ -84,7 +84,7 @@ export function findPrimaryResource(action: Action): ActionResource | null {
 }
 
 // Default placeholder account ID for when no principal is selected
-export const PLACEHOLDER_ACCOUNT_ID = '123456789012';
+export const PLACEHOLDER_ACCOUNT_ID = '000000000000';
 
 // Format an ARN template with sensible defaults
 // Replaces wildcards (*) in the ARN format with placeholder values

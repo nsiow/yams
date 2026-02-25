@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/nsiow/yams/internal/common"
+	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/server/httputil"
 )
 
@@ -16,6 +17,7 @@ func (s *Server) Status(w http.ResponseWriter, req *http.Request) {
 		"groups":     s.Simulator.Universe.NumGroups(),
 		"policies":   s.Simulator.Universe.NumPolicies(),
 		"resources":  s.Simulator.Universe.NumResources(),
+		"actions":    len(sar.AllActions()),
 		"sources": common.Map(s.Sources, func(src *Source) map[string]any {
 			return map[string]any{
 				"source":  src.Reader.Source,

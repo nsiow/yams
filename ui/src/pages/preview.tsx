@@ -37,7 +37,6 @@ import {
   IconClock,
   IconDeviceFloppy,
   IconExternalLink,
-  IconFlask,
   IconGripVertical,
   IconLayersSubtract,
   IconMoon,
@@ -899,7 +898,7 @@ const simulateIconOptions = [
   { name: 'PlayerPlay', icon: IconPlayerPlay, description: 'Play button - indicates running/executing' },
   { name: 'ArrowRight', icon: IconArrowRight, description: 'Arrow - indicates navigation' },
   { name: 'ExternalLink', icon: IconExternalLink, description: 'External link - indicates opening elsewhere' },
-  { name: 'Flask', icon: IconFlask, description: 'Flask - science/experiment theme' },
+  { name: 'Flask', icon: IconTestPipe, description: 'Flask - science/experiment theme' },
   { name: 'TestPipe', icon: IconTestPipe, description: 'Test tube - testing theme' },
   { name: 'ZoomCheck', icon: IconZoomCheck, description: 'Magnify with check - inspection/verification' },
   { name: 'Eye', icon: IconEye, description: 'Eye - view/inspect' },
@@ -1007,7 +1006,7 @@ const topbarPreviews: TopbarPreview[] = [
     description: 'One-click access to start a new simulation. Reduces navigation for common workflow.',
     render: () => (
       <TopbarBase rightSection={
-        <Button variant="white" color="purple" size="sm" leftSection={<IconFlask size={16} />}>
+        <Button variant="white" color="purple" size="sm" leftSection={<IconTestPipe size={16} />}>
           New Simulation
         </Button>
       } />

@@ -7,6 +7,7 @@ import { PrincipalsPage } from './pages/search/principals';
 import { ResourcesPage } from './pages/search/resources';
 import { PoliciesPage } from './pages/search/policies';
 import { ActionsPage } from './pages/search/actions';
+import { GroupsPage } from './pages/search/groups';
 import { AccessCheckPage } from './pages/simulate/access';
 import { WhichPrincipalsPage } from './pages/simulate/which-principals';
 import { WhichActionsPage } from './pages/simulate/which-actions';
@@ -33,6 +34,8 @@ export function App(): JSX.Element {
         <Route path="/search/policies/*" element={<PoliciesPage />} />
         <Route path="/search/actions" element={<ActionsPage />} />
         <Route path="/search/actions/*" element={<ActionsPage />} />
+        <Route path="/search/groups" element={<GroupsPage />} />
+        <Route path="/search/groups/*" element={<GroupsPage />} />
         <Route path="/simulate/access" element={<AccessCheckPage />} />
         <Route path="/simulate/which-principals" element={<WhichPrincipalsPage />} />
         <Route path="/simulate/which-actions" element={<WhichActionsPage />} />

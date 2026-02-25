@@ -20,18 +20,18 @@ LDFLAGS    += -X 'github.com/nsiow/yams/cmd/yams/cli.BuildDate=$(BUILD_DATE)'
 
 .PHONY: build
 build:
-	go build -tags noui ./...
+	go build ./...
 
 .PHONY: binary
 binary: $(CLI)
 
 $(CLI): $(GO_FILES)
-	$(GO_BUILDER) -tags noui -ldflags "$(LDFLAGS)" -o $(CLI) ./cmd/yams
+	$(GO_BUILDER) -ldflags "$(LDFLAGS)" -o $(CLI) ./cmd/yams
 
 .PHONY: binary-ui
 binary-ui: ui-build
 	cp -r $(UI_DIR)/dist internal/ui/dist
-	$(GO_BUILDER) -ldflags "$(LDFLAGS)" -o $(CLI) ./cmd/yams
+	$(GO_BUILDER) -tags ui -ldflags "$(LDFLAGS)" -o $(CLI) ./cmd/yams
 	rm -rf internal/ui/dist
 
 .PHONY: install
@@ -65,15 +65,15 @@ format:
 
 .PHONY: vet
 vet:
-	go vet -tags noui ./...
+	go vet ./...
 
 .PHONY: lint
 lint:
-	golangci-lint run --build-tags noui
+	golangci-lint run
 
 .PHONY: test
 test:
-	go test -tags noui $(GO_TEST_FLAGS) ./...
+	go test $(GO_TEST_FLAGS) ./...
 
 .PHONY: testv
 testv: GO_TEST_FLAGS+=-v

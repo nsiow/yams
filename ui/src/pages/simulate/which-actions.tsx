@@ -25,7 +25,7 @@ import {
   IconCheck,
   IconChevronDown,
   IconChevronUp,
-  IconFlask,
+  IconTestPipe,
   IconOctagonFilled,
   IconSearch,
   IconX,
@@ -394,7 +394,7 @@ export function WhichActionsPage(): JSX.Element {
                                 ) : (
                                   <IconChevronDown size={14} color="var(--mantine-color-dimmed)" />
                                 )}
-                                <IconFlask size={14} color="var(--mantine-color-dimmed)" />
+                                <IconTestPipe size={14} color="var(--mantine-color-dimmed)" />
                               </Group>
                             </UnstyledButton>
                           </Table.Td>

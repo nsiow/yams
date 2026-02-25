@@ -62,6 +62,9 @@ func NewServer(opts *cli.Flags) (*Server, error) {
 		&v1.OverlayAPI{Store: server.OverlayStore},
 	)
 	mux.Handle("/ui/", ui.Handler())
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/ui/", http.StatusFound)
+	})
 
 	return &server, nil
 }

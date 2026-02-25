@@ -12,6 +12,7 @@ export interface StatusResponse {
   policies: number;
   principals: number;
   resources: number;
+  actions: number;
   sources: SourceStatus[];
   env?: Record<string, string>;
 }

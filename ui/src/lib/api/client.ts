@@ -5,6 +5,7 @@ import type {
   Principal,
   Resource,
   Policy,
+  Group,
   Account,
   SimulationRequest,
   SimulationResponse,
@@ -176,6 +177,22 @@ export class YamsClient {
   async searchAccounts(query: string): Promise<string[]> {
     return this.fetch<string[]>(
       `/accounts/search/${encodeURIComponent(query)}`
+    );
+  }
+
+  // Groups
+
+  async listGroups(): Promise<string[]> {
+    return this.fetch<string[]>('/groups');
+  }
+
+  async getGroup(arn: string): Promise<Group> {
+    return this.fetch<Group>(`/groups/${encodeURIComponent(arn)}`);
+  }
+
+  async searchGroups(query: string): Promise<string[]> {
+    return this.fetch<string[]>(
+      `/groups/search/${encodeURIComponent(query)}`
     );
   }
 

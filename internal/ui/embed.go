@@ -1,4 +1,4 @@
-//go:build !noui
+//go:build ui
 
 package ui
 

@@ -13,10 +13,10 @@ import {
 } from '@mantine/core';
 import {
   IconChevronDown,
-  IconFlask,
   IconLayersSubtract,
   IconSearch,
   IconServer,
+  IconTestPipe,
 } from '@tabler/icons-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
@@ -46,6 +46,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Accounts', path: '/search/accounts' },
       { label: 'Principals', path: '/search/principals' },
+      { label: 'Groups', path: '/search/groups' },
       { label: 'Resources', path: '/search/resources' },
       { label: 'Policies', path: '/search/policies' },
       { label: 'Actions', path: '/search/actions' },
@@ -53,7 +54,7 @@ const navSections: NavSection[] = [
   },
   {
     title: 'Simulate',
-    icon: IconFlask,
+    icon: IconTestPipe,
     items: [
       { label: 'Access Check', path: '/simulate/access' },
       { label: 'Which Principals', path: '/simulate/which-principals' },
