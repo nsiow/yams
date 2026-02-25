@@ -7,6 +7,7 @@ import {
   Container,
   Group,
   Loader,
+  Skeleton,
   SimpleGrid,
   Stack,
   Text,
@@ -22,9 +23,10 @@ interface StatCardProps {
   label: string;
   value: number;
   href?: string;
+  loading?: boolean;
 }
 
-function StatCard({ label, value, href }: StatCardProps): JSX.Element {
+function StatCard({ label, value, href, loading }: StatCardProps): JSX.Element {
   const navigate = useNavigate();
   return (
     <Card
@@ -38,9 +40,11 @@ function StatCard({ label, value, href }: StatCardProps): JSX.Element {
       <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
         {label}
       </Text>
-      <Text size="xl" fw={700} mt="xs">
-        {(value ?? 0).toLocaleString()}
-      </Text>
+      <Skeleton visible={loading ?? false} mt="xs" w={60} h={28}>
+        <Text size="xl" fw={700}>
+          {(value ?? 0).toLocaleString()}
+        </Text>
+      </Skeleton>
     </Card>
   );
 }
@@ -169,7 +173,9 @@ export function HomePage(): JSX.Element {
             </Tooltip>
           </Group>
           <Stack align="flex-end" gap={4}>
-            <StatusIndicator healthy={healthy ?? false} />
+            <Skeleton visible={refreshing} w={90} h={26} radius="xl">
+              <StatusIndicator healthy={healthy ?? false} />
+            </Skeleton>
             {lastChecked && (
               <Text size="xs" c="dimmed">
                 Last checked: {lastChecked.toLocaleTimeString()}
@@ -186,12 +192,12 @@ export function HomePage(): JSX.Element {
           <>
             <Title order={3} mt="md">Entity Counts</Title>
             <SimpleGrid cols={{ base: 2, sm: 3 }}>
-              <StatCard label="Accounts" value={status.accounts} href="/search/accounts" />
-              <StatCard label="Principals" value={status.principals} href="/search/principals" />
-              <StatCard label="Groups" value={status.groups} href="/search/groups" />
-              <StatCard label="Resources" value={status.resources} href="/search/resources" />
-              <StatCard label="Policies" value={status.policies} href="/search/policies" />
-              <StatCard label="Actions" value={status.actions} href="/search/actions" />
+              <StatCard label="Accounts" value={status.accounts} href="/search/accounts" loading={refreshing} />
+              <StatCard label="Principals" value={status.principals} href="/search/principals" loading={refreshing} />
+              <StatCard label="Groups" value={status.groups} href="/search/groups" loading={refreshing} />
+              <StatCard label="Resources" value={status.resources} href="/search/resources" loading={refreshing} />
+              <StatCard label="Policies" value={status.policies} href="/search/policies" loading={refreshing} />
+              <StatCard label="Actions" value={status.actions} href="/search/actions" loading={refreshing} />
             </SimpleGrid>
 
             <Title order={3} mt="xl">Data Sources</Title>
@@ -210,10 +216,12 @@ export function HomePage(): JSX.Element {
                             Last updated: {formatTimestamp(src.updated)}
                           </Text>
                         </Stack>
-                        <StatusIndicator
-                          healthy={fresh}
-                          label={fresh ? 'Fresh' : 'Stale'}
-                        />
+                        <Skeleton visible={refreshing} w={70} h={26} radius="xl">
+                          <StatusIndicator
+                            healthy={fresh}
+                            label={fresh ? 'Fresh' : 'Stale'}
+                          />
+                        </Skeleton>
                       </Group>
                     </Card>
                   );
