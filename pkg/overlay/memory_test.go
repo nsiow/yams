@@ -281,3 +281,28 @@ func TestMemoryStore_Isolation(t *testing.T) {
 		t.Error("store should be isolated from external mutations after Get")
 	}
 }
+
+func TestNewStore(t *testing.T) {
+	// Default memory store
+	store, err := NewStore("")
+	if err != nil || store == nil {
+		t.Fatal("NewStore('') should return memory store")
+	}
+
+	store, err = NewStore("memory")
+	if err != nil || store == nil {
+		t.Fatal("NewStore('memory') should return memory store")
+	}
+
+	// Invalid ddb:// with empty table name
+	_, err = NewStore("ddb://")
+	if err == nil {
+		t.Fatal("NewStore('ddb://') should fail with empty table name")
+	}
+
+	// Unknown spec
+	_, err = NewStore("unknown://foo")
+	if err == nil {
+		t.Fatal("NewStore('unknown://foo') should fail")
+	}
+}

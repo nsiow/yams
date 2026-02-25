@@ -1009,3 +1009,81 @@ func TestProduct_BatchSubmission(t *testing.T) {
 		t.Fatal("expected results from AccessSummary")
 	}
 }
+
+// Test public wrappers that delegate to unexported methods
+func TestExpandResources_PublicWrapper(t *testing.T) {
+	sim, err := NewSimulator()
+	if err != nil {
+		t.Fatalf("error creating simulator: %v", err)
+	}
+	sim.Universe = SimpleTestUniverse_1
+
+	expanded, err := sim.ExpandResources([]string{"arn:aws:s3:::bucket1"}, DEFAULT_OPTIONS)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+
+	expected := []string{"arn:aws:s3:::bucket1", "arn:aws:s3:::bucket1/*"}
+	if !reflect.DeepEqual(expanded, expected) {
+		t.Fatalf("expected %v but got: %v", expected, expanded)
+	}
+}
+
+func TestFreezeResources_PublicWrapper(t *testing.T) {
+	sim, err := NewSimulator()
+	if err != nil {
+		t.Fatalf("error creating simulator: %v", err)
+	}
+	sim.Universe = SimpleTestUniverse_1
+
+	frozen, err := sim.FreezeResources([]string{"arn:aws:s3:::bucket1"}, DEFAULT_OPTIONS)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	if len(frozen) == 0 {
+		t.Fatal("expected frozen resources")
+	}
+}
+
+func TestProductFrozenStreaming(t *testing.T) {
+	sim, err := NewSimulator()
+	if err != nil {
+		t.Fatalf("error creating simulator: %v", err)
+	}
+	sim.Universe = SimpleTestUniverse_1
+
+	pArns := []string{}
+	for p := range sim.Universe.Principals() {
+		pArns = append(pArns, p.Arn)
+	}
+	principals, err := sim.FreezePrincipals(pArns, TestingSimulationOptions)
+	if err != nil {
+		t.Fatalf("error freezing principals: %v", err)
+	}
+
+	resources, err := sim.FreezeResources(
+		[]string{"arn:aws:s3:::bucket1"}, TestingSimulationOptions)
+	if err != nil {
+		t.Fatalf("error freezing resources: %v", err)
+	}
+
+	// Test happy path
+	count := 0
+	err = sim.ProductFrozenStreaming(principals, []string{"s3:listbucket"}, resources,
+		TestingSimulationOptions, func(r AccessTuple) {
+			count++
+		})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if count == 0 {
+		t.Fatal("expected streaming results")
+	}
+
+	// Test unknown action
+	err = sim.ProductFrozenStreaming(principals, []string{"fake:unknown"}, resources,
+		TestingSimulationOptions, func(r AccessTuple) {})
+	if err == nil {
+		t.Fatal("expected error for unknown action")
+	}
+}

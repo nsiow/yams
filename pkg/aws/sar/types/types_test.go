@@ -159,6 +159,27 @@ func TestTargets_CustomHandling(t *testing.T) {
 	})
 }
 
+func TestSetShortName(t *testing.T) {
+	a := Action{Service: "s3", Name: "GetObject"}
+
+	// Before SetShortName, shortName is empty so ShortName computes it
+	if a.ShortName() != "s3:GetObject" {
+		t.Fatalf("expected s3:GetObject, got %s", a.ShortName())
+	}
+
+	// After SetShortName, the cached value is returned
+	a.SetShortName()
+	if a.ShortName() != "s3:GetObject" {
+		t.Fatalf("expected cached s3:GetObject, got %s", a.ShortName())
+	}
+
+	// Verify the cache works by modifying fields (cached value shouldn't change)
+	a.Name = "PutObject"
+	if a.ShortName() != "s3:GetObject" {
+		t.Fatalf("expected cached s3:GetObject after mutation, got %s", a.ShortName())
+	}
+}
+
 func TestTargets_UnknownCustomHandling(t *testing.T) {
 	action := Action{
 		Service: "s3",

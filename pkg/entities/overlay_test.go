@@ -271,6 +271,55 @@ func TestOverlay_Clone(t *testing.T) {
 	}
 }
 
+func TestOverlay_ToData_NilUniverse(t *testing.T) {
+	o := &Overlay{Name: "nil-universe", ID: "test-id"}
+	data := o.ToData()
+	if data.Name != "nil-universe" {
+		t.Errorf("expected name 'nil-universe', got %q", data.Name)
+	}
+	if len(data.Principals) != 0 || len(data.Resources) != 0 {
+		t.Error("nil universe ToData should have empty collections")
+	}
+}
+
+func TestOverlay_Clone_AllEntityTypes(t *testing.T) {
+	o := NewOverlay("full")
+	o.Universe.PutAccount(Account{Id: "111111111111"})
+	o.Universe.PutGroup(Group{Arn: "arn:aws:iam::111111111111:group/Admins"})
+	o.Universe.PutPolicy(ManagedPolicy{Arn: "arn:aws:iam::111111111111:policy/Test"})
+	o.Universe.PutPrincipal(Principal{Arn: "arn:aws:iam::111111111111:role/Test"})
+	o.Universe.PutResource(Resource{Arn: "arn:aws:s3:::bucket"})
+
+	clone := o.Clone("full-clone")
+
+	if clone.NumAccounts() != 1 {
+		t.Errorf("expected 1 account, got %d", clone.NumAccounts())
+	}
+	if clone.NumGroups() != 1 {
+		t.Errorf("expected 1 group, got %d", clone.NumGroups())
+	}
+	if clone.NumPolicies() != 1 {
+		t.Errorf("expected 1 policy, got %d", clone.NumPolicies())
+	}
+	if clone.NumPrincipals() != 1 {
+		t.Errorf("expected 1 principal, got %d", clone.NumPrincipals())
+	}
+	if clone.NumResources() != 1 {
+		t.Errorf("expected 1 resource, got %d", clone.NumResources())
+	}
+}
+
+func TestOverlay_Clone_NilUniverse(t *testing.T) {
+	o := &Overlay{Name: "nil-universe", ID: "test-id"}
+	clone := o.Clone("cloned")
+	if clone.Name != "cloned" {
+		t.Errorf("expected name 'cloned', got %q", clone.Name)
+	}
+	if clone.Universe == nil {
+		t.Error("clone should have non-nil universe")
+	}
+}
+
 func TestOverlay_ArnMethods(t *testing.T) {
 	o := NewOverlay("test")
 	o.Universe.PutPrincipal(Principal{Arn: "arn:aws:iam::123456789012:role/b"})

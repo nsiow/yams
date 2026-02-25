@@ -208,6 +208,50 @@ func TestOverlayAPI_UpdateOverlay_NotFound(t *testing.T) {
 	}
 }
 
+func TestOverlayAPI_UpdateOverlay_MissingID(t *testing.T) {
+	api := newTestOverlayAPI(t)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/v1/overlays/", bytes.NewReader([]byte(`{}`)))
+	req.SetPathValue("id", "")
+
+	api.UpdateOverlay(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("UpdateOverlay() missing ID status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestOverlayAPI_UpdateOverlay_InvalidJSON(t *testing.T) {
+	api := newTestOverlayAPI(t)
+
+	// Create overlay first
+	o := entities.NewOverlay("test-overlay")
+	_ = api.Store.Create(context.Background(), o)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/v1/overlays/"+o.ID, bytes.NewReader([]byte("invalid")))
+	req.SetPathValue("id", o.ID)
+
+	api.UpdateOverlay(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("UpdateOverlay() invalid JSON status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
+func TestOverlayAPI_DeleteOverlay_MissingID(t *testing.T) {
+	api := newTestOverlayAPI(t)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", "/api/v1/overlays/", nil)
+	req.SetPathValue("id", "")
+
+	api.DeleteOverlay(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("DeleteOverlay() missing ID status = %d, want %d", w.Code, http.StatusBadRequest)
+	}
+}
+
 func TestOverlayAPI_DeleteOverlay(t *testing.T) {
 	api := newTestOverlayAPI(t)
 

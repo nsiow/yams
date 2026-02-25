@@ -3,6 +3,7 @@ package awsconfig
 import (
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
@@ -751,5 +752,29 @@ func TestLoad_EdgeCases(t *testing.T) {
 	err = l.LoadJsonl(reader)
 	if err == nil {
 		t.Fatalf("LoadJson; should have failed, but succeeded")
+	}
+}
+
+func TestLoadJson_NonArray(t *testing.T) {
+	l := NewLoader()
+	reader := strings.NewReader(`{"foo": "bar"}`)
+	err := l.LoadJson(reader)
+	if err == nil {
+		t.Fatal("LoadJson with non-array should have failed")
+	}
+	if !strings.Contains(err.Error(), "expected JSON array") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestLoadJson_MalformedJSON(t *testing.T) {
+	l := NewLoader()
+	reader := strings.NewReader(`{invalid json!!!`)
+	err := l.LoadJson(reader)
+	if err == nil {
+		t.Fatal("LoadJson with malformed JSON should have failed")
+	}
+	if !strings.Contains(err.Error(), "unable to parse JSON") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

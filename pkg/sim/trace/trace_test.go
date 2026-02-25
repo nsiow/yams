@@ -228,3 +228,20 @@ func TestExtra(t *testing.T) {
 	e.FrameStart(nil)
 	e.FrameEnd(nil)
 }
+
+func TestEnabled(t *testing.T) {
+	trc := New()
+	if trc.Enabled() {
+		t.Fatal("new trace should not be enabled")
+	}
+
+	trc.Enable()
+	if !trc.Enabled() {
+		t.Fatal("enabled trace should report enabled")
+	}
+
+	trc.Disable()
+	if trc.Enabled() {
+		t.Fatal("disabled trace should not be enabled")
+	}
+}

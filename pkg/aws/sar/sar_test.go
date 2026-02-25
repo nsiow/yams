@@ -199,6 +199,62 @@ func TestQuery(t *testing.T) {
 	})
 }
 
+func TestAllActions(t *testing.T) {
+	actions := AllActions()
+	if len(actions) < 15000 {
+		t.Fatalf("AllActions() returned too few actions: %d", len(actions))
+	}
+
+	// Verify a known action exists
+	found := false
+	for _, a := range actions {
+		if strings.EqualFold(a.ShortName(), "s3:GetObject") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("AllActions() missing s3:GetObject")
+	}
+}
+
+func TestActionsByService(t *testing.T) {
+	// Valid service
+	actions := ActionsByService("s3")
+	if len(actions) == 0 {
+		t.Fatal("ActionsByService(s3) returned empty")
+	}
+	for _, a := range actions {
+		if !strings.EqualFold(a.Service, "s3") {
+			t.Fatalf("ActionsByService(s3) returned non-s3 action: %s", a.Service)
+		}
+	}
+
+	// Case insensitive
+	actions2 := ActionsByService("S3")
+	if len(actions) != len(actions2) {
+		t.Fatal("ActionsByService should be case insensitive")
+	}
+
+	// Unknown service
+	actions3 := ActionsByService("nonexistent")
+	if len(actions3) != 0 {
+		t.Fatalf("ActionsByService(nonexistent) should return empty, got %d", len(actions3))
+	}
+}
+
+func TestQueryWithResourceless(t *testing.T) {
+	results := NewQuery().WithResourceless().Results()
+	if len(results) == 0 {
+		t.Fatal("WithResourceless() returned no results")
+	}
+	for _, a := range results {
+		if a.HasTargets() {
+			t.Fatalf("WithResourceless() returned action with targets: %s", a.ShortName())
+		}
+	}
+}
+
 func TestQueryWithSearch(t *testing.T) {
 	// Test WithSearch functionality
 	q := NewQuery().WithSearch("s3:list")

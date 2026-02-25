@@ -206,6 +206,70 @@ func TestAPI_UtilResourcelessActions(t *testing.T) {
 	}
 }
 
+func TestAPI_UtilSharedContext(t *testing.T) {
+	// nil context
+	api := newTestAPI(t)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/utils/context", nil)
+	api.UtilSharedContext(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("UtilSharedContext() status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var ctx map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &ctx); err != nil {
+		t.Fatalf("UtilSharedContext() invalid JSON: %v", err)
+	}
+	if len(ctx) != 0 {
+		t.Errorf("UtilSharedContext() nil context should return empty map, got %d entries", len(ctx))
+	}
+
+	// Populated context
+	api.SharedContext = map[string]string{"aws:SourceIp": "10.0.0.1"}
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("GET", "/api/v1/utils/context", nil)
+	api.UtilSharedContext(w, req)
+
+	if err := json.Unmarshal(w.Body.Bytes(), &ctx); err != nil {
+		t.Fatalf("UtilSharedContext() invalid JSON: %v", err)
+	}
+	if ctx["aws:SourceIp"] != "10.0.0.1" {
+		t.Errorf("UtilSharedContext() expected SourceIp=10.0.0.1, got %q", ctx["aws:SourceIp"])
+	}
+}
+
+func TestAPI_UtilActionTargeting(t *testing.T) {
+	api := newTestAPI(t)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/utils/actions/targeting", nil)
+
+	api.UtilActionTargeting(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("UtilActionTargeting() status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var results []map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &results); err != nil {
+		t.Fatalf("UtilActionTargeting() invalid JSON: %v", err)
+	}
+
+	if len(results) == 0 {
+		t.Fatal("UtilActionTargeting() returned empty results")
+	}
+
+	// Verify sorted
+	for i := 1; i < len(results); i++ {
+		a := results[i-1]["action"].(string)
+		b := results[i]["action"].(string)
+		if a > b {
+			t.Errorf("UtilActionTargeting() not sorted: %s > %s", a, b)
+			break
+		}
+	}
+}
+
 func TestAPI_UtilActionAccessLevels(t *testing.T) {
 	api := newTestAPI(t)
 	w := httptest.NewRecorder()

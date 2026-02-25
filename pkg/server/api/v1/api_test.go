@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	json "github.com/bytedance/sonic"
@@ -417,6 +418,44 @@ func TestAPI_SearchResources(t *testing.T) {
 	api := newTestAPIWithData(t)
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/resources/search/bucket", nil)
+	req.SetPathValue("search", "bucket")
+
+	api.SearchResources(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("SearchResources() status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestAPI_SearchResources_WithActionFilter(t *testing.T) {
+	api := newTestAPIWithData(t)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/resources/search/bucket?action=s3:GetObject", nil)
+	req.SetPathValue("search", "bucket")
+
+	api.SearchResources(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("SearchResources() status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var keys []string
+	if err := json.Unmarshal(w.Body.Bytes(), &keys); err != nil {
+		t.Fatalf("SearchResources() invalid JSON: %v", err)
+	}
+
+	// Verify results are filtered to action targets
+	for _, key := range keys {
+		if !strings.Contains(strings.ToLower(key), "bucket") {
+			t.Errorf("SearchResources() returned non-matching key: %s", key)
+		}
+	}
+}
+
+func TestAPI_SearchResources_WithUnknownAction(t *testing.T) {
+	api := newTestAPIWithData(t)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/resources/search/bucket?action=fake:FakeAction", nil)
 	req.SetPathValue("search", "bucket")
 
 	api.SearchResources(w, req)
