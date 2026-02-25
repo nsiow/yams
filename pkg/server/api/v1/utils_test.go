@@ -51,52 +51,6 @@ func newTestAPIWithUtilsData(t *testing.T) *API {
 	return &API{Simulator: simulator}
 }
 
-func TestAPI_UtilAccountNames(t *testing.T) {
-	api := newTestAPIWithUtilsData(t)
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/v1/utils/accounts/names", nil)
-
-	api.UtilAccountNames(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("UtilAccountNames() status = %d, want %d", w.Code, http.StatusOK)
-	}
-
-	var names map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &names); err != nil {
-		t.Fatalf("UtilAccountNames() invalid JSON: %v", err)
-	}
-
-	// Verify accounts are present
-	if names["111111111111"] != "Account One" {
-		t.Errorf("UtilAccountNames() missing or incorrect account 111111111111, got %q", names["111111111111"])
-	}
-	if names["222222222222"] != "Account Two" {
-		t.Errorf("UtilAccountNames() missing or incorrect account 222222222222, got %q", names["222222222222"])
-	}
-}
-
-func TestAPI_UtilAccountNames_Empty(t *testing.T) {
-	api := newTestAPI(t)
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/v1/utils/accounts/names", nil)
-
-	api.UtilAccountNames(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("UtilAccountNames() status = %d, want %d", w.Code, http.StatusOK)
-	}
-
-	var names map[string]string
-	if err := json.Unmarshal(w.Body.Bytes(), &names); err != nil {
-		t.Fatalf("UtilAccountNames() invalid JSON: %v", err)
-	}
-
-	if len(names) != 0 {
-		t.Errorf("UtilAccountNames() expected empty map, got %d entries", len(names))
-	}
-}
-
 func TestAPI_UtilResourceAccounts(t *testing.T) {
 	api := newTestAPIWithUtilsData(t)
 	w := httptest.NewRecorder()

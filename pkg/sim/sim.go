@@ -24,6 +24,16 @@ func isCreateAction(a *types.Action) bool {
 	return strings.HasPrefix(a.Name, "Create") || a.Name == "RunInstances"
 }
 
+// newPlaceholderResource builds a minimal FrozenResource for Create*/RunInstances targets that
+// don't exist yet
+func newPlaceholderResource(arn string) *entities.FrozenResource {
+	return &entities.FrozenResource{
+		AccountId:   placeholderAccountId,
+		Arn:         arn,
+		ArnSegments: entities.SplitArn(arn),
+	}
+}
+
 // allActionsAreCreate returns true if every action in the slice is a create-type action
 func allActionsAreCreate(fas []*types.Action) bool {
 	for _, a := range fas {
@@ -225,12 +235,7 @@ func (s *Simulator) SimulateByArnWithOptions(
 	if ac.Action.HasTargets() {
 		_, ok := s.Universe.Resource(resourceArn)
 		if !ok && isCreateAction(ac.Action) {
-			// Create*/RunInstances target resources that don't exist yet — use a placeholder
-			ac.Resource = &entities.FrozenResource{
-				AccountId:   placeholderAccountId,
-				Arn:         resourceArn,
-				ArnSegments: entities.SplitArn(resourceArn),
-			}
+			ac.Resource = newPlaceholderResource(resourceArn)
 		} else {
 			fr, err := s.resolveResource(resourceArn, opts)
 			if err != nil {
@@ -419,11 +424,7 @@ func (s *Simulator) freezeResources(arns []string, opts Options, allowPlaceholde
 			if !allowPlaceholders {
 				return nil, fmt.Errorf("unable to resolve resource '%s': %w", r, err)
 			}
-			fr = &entities.FrozenResource{
-				AccountId:   placeholderAccountId,
-				Arn:         r,
-				ArnSegments: entities.SplitArn(r),
-			}
+			fr = newPlaceholderResource(r)
 		}
 		frs = append(frs, fr)
 	}

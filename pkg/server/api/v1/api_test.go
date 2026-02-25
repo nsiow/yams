@@ -66,6 +66,48 @@ func newTestAPIWithData(t *testing.T) *API {
 // List Tests
 // -------------------------------------------------------------------------------------------------
 
+func TestAPI_AccountNames(t *testing.T) {
+	api := newTestAPIWithData(t)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/accounts/names", nil)
+
+	api.AccountNames(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("AccountNames() status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var names map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &names); err != nil {
+		t.Fatalf("AccountNames() invalid JSON: %v", err)
+	}
+
+	if names["123456789012"] != "TestAccount" {
+		t.Errorf("AccountNames() got %q, want %q", names["123456789012"], "TestAccount")
+	}
+}
+
+func TestAPI_AccountNames_Empty(t *testing.T) {
+	api := newTestAPI(t)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/accounts/names", nil)
+
+	api.AccountNames(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("AccountNames() status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var names map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &names); err != nil {
+		t.Fatalf("AccountNames() invalid JSON: %v", err)
+	}
+
+	if len(names) != 0 {
+		t.Errorf("AccountNames() expected empty map, got %d entries", len(names))
+	}
+}
+
 func TestAPI_ListAccounts(t *testing.T) {
 	api := newTestAPIWithData(t)
 	w := httptest.NewRecorder()
