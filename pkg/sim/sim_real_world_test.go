@@ -526,6 +526,7 @@ func TestRealWorldData(t *testing.T) {
 			Want: true,
 		},
 		{
+			// Bucket policy directly grants PandaRole s3:PutObject, so boundary is bypassed
 			Input: in{
 				p: "arn:aws:iam::213308312933:role/PandaRole",
 				a: "s3:putobject",
@@ -534,7 +535,7 @@ func TestRealWorldData(t *testing.T) {
 					"aws:CurrentTime": "2023-01-01T00:00:00Z",
 				},
 			},
-			Want: false,
+			Want: true,
 		},
 		{
 			Input: in{
@@ -679,18 +680,26 @@ func TestRealWorldData(t *testing.T) {
 			},
 			Want: false,
 		},
-		// {
-		// 	// Waiting on key to delete
-		// 	Input: in{
-		// 		p: "arn:aws:iam::777583092761:role/CoralRole",
-		// 		a: "kms:decrypt",
-		// 		r: "arn:aws:kms:us-east-1:777583092761:alias/chartreuse-key",
-		// 		c: map[string]string{
-		// 			"aws:RequestTag/Emergency": "true",
-		// 		},
-		// 	},
-		// 	Want: true,
-		// },
+		// KMS: CoralRole emergency access via root delegation + tag condition
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/CoralRole",
+				a: "kms:decrypt",
+				r: "arn:aws:kms:us-east-1:777583092761:key/04379ae8-3ab9-4c17-bc9f-55c53dca02f0",
+				c: map[string]string{
+					"aws:RequestTag/Emergency": "true",
+				},
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/CoralRole",
+				a: "kms:decrypt",
+				r: "arn:aws:kms:us-east-1:777583092761:key/04379ae8-3ab9-4c17-bc9f-55c53dca02f0",
+			},
+			Want: false,
+		},
 		{
 			Input: in{
 				p: "arn:aws:iam::213308312933:user/CatUser",
@@ -711,6 +720,253 @@ func TestRealWorldData(t *testing.T) {
 			},
 			Want: true,
 		},
+
+		// DDB: SandwichRole (acct2) with CupcakeBoundary
+		{
+			Input: in{
+				p: "arn:aws:iam::255082776537:role/SandwichRole",
+				a: "dynamodb:getitem",
+				r: "arn:aws:dynamodb:us-east-1:255082776537:table/TacoTable",
+				c: map[string]string{
+					"aws:RequestedRegion": "us-east-1",
+				},
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::255082776537:role/SandwichRole",
+				a: "dynamodb:deleteitem",
+				r: "arn:aws:dynamodb:us-east-1:255082776537:table/TacoTable",
+				c: map[string]string{
+					"aws:RequestedRegion": "us-east-1",
+				},
+			},
+			Want: false,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::255082776537:role/SandwichRole",
+				a: "dynamodb:scan",
+				r: "arn:aws:dynamodb:us-east-1:255082776537:table/TacoTable",
+				c: map[string]string{
+					"aws:RequestedRegion": "us-east-1",
+				},
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::255082776537:role/SandwichRole",
+				a: "dynamodb:query",
+				r: "arn:aws:dynamodb:us-east-1:255082776537:table/TacoTable",
+				c: map[string]string{
+					"aws:RequestedRegion": "us-east-1",
+				},
+			},
+			Want: true,
+		},
+
+		// DDB: MouseRole (acct1) with LlamaBoundary
+		{
+			Input: in{
+				p: "arn:aws:iam::213308312933:role/MouseRole",
+				a: "dynamodb:getitem",
+				r: "arn:aws:dynamodb:us-east-1:213308312933:table/ElephantTable",
+				c: map[string]string{
+					"aws:CurrentTime": "2025-01-01T00:00:00Z",
+				},
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::213308312933:role/MouseRole",
+				a: "dynamodb:deleteitem",
+				r: "arn:aws:dynamodb:us-east-1:213308312933:table/ElephantTable",
+			},
+			Want: false,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::213308312933:role/MouseRole",
+				a: "dynamodb:deletetable",
+				r: "arn:aws:dynamodb:us-east-1:213308312933:table/ElephantTable",
+			},
+			Want: false,
+		},
+
+		// DDB: PandaRole (acct1) with LlamaBoundary
+		{
+			Input: in{
+				p: "arn:aws:iam::213308312933:role/PandaRole",
+				a: "dynamodb:getitem",
+				r: "arn:aws:dynamodb:us-east-1:213308312933:table/ElephantTable",
+				c: map[string]string{
+					"aws:CurrentTime": "2025-01-01T00:00:00Z",
+				},
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::213308312933:role/PandaRole",
+				a: "dynamodb:putitem",
+				r: "arn:aws:dynamodb:us-east-1:213308312933:table/ElephantTable",
+				c: map[string]string{
+					"aws:CurrentTime": "2025-01-01T00:00:00Z",
+				},
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::213308312933:role/PandaRole",
+				a: "dynamodb:putitem",
+				r: "arn:aws:dynamodb:us-east-1:213308312933:table/ElephantTable",
+				c: map[string]string{
+					"aws:CurrentTime": "2023-01-01T00:00:00Z",
+				},
+			},
+			Want: false,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::213308312933:role/PandaRole",
+				a: "dynamodb:deleteitem",
+				r: "arn:aws:dynamodb:us-east-1:213308312933:table/ElephantTable",
+			},
+			Want: false,
+		},
+
+		// DDB: BlueRole (acct0) via GreyPolicy
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/BlueRole",
+				a: "dynamodb:query",
+				r: "arn:aws:dynamodb:us-east-1:777583092761:table/OrangeTable",
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/BlueRole",
+				a: "dynamodb:putitem",
+				r: "arn:aws:dynamodb:us-east-1:777583092761:table/OrangeTable",
+			},
+			Want: true,
+		},
+
+		// DDB: TaupeRole (acct0) with PinkBoundary
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/TaupeRole",
+				a: "dynamodb:getitem",
+				r: "arn:aws:dynamodb:us-east-1:777583092761:table/OrangeTable",
+				c: map[string]string{
+					"aws:RequestedRegion": "us-east-1",
+					"aws:CurrentTime":     "2025-01-01T00:00:00Z",
+					"aws:SourceIp":        "10.0.0.0",
+				},
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/TaupeRole",
+				a: "dynamodb:putitem",
+				r: "arn:aws:dynamodb:us-east-1:777583092761:table/OrangeTable",
+				c: map[string]string{
+					"aws:RequestedRegion": "us-east-1",
+					"aws:CurrentTime":     "2025-01-01T00:00:00Z",
+					"aws:SourceIp":        "10.0.0.0",
+				},
+			},
+			Want: false,
+		},
+
+		// KMS: BeigeRole (acct0) - key policy directly names BeigeRole
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/BeigeRole",
+				a: "kms:decrypt",
+				r: "arn:aws:kms:us-east-1:777583092761:key/04379ae8-3ab9-4c17-bc9f-55c53dca02f0",
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/BeigeRole",
+				a: "kms:describekey",
+				r: "arn:aws:kms:us-east-1:777583092761:key/04379ae8-3ab9-4c17-bc9f-55c53dca02f0",
+			},
+			Want: true,
+		},
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/BeigeRole",
+				a: "kms:encrypt",
+				r: "arn:aws:kms:us-east-1:777583092761:key/04379ae8-3ab9-4c17-bc9f-55c53dca02f0",
+			},
+			Want: false,
+		},
+
+		// KMS: RedRole has no KMS identity policy, TurquoiseKey only has root policy
+		{
+			Input: in{
+				p: "arn:aws:iam::777583092761:role/RedRole",
+				a: "kms:encrypt",
+				r: "arn:aws:kms:us-east-1:777583092761:key/803e5b22-eb7b-4ff2-863b-8a4ea1e4b5a3",
+			},
+			Want: false,
+		},
+
+		// KMS tests requiring redeploy: uncomment after `make cf && make real-world-data`
+		// BlueRole → FoxKey (acct1) cross-account via key policy
+		// {
+		// 	Input: in{
+		// 		p: "arn:aws:iam::777583092761:role/BlueRole",
+		// 		a: "kms:decrypt",
+		// 		r: "<FoxKey ARN from acct1>",
+		// 	},
+		// 	Want: true,
+		// },
+		// RedRole → FoxKey (acct1) - not in key policy
+		// {
+		// 	Input: in{
+		// 		p: "arn:aws:iam::777583092761:role/RedRole",
+		// 		a: "kms:decrypt",
+		// 		r: "<FoxKey ARN from acct1>",
+		// 	},
+		// 	Want: false,
+		// },
+		// BlueRole → ChartreuseKey via GreyPolicy (root delegation)
+		// {
+		// 	Input: in{
+		// 		p: "arn:aws:iam::777583092761:role/BlueRole",
+		// 		a: "kms:decrypt",
+		// 		r: "arn:aws:kms:us-east-1:777583092761:key/04379ae8-3ab9-4c17-bc9f-55c53dca02f0",
+		// 	},
+		// 	Want: true,
+		// },
+		// BlueRole → ChartreuseKey - GenerateDataKey not in GreyPolicy
+		// {
+		// 	Input: in{
+		// 		p: "arn:aws:iam::777583092761:role/BlueRole",
+		// 		a: "kms:generatedatakey",
+		// 		r: "arn:aws:kms:us-east-1:777583092761:key/04379ae8-3ab9-4c17-bc9f-55c53dca02f0",
+		// 	},
+		// 	Want: false,
+		// },
+		// DogUser → WaffleKey (acct2) via acct1 root delegation + DogPolicy
+		// {
+		// 	Input: in{
+		// 		p: "arn:aws:iam::213308312933:user/DogUser",
+		// 		a: "kms:decrypt",
+		// 		r: "<WaffleKey ARN from acct2>",
+		// 	},
+		// 	Want: true,
+		// },
 	}
 
 	sim, err := buildTestSimulator()

@@ -66,6 +66,14 @@ func evalOverallAccess(s *subject) SimResult {
 		return SimResult{IsAllowed: false}
 	}
 
+	// Same-account resource-grants-principal edge case: the resource policy directly grants
+	// the principal access (not via delegation), so neither identity policy nor permission
+	// boundary are required
+	if evalIsSameAccount(s) && s.extra.ResourceGrantsPrincipalAccess {
+		s.trc.Allowed("[allow] access granted via same-account resource grant")
+		return SimResult{IsAllowed: true}
+	}
+
 	// Calculate permissions boundary access, if present
 	pbAccess := evalPermissionsBoundary(s)
 	if pbAccess.DeniedExplicit() {
@@ -79,13 +87,6 @@ func evalOverallAccess(s *subject) SimResult {
 
 	// If same account, access is granted if the Principal has access
 	if evalIsSameAccount(s) {
-		// Same-account resource-grants-principal edge case: the resource policy directly grants
-		// the principal access (not via delegation), so identity policy is not required
-		if s.extra.ResourceGrantsPrincipalAccess {
-			s.trc.Allowed("[allow] access granted via same-account resource grant")
-			return SimResult{IsAllowed: true}
-		}
-
 		if pAccess.Allowed() && !isStrictCall(s) {
 			s.trc.Allowed("[allow] access granted via same-account identity policy")
 			return SimResult{IsAllowed: true}

@@ -322,6 +322,12 @@ Resources:
           - Effect: 'Allow'
             Action: 'dynamodb:*'
             Resource: !GetAtt OrangeTable.Arn
+          - Effect: 'Allow'
+            Action:
+              - 'kms:Encrypt'
+              - 'kms:Decrypt'
+              - 'kms:DescribeKey'
+            Resource: !GetAtt ChartreuseKey.Arn
 
   MustardBoundary:
     Type: 'AWS::IAM::ManagedPolicy'
@@ -579,6 +585,9 @@ Resources:
               - kms:Decrypt
               - kms:DescribeKey
             Resource: '*'
+      Tags:
+        - Key: Color
+          Value: Chartreuse
 
   ChartreuseAlias:
     Type: AWS::KMS::Alias
