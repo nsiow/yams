@@ -662,8 +662,8 @@ var InvalidTestUniverse_1 = entities.NewBuilder().
 			},
 			OrgNodes: []entities.OrgNode{
 				{
-					SCPs: []entities.Arn{
-						"arn:aws:organizations::00000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+					SCPs: []entities.OrgPolicyRef{
+						{Arn: "arn:aws:organizations::00000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access"},
 					},
 				},
 			},
@@ -697,8 +697,8 @@ var InvalidTestUniverse_2 = entities.NewBuilder().
 			},
 			OrgNodes: []entities.OrgNode{
 				{
-					SCPs: []entities.Arn{
-						"arn:aws:organizations::00000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+					SCPs: []entities.OrgPolicyRef{
+						{Arn: "arn:aws:organizations::00000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access"},
 					},
 				},
 			},

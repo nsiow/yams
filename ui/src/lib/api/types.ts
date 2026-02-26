@@ -1,3 +1,15 @@
+// List Item Types
+
+export interface AccountListItem {
+  id: string;
+  name: string;
+}
+
+export interface PolicyListItem {
+  arn: string;
+  name: string;
+}
+
 // API Response Types
 
 export interface SourceStatus {
@@ -87,13 +99,18 @@ export interface PolicyStatement {
   Principal?: string | Record<string, string | string[]>;
 }
 
+export interface OrgPolicyRef {
+  Arn: string;
+  Name: string;
+}
+
 export interface OrgNode {
   Id: string;
   Type: 'ROOT' | 'ORGANIZATIONAL_UNIT' | 'ACCOUNT';
   Arn: string;
   Name: string;
-  SCPs?: string[];
-  RCPs?: string[];
+  SCPs?: OrgPolicyRef[];
+  RCPs?: OrgPolicyRef[];
 }
 
 export interface Account {

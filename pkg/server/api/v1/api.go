@@ -52,15 +52,19 @@ func (api *API) GetResource(w http.ResponseWriter, req *http.Request) {
 // -------------------------------------------------------------------------------------------------
 
 func (api *API) ListAccounts(w http.ResponseWriter, req *http.Request) {
-	List(w, req, api.Simulator.Universe.Accounts)
-}
-
-func (api *API) AccountNames(w http.ResponseWriter, req *http.Request) {
-	names := make(map[string]string)
-	for account := range api.Simulator.Universe.Accounts() {
-		names[account.Id] = account.Name
+	type entry struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
 	}
-	httputil.WriteJsonResponse(w, req, names)
+
+	var items []entry
+	for a := range api.Simulator.Universe.Accounts() {
+		items = append(items, entry{Id: a.Id, Name: a.Name})
+	}
+	slices.SortFunc(items, func(a, b entry) int {
+		return strings.Compare(a.Id, b.Id)
+	})
+	httputil.WriteJsonResponse(w, req, items)
 }
 
 func (api *API) ListGroups(w http.ResponseWriter, req *http.Request) {
@@ -68,7 +72,19 @@ func (api *API) ListGroups(w http.ResponseWriter, req *http.Request) {
 }
 
 func (api *API) ListPolicies(w http.ResponseWriter, req *http.Request) {
-	List(w, req, api.Simulator.Universe.Policies)
+	type entry struct {
+		Arn  string `json:"arn"`
+		Name string `json:"name"`
+	}
+
+	var items []entry
+	for p := range api.Simulator.Universe.Policies() {
+		items = append(items, entry{Arn: p.Arn, Name: p.Name})
+	}
+	slices.SortFunc(items, func(a, b entry) int {
+		return strings.Compare(a.Arn, b.Arn)
+	})
+	httputil.WriteJsonResponse(w, req, items)
 }
 
 func (api *API) ListPrincipals(w http.ResponseWriter, req *http.Request) {

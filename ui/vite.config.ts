@@ -3,7 +3,22 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   base: '/ui/',
-  plugins: [react()],
+  plugins: [
+    {
+      name: 'redirect-root',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.originalUrl === '/' || req.originalUrl === '') {
+            res.writeHead(302, { Location: '/ui/' });
+            res.end();
+            return;
+          }
+          next();
+        });
+      },
+    },
+    react(),
+  ],
   server: {
     port: 3000,
     proxy: {

@@ -142,7 +142,7 @@ describe('YamsClient', () => {
 
   describe('policies', () => {
     it('lists all policies', async () => {
-      const policies = ['arn:aws:iam::123:policy/Test'];
+      const policies = [{ arn: 'arn:aws:iam::123:policy/Test', name: 'Test' }];
       mockJsonResponse(policies);
 
       const result = await client.listPolicies();
@@ -166,7 +166,7 @@ describe('YamsClient', () => {
 
   describe('accounts', () => {
     it('lists all accounts', async () => {
-      const accounts = ['123456789012'];
+      const accounts = [{ id: '123456789012', name: 'TestAccount' }];
       mockJsonResponse(accounts);
 
       const result = await client.listAccounts();

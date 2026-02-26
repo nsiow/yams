@@ -117,7 +117,11 @@ func (l *Loader) loadItems(blobs []configBlob) error {
 			}
 		}
 	})
-	return loadErr
+	if loadErr != nil {
+		return loadErr
+	}
+	l.uv.ResolveOrgPolicyNames()
+	return nil
 }
 
 // -------------------------------------------------------------------------------------------------

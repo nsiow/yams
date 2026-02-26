@@ -18,7 +18,7 @@ import {
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconSearch, IconCloud, IconChevronRight } from '@tabler/icons-react';
 import { yamsApi } from '../../lib/api';
-import type { Account } from '../../lib/api';
+import type { Account, AccountListItem } from '../../lib/api';
 import {
   CollapsibleCard,
   CopyButton,
@@ -32,11 +32,6 @@ import {
 
 // TODO(nsiow): Add tag filtering when tags are available in the API
 
-interface AccountListItem {
-  id: string;
-  name: string;
-}
-
 function formatNumber(n: number): string {
   return n.toLocaleString();
 }
@@ -48,8 +43,7 @@ export function AccountsPage(): JSX.Element {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [accountIds, setAccountIds] = useState<string[]>([]);
-  const [accountNames, setAccountNames] = useState<Record<string, string>>({});
+  const [accounts, setAccounts] = useState<AccountListItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(idFromUrl || null);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -72,35 +66,23 @@ export function AccountsPage(): JSX.Element {
     setSearchQuery('');
   };
 
-  // Build account list with names
-  const accountList = useMemo((): AccountListItem[] => {
-    return accountIds.map(id => ({
-      id,
-      name: accountNames[id] || id,
-    }));
-  }, [accountIds, accountNames]);
-
   // Filter accounts based on search
   const filteredAccounts = useMemo(() => {
-    return accountList.filter(a => {
+    return accounts.filter(a => {
       if (debouncedSearch) {
         const query = debouncedSearch.toLowerCase();
         return a.name.toLowerCase().includes(query) || a.id.toLowerCase().includes(query);
       }
       return true;
     });
-  }, [accountList, debouncedSearch]);
+  }, [accounts, debouncedSearch]);
 
-  // Fetch all account IDs and names on mount
+  // Fetch all accounts on mount
   useEffect(() => {
     async function fetchData(): Promise<void> {
       try {
-        const [ids, names] = await Promise.all([
-          yamsApi.listAccounts(),
-          yamsApi.accountNames(),
-        ]);
-        setAccountIds(ids);
-        setAccountNames(names);
+        const items = await yamsApi.listAccounts();
+        setAccounts(items);
         setError(null);
       } catch (err) {
         console.error('Failed to fetch data:', err);
@@ -208,7 +190,7 @@ export function AccountsPage(): JSX.Element {
             </FilterBar>
 
             <Text size="sm" c="dimmed">
-              {formatNumber(filteredAccounts.length)} of {formatNumber(accountList.length)} accounts
+              {formatNumber(filteredAccounts.length)} of {formatNumber(accounts.length)} accounts
               {totalPages > 1 && ` (page ${formatNumber(page)} of ${formatNumber(totalPages)})`}
             </Text>
 
@@ -348,14 +330,14 @@ export function AccountsPage(): JSX.Element {
                                 <Stack gap={2}>
                                   {node.SCPs.map((scp) => (
                                     <Anchor
-                                      key={scp}
+                                      key={scp.Arn}
                                       component={Link}
-                                      to={`/search/policies/${scp}`}
+                                      to={`/search/policies/${scp.Arn}`}
                                       size="xs"
                                       ff="monospace"
                                       style={{ wordBreak: 'break-all' }}
                                     >
-                                      {scp.split('/').pop()}
+                                      {scp.Name || scp.Arn.split('/').pop()}
                                     </Anchor>
                                   ))}
                                 </Stack>
@@ -369,14 +351,14 @@ export function AccountsPage(): JSX.Element {
                                 <Stack gap={2}>
                                   {node.RCPs.map((rcp) => (
                                     <Anchor
-                                      key={rcp}
+                                      key={rcp.Arn}
                                       component={Link}
-                                      to={`/search/policies/${rcp}`}
+                                      to={`/search/policies/${rcp.Arn}`}
                                       size="xs"
                                       ff="monospace"
                                       style={{ wordBreak: 'break-all' }}
                                     >
-                                      {rcp.split('/').pop()}
+                                      {rcp.Name || rcp.Arn.split('/').pop()}
                                     </Anchor>
                                   ))}
                                 </Stack>

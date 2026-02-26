@@ -87,7 +87,7 @@ export function Layout(): JSX.Element {
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Group gap="sm" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
-              <Image src="/apple-touch-icon.png" w={44} h={44} />
+              <Image src={`${import.meta.env.BASE_URL}apple-touch-icon.png`} w={44} h={44} />
               <Title order={3} c="white" ff="'Urbanist', sans-serif" fz="xl" style={{ letterSpacing: '0.15em' }}>
                 yams
               </Title>

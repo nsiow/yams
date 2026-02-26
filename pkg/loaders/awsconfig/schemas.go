@@ -408,8 +408,12 @@ func (c *Account) asAccount() entities.Account {
 				Type: in.Type,
 				Arn:  in.Arn,
 				Name: in.Name,
-				SCPs: in.SCPs,
-				RCPs: in.RCPs,
+				SCPs: common.Map(in.SCPs, func(arn string) entities.OrgPolicyRef {
+					return entities.OrgPolicyRef{Arn: arn}
+				}),
+				RCPs: common.Map(in.RCPs, func(arn string) entities.OrgPolicyRef {
+					return entities.OrgPolicyRef{Arn: arn}
+				}),
 			}
 		}),
 	}

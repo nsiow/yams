@@ -62,13 +62,13 @@ func TestLoad(t *testing.T) {
 								Type: "ACCOUNT",
 								Name: "myaccount",
 								Arn:  "arn:aws:organizations::111:account/o-123/123",
-								SCPs: []entities.Arn{
-									"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-									"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								SCPs: []entities.OrgPolicyRef{
+									{Arn: "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess", Name: "FullAWSAccess"},
+									{Arn: "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access", Name: "FullS3Access"},
 								},
-								RCPs: []entities.Arn{
-									"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-									"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								RCPs: []entities.OrgPolicyRef{
+									{Arn: "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess", Name: "FullAWSAccess"},
+									{Arn: "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access", Name: "FullS3Access"},
 								},
 							},
 						},
@@ -95,13 +95,13 @@ func TestLoad(t *testing.T) {
 								Type: "ACCOUNT",
 								Name: "myaccount",
 								Arn:  "arn:aws:organizations::111:account/o-123/123",
-								SCPs: []entities.Arn{
-									"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-									"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								SCPs: []entities.OrgPolicyRef{
+									{Arn: "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess", Name: "FullAWSAccess"},
+									{Arn: "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access", Name: "FullS3Access"},
 								},
-								RCPs: []entities.Arn{
-									"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-									"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								RCPs: []entities.OrgPolicyRef{
+									{Arn: "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess", Name: "FullAWSAccess"},
+									{Arn: "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access", Name: "FullS3Access"},
 								},
 							},
 						},

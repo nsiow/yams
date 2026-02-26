@@ -116,16 +116,16 @@ func (n *OrgNode) FreezeWith(strict bool, uvs ...*Universe) (FrozenOrgNode, erro
 		Name: n.Name,
 	}
 
-	for _, arn := range n.SCPs {
-		policies, err := freezePolicy(arn, strict, uvs...)
+	for _, ref := range n.SCPs {
+		policies, err := freezePolicy(ref.Arn, strict, uvs...)
 		if err != nil {
 			return FrozenOrgNode{}, err
 		}
 		frozen.SCPs = append(frozen.SCPs, policies)
 	}
 
-	for _, arn := range n.RCPs {
-		policies, err := freezePolicy(arn, strict, uvs...)
+	for _, ref := range n.RCPs {
+		policies, err := freezePolicy(ref.Arn, strict, uvs...)
 		if err != nil {
 			return FrozenOrgNode{}, err
 		}

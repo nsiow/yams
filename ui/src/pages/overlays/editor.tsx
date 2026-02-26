@@ -163,12 +163,12 @@ function AddEntityModal({ opened, onClose, entityType, onAdd, existingArns }: Ad
           case 'policy':
             data = searchQuery
               ? await yamsApi.searchPolicies(searchQuery)
-              : await yamsApi.listPolicies();
+              : (await yamsApi.listPolicies()).map(p => p.arn);
             break;
           case 'account':
             data = searchQuery
               ? await yamsApi.searchAccounts(searchQuery)
-              : await yamsApi.listAccounts();
+              : (await yamsApi.listAccounts()).map(a => a.id);
             break;
         }
         // Filter out already added entities

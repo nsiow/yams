@@ -59,7 +59,7 @@ describe('WhichResourcesPage', () => {
     render(<WhichResourcesPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Search and select a principal/)).toBeInTheDocument();
+      expect(screen.getByText(/Select a principal and an action/)).toBeInTheDocument();
     });
   });
 
@@ -67,7 +67,7 @@ describe('WhichResourcesPage', () => {
     render(<WhichResourcesPage />);
 
     expect(screen.getByText('Principal (required)')).toBeInTheDocument();
-    expect(screen.getByText('Action (optional)')).toBeInTheDocument();
+    expect(screen.getByText('Action (required)')).toBeInTheDocument();
   });
 
   it('searches for principals when typing in principal input', async () => {
@@ -102,12 +102,7 @@ describe('WhichResourcesPage', () => {
     });
   });
 
-  it('runs query when principal is selected (action optional)', async () => {
-    vi.mocked(yamsApi.whichResources).mockResolvedValue([
-      'arn:aws:s3:::my-bucket',
-      'arn:aws:s3:::other-bucket',
-    ]);
-
+  it('does not run query when only principal is selected', async () => {
     render(<WhichResourcesPage />, {
       routerProps: {
         initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole'],
@@ -115,15 +110,13 @@ describe('WhichResourcesPage', () => {
     });
 
     await waitFor(() => {
-      expect(yamsApi.whichResources).toHaveBeenCalledWith(
-        expect.objectContaining({
-          principal: 'arn:aws:iam::123456789012:role/MyRole',
-        })
-      );
+      expect(screen.getByText(/Select a principal and an action/)).toBeInTheDocument();
     });
+
+    expect(yamsApi.whichResources).not.toHaveBeenCalled();
   });
 
-  it('runs query with action when both are selected', async () => {
+  it('runs query when both principal and action are selected', async () => {
     vi.mocked(yamsApi.whichResources).mockResolvedValue([
       'arn:aws:s3:::my-bucket',
     ]);
@@ -152,7 +145,7 @@ describe('WhichResourcesPage', () => {
 
     render(<WhichResourcesPage />, {
       routerProps: {
-        initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole'],
+        initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole&action=s3:GetObject'],
       },
     });
 
@@ -172,7 +165,7 @@ describe('WhichResourcesPage', () => {
 
     render(<WhichResourcesPage />, {
       routerProps: {
-        initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole'],
+        initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole&action=s3:GetObject'],
       },
     });
 
@@ -191,7 +184,7 @@ describe('WhichResourcesPage', () => {
 
     render(<WhichResourcesPage />, {
       routerProps: {
-        initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole'],
+        initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole&action=s3:GetObject'],
       },
     });
 
@@ -205,7 +198,7 @@ describe('WhichResourcesPage', () => {
 
     render(<WhichResourcesPage />, {
       routerProps: {
-        initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole'],
+        initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole&action=s3:GetObject'],
       },
     });
 
@@ -224,7 +217,7 @@ describe('WhichResourcesPage', () => {
 
     render(<WhichResourcesPage />, {
       routerProps: {
-        initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole'],
+        initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole&action=s3:GetObject'],
       },
     });
 
@@ -246,8 +239,6 @@ describe('WhichResourcesPage', () => {
   });
 
   it('shows Clear All button when selections are made', async () => {
-    vi.mocked(yamsApi.whichResources).mockResolvedValue([]);
-
     render(<WhichResourcesPage />, {
       routerProps: {
         initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole'],
@@ -264,7 +255,7 @@ describe('WhichResourcesPage', () => {
 
     render(<WhichResourcesPage />, {
       routerProps: {
-        initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole'],
+        initialEntries: ['/?principal=arn:aws:iam::123456789012:role/MyRole&action=s3:GetObject'],
       },
     });
 

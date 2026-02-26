@@ -137,9 +137,9 @@ export function WhichResourcesPage(): JSX.Element {
   const searchPrincipals = useCallback((query: string) => yamsApi.searchPrincipals(query), []);
   const searchActions = useCallback((query: string) => yamsApi.searchActions(query), []);
 
-  // Run query when principal is selected
+  // Run query when both principal and action are selected
   const runQuery = useCallback(async (): Promise<void> => {
-    if (!selectedPrincipal) return;
+    if (!selectedPrincipal || !selectedAction) return;
 
     setLoading(true);
     setError(null);
@@ -154,7 +154,7 @@ export function WhichResourcesPage(): JSX.Element {
 
       const response = await yamsApi.whichResources({
         principal: selectedPrincipal,
-        action: selectedAction || undefined,
+        action: selectedAction,
         context,
         overlay,
       });
@@ -173,7 +173,7 @@ export function WhichResourcesPage(): JSX.Element {
 
   // Auto-run query when selections or options change
   useEffect(() => {
-    if (selectedPrincipal) {
+    if (selectedPrincipal && selectedAction) {
       runQuery();
     } else {
       setResults([]);
@@ -260,7 +260,7 @@ export function WhichResourcesPage(): JSX.Element {
             <Text size="sm" c="dimmed">
               Find which <Text component="span" fw={500} c="purple.6">resources</Text> a
               <Text component="span" fw={500} c="purple.6"> principal</Text> can
-              access{selectedAction && <> with a specific <Text component="span" fw={500} c="purple.6">action</Text></>}.
+              access with a specific <Text component="span" fw={500} c="purple.6">action</Text>.
             </Text>
           </Box>
           {hasAnySelection && (
@@ -293,7 +293,7 @@ export function WhichResourcesPage(): JSX.Element {
             </Grid.Col>
             <Grid.Col span={6}>
               <AsyncSearchSelect
-                label="Action (optional)"
+                label="Action (required)"
                 placeholder="Search actions..."
                 value={selectedAction}
                 onChange={(v) => updateSelection('action', v)}
@@ -318,7 +318,7 @@ export function WhichResourcesPage(): JSX.Element {
           contextVars={contextVars}
           onChange={setContextVars}
           onRerun={runQuery}
-          showRerunButton={!!selectedPrincipal}
+          showRerunButton={!!selectedPrincipal && !!selectedAction}
           sharedContextVars={sharedContextVars}
         />
 
@@ -524,19 +524,18 @@ export function WhichResourcesPage(): JSX.Element {
           </Card>
         )}
 
-        {!loading && !error && selectedPrincipal && results.length === 0 && (
+        {!loading && !error && selectedPrincipal && selectedAction && results.length === 0 && (
           <Card withBorder p="xl">
             <Text ta="center" c="dimmed" size="lg">
-              No resources found that this principal can access
-              {selectedAction ? ' with this action' : ''}.
+              No resources found that this principal can access with this action.
             </Text>
           </Card>
         )}
 
-        {!selectedPrincipal && !loading && (
+        {(!selectedPrincipal || !selectedAction) && !loading && (
           <Card withBorder p="xl">
             <Text ta="center" c="dimmed" size="lg">
-              Search and select a principal to find which resources they can access.
+              Select a principal and an action to find which resources they can access.
             </Text>
           </Card>
         )}

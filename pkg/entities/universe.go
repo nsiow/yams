@@ -117,6 +117,37 @@ func (u *Universe) Size() int {
 }
 
 // -------------------------------------------------------------------------------------------------
+// Org Policy Resolution
+// -------------------------------------------------------------------------------------------------
+
+// ResolveOrgPolicyNames populates the Name field of OrgPolicyRef entries on all accounts by looking
+// up each ARN in the policy store. Falls back to extracting the last path segment from the ARN.
+func (u *Universe) ResolveOrgPolicyNames() {
+	u.mut.Lock()
+	defer u.mut.Unlock()
+
+	for _, acct := range u.accounts {
+		for i := range acct.OrgNodes {
+			node := &acct.OrgNodes[i]
+			for j := range node.SCPs {
+				node.SCPs[j].Name = u.resolveOrgPolicyName(node.SCPs[j].Arn)
+			}
+			for j := range node.RCPs {
+				node.RCPs[j].Name = u.resolveOrgPolicyName(node.RCPs[j].Arn)
+			}
+		}
+	}
+}
+
+// resolveOrgPolicyName returns the friendly name for a policy ARN. Must be called with lock held.
+func (u *Universe) resolveOrgPolicyName(arn string) string {
+	if p, ok := u.policies[arn]; ok && p.Name != "" {
+		return p.Name
+	}
+	return path.Base(arn)
+}
+
+// -------------------------------------------------------------------------------------------------
 // Accounts
 // -------------------------------------------------------------------------------------------------
 

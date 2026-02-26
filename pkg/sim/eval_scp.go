@@ -34,7 +34,7 @@ func evalSCP(s *subject) Decision {
 
 		for _, scp := range node.SCPs {
 			if trc {
-				s.trc.Push("evaluating service control policy: %s", scp.Arn)
+				s.trc.Push("evaluating service control policy: %s", scp.Name)
 			}
 
 			localDecision := evalPolicy(s, scp.Policy,
@@ -42,7 +42,7 @@ func evalSCP(s *subject) Decision {
 				evalStatementMatchesResource,
 				evalStatementMatchesCondition)
 			if trc && localDecision.DeniedExplicit() {
-				s.trc.Denied("explicit deny in service control policy: %s", scp.Arn)
+				s.trc.Denied("explicit deny in service control policy: %s", scp.Name)
 			}
 
 			// Calculate access for this layer

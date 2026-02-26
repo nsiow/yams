@@ -2,6 +2,8 @@ import type {
   StatusResponse,
   Action,
   ActionTargeting,
+  AccountListItem,
+  PolicyListItem,
   Principal,
   Resource,
   Policy,
@@ -150,8 +152,8 @@ export class YamsClient {
 
   // Policies
 
-  async listPolicies(): Promise<string[]> {
-    return this.fetch<string[]>('/policies');
+  async listPolicies(): Promise<PolicyListItem[]> {
+    return this.fetch<PolicyListItem[]>('/policies');
   }
 
   async getPolicy(arn: string): Promise<Policy> {
@@ -166,8 +168,8 @@ export class YamsClient {
 
   // Accounts
 
-  async listAccounts(): Promise<string[]> {
-    return this.fetch<string[]>('/accounts');
+  async listAccounts(): Promise<AccountListItem[]> {
+    return this.fetch<AccountListItem[]>('/accounts');
   }
 
   async getAccount(id: string): Promise<Account> {
@@ -199,7 +201,8 @@ export class YamsClient {
   // Utils
 
   async accountNames(): Promise<Record<string, string>> {
-    return this.fetch<Record<string, string>>('/accounts/names');
+    const accounts = await this.listAccounts();
+    return Object.fromEntries(accounts.map(a => [a.id, a.name]));
   }
 
   async resourceAccounts(): Promise<Record<string, string>> {

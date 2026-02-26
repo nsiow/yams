@@ -101,6 +101,7 @@ export function PoliciesPage(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [policyArns, setPolicyArns] = useState<string[]>([]);
+  const [policyNameMap, setPolicyNameMap] = useState<Record<string, string>>({});
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
   const [selectedArn, setSelectedArn] = useState<string | null>(arnFromUrl || null);
   const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null);
@@ -129,10 +130,16 @@ export function PoliciesPage(): JSX.Element {
     setAccountFilter(null);
   };
 
-  // Parse all policy ARNs into list items
+  // Parse all policy ARNs into list items, using server-provided names when available
   const policyList = useMemo(() => {
-    return policyArns.map(parsePolicyArn);
-  }, [policyArns]);
+    return policyArns.map((arn) => {
+      const parsed = parsePolicyArn(arn);
+      if (policyNameMap[arn]) {
+        parsed.name = policyNameMap[arn];
+      }
+      return parsed;
+    });
+  }, [policyArns, policyNameMap]);
 
   // Extract unique types for filter dropdown
   const typeOptions = useMemo(() => {
@@ -174,16 +181,17 @@ export function PoliciesPage(): JSX.Element {
     });
   }, [policyList, typeFilter, accountFilter, debouncedSearch]);
 
-  // Fetch all policy ARNs and account names on mount
+  // Fetch all policy data and account names on mount
   useEffect(() => {
     async function fetchData(): Promise<void> {
       try {
-        const [arns, names] = await Promise.all([
+        const [policies, acctNames] = await Promise.all([
           yamsApi.listPolicies(),
           yamsApi.accountNames(),
         ]);
-        setPolicyArns(arns);
-        setAccountNames(names);
+        setPolicyArns(policies.map(p => p.arn));
+        setPolicyNameMap(Object.fromEntries(policies.map(p => [p.arn, p.name])));
+        setAccountNames(acctNames);
         setError(null);
       } catch (err) {
         console.error('Failed to fetch data:', err);
