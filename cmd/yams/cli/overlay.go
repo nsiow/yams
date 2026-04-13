@@ -7,6 +7,7 @@ import (
 
 	json "github.com/bytedance/sonic"
 	"github.com/nsiow/yams/pkg/entities"
+	"github.com/nsiow/yams/pkg/loaders/awsconfig"
 	v1 "github.com/nsiow/yams/pkg/server/api/v1"
 )
 
@@ -56,15 +57,15 @@ func LoadOverlays(files []string) (*v1.Overlay, error) {
 			overlay.Groups = append(overlay.Groups, group)
 		case
 			"AWS::IAM::Policy",
-			"Yams::Organizations::ServiceControlPolicy",
-			"Yams::Organizations::ResourceControlPolicy":
+			awsconfig.CONST_TYPE_YAMS_ORGANIZATIONS_SCP,
+			awsconfig.CONST_TYPE_YAMS_ORGANIZATIONS_RCP:
 			var policy entities.ManagedPolicy
 			err = json.Unmarshal(content, &policy)
 			if err != nil {
 				return nil, fmt.Errorf("could not decode policy from overlay file '%s': %v", fn, err)
 			}
 			overlay.Policies = append(overlay.Policies, policy)
-		case "Yams::Organizations::Account":
+		case awsconfig.CONST_TYPE_YAMS_ORGANIZATIONS_ACCOUNT:
 			var account entities.Account
 			err = json.Unmarshal(content, &account)
 			if err != nil {

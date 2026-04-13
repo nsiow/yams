@@ -115,7 +115,7 @@ func TestLoad(t *testing.T) {
 			Want: entities.NewBuilder().
 				WithPolicies(
 					entities.ManagedPolicy{
-						Type:      "Yams::Organizations::ServiceControlPolicy",
+						Type:      CONST_TYPE_YAMS_ORGANIZATIONS_SCP,
 						AccountId: "000000000000",
 						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
 						Policy: policy.Policy{
@@ -136,7 +136,7 @@ func TestLoad(t *testing.T) {
 				).
 				WithResources(
 					entities.Resource{
-						Type:      "Yams::Organizations::ServiceControlPolicy",
+						Type:      CONST_TYPE_YAMS_ORGANIZATIONS_SCP,
 						AccountId: "000000000000",
 						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
 					},
@@ -149,7 +149,7 @@ func TestLoad(t *testing.T) {
 			Want: entities.NewBuilder().
 				WithPolicies(
 					entities.ManagedPolicy{
-						Type:      "Yams::Organizations::ResourceControlPolicy",
+						Type:      CONST_TYPE_YAMS_ORGANIZATIONS_RCP,
 						AccountId: "000000000000",
 						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/resource_control_policy/p-aaa/FullS3Access",
 						Policy: policy.Policy{
@@ -170,7 +170,7 @@ func TestLoad(t *testing.T) {
 				).
 				WithResources(
 					entities.Resource{
-						Type:      "Yams::Organizations::ResourceControlPolicy",
+						Type:      CONST_TYPE_YAMS_ORGANIZATIONS_RCP,
 						AccountId: "000000000000",
 						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/resource_control_policy/p-aaa/FullS3Access",
 					},

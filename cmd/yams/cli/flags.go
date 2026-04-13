@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/nsiow/yams/pkg/loaders/awsconfig"
 	v1 "github.com/nsiow/yams/pkg/server/api/v1"
 )
 
@@ -77,7 +78,8 @@ type Flags struct {
 	Exact        bool
 
 	// multiple
-	Server string
+	Server    string
+	OrgPrefix string
 }
 
 func Parse() (*Flags, error) {
@@ -145,6 +147,9 @@ func Parse() (*Flags, error) {
 		fs.BoolVar(&opts.DryRun, "n", false, "alias for -dry-run")
 		fs.BoolVar(&opts.DryRun, "dry-run", false, "show what would be done without executing")
 
+		fs.StringVar(&opts.OrgPrefix, "org-prefix", "",
+			"namespace prefix for custom org types (default: Yams)")
+
 		err = fs.Parse(os.Args[2:])
 		args = fs.Args()
 
@@ -169,6 +174,9 @@ func Parse() (*Flags, error) {
 
 		fs.Var(&opts.SharedContext, "c", "alias for -context")
 		fs.Var(&opts.SharedContext, "context", "shared request context key=value pairs")
+
+		fs.StringVar(&opts.OrgPrefix, "org-prefix", "",
+			"namespace prefix for custom org types (default: Yams)")
 
 		err = fs.Parse(os.Args[2:])
 		args = fs.Args()
@@ -295,6 +303,15 @@ func Parse() (*Flags, error) {
 	envserver := os.Getenv("YAMS_SERVER_ADDRESS")
 	if len(envserver) > 0 {
 		opts.Server = envserver
+	}
+
+	// Apply org prefix: env var overrides flag, flag overrides ldflags default
+	if envPrefix := os.Getenv("YAMS_ORG_PREFIX"); envPrefix != "" {
+		opts.OrgPrefix = envPrefix
+	}
+	if opts.OrgPrefix != "" {
+		awsconfig.OrgPrefix = opts.OrgPrefix
+		awsconfig.RecomputeOrgConstants()
 	}
 
 	return opts, err

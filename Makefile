@@ -14,9 +14,12 @@ GO_BUILDER ?= go build
 VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 GIT_COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+ORG_PREFIX ?= Yams
+
 LDFLAGS    := -X 'github.com/nsiow/yams/cmd/yams/cli.Version=$(VERSION)'
 LDFLAGS    += -X 'github.com/nsiow/yams/cmd/yams/cli.GitCommit=$(GIT_COMMIT)'
 LDFLAGS    += -X 'github.com/nsiow/yams/cmd/yams/cli.BuildDate=$(BUILD_DATE)'
+LDFLAGS    += -X 'github.com/nsiow/yams/pkg/loaders/awsconfig.OrgPrefix=$(ORG_PREFIX)'
 
 .PHONY: build
 build:
