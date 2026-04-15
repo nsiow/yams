@@ -498,3 +498,31 @@ func TestUniverse_LoadBasePolicies(t *testing.T) {
 		t.Fatal("LoadBasePolicies should be idempotent")
 	}
 }
+
+func TestUniverse_WithBulkWriter(t *testing.T) {
+	uv := NewUniverse()
+
+	uv.WithBulkWriter(func(bw *BulkWriter) {
+		bw.PutAccount(Account{Id: "111111111111"})
+		bw.PutGroup(Group{Arn: "arn:aws:iam::111111111111:group/Admins"})
+		bw.PutPolicy(ManagedPolicy{Arn: "arn:aws:iam::111111111111:policy/TestPolicy"})
+		bw.PutPrincipal(Principal{Arn: "arn:aws:iam::111111111111:role/TestRole"})
+		bw.PutResource(Resource{Arn: "arn:aws:s3:::test-bucket"})
+	})
+
+	if uv.NumAccounts() != 1 {
+		t.Errorf("expected 1 account, got %d", uv.NumAccounts())
+	}
+	if uv.NumGroups() != 1 {
+		t.Errorf("expected 1 group, got %d", uv.NumGroups())
+	}
+	if uv.NumPolicies() != 1 {
+		t.Errorf("expected 1 policy, got %d", uv.NumPolicies())
+	}
+	if uv.NumPrincipals() != 1 {
+		t.Errorf("expected 1 principal, got %d", uv.NumPrincipals())
+	}
+	if uv.NumResources() != 1 {
+		t.Errorf("expected 1 resource, got %d", uv.NumResources())
+	}
+}

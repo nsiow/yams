@@ -61,8 +61,8 @@ func TestFreeze(t *testing.T) {
 						Id: "55555",
 						OrgNodes: []OrgNode{
 							{
-								SCPs: []Arn{
-									Arn("arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"),
+								SCPs: []OrgPolicyRef{
+									{Arn: "arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"},
 								},
 							},
 						},
@@ -84,8 +84,8 @@ func TestFreeze(t *testing.T) {
 						Id: "55555",
 						OrgNodes: []OrgNode{
 							{
-								RCPs: []Arn{
-									Arn("arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456"),
+								RCPs: []OrgPolicyRef{
+									{Arn: "arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456"},
 								},
 							},
 						},
@@ -173,8 +173,8 @@ func TestFreeze(t *testing.T) {
 						Id: "55555",
 						OrgNodes: []OrgNode{
 							{
-								SCPs: []Arn{
-									Arn("arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"),
+								SCPs: []OrgPolicyRef{
+									{Arn: "arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"},
 								},
 							},
 						},
@@ -197,11 +197,11 @@ func TestFreeze(t *testing.T) {
 						Id: "55555",
 						OrgNodes: []OrgNode{
 							{
-								SCPs: []Arn{
-									Arn("arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"),
+								SCPs: []OrgPolicyRef{
+									{Arn: "arn:aws:organizations::55555:policy/o-123/service_control_policy/p-123"},
 								},
-								RCPs: []Arn{
-									Arn("arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456"),
+								RCPs: []OrgPolicyRef{
+									{Arn: "arn:aws:organizations::55555:policy/o-123/resource_control_policy/p-456"},
 								},
 							},
 						},
@@ -395,11 +395,11 @@ func TestFreeze_NonStrict(t *testing.T) {
 				Id: "88888",
 				OrgNodes: []OrgNode{
 					{
-						SCPs: []Arn{
-							"arn:aws:organizations::88888:policy/o-123/service_control_policy/missing-scp",
+						SCPs: []OrgPolicyRef{
+							{Arn: "arn:aws:organizations::88888:policy/o-123/service_control_policy/missing-scp"},
 						},
-						RCPs: []Arn{
-							"arn:aws:organizations::88888:policy/o-123/resource_control_policy/missing-rcp",
+						RCPs: []OrgPolicyRef{
+							{Arn: "arn:aws:organizations::88888:policy/o-123/resource_control_policy/missing-rcp"},
 						},
 					},
 				},
@@ -466,8 +466,8 @@ func TestFreeze_NonStrictResources(t *testing.T) {
 				Id: "88888",
 				OrgNodes: []OrgNode{
 					{
-						SCPs: []Arn{
-							"arn:aws:organizations::88888:policy/o-123/service_control_policy/missing-scp",
+						SCPs: []OrgPolicyRef{
+							{Arn: "arn:aws:organizations::88888:policy/o-123/service_control_policy/missing-scp"},
 						},
 					},
 				},

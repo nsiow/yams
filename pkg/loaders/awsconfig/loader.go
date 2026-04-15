@@ -117,7 +117,11 @@ func (l *Loader) loadItems(blobs []configBlob) error {
 			}
 		}
 	})
-	return loadErr
+	if loadErr != nil {
+		return loadErr
+	}
+	l.uv.ResolveOrgPolicyNames()
+	return nil
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -152,6 +156,8 @@ func (l *Loader) loadItem(blob configBlob, w *entities.BulkWriter) error {
 		err = l.loadQueue(blob, w)
 	case CONST_TYPE_AWS_KMS_KEY:
 		err = l.loadKey(blob, w)
+	case CONST_TYPE_AWS_LAMBDA_FUNCTION:
+		err = l.loadLambdaFunction(blob, w)
 	default:
 		err = l.loadGenericResource(blob, w)
 	}
@@ -308,6 +314,18 @@ func (l *Loader) loadQueue(blob configBlob, w *entities.BulkWriter) error {
 
 func (l *Loader) loadKey(blob configBlob, w *entities.BulkWriter) error {
 	var target KmsKey
+
+	err := json.Unmarshal(blob.raw, &target)
+	if err != nil {
+		return err
+	}
+
+	w.PutResource(target.asResource())
+	return nil
+}
+
+func (l *Loader) loadLambdaFunction(blob configBlob, w *entities.BulkWriter) error {
+	var target LambdaFunction
 
 	err := json.Unmarshal(blob.raw, &target)
 	if err != nil {

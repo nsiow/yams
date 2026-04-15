@@ -6,6 +6,7 @@ import (
 
 // Policy represents the grammar and structure of an AWS IAM Policy
 type Policy struct {
+	Name      string `json:"_Name,omitempty"` // Inline policy name (custom field, not part of AWS policy)
 	Version   string
 	Id        string `json:",omitempty"`
 	Statement StatementBlock

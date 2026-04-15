@@ -3,8 +3,12 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/nsiow/yams/cmd/yams/cli"
+	"github.com/nsiow/yams/internal/middleware"
+	ui "github.com/nsiow/yams/internal/ui"
+	"github.com/nsiow/yams/pkg/overlay"
 	v1 "github.com/nsiow/yams/pkg/server/api/v1"
 	"github.com/nsiow/yams/pkg/sim"
 )
@@ -13,17 +17,24 @@ type Server struct {
 	*http.Server
 	mux *http.ServeMux
 
-	Sources   []*Source
-	Simulator *sim.Simulator
-	Opts      *cli.Flags
+	Sources      []*Source
+	Simulator    *sim.Simulator
+	OverlayStore overlay.Store
+	Opts         *cli.Flags
 }
 
 func NewServer(opts *cli.Flags) (*Server, error) {
 	mux := http.NewServeMux()
+
+	// Middleware chain: Cache -> Gzip -> CORS -> Handler
+	handler := corsMiddleware(mux)
+	handler = middleware.Gzip(handler)
+	handler = middleware.Cache(5 * time.Minute)(handler)
+
 	server := Server{
 		Server: &http.Server{
 			Addr:    opts.Addr,
-			Handler: corsMiddleware(mux),
+			Handler: handler,
 		},
 		mux:  mux,
 		Opts: opts,
@@ -35,8 +46,25 @@ func NewServer(opts *cli.Flags) (*Server, error) {
 	}
 	server.Simulator = sim
 
+	// Create overlay store
+	overlayStore, err := overlay.NewStore(opts.OverlayStore)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create overlay store: %w", err)
+	}
+	server.OverlayStore = overlayStore
+
 	// routes routes routes
-	server.addV1Routes(&v1.API{Simulator: server.Simulator})
+	server.addV1Routes(
+		&v1.API{
+			Simulator:     server.Simulator,
+			SharedContext: map[string]string(opts.SharedContext),
+		},
+		&v1.OverlayAPI{Store: server.OverlayStore},
+	)
+	mux.Handle("/ui/", ui.Handler())
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/ui/", http.StatusFound)
+	})
 
 	return &server, nil
 }

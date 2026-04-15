@@ -18,6 +18,13 @@ func TestTrace(t *testing.T) {
 		{
 			Name:  "empty_trace",
 			Input: func(t *Trace) {},
+			Want:  output{},
+		},
+		{
+			Name: "enabled_empty_trace",
+			Input: func(t *Trace) {
+				t.Enable()
+			},
 			Want: output{
 				Trace: []string{
 					"begin: root",
@@ -165,15 +172,6 @@ func TestTrace(t *testing.T) {
 	})
 }
 
-func TestPanicNoStack(t *testing.T) {
-	defer testlib.AssertPanicWithText(t,
-		"attempt to look up current frame for empty stack")
-
-	trc := Trace{}
-	trc.Enable()
-	trc.curr()
-}
-
 func TestPanicPopRoot(t *testing.T) {
 	defer testlib.AssertPanicWithText(t,
 		"attempt to pop root frame from trace stack")
@@ -183,14 +181,30 @@ func TestPanicPopRoot(t *testing.T) {
 	trc.Pop()
 }
 
-func TestPanicEmptyWalk(t *testing.T) {
-	defer testlib.AssertPanicWithText(t,
-		"trace somehow has empty stack")
-
-	pr := Printer{}
+func TestEnableInitializesStack(t *testing.T) {
+	// Enable() on a zero-value Trace should initialize the stack
 	trc := Trace{}
 	trc.Enable()
+
+	// curr() should work without panic
+	frame := trc.curr()
+	if frame.Header != "root" {
+		t.Fatalf("expected root frame, got %s", frame.Header)
+	}
+
+	// Walk should work without panic
+	pr := Printer{}
 	trc.Walk(&pr)
+}
+
+func TestWalkUninitializedTrace(t *testing.T) {
+	// Walk on an uninitialized trace should be a no-op
+	pr := Printer{}
+	trc := Trace{}
+	trc.Walk(&pr)
+	if len(pr.messages) != 0 {
+		t.Fatalf("expected no messages, got %d", len(pr.messages))
+	}
 }
 
 func TestPanicBadEventWalk(t *testing.T) {
@@ -213,4 +227,21 @@ func TestExtra(t *testing.T) {
 	e := Explainer{}
 	e.FrameStart(nil)
 	e.FrameEnd(nil)
+}
+
+func TestEnabled(t *testing.T) {
+	trc := New()
+	if trc.Enabled() {
+		t.Fatal("new trace should not be enabled")
+	}
+
+	trc.Enable()
+	if !trc.Enabled() {
+		t.Fatal("enabled trace should report enabled")
+	}
+
+	trc.Disable()
+	if trc.Enabled() {
+		t.Fatal("disabled trace should not be enabled")
+	}
 }

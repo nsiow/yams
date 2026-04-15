@@ -24,6 +24,23 @@ func TestValidSarIndexLoad(t *testing.T) {
 	sarDataLoad = sync.Once{} // reset data loading
 }
 
+func TestSARByService(t *testing.T) {
+	byService := SARByService()
+	if len(byService) < MINIMUM_SAR_SIZE {
+		t.Fatalf("expected >= %d services but saw %d", MINIMUM_SAR_SIZE, len(byService))
+	}
+
+	// Verify a known service exists with the right actions
+	s3Actions, ok := byService["s3"]
+	if !ok {
+		t.Fatal("expected s3 service in SARByService")
+	}
+	if len(s3Actions) == 0 {
+		t.Fatal("expected s3 to have actions")
+	}
+	sarDataLoad = sync.Once{} // reset data loading
+}
+
 func TestInvalidSarGzip(t *testing.T) {
 	defer testlib.AssertPanicWithText(t, `error unwrapping SAR data: EOF`)
 	loadSAR([]byte{})

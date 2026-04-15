@@ -1,4 +1,4 @@
-# GEMINI.md
+# CLAUDE.md
 
 ## Persona & Tone
 * **Role:** Senior Software Engineer (Pragmatic, Security-conscious).
@@ -15,9 +15,11 @@
 ---
 
 ## Development Rules (All)
-* **Git:** Use Conventional Commits (e.g., `feat:`, `fix:`, `docs:`).
-* **Precommit:** Run `make precommit` before any git commit or push operations.
-* **Pull Requests:** Always confirm PR titles and descriptions with the user before creating. Do not include test plans.
+* **Git:**
+  * Match commit message and PR style to existing repo history. Keep messages concise and lowercase.
+  * Use Conventional Commits (e.g., `feat:`, `fix:`, `docs:`).
+  * Run `make precommit` before any git commit or push operations.
+  * Always confirm PR titles and descriptions with the user before creating. Do not include test plans.
 * **Comments:** Keep comments concise, and use them to summarize what is happening in "paragraphs"
   of code. Avoid stream-of-consciousness comments and overly verbose language.
 
@@ -52,7 +54,29 @@
 ---
 
 ## Project Structure
-TBD, follow what currently exists
+* **Backend:** Go code in `cmd/`, `pkg/`, `internal/`
+* **Frontend:** All UI code lives in `ui/` directory
+
+---
+
+## Development Server
+* A yams server is typically already running on port 8888 during development.
+* When you need to start a one-off yams server for testing (e.g., to curl an API endpoint), use a different port:
+  ```bash
+  ./yams server -a :9999 &
+  curl -s http://localhost:9999/api/v1/actions/s3:GetObject
+  pkill -f "yams server.*9999" || true
+  ```
+
+---
+
+## UI Color Scheme
+Primary palette from https://coolors.co/6e44ff-b892ff-ffc2e2-ff90b3-ef7a85:
+* **Primary:** `#6E44FF` (vivid purple)
+* **Secondary:** `#B892FF` (light purple)
+* **Accent 1:** `#FFC2E2` (soft pink)
+* **Accent 2:** `#FF90B3` (medium pink)
+* **Accent 3:** `#EF7A85` (coral)
 
 ---
 
@@ -65,3 +89,67 @@ TBD, follow what currently exists
 ## Pull Requests
 * **PR body:** Keep concise. Include a brief summary only. Do not include test plans, commit lists, or AI attribution.
 * **Commit messages:** Keep short and use conventional commit format.
+
+---
+
+## UI Testing Guidelines
+
+When writing or modifying UI tests:
+
+### Avoid Circular Tests
+Do not write tests that simply verify the test setup rather than actual behavior:
+```tsx
+// BAD: Circular test - just verifies the mock
+it('returns mocked data', () => {
+  vi.mocked(api.getData).mockReturnValue('test');
+  expect(api.getData()).toBe('test'); // This tests nothing useful
+});
+```
+
+### Avoid Useless Tests
+Do not write tests that provide no meaningful coverage:
+```tsx
+// BAD: Tests implementation detail, not behavior
+it('calls useState', () => {
+  render(<Component />);
+  expect(React.useState).toHaveBeenCalled();
+});
+
+// BAD: Tests that a component renders without testing anything specific
+it('renders', () => {
+  render(<Component />);
+  // No assertions about what was rendered
+});
+```
+
+### Good Test Patterns
+- Test user-visible behavior and interactions
+- Test error states and edge cases
+- Test that correct data is displayed
+- Test that user actions trigger expected effects
+
+```tsx
+// GOOD: Tests actual user behavior
+it('displays error when API fails', async () => {
+  vi.mocked(api.getData).mockRejectedValue(new Error('Network error'));
+  render(<Component />);
+  await waitFor(() => {
+    expect(screen.getByText('Network error')).toBeInTheDocument();
+  });
+});
+
+// GOOD: Tests user interaction
+it('submits form when button clicked', async () => {
+  const user = userEvent.setup();
+  render(<Form />);
+  await user.type(screen.getByLabelText('Name'), 'Test');
+  await user.click(screen.getByRole('button', { name: /submit/i }));
+  expect(api.submitForm).toHaveBeenCalledWith({ name: 'Test' });
+});
+```
+
+### Test Organization
+- Group related tests in `describe` blocks
+- Use clear, descriptive test names
+- Keep tests focused on single behaviors
+- Prefer testing public API over implementation details

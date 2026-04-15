@@ -6,6 +6,7 @@
     "accountId": "999999999999",
     "configuration": {},
     "supplementaryConfiguration": {
+      "Policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"EnableRootAccountAccess\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::999999999999:root\"},\"Action\":\"kms:*\",\"Resource\":\"*\"}]}",
       "Tags": []
     },
     "tags": []

@@ -283,7 +283,7 @@ func TestSCP(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) (Decision, error) {
 		subj := newSubject(ac, TestingSimulationOptions)
-		decision := evalSCP(subj)
+		decision := evalSCP(&subj)
 		return decision, nil
 	})
 }

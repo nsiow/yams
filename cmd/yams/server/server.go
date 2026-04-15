@@ -33,7 +33,7 @@ func Run(opts *cli.Flags) {
 		}
 	}
 
-	slog.Info("starting server")
+	slog.Info("server started", "addr", opts.Addr)
 	err = srv.ListenAndServe()
 	if err != nil {
 		cli.Fail("error from server: %v", err)

@@ -19,13 +19,23 @@ type Service struct {
 type Action struct {
 	Name                string
 	Service             string // technically doesn't exist, but we add this
+	AccessLevel         string
 	ActionConditionKeys []string
 	Resources           []Resource `json:"ResolvedResources"`
+	shortName           string     // cached service:name, set during SAR load
 }
 
-// ShortName provides the :-contatenated string representation of the action
+// ShortName provides the :-concatenated string representation of the action
 func (a *Action) ShortName() string {
+	if a.shortName != "" {
+		return a.shortName
+	}
 	return a.Service + ":" + a.Name
+}
+
+// SetShortName precomputes and caches the short name
+func (a *Action) SetShortName() {
+	a.shortName = a.Service + ":" + a.Name
 }
 
 // HasTargets returns whether this Action targets any Resources

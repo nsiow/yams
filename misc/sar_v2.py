@@ -42,10 +42,21 @@ class Resource(pydantic.BaseModel):
     ConditionKeys: list[str] = []
     CustomHandling: list[str] = []
 
+class ActionProperties(pydantic.BaseModel):
+    IsList: bool = False
+    IsPermissionManagement: bool = False
+    IsTaggingOnly: bool = False
+    IsWrite: bool = False
+
+class ActionAnnotations(pydantic.BaseModel):
+    Properties: ActionProperties = ActionProperties()
+
 class Action(pydantic.BaseModel):
     Name: str
     Service: str | None = None
+    AccessLevel: str | None = None
     ActionConditionKeys: list[str] = []
+    Annotations: ActionAnnotations = ActionAnnotations()
     Resources: list[ResourcePointer] = []
     ResolvedResources: list[Resource] = []
 
@@ -92,6 +103,7 @@ def normalize(service: Service) -> Service:
     service = normalize_condition_variables(service)
     service = normalize_resource_arn_formats(service)
     service = propagate_service(service)
+    service = propagate_access_level(service)
     service = resolve_resource_pointers(service)
     service = apply_custom_handling(service)
     return service
@@ -124,6 +136,22 @@ def normalize_resource_arn_formats(service: Service) -> Service:
 def propagate_service(service: Service) -> Service:
     for action in service.Actions:
         action.Service = service.Name
+    return service
+
+# derive AccessLevel from Annotations.Properties
+def propagate_access_level(service: Service) -> Service:
+    for action in service.Actions:
+        props = action.Annotations.Properties
+        if props.IsPermissionManagement:
+            action.AccessLevel = 'Permissions management'
+        elif props.IsTaggingOnly:
+            action.AccessLevel = 'Tagging'
+        elif props.IsList:
+            action.AccessLevel = 'List'
+        elif props.IsWrite:
+            action.AccessLevel = 'Write'
+        else:
+            action.AccessLevel = 'Read'
     return service
 
 # resolve Service.Actions[].ResolvedResources
@@ -159,7 +187,8 @@ def apply_custom_handling(service: Service) -> Service:
 def main():
     service_listing = fetch_service_listing()
     services = [normalize(fetch_service(s)) for s in service_listing]
-    services_json = [s.model_dump(exclude_defaults=True) for s in services]
+    # Exclude Annotations since we've derived AccessLevel from it
+    services_json = [s.model_dump(exclude_defaults=True, exclude={'Actions': {'__all__': {'Annotations'}}}) for s in services]
 
     if len(sys.argv) >= 2:
         out = gzip.open(sys.argv[1], 'wt')

@@ -18,6 +18,22 @@ var sar = assets.SAR
 // sarIndex is a local alias hiding the asset implementation of the SAR index
 var sarIndex = assets.SARIndex
 
+// AllActions returns all actions from all services
+func AllActions() []types.Action {
+	var actions []types.Action
+	for _, service := range sar() {
+		actions = append(actions, service.Actions...)
+	}
+	return actions
+}
+
+// ActionsByService returns all actions for the specified service via direct index lookup.
+// The service name is case-insensitive.
+func ActionsByService(service string) []types.Action {
+	service = strings.ToLower(service)
+	return assets.SARByService()[service]
+}
+
 // Lookup allows for querying a specific api call based on service + action name
 func Lookup(service, action string) (*types.Action, bool) {
 	// SAR index uses lower-case keys
@@ -135,6 +151,13 @@ func (q *Query) WithName(name string) *Query {
 func (q *Query) WithSearch(substr string) *Query {
 	return q.add("partial_name", substr, func(a types.Action) bool {
 		return strings.Contains(strings.ToLower(a.ShortName()), strings.ToLower(substr))
+	})
+}
+
+// WithResourceless adds a filter to only include actions that don't require a resource
+func (q *Query) WithResourceless() *Query {
+	return q.add("resourceless", "true", func(a types.Action) bool {
+		return !a.HasTargets()
 	})
 }
 

@@ -380,6 +380,26 @@ func TestWhichPrincipals(t *testing.T) {
 			},
 		},
 		{
+			Name: "create_action_nonexistent_resource",
+			Input: input{
+				uv:       CreateActionTestUniverse,
+				action:   "sqs:createqueue",
+				resource: "arn:aws:sqs:us-east-1:88888:newqueue",
+			},
+			Want: []string{
+				"arn:aws:iam::88888:role/role1",
+			},
+		},
+		{
+			Name: "non_create_action_nonexistent_resource",
+			Input: input{
+				uv:       CreateActionTestUniverse,
+				action:   "sqs:sendmessage",
+				resource: "arn:aws:sqs:us-east-1:88888:nonexistent",
+			},
+			ShouldErr: true,
+		},
+		{
 			Name: "forced_failure",
 			Input: input{
 				uv:       SimpleTestUniverse_1,
@@ -591,6 +611,27 @@ var SimpleTestUniverse_1 = entities.NewBuilder().
 	).
 	Build()
 
+var CreateActionTestUniverse = entities.NewBuilder().
+	WithPrincipals(
+		entities.Principal{
+			Arn:       "arn:aws:iam::88888:role/role1",
+			Type:      "AWS::IAM::Role",
+			AccountId: "88888",
+			InlinePolicies: []policy.Policy{
+				{
+					Statement: []policy.Statement{
+						{
+							Effect:   policy.EFFECT_ALLOW,
+							Action:   []string{"sqs:createqueue", "sqs:sendmessage"},
+							Resource: []string{"*"},
+						},
+					},
+				},
+			},
+		},
+	).
+	Build()
+
 var InvalidTestUniverse_1 = entities.NewBuilder().
 	WithPrincipals(
 		entities.Principal{
@@ -621,8 +662,8 @@ var InvalidTestUniverse_1 = entities.NewBuilder().
 			},
 			OrgNodes: []entities.OrgNode{
 				{
-					SCPs: []entities.Arn{
-						"arn:aws:organizations::00000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+					SCPs: []entities.OrgPolicyRef{
+						{Arn: "arn:aws:organizations::00000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access"},
 					},
 				},
 			},
@@ -656,8 +697,8 @@ var InvalidTestUniverse_2 = entities.NewBuilder().
 			},
 			OrgNodes: []entities.OrgNode{
 				{
-					SCPs: []entities.Arn{
-						"arn:aws:organizations::00000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+					SCPs: []entities.OrgPolicyRef{
+						{Arn: "arn:aws:organizations::00000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access"},
 					},
 				},
 			},
@@ -966,5 +1007,83 @@ func TestProduct_BatchSubmission(t *testing.T) {
 	// Verify results were computed
 	if len(results) == 0 {
 		t.Fatal("expected results from AccessSummary")
+	}
+}
+
+// Test public wrappers that delegate to unexported methods
+func TestExpandResources_PublicWrapper(t *testing.T) {
+	sim, err := NewSimulator()
+	if err != nil {
+		t.Fatalf("error creating simulator: %v", err)
+	}
+	sim.Universe = SimpleTestUniverse_1
+
+	expanded, err := sim.ExpandResources([]string{"arn:aws:s3:::bucket1"}, DEFAULT_OPTIONS)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+
+	expected := []string{"arn:aws:s3:::bucket1", "arn:aws:s3:::bucket1/*"}
+	if !reflect.DeepEqual(expanded, expected) {
+		t.Fatalf("expected %v but got: %v", expected, expanded)
+	}
+}
+
+func TestFreezeResources_PublicWrapper(t *testing.T) {
+	sim, err := NewSimulator()
+	if err != nil {
+		t.Fatalf("error creating simulator: %v", err)
+	}
+	sim.Universe = SimpleTestUniverse_1
+
+	frozen, err := sim.FreezeResources([]string{"arn:aws:s3:::bucket1"}, DEFAULT_OPTIONS)
+	if err != nil {
+		t.Fatalf("error: %v", err)
+	}
+	if len(frozen) == 0 {
+		t.Fatal("expected frozen resources")
+	}
+}
+
+func TestProductFrozenStreaming(t *testing.T) {
+	sim, err := NewSimulator()
+	if err != nil {
+		t.Fatalf("error creating simulator: %v", err)
+	}
+	sim.Universe = SimpleTestUniverse_1
+
+	pArns := []string{}
+	for p := range sim.Universe.Principals() {
+		pArns = append(pArns, p.Arn)
+	}
+	principals, err := sim.FreezePrincipals(pArns, TestingSimulationOptions)
+	if err != nil {
+		t.Fatalf("error freezing principals: %v", err)
+	}
+
+	resources, err := sim.FreezeResources(
+		[]string{"arn:aws:s3:::bucket1"}, TestingSimulationOptions)
+	if err != nil {
+		t.Fatalf("error freezing resources: %v", err)
+	}
+
+	// Test happy path
+	count := 0
+	err = sim.ProductFrozenStreaming(principals, []string{"s3:listbucket"}, resources,
+		TestingSimulationOptions, func(r AccessTuple) {
+			count++
+		})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if count == 0 {
+		t.Fatal("expected streaming results")
+	}
+
+	// Test unknown action
+	err = sim.ProductFrozenStreaming(principals, []string{"fake:unknown"}, resources,
+		TestingSimulationOptions, func(r AccessTuple) {})
+	if err == nil {
+		t.Fatal("expected error for unknown action")
 	}
 }

@@ -150,6 +150,178 @@ func TestWildcard(t *testing.T) {
 	})
 }
 
+func TestMatchSegmentsPreSplit(t *testing.T) {
+	type input struct {
+		pattern       string
+		valueSegments []string
+	}
+
+	tests := []testlib.TestCase[input, bool]{
+		{
+			Name: "wildcard_all",
+			Input: input{
+				pattern:       "*",
+				valueSegments: []string{"anything"},
+			},
+			Want: true,
+		},
+		{
+			Name: "empty_pattern",
+			Input: input{
+				pattern:       "",
+				valueSegments: []string{"foo"},
+			},
+			Want: false,
+		},
+		{
+			Name: "exact_match",
+			Input: input{
+				pattern:       "arn:aws:s3:::bucket",
+				valueSegments: []string{"arn", "aws", "s3", "", "", "bucket"},
+			},
+			Want: true,
+		},
+		{
+			Name: "wildcard_segment",
+			Input: input{
+				pattern:       "arn:aws:sns:us-east-1:*:topic",
+				valueSegments: []string{"arn", "aws", "sns", "us-east-1", "55555", "topic"},
+			},
+			Want: true,
+		},
+		{
+			Name: "no_match",
+			Input: input{
+				pattern:       "arn:aws:s3:::bucket",
+				valueSegments: []string{"arn", "aws", "s3", "", "", "other"},
+			},
+			Want: false,
+		},
+		{
+			Name: "pattern_more_segments",
+			Input: input{
+				pattern:       "arn:aws:s3:::bucket:extra",
+				valueSegments: []string{"arn", "aws", "s3", "", "", "bucket"},
+			},
+			Want: false,
+		},
+		{
+			Name: "value_more_segments",
+			Input: input{
+				pattern:       "arn:aws:s3:::bucket",
+				valueSegments: []string{"arn", "aws", "s3", "", "", "bucket", "extra"},
+			},
+			Want: false,
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return MatchSegmentsPreSplit(i.pattern, i.valueSegments), nil
+	})
+}
+
+func TestMatchSegmentsIgnoreCase_Extended(t *testing.T) {
+	type input struct {
+		pattern string
+		value   string
+	}
+
+	tests := []testlib.TestCase[input, bool]{
+		{
+			Name: "empty_pattern",
+			Input: input{
+				pattern: "",
+				value:   "foo",
+			},
+			Want: false,
+		},
+		{
+			Name: "wildcard_all",
+			Input: input{
+				pattern: "*",
+				value:   "anything",
+			},
+			Want: true,
+		},
+		{
+			Name: "mismatched_segment_count",
+			Input: input{
+				pattern: "s3:getobject:extra",
+				value:   "s3:GetObject",
+			},
+			Want: false,
+		},
+		{
+			Name: "multi_segment_case_insensitive",
+			Input: input{
+				pattern: "arn:aws:s3:::BUCKET",
+				value:   "arn:aws:s3:::bucket",
+			},
+			Want: true,
+		},
+		{
+			Name: "suffix_wildcard_case_insensitive",
+			Input: input{
+				pattern: "*Object",
+				value:   "getobject",
+			},
+			Want: true,
+		},
+		{
+			Name: "prefix_wildcard_case_insensitive",
+			Input: input{
+				pattern: "S3:Get*",
+				value:   "s3:getobject",
+			},
+			Want: true,
+		},
+		{
+			Name: "contains_wildcard_case_insensitive",
+			Input: input{
+				pattern: "*Get*",
+				value:   "getobject",
+			},
+			Want: true,
+		},
+		{
+			Name: "mixed_wildcards_case_insensitive",
+			Input: input{
+				pattern: "s3:*?t*",
+				value:   "s3:GetObject",
+			},
+			Want: true,
+		},
+		{
+			Name: "multi_wildcard_fallthrough_case_insensitive",
+			Input: input{
+				pattern: "s3:G*Ob*",
+				value:   "s3:getobject",
+			},
+			Want: true,
+		},
+	}
+
+	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
+		return MatchSegmentsIgnoreCase(i.pattern, i.value), nil
+	})
+}
+
+func TestMatchViaRegex_CacheHit(t *testing.T) {
+	// Call twice with same pattern to exercise the cache hit branch
+	pattern := "test-cache-*-pattern"
+	value := "test-cache-hit-pattern"
+
+	result1 := MatchString(pattern, value)
+	result2 := MatchString(pattern, value)
+
+	if result1 != result2 {
+		t.Fatalf("cache hit produced different result: %v vs %v", result1, result2)
+	}
+	if !result1 {
+		t.Fatal("expected match")
+	}
+}
+
 func TestMatchAllOrNothing(t *testing.T) {
 	type input struct {
 		pattern string

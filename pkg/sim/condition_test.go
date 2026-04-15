@@ -69,7 +69,7 @@ func TestStatementBase(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -129,7 +129,7 @@ func TestStringEquals(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -179,7 +179,7 @@ func TestStringEqualsIgnoreCase(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -221,7 +221,7 @@ func TestStringNotEquals(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -267,7 +267,7 @@ func TestStringNotEqualsIgnoreCase(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -311,7 +311,7 @@ func TestStringLike(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -353,7 +353,7 @@ func TestStringNotLike(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -403,7 +403,7 @@ func TestNumericConversion(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 
 }
@@ -451,7 +451,7 @@ func TestNumericEquals(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -498,7 +498,7 @@ func TestNumericNotEquals(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -545,7 +545,7 @@ func TestNumericLessThan(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -610,7 +610,7 @@ func TestNumericLessThanEquals(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -675,7 +675,7 @@ func TestNumericGreaterThan(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -744,7 +744,7 @@ func TestNumericGreaterThanEquals(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -866,7 +866,7 @@ func TestDateEquals(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -930,7 +930,7 @@ func TestDateNotEquals(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -994,7 +994,7 @@ func TestDateLessThan(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -1076,7 +1076,7 @@ func TestDateLessThanEquals(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -1159,7 +1159,7 @@ func TestDateGreaterThan(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -1241,7 +1241,7 @@ func TestDateGreaterThanEquals(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -1381,7 +1381,7 @@ func TestBool(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -1467,7 +1467,7 @@ func TestBinary(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -1625,7 +1625,7 @@ func TestIpAddress(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -1725,7 +1725,7 @@ func TestNotIpAddress(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -1811,7 +1811,7 @@ func TestArnEquals(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -1893,7 +1893,7 @@ func TestArnNotEquals(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -1975,7 +1975,7 @@ func TestArnLike(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -2057,7 +2057,7 @@ func TestArnNotLike(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -2125,7 +2125,7 @@ func TestIfExists(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -2189,7 +2189,7 @@ func TestForAllValues(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -2253,7 +2253,7 @@ func TestForAnyValues(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }
 
@@ -2363,6 +2363,6 @@ func TestNull(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {
 		subj := newSubject(i.ac, TestingSimulationOptions)
-		return evalStatementMatchesCondition(subj, &i.stmt), nil
+		return evalStatementMatchesCondition(&subj, &i.stmt), nil
 	})
 }

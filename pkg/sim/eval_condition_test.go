@@ -101,6 +101,6 @@ func TestEvalCheckCondition(t *testing.T) {
 		}
 
 		subj := newSubject(i.ac, *i.opts)
-		return evalCheckCondition(subj, i.op, i.cond), nil
+		return evalCheckCondition(&subj, i.op, i.cond), nil
 	})
 }

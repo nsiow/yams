@@ -1,5 +1,11 @@
 package entities
 
+// OrgPolicyRef is a reference to an org policy (SCP or RCP) attached to a node
+type OrgPolicyRef struct {
+	Arn  string
+	Name string
+}
+
 // OrgNode defines the general shape of an Organizations Node: an Account or OU
 type OrgNode struct {
 	// Id refers to the primary identifier of the node
@@ -17,8 +23,8 @@ type OrgNode struct {
 	// SCPs refers to the Service Control Policies applied to the node
 	// TODO(nsiow) add more support for the niche cases described in:
 	// https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps_syntax.html
-	SCPs []Arn
+	SCPs []OrgPolicyRef
 
 	// RCPs refers to the Resource Control Policies applied to the node
-	RCPs []Arn
+	RCPs []OrgPolicyRef
 }

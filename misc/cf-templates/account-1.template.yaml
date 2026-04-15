@@ -375,6 +375,29 @@ Resources:
                   'body': json.dumps('Hello from Account 1!')
               }
 
+  FoxKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: Fox KMS Key for cross-account testing
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AccountId0}:role/BlueRole'
+            Action:
+              - kms:Encrypt
+              - kms:Decrypt
+            Resource: '*'
+      Tags:
+        - Key: Animal
+          Value: Fox
+
   # Resource-based policy for Lambda
   GorillaLambdaPermission:
     Type: AWS::Lambda::Permission

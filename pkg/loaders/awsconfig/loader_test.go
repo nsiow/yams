@@ -3,6 +3,7 @@ package awsconfig
 import (
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
@@ -33,10 +34,10 @@ func TestLoad(t *testing.T) {
 			Want: entities.NewBuilder().
 				WithResources(
 					entities.Resource{
-						Type:      "AWS::Lambda::Function",
+						Type:      "AWS::EC2::Instance",
 						AccountId: "123456789012",
 						Region:    "us-west-2",
-						Arn:       "arn:aws:lambda:us-west-2:123456789012:function:my-function",
+						Arn:       "arn:aws:ec2:us-west-2:123456789012:instance/i-1234567890abcdef0",
 						Tags:      []entities.Tag{},
 					},
 				).
@@ -61,13 +62,13 @@ func TestLoad(t *testing.T) {
 								Type: "ACCOUNT",
 								Name: "myaccount",
 								Arn:  "arn:aws:organizations::111:account/o-123/123",
-								SCPs: []entities.Arn{
-									"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-									"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								SCPs: []entities.OrgPolicyRef{
+									{Arn: "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess", Name: "FullAWSAccess"},
+									{Arn: "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access", Name: "FullS3Access"},
 								},
-								RCPs: []entities.Arn{
-									"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-									"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								RCPs: []entities.OrgPolicyRef{
+									{Arn: "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess", Name: "FullAWSAccess"},
+									{Arn: "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access", Name: "FullS3Access"},
 								},
 							},
 						},
@@ -94,13 +95,13 @@ func TestLoad(t *testing.T) {
 								Type: "ACCOUNT",
 								Name: "myaccount",
 								Arn:  "arn:aws:organizations::111:account/o-123/123",
-								SCPs: []entities.Arn{
-									"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-									"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								SCPs: []entities.OrgPolicyRef{
+									{Arn: "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess", Name: "FullAWSAccess"},
+									{Arn: "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access", Name: "FullS3Access"},
 								},
-								RCPs: []entities.Arn{
-									"arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess",
-									"arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
+								RCPs: []entities.OrgPolicyRef{
+									{Arn: "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess/FullAWSAccess", Name: "FullAWSAccess"},
+									{Arn: "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access", Name: "FullS3Access"},
 								},
 							},
 						},
@@ -114,7 +115,7 @@ func TestLoad(t *testing.T) {
 			Want: entities.NewBuilder().
 				WithPolicies(
 					entities.ManagedPolicy{
-						Type:      "Yams::Organizations::ServiceControlPolicy",
+						Type:      CONST_TYPE_YAMS_ORGANIZATIONS_SCP,
 						AccountId: "000000000000",
 						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
 						Policy: policy.Policy{
@@ -135,7 +136,7 @@ func TestLoad(t *testing.T) {
 				).
 				WithResources(
 					entities.Resource{
-						Type:      "Yams::Organizations::ServiceControlPolicy",
+						Type:      CONST_TYPE_YAMS_ORGANIZATIONS_SCP,
 						AccountId: "000000000000",
 						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/service_control_policy/p-aaa/FullS3Access",
 					},
@@ -148,7 +149,7 @@ func TestLoad(t *testing.T) {
 			Want: entities.NewBuilder().
 				WithPolicies(
 					entities.ManagedPolicy{
-						Type:      "Yams::Organizations::ResourceControlPolicy",
+						Type:      CONST_TYPE_YAMS_ORGANIZATIONS_RCP,
 						AccountId: "000000000000",
 						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/resource_control_policy/p-aaa/FullS3Access",
 						Policy: policy.Policy{
@@ -169,7 +170,7 @@ func TestLoad(t *testing.T) {
 				).
 				WithResources(
 					entities.Resource{
-						Type:      "Yams::Organizations::ResourceControlPolicy",
+						Type:      CONST_TYPE_YAMS_ORGANIZATIONS_RCP,
 						AccountId: "000000000000",
 						Arn:       "arn:aws:organizations::000000000000:policy/o-aaa/resource_control_policy/p-aaa/FullS3Access",
 					},
@@ -191,6 +192,7 @@ func TestLoad(t *testing.T) {
 						},
 						InlinePolicies: []policy.Policy{
 							{
+								Name:    "my-group-policy",
 								Version: "2012-10-17",
 								Statement: policy.StatementBlock{
 									policy.Statement{
@@ -274,6 +276,7 @@ func TestLoad(t *testing.T) {
 						},
 						InlinePolicies: []policy.Policy{
 							{
+								Name:    "s3readpermissions",
 								Version: "2012-10-17",
 								Statement: []policy.Statement{
 									{
@@ -341,6 +344,7 @@ func TestLoad(t *testing.T) {
 						Tags:      []entities.Tag{},
 						InlinePolicies: []policy.Policy{
 							{
+								Name:    "someUserPermissions",
 								Version: "2012-10-17",
 								Statement: policy.StatementBlock{
 									policy.Statement{
@@ -425,6 +429,27 @@ func TestLoad(t *testing.T) {
 						Region:    "us-east-1",
 						Arn:       "arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable",
 						Tags:      []entities.Tag{},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "AllowAccessFromRole",
+									Effect: "Allow",
+									Principal: policy.Principal{
+										AWS: policy.Value{
+											"arn:aws:iam::000000000000:role/MyAppRole",
+										},
+									},
+									Action: policy.Value{
+										"dynamodb:GetItem",
+										"dynamodb:Query",
+									},
+									Resource: policy.Value{
+										"arn:aws:dynamodb:us-east-1:000000000000:table/SomeTable",
+									},
+								},
+							},
+						},
 					},
 				).
 				Build(),
@@ -510,6 +535,81 @@ func TestLoad(t *testing.T) {
 						AccountId: "999999999999",
 						Region:    "us-west-2",
 						Arn:       "arn:aws:kms:us-west-2:999999999999:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+						Tags:      []entities.Tag{},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "EnableRootAccountAccess",
+									Effect: "Allow",
+									Principal: policy.Principal{
+										AWS: policy.Value{
+											"arn:aws:iam::999999999999:root",
+										},
+									},
+									Action: policy.Value{
+										"kms:*",
+									},
+									Resource: policy.Value{
+										"*",
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "lambda_valid",
+			Input: `../../../testdata/config-loading/lambda_valid.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::Lambda::Function",
+						AccountId: "123456789012",
+						Region:    "us-west-2",
+						Arn:       "arn:aws:lambda:us-west-2:123456789012:function:my-function",
+						Tags:      []entities.Tag{},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "AllowS3Invoke",
+									Effect: "Allow",
+									Principal: policy.Principal{
+										Service: policy.Value{
+											"s3.amazonaws.com",
+										},
+									},
+									Action: policy.Value{
+										"lambda:InvokeFunction",
+									},
+									Resource: policy.Value{
+										"arn:aws:lambda:us-west-2:123456789012:function:my-function",
+									},
+									Condition: policy.ConditionBlock{
+										"StringEquals": {
+											"AWS:SourceAccount": policy.Value{"123456789012"},
+										},
+									},
+								},
+							},
+						},
+					},
+				).
+				Build(),
+		},
+		{
+			Name:  "lambda_no_policy",
+			Input: `../../../testdata/config-loading/lambda_no_policy.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::Lambda::Function",
+						AccountId: "123456789012",
+						Region:    "us-east-1",
+						Arn:       "arn:aws:lambda:us-east-1:123456789012:function:no-policy-function",
 						Tags:      []entities.Tag{},
 					},
 				).
@@ -652,5 +752,29 @@ func TestLoad_EdgeCases(t *testing.T) {
 	err = l.LoadJsonl(reader)
 	if err == nil {
 		t.Fatalf("LoadJson; should have failed, but succeeded")
+	}
+}
+
+func TestLoadJson_NonArray(t *testing.T) {
+	l := NewLoader()
+	reader := strings.NewReader(`{"foo": "bar"}`)
+	err := l.LoadJson(reader)
+	if err == nil {
+		t.Fatal("LoadJson with non-array should have failed")
+	}
+	if !strings.Contains(err.Error(), "expected JSON array") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestLoadJson_MalformedJSON(t *testing.T) {
+	l := NewLoader()
+	reader := strings.NewReader(`{invalid json!!!`)
+	err := l.LoadJson(reader)
+	if err == nil {
+		t.Fatal("LoadJson with malformed JSON should have failed")
+	}
+	if !strings.Contains(err.Error(), "unable to parse JSON") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

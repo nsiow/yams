@@ -1,0 +1,18 @@
+[
+  {
+    "resource_type": "AWS::S3::Bucket",
+    "actions": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+  },
+  {
+    "resource_type": "AWS::SQS::Queue",
+    "actions": ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage"]
+  },
+  {
+    "resource_type": "AWS::SNS::Topic",
+    "actions": ["sns:Publish", "sns:Subscribe"]
+  },
+  {
+    "resource_type": "AWS::DynamoDB::Table",
+    "actions": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem", "dynamodb:Query"]
+  }
+]

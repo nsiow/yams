@@ -11,183 +11,200 @@ import (
 var regexCache sync.Map
 
 // MatchSegments determines if the provided string matches the wildcard pattern, using AWS's
-// heuristics for wildcards
+// heuristics for wildcards. Uses index-based iteration to avoid allocations.
 func MatchSegments(pattern, value string) bool {
-	// Full wildcard case -- '*' matches absolutely everything
 	if pattern == "*" {
 		return true
 	}
-
-	// Empty pattern case -- '' matches absolutely nothing
 	if pattern == "" {
 		return false
 	}
 
-	// Otherwise we do wildcard matches separated by ':' boundaries
-	patternSegments := strings.Split(pattern, ":")
-	valueSegments := strings.Split(value, ":")
+	// Iterate both strings segment by segment without allocating
+	for {
+		pi := strings.IndexByte(pattern, ':')
+		vi := strings.IndexByte(value, ':')
 
-	// Segment length should be the same size
-	if len(patternSegments) != len(valueSegments) {
-		return false
-	}
-
-	// Segments should be equivalent
-	for i := range patternSegments {
-		p := patternSegments[i]
-		v := valueSegments[i]
-		if !MatchString(p, v) {
+		// Both must have a boundary or both must be at the final segment
+		if (pi < 0) != (vi < 0) {
 			return false
 		}
-	}
 
-	// If we got here, then all our segments matched - success!
-	return true
+		var pSeg, vSeg string
+		if pi < 0 {
+			pSeg, vSeg = pattern, value
+		} else {
+			pSeg, vSeg = pattern[:pi], value[:vi]
+		}
+
+		if !MatchString(pSeg, vSeg) {
+			return false
+		}
+
+		if pi < 0 {
+			return true
+		}
+		pattern = pattern[pi+1:]
+		value = value[vi+1:]
+	}
 }
 
 // MatchSegmentsPreSplit is an optimized version of MatchSegments that accepts pre-split
 // value segments to avoid repeated string splitting allocations.
 func MatchSegmentsPreSplit(pattern string, valueSegments []string) bool {
-	// Full wildcard case -- '*' matches absolutely everything
 	if pattern == "*" {
 		return true
 	}
-
-	// Empty pattern case -- '' matches absolutely nothing
 	if pattern == "" {
 		return false
 	}
 
-	// Split only the pattern (which varies per policy statement)
-	patternSegments := strings.Split(pattern, ":")
+	// Iterate pattern segments by index, compare against pre-split value segments
+	idx := 0
+	for {
+		pi := strings.IndexByte(pattern, ':')
 
-	// Segment length should be the same size
-	if len(patternSegments) != len(valueSegments) {
-		return false
-	}
+		var pSeg string
+		if pi < 0 {
+			pSeg = pattern
+		} else {
+			pSeg = pattern[:pi]
+		}
 
-	// Segments should be equivalent
-	for i := range patternSegments {
-		if !MatchString(patternSegments[i], valueSegments[i]) {
+		if idx >= len(valueSegments) {
 			return false
 		}
-	}
+		if !MatchString(pSeg, valueSegments[idx]) {
+			return false
+		}
+		idx++
 
-	return true
+		if pi < 0 {
+			return idx == len(valueSegments)
+		}
+		pattern = pattern[pi+1:]
+	}
 }
 
 // MatchString handles the comparison of a single segment of an AWS value
 func MatchString(pattern, value string) bool {
-	// * matches everything within a subsegment
 	if pattern == "*" {
 		return true
 	}
 
-	// Count the number of '*' and '?'
-	wildcards := strings.Count(pattern, "*")
-	anys := strings.Count(pattern, "?")
+	// Single-pass scan for wildcards and ?s to avoid two strings.Count calls
+	wildcards, anys := 0, 0
+	for i := 0; i < len(pattern); i++ {
+		switch pattern[i] {
+		case '*':
+			wildcards++
+		case '?':
+			anys++
+		}
+	}
 
-	// If we have both, only choice is a regex
 	if wildcards > 0 && anys > 0 {
 		return matchViaRegex(pattern, value)
 	}
 
-	// If we have neither, treat as string literals
 	if wildcards == 0 && anys == 0 {
 		return pattern == value
 	}
 
-	// Handle wildcards prefixes
 	if wildcards == 1 && pattern[0] == '*' {
-		return strings.HasSuffix(value, strings.TrimLeft(pattern, "*"))
+		suffix := pattern[1:]
+		return len(value) >= len(suffix) && value[len(value)-len(suffix):] == suffix
 	}
 
-	// Handle wildcard suffixes
 	if wildcards == 1 && pattern[len(pattern)-1] == '*' {
-		return strings.HasPrefix(value, strings.TrimRight(pattern, "*"))
+		prefix := pattern[:len(pattern)-1]
+		return len(value) >= len(prefix) && value[:len(prefix)] == prefix
 	}
 
-	// Handle wildcard prefixes + suffixes
 	if wildcards == 2 && pattern[0] == '*' && pattern[len(pattern)-1] == '*' {
-		return strings.Contains(value, strings.Trim(pattern, "*"))
+		middle := pattern[1 : len(pattern)-1]
+		return strings.Contains(value, middle)
 	}
 
-	// Fall back to regex matching
 	return matchViaRegex(pattern, value)
 }
 
 // MatchSegmentsIgnoreCase determines if the provided string matches the wildcard pattern, using
-// AWS's heuristics for wildcards. This version avoids allocations by using case-insensitive comparison.
+// AWS's heuristics for wildcards. Uses index-based iteration to avoid allocations.
 func MatchSegmentsIgnoreCase(pattern, value string) bool {
-	// Full wildcard case -- '*' matches absolutely everything
 	if pattern == "*" {
 		return true
 	}
-
-	// Empty pattern case -- '' matches absolutely nothing
 	if pattern == "" {
 		return false
 	}
 
-	// Otherwise we do wildcard matches separated by ':' boundaries
-	patternSegments := strings.Split(pattern, ":")
-	valueSegments := strings.Split(value, ":")
+	for {
+		pi := strings.IndexByte(pattern, ':')
+		vi := strings.IndexByte(value, ':')
 
-	// Segment length should be the same size
-	if len(patternSegments) != len(valueSegments) {
-		return false
-	}
-
-	// Segments should be equivalent (case-insensitive)
-	for i := range patternSegments {
-		if !matchStringIgnoreCase(patternSegments[i], valueSegments[i]) {
+		if (pi < 0) != (vi < 0) {
 			return false
 		}
-	}
 
-	return true
+		var pSeg, vSeg string
+		if pi < 0 {
+			pSeg, vSeg = pattern, value
+		} else {
+			pSeg, vSeg = pattern[:pi], value[:vi]
+		}
+
+		if !matchStringIgnoreCase(pSeg, vSeg) {
+			return false
+		}
+
+		if pi < 0 {
+			return true
+		}
+		pattern = pattern[pi+1:]
+		value = value[vi+1:]
+	}
 }
 
 // matchStringIgnoreCase handles the comparison of a single segment with case-insensitive matching
 func matchStringIgnoreCase(pattern, value string) bool {
-	// * matches everything within a subsegment
 	if pattern == "*" {
 		return true
 	}
 
-	// Count the number of '*' and '?'
-	wildcards := strings.Count(pattern, "*")
-	anys := strings.Count(pattern, "?")
+	wildcards, anys := 0, 0
+	for i := 0; i < len(pattern); i++ {
+		switch pattern[i] {
+		case '*':
+			wildcards++
+		case '?':
+			anys++
+		}
+	}
 
-	// If we have both, only choice is a regex (lowercase for case insensitivity)
 	if wildcards > 0 && anys > 0 {
 		return matchViaRegex(strings.ToLower(pattern), strings.ToLower(value))
 	}
 
-	// If we have neither, treat as string literals (case-insensitive)
 	if wildcards == 0 && anys == 0 {
 		return strings.EqualFold(pattern, value)
 	}
 
-	// Handle wildcards prefixes (case-insensitive)
 	if wildcards == 1 && pattern[0] == '*' {
-		suffix := strings.TrimLeft(pattern, "*")
+		suffix := pattern[1:]
 		return len(value) >= len(suffix) && strings.EqualFold(value[len(value)-len(suffix):], suffix)
 	}
 
-	// Handle wildcard suffixes (case-insensitive)
 	if wildcards == 1 && pattern[len(pattern)-1] == '*' {
-		prefix := strings.TrimRight(pattern, "*")
+		prefix := pattern[:len(pattern)-1]
 		return len(value) >= len(prefix) && strings.EqualFold(value[:len(prefix)], prefix)
 	}
 
-	// Handle wildcard prefixes + suffixes (case-insensitive)
 	if wildcards == 2 && pattern[0] == '*' && pattern[len(pattern)-1] == '*' {
-		middle := strings.Trim(pattern, "*")
+		middle := pattern[1 : len(pattern)-1]
 		return strings.Contains(strings.ToLower(value), strings.ToLower(middle))
 	}
 
-	// Fall back to regex matching (lowercase for case insensitivity)
 	return matchViaRegex(strings.ToLower(pattern), strings.ToLower(value))
 }
 

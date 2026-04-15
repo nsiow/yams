@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	json "github.com/bytedance/sonic"
@@ -77,9 +78,19 @@ func TestAPI_ListAccounts(t *testing.T) {
 		t.Errorf("ListAccounts() status = %d, want %d", w.Code, http.StatusOK)
 	}
 
-	var accounts []string
+	var accounts []struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
+	}
 	if err := json.Unmarshal(w.Body.Bytes(), &accounts); err != nil {
 		t.Fatalf("ListAccounts() invalid JSON: %v", err)
+	}
+
+	if len(accounts) != 1 {
+		t.Fatalf("ListAccounts() expected 1 account, got %d", len(accounts))
+	}
+	if accounts[0].Id != "123456789012" || accounts[0].Name != "TestAccount" {
+		t.Errorf("ListAccounts() got %+v, want id=123456789012 name=TestAccount", accounts[0])
 	}
 }
 
@@ -111,7 +122,10 @@ func TestAPI_ListPolicies(t *testing.T) {
 		t.Errorf("ListPolicies() status = %d, want %d", w.Code, http.StatusOK)
 	}
 
-	var policies []string
+	var policies []struct {
+		Arn  string `json:"arn"`
+		Name string `json:"name"`
+	}
 	if err := json.Unmarshal(w.Body.Bytes(), &policies); err != nil {
 		t.Fatalf("ListPolicies() invalid JSON: %v", err)
 	}
@@ -375,6 +389,44 @@ func TestAPI_SearchResources(t *testing.T) {
 	api := newTestAPIWithData(t)
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/v1/resources/search/bucket", nil)
+	req.SetPathValue("search", "bucket")
+
+	api.SearchResources(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("SearchResources() status = %d, want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestAPI_SearchResources_WithActionFilter(t *testing.T) {
+	api := newTestAPIWithData(t)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/resources/search/bucket?action=s3:GetObject", nil)
+	req.SetPathValue("search", "bucket")
+
+	api.SearchResources(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("SearchResources() status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var keys []string
+	if err := json.Unmarshal(w.Body.Bytes(), &keys); err != nil {
+		t.Fatalf("SearchResources() invalid JSON: %v", err)
+	}
+
+	// Verify results are filtered to action targets
+	for _, key := range keys {
+		if !strings.Contains(strings.ToLower(key), "bucket") {
+			t.Errorf("SearchResources() returned non-matching key: %s", key)
+		}
+	}
+}
+
+func TestAPI_SearchResources_WithUnknownAction(t *testing.T) {
+	api := newTestAPIWithData(t)
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/resources/search/bucket?action=fake:FakeAction", nil)
 	req.SetPathValue("search", "bucket")
 
 	api.SearchResources(w, req)

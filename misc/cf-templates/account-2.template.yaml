@@ -306,6 +306,28 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
+  WaffleKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: Waffle KMS Key for cross-account testing
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AccountId1}:root'
+            Action:
+              - kms:Decrypt
+            Resource: '*'
+      Tags:
+        - Key: Food
+          Value: Waffle
+
   PieLambda:
     Type: AWS::Lambda::Function
     Properties:

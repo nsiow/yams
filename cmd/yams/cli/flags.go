@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/nsiow/yams/pkg/loaders/awsconfig"
 	v1 "github.com/nsiow/yams/pkg/server/api/v1"
 )
 
@@ -20,6 +21,7 @@ const (
 	RUN_MODE_PRINCIPALS = "principals"
 	RUN_MODE_POLICIES   = "policies"
 	RUN_MODE_SIM        = "sim"
+	RUN_MODE_AUDIT      = "audit"
 )
 
 var RUN_MODES = []string{
@@ -32,6 +34,7 @@ var RUN_MODES = []string{
 	RUN_MODE_PRINCIPALS,
 	RUN_MODE_POLICIES,
 	RUN_MODE_SIM,
+	RUN_MODE_AUDIT,
 }
 
 // Flags is a struct containing all flags/options related to CLI behavior
@@ -46,17 +49,22 @@ type Flags struct {
 	DryRun        bool
 
 	// server
-	Addr    string
-	Sources MultiString
-	Refresh int
-	Debug   bool
-	Env     MultiString
+	Addr          string
+	Sources       MultiString
+	Refresh       int
+	Debug         bool
+	Env           MultiString
+	OverlayStore  string
+	SharedContext MapString
 
 	// inventory
 	Key    string
 	Query  string
 	Freeze bool
 	Format string
+
+	// audit
+	Config string
 
 	// sim
 	Principal    string
@@ -70,7 +78,8 @@ type Flags struct {
 	Exact        bool
 
 	// multiple
-	Server string
+	Server    string
+	OrgPrefix string
 }
 
 func Parse() (*Flags, error) {
@@ -138,6 +147,9 @@ func Parse() (*Flags, error) {
 		fs.BoolVar(&opts.DryRun, "n", false, "alias for -dry-run")
 		fs.BoolVar(&opts.DryRun, "dry-run", false, "show what would be done without executing")
 
+		fs.StringVar(&opts.OrgPrefix, "org-prefix", "",
+			"namespace prefix for custom org types (default: Yams)")
+
 		err = fs.Parse(os.Args[2:])
 		args = fs.Args()
 
@@ -156,6 +168,15 @@ func Parse() (*Flags, error) {
 
 		fs.Var(&opts.Env, "e", "alias for -env")
 		fs.Var(&opts.Env, "env", "environment variables to report in /status endpoint")
+
+		fs.StringVar(&opts.OverlayStore, "overlay", "",
+			"overlay store backend: 'memory' (default) or 'ddb://<table-name>'")
+
+		fs.Var(&opts.SharedContext, "c", "alias for -context")
+		fs.Var(&opts.SharedContext, "context", "shared request context key=value pairs")
+
+		fs.StringVar(&opts.OrgPrefix, "org-prefix", "",
+			"namespace prefix for custom org types (default: Yams)")
 
 		err = fs.Parse(os.Args[2:])
 		args = fs.Args()
@@ -233,6 +254,26 @@ func Parse() (*Flags, error) {
 		err = fs.Parse(os.Args[2:])
 		args = fs.Args()
 
+	case RUN_MODE_AUDIT:
+		fs := flag.NewFlagSet("audit", flag.ExitOnError)
+
+		fs.Var(&opts.Sources, "s", "alias for -source")
+		fs.Var(&opts.Sources, "source", "list of sources to use for data (supports multiple)")
+
+		fs.StringVar(&opts.Config, "f", "", "alias for -config")
+		fs.StringVar(&opts.Config, "config", "", "path to audit config JSON file")
+
+		fs.StringVar(&opts.Out, "o", "", "alias for -out")
+		fs.StringVar(&opts.Out, "out", "", "destination for CSV output")
+
+		fs.Var(&opts.Context, "c", "alias for -context")
+		fs.Var(&opts.Context, "context", "additional request-context key=value pairs")
+
+		fs.Var(&opts.OverlayFiles, "overlay", "entity definition file for overrides")
+
+		err = fs.Parse(os.Args[2:])
+		args = fs.Args()
+
 	// unknown mode
 	default:
 		return nil, fmt.Errorf("'%s' is not one of available commands: %s",
@@ -262,6 +303,15 @@ func Parse() (*Flags, error) {
 	envserver := os.Getenv("YAMS_SERVER_ADDRESS")
 	if len(envserver) > 0 {
 		opts.Server = envserver
+	}
+
+	// Apply org prefix: env var overrides flag, flag overrides ldflags default
+	if envPrefix := os.Getenv("YAMS_ORG_PREFIX"); envPrefix != "" {
+		opts.OrgPrefix = envPrefix
+	}
+	if opts.OrgPrefix != "" {
+		awsconfig.OrgPrefix = opts.OrgPrefix
+		awsconfig.RecomputeOrgConstants()
 	}
 
 	return opts, err

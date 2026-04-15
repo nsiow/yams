@@ -18,6 +18,10 @@ local/
 # Local notes
 notes/
 
+# ui stuff
+node_modules/
+internal/ui/dist/
+
 # slop
 .claude/settings.local.json
 
@@ -54,3 +58,14 @@ coverage.html
 
 # Go workspace file
 go.work
+
+# --------------------------------------------------------------------------------
+# UI (Node/Vite)
+# --------------------------------------------------------------------------------
+
+ui/node_modules/
+ui/dist/
+ui/*.local
+*.tsbuildinfo
+ui/vite.config.js
+ui/vite.config.d.ts

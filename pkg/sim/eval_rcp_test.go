@@ -427,7 +427,7 @@ func TestRCP(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) (Decision, error) {
 		subj := newSubject(ac, TestingSimulationOptions)
-		decision := evalRCP(subj)
+		decision := evalRCP(&subj)
 		return decision, nil
 	})
 }

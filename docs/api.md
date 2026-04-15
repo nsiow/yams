@@ -247,15 +247,8 @@ curl ${YAMS_SERVER_ADDRESS}/api/v1/policies
 ```
 ```json
 [
-  "arn:aws:iam::213308312933:policy/yams-test-infra-DogPolicy-pX0mgCedLaeo",
-  "arn:aws:iam::213308312933:policy/yams-test-infra-LlamaBoundary-mvVoctsE53pG",
-  "arn:aws:iam::255082776537:policy/yams-test-infra-CupcakeBoundary-udxeJjTH6ebJ",
-  "arn:aws:iam::255082776537:policy/yams-test-infra-SaladPolicy-opE0edVZrSWR",
-  "arn:aws:iam::255082776537:policy/yams-test-infra-SoupPolicy-65QKm40EPh1y",
-  "arn:aws:iam::777583092761:policy/yams-test-infra-GreyPolicy-gLf7j3ZwJYBm",
-  "arn:aws:iam::777583092761:policy/yams-test-infra-MustardBoundary-47JW6znulEXt",
-  "arn:aws:iam::777583092761:policy/yams-test-infra-PinkBoundary-xuINwerkCuZ3",
-  "arn:aws:iam::aws:policy/AIOpsAssistantPolicy",
+  {"arn": "arn:aws:iam::213308312933:policy/yams-test-infra-DogPolicy-pX0mgCedLaeo", "name": "yams-test-infra-DogPolicy-pX0mgCedLaeo"},
+  {"arn": "arn:aws:iam::255082776537:policy/yams-test-infra-SaladPolicy-opE0edVZrSWR", "name": "yams-test-infra-SaladPolicy-opE0edVZrSWR"},
   ...
 ]
 ```
@@ -313,10 +306,10 @@ curl ${YAMS_SERVER_ADDRESS}/api/v1/accounts
 ```
 ```json
 [
-  "213308312933",
-  "255082776537",
-  "777583092761",
-  "810970970902"
+  {"id": "213308312933", "name": "yams1"},
+  {"id": "255082776537", "name": "yams2"},
+  {"id": "777583092761", "name": "yams3"},
+  {"id": "810970970902", "name": "yams-org-mgmt"}
 ]
 ```
 

@@ -111,7 +111,8 @@ func createTestSubject() *subject {
 		Resource:  resource,
 	}
 
-	return newSubject(ac, DEFAULT_OPTIONS)
+	subj := newSubject(ac, DEFAULT_OPTIONS)
+	return &subj
 }
 
 func BenchmarkEvalStatement_ActionMatch(b *testing.B) {

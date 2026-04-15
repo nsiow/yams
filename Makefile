@@ -1,4 +1,4 @@
-.DEFAULT_GOAL = cli
+.DEFAULT_GOAL = binary
 
 # --------------------------------------------------------------------------------
 # Building
@@ -14,19 +14,28 @@ GO_BUILDER ?= go build
 VERSION    ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 GIT_COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+ORG_PREFIX ?= Yams
+
 LDFLAGS    := -X 'github.com/nsiow/yams/cmd/yams/cli.Version=$(VERSION)'
 LDFLAGS    += -X 'github.com/nsiow/yams/cmd/yams/cli.GitCommit=$(GIT_COMMIT)'
 LDFLAGS    += -X 'github.com/nsiow/yams/cmd/yams/cli.BuildDate=$(BUILD_DATE)'
+LDFLAGS    += -X 'github.com/nsiow/yams/pkg/loaders/awsconfig.OrgPrefix=$(ORG_PREFIX)'
 
 .PHONY: build
 build:
 	go build ./...
 
-.PHONY: cli
-cli: $(CLI)
+.PHONY: binary
+binary: $(CLI)
 
 $(CLI): $(GO_FILES)
-	go build -ldflags "$(LDFLAGS)" ./cmd/yams
+	$(GO_BUILDER) -ldflags "$(LDFLAGS)" -o $(CLI) ./cmd/yams
+
+.PHONY: binary-ui
+binary-ui: ui-build
+	cp -r $(UI_DIR)/dist internal/ui/dist
+	$(GO_BUILDER) -tags ui -ldflags "$(LDFLAGS)" -o $(CLI) ./cmd/yams
+	rm -rf internal/ui/dist
 
 .PHONY: install
 install: $(CLI)
@@ -37,6 +46,7 @@ clean:
 	rm -f $(CLI)
 	rm -f coverage.*
 	rm -f *.cov
+	rm -rf internal/ui/dist
 	go clean -testcache
 
 # --------------------------------------------------------------------------------
@@ -98,7 +108,7 @@ cov-missing: coverage.out
 cov-html: coverage.html
 
 .PHONY: precommit
-precommit: clean test lint cov-report
+precommit: clean test lint cov-report ui-lint ui-test
 
 coverage.out: $(GO_FILES)
 	GO_TEST_FLAGS='-coverprofile=$@' make test
@@ -211,4 +221,39 @@ real-world-data:
 	
 .PHONY: real-world-org-data
 real-world-org-data:
-	make cli && ./yams dump -target org -out /tmp/org.json && cat /tmp/org.json | jq -c '.[]' > testdata/real-world/org.jsonl
+	make binary && ./yams dump -target org -out /tmp/org.json && cat /tmp/org.json | jq -c '.[]' > testdata/real-world/org.jsonl
+
+# --------------------------------------------------------------------------------
+# UI Development
+# --------------------------------------------------------------------------------
+
+UI_DIR = ./ui
+
+.PHONY: ui-deps
+ui-deps:
+	cd $(UI_DIR) && npm install
+
+.PHONY: ui-dev
+ui-dev: ui-clean ui-deps
+	cd $(UI_DIR) && npm run dev
+
+.PHONY: ui-build
+ui-build:
+	cd $(UI_DIR) && npm run build
+
+.PHONY: ui-lint
+ui-lint:
+	cd $(UI_DIR) && npm run lint
+
+.PHONY: ui-test
+ui-test:
+	cd $(UI_DIR) && npm test
+
+.PHONY: ui-preview
+ui-preview:
+	cd $(UI_DIR) && npm run preview
+
+.PHONY: ui-clean
+ui-clean:
+	rm -rf $(UI_DIR)/node_modules
+	rm -rf $(UI_DIR)/dist

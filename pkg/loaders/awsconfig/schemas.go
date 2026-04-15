@@ -73,7 +73,9 @@ func (c *IamUser) asPrincipal() entities.Principal {
 		Tags:      c.Tags,
 		InlinePolicies: common.Map(c.Configuration.UserPolicies,
 			func(x inlinePolicy) policy.Policy {
-				return policy.Policy(x.Document)
+				p := policy.Policy(x.Document)
+				p.Name = x.Name
+				return p
 			}),
 		AttachedPolicies: common.Map(c.Configuration.AttachedManagedPolicies,
 			func(x policyRef) entities.Arn {
@@ -121,7 +123,9 @@ func (c *IamRole) asPrincipal() entities.Principal {
 		Tags:      c.Tags,
 		InlinePolicies: common.Map(c.Configuration.RolePolicies,
 			func(x inlinePolicy) policy.Policy {
-				return policy.Policy(x.Document)
+				p := policy.Policy(x.Document)
+				p.Name = x.Name
+				return p
 			}),
 		AttachedPolicies: common.Map(c.Configuration.AttachedManagedPolicies,
 			func(x policyRef) entities.Arn {
@@ -205,7 +209,9 @@ func (c *IamGroup) asGroup() entities.Group {
 		Arn:       c.Arn,
 		InlinePolicies: common.Map(c.Configuration.GroupPolicies,
 			func(x inlinePolicy) policy.Policy {
-				return policy.Policy(x.Document)
+				p := policy.Policy(x.Document)
+				p.Name = x.Name
+				return p
 			}),
 		AttachedPolicies: common.Map(c.Configuration.AttachedManagedPolicies,
 			func(x policyRef) entities.Arn {
@@ -256,6 +262,9 @@ func (c *S3Bucket) asResource() entities.Resource {
 
 type DynamodbTable struct {
 	ConfigItem
+	SupplementaryConfiguration struct {
+		Policy EncodedPolicy
+	} `json:"supplementaryConfiguration"`
 }
 
 func (c *DynamodbTable) asResource() entities.Resource {
@@ -266,7 +275,7 @@ func (c *DynamodbTable) asResource() entities.Resource {
 		Region:    c.Region,
 		Arn:       c.Arn,
 		Tags:      c.Tags,
-		Policy:    policy.Policy{}, // TODO(nsiow) DDB table policies: AWS Config does not yet export these
+		Policy:    policy.Policy(c.SupplementaryConfiguration.Policy),
 	}
 }
 
@@ -276,6 +285,9 @@ func (c *DynamodbTable) asResource() entities.Resource {
 
 type KmsKey struct {
 	ConfigItem
+	SupplementaryConfiguration struct {
+		Policy EncodedPolicy
+	} `json:"supplementaryConfiguration"`
 }
 
 func (c *KmsKey) asResource() entities.Resource {
@@ -286,7 +298,30 @@ func (c *KmsKey) asResource() entities.Resource {
 		Region:    c.Region,
 		Arn:       c.Arn,
 		Tags:      c.Tags,
-		Policy:    policy.Policy{}, // TODO(nsiow) KMS key policies: AWS Config does not yet export these
+		Policy:    policy.Policy(c.SupplementaryConfiguration.Policy),
+	}
+}
+
+// -------------------------------------------------------------------------------------------------
+// AWS::Lambda::Function
+// -------------------------------------------------------------------------------------------------
+
+type LambdaFunction struct {
+	ConfigItem
+	SupplementaryConfiguration struct {
+		Policy EncodedPolicy
+	} `json:"supplementaryConfiguration"`
+}
+
+func (c *LambdaFunction) asResource() entities.Resource {
+	return entities.Resource{
+		Type:      c.Type,
+		Name:      c.Name,
+		AccountId: c.AccountId,
+		Region:    c.Region,
+		Arn:       c.Arn,
+		Tags:      c.Tags,
+		Policy:    policy.Policy(c.SupplementaryConfiguration.Policy),
 	}
 }
 
@@ -373,8 +408,12 @@ func (c *Account) asAccount() entities.Account {
 				Type: in.Type,
 				Arn:  in.Arn,
 				Name: in.Name,
-				SCPs: in.SCPs,
-				RCPs: in.RCPs,
+				SCPs: common.Map(in.SCPs, func(arn string) entities.OrgPolicyRef {
+					return entities.OrgPolicyRef{Arn: arn}
+				}),
+				RCPs: common.Map(in.RCPs, func(arn string) entities.OrgPolicyRef {
+					return entities.OrgPolicyRef{Arn: arn}
+				}),
 			}
 		}),
 	}

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"sync/atomic"
+	"sync"
 	"time"
 
 	"github.com/nsiow/yams/internal/common"
@@ -15,6 +15,34 @@ import (
 	"github.com/nsiow/yams/pkg/aws/sar/types"
 	"github.com/nsiow/yams/pkg/entities"
 )
+
+// placeholderAccountId is used for placeholder resources that don't exist yet (Create*/RunInstances)
+const placeholderAccountId = "000000000000"
+
+// isCreateAction returns true for actions that target resources which don't exist yet
+func isCreateAction(a *types.Action) bool {
+	return strings.HasPrefix(a.Name, "Create") || a.Name == "RunInstances"
+}
+
+// newPlaceholderResource builds a minimal FrozenResource for Create*/RunInstances targets that
+// don't exist yet
+func newPlaceholderResource(arn string) *entities.FrozenResource {
+	return &entities.FrozenResource{
+		AccountId:   placeholderAccountId,
+		Arn:         arn,
+		ArnSegments: entities.SplitArn(arn),
+	}
+}
+
+// allActionsAreCreate returns true if every action in the slice is a create-type action
+func allActionsAreCreate(fas []*types.Action) bool {
+	for _, a := range fas {
+		if !isCreateAction(a) {
+			return false
+		}
+	}
+	return len(fas) > 0
+}
 
 // Simulator provides the ability to simulate IAM policies and the interactions between
 // Principals + Resources
@@ -108,6 +136,12 @@ func (s *Simulator) resolveResource(arn string, opts Options) (*entities.FrozenR
 	return nil, fmt.Errorf("no resource with arn: %s", arn)
 }
 
+// ExpandResources takes the provided list of Resource ARNs and performs any required expansion of
+// Resources into Sub-resources (e.g. S3 bucket → object)
+func (s *Simulator) ExpandResources(arns []string, opts Options) ([]string, error) {
+	return s.expandResources(arns, opts)
+}
+
 // expandResources takes the provided list of Resource ARNs and specified options, and performs any
 // required expansion of Resources into Sub-resources. For example, expanding a resource set with
 // a non-empty value for DefaultS3Key will add a new Resource to the set for each S3 bucket.
@@ -144,7 +178,7 @@ func (s *Simulator) Simulate(ac AuthContext) (*SimResult, error) {
 	return s.SimulateWithOptions(ac, DEFAULT_OPTIONS)
 }
 
-// Simulate determines whether the provided AuthContext would be allowed
+// SimulateWithOptions determines whether the provided AuthContext would be allowed
 func (s *Simulator) SimulateWithOptions(ac AuthContext, opts Options) (*SimResult, error) {
 	if opts.ForceFailure {
 		return nil, fmt.Errorf("error due to forced-failure option")
@@ -155,16 +189,18 @@ func (s *Simulator) SimulateWithOptions(ac AuthContext, opts Options) (*SimResul
 		return nil, err
 	}
 
-	// TODO(nsiow) see if we can add stronger guarantees around P/A/R being set
 	subj := newSubject(ac, opts)
-	result := evalOverallAccess(subj)
+	result := evalOverallAccess(&subj)
 	result.Principal = ac.Principal.Arn
 	result.Action = ac.Action.ShortName()
 	if ac.Resource != nil {
 		result.Resource = ac.Resource.Arn
 	}
+	if opts.EnableTracing {
+		result.Trace = &subj.trc
+	}
 
-	return result, nil
+	return &result, nil
 }
 
 // SimulateByArn determines whether the operation would be allowed between the Principal and
@@ -198,16 +234,9 @@ func (s *Simulator) SimulateByArnWithOptions(
 	// Locate Resource (if needed)
 	if ac.Action.HasTargets() {
 		_, ok := s.Universe.Resource(resourceArn)
-		if !ok && (strings.HasPrefix(ac.Action.Name, "Create") || ac.Action.Name == "RunInstances") {
-			// Handle case where API call DOES have targets but those targets shouldn't exist yet. It's
-			// really just targeted Create* calls
-			// TODO(nsiow) revisit this
-			ac.Resource = &entities.FrozenResource{
-				AccountId: fp.AccountId,
-				Arn:       resourceArn,
-			}
+		if !ok && isCreateAction(ac.Action) {
+			ac.Resource = newPlaceholderResource(resourceArn)
 		} else {
-			// Handle normal case where API call does have targets and also those targets should exist
 			fr, err := s.resolveResource(resourceArn, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error resolving resource for simulation: %w", err)
@@ -241,7 +270,7 @@ func (s *Simulator) WhichPrincipals(action, resource string, opts Options) ([]st
 
 func (s *Simulator) WhichActions(principal, resource string, opts Options) ([]string, error) {
 	svc := arn.Service(resource)
-	actions := sar.NewQuery().WithService(svc).Results()
+	actions := sar.ActionsByService(svc)
 
 	matrix, err := s.Product(
 		[]string{principal},
@@ -349,102 +378,254 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 		fas = append(fas, fa)
 	}
 
-	var fps []*entities.FrozenPrincipal
-	for _, p := range ps {
-		fp, err := s.resolvePrincipal(p, opts)
-		if err != nil {
-			return nil, fmt.Errorf("unable to resolve principal '%s' for simulation: %w", p, err)
-		}
-		fps = append(fps, fp)
+	fps, err := s.FreezePrincipals(ps, opts)
+	if err != nil {
+		return nil, err
 	}
 
-	var frs []*entities.FrozenResource
-	for _, r := range rs {
-		fr, err := s.resolveResource(r, opts)
-		if err != nil {
-			return nil, fmt.Errorf("unable to resolve resource '%s' for simulation: %w", r, err)
-		}
-		frs = append(frs, fr)
+	frs, err := s.freezeResources(rs, opts, allActionsAreCreate(fas))
+	if err != nil {
+		return nil, err
 	}
 
 	slog.Debug("froze entities",
 		"sim_id", simId)
 
-	var submitted int32
-	var done atomic.Int32
-	var sent atomic.Int32
-	finished := make(chan simOut, s.Pool.NumWorkers())
-	batch := simBatch{Jobs: []simIn{}, Finished: finished, Done: &done, Sent: &sent}
+	return s.runProduct(fps, fas, frs, opts)
+}
+
+// FreezePrincipals resolves and freezes all the provided principal ARNs. This allows callers to
+// freeze once and reuse across multiple Product calls.
+func (s *Simulator) FreezePrincipals(arns []string, opts Options) ([]*entities.FrozenPrincipal, error) {
+	fps := make([]*entities.FrozenPrincipal, 0, len(arns))
+	for _, p := range arns {
+		fp, err := s.resolvePrincipal(p, opts)
+		if err != nil {
+			return nil, fmt.Errorf("unable to resolve principal '%s': %w", p, err)
+		}
+		fps = append(fps, fp)
+	}
+	return fps, nil
+}
+
+// FreezeResources resolves and freezes all the provided resource ARNs
+func (s *Simulator) FreezeResources(arns []string, opts Options) ([]*entities.FrozenResource, error) {
+	return s.freezeResources(arns, opts, false)
+}
+
+// freezeResources resolves and freezes resource ARNs. When allowPlaceholders is true (i.e. all
+// actions are Create*/RunInstances), unresolvable ARNs get a minimal placeholder instead of
+// returning an error.
+func (s *Simulator) freezeResources(arns []string, opts Options, allowPlaceholders bool) ([]*entities.FrozenResource, error) {
+	frs := make([]*entities.FrozenResource, 0, len(arns))
+	for _, r := range arns {
+		fr, err := s.resolveResource(r, opts)
+		if err != nil {
+			if !allowPlaceholders {
+				return nil, fmt.Errorf("unable to resolve resource '%s': %w", r, err)
+			}
+			fr = newPlaceholderResource(r)
+		}
+		frs = append(frs, fr)
+	}
+	return frs, nil
+}
+
+// ProductFrozenStreaming runs the cartesian product simulation with pre-frozen entities and streams
+// allowed results to the onResult callback instead of collecting them in memory
+func (s *Simulator) ProductFrozenStreaming(
+	fps []*entities.FrozenPrincipal,
+	actions []string,
+	frs []*entities.FrozenResource,
+	opts Options,
+	onResult func(AccessTuple),
+) error {
+	var fas []*types.Action
+	for _, a := range actions {
+		fa, ok := sar.LookupString(a)
+		if !ok {
+			return fmt.Errorf("unknown action: %s", a)
+		}
+		fas = append(fas, fa)
+	}
+
+	var simErr error
+	s.streamProduct(fps, fas, frs, opts, onResult, func(err error) {
+		simErr = err
+	})
+	return simErr
+}
+
+// runProduct submits simulation work to the pool and collects allowed results
+func (s *Simulator) runProduct(
+	fps []*entities.FrozenPrincipal,
+	fas []*types.Action,
+	frs []*entities.FrozenResource,
+	opts Options,
+) ([]AccessTuple, error) {
+	var matrix []AccessTuple
+	var collectErr error
+
+	s.streamProduct(fps, fas, frs, opts, func(t AccessTuple) {
+		matrix = append(matrix, t)
+	}, func(err error) {
+		collectErr = err
+	})
+
+	return matrix, collectErr
+}
+
+// actionResources pairs an action with the pre-filtered resources it can target, computed once
+// before the principal loop to avoid redundant Targets() calls per principal
+type actionResources struct {
+	action    *types.Action
+	resources []*entities.FrozenResource
+}
+
+// precomputeTargets builds a filtered mapping of actions to their targeted resources. This moves
+// the Targets() wildcard matching from O(principals × actions × resources) to O(actions × resources).
+func precomputeTargets(fas []*types.Action, frs []*entities.FrozenResource) []actionResources {
+	result := make([]actionResources, 0, len(fas))
+	for _, a := range fas {
+		var matching []*entities.FrozenResource
+		for _, r := range frs {
+			if a.Targets(r.Arn) {
+				matching = append(matching, r)
+			}
+		}
+		if len(matching) > 0 {
+			result = append(result, actionResources{action: a, resources: matching})
+		}
+	}
+	return result
+}
+
+// streamProduct is the core simulation engine. It partitions principals across multiple submission
+// goroutines to keep workers saturated. A context is used to cancel in-flight work on error.
+func (s *Simulator) streamProduct(
+	fps []*entities.FrozenPrincipal,
+	fas []*types.Action,
+	frs []*entities.FrozenResource,
+	opts Options,
+	onResult func(AccessTuple),
+	onError func(error),
+) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	finished := make(chan simOut, s.Pool.NumWorkers()*s.Pool.BatchSize())
+	var wg sync.WaitGroup
+
+	// Pre-compute which resources each action targets to avoid repeated Targets() calls
+	filtered := precomputeTargets(fas, frs)
+
+	// Partition principals across multiple submission goroutines to avoid a single-threaded
+	// submission bottleneck
+	numSubmitters := s.Pool.NumWorkers()
+	if numSubmitters > len(fps) {
+		numSubmitters = len(fps)
+	}
+	if numSubmitters < 1 {
+		numSubmitters = 1
+	}
+
+	// Coordinator goroutine: waits for all submitters then closes the channel
+	go func() {
+		var submitters sync.WaitGroup
+		submitters.Add(numSubmitters)
+
+		for i := range numSubmitters {
+			start := i * len(fps) / numSubmitters
+			end := (i + 1) * len(fps) / numSubmitters
+
+			go func(principals []*entities.FrozenPrincipal) {
+				defer submitters.Done()
+				s.submitPartition(principals, filtered, opts, finished, &wg, ctx)
+			}(fps[start:end])
+		}
+
+		submitters.Wait()
+		wg.Wait()
+		close(finished)
+	}()
+
+	// Consume results until all batches are processed and the channel is closed
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	var received int64
+
+	for {
+		select {
+		case job, ok := <-finished:
+			if !ok {
+				return
+			}
+			received++
+			if job.Error != nil {
+				onError(fmt.Errorf("simulation error: %w", job.Error))
+				return
+			}
+			if job.Result.IsAllowed {
+				result := &job.Result
+				onResult(AccessTuple{
+					Principal: result.Principal,
+					Action:    result.Action,
+					Resource:  result.Resource,
+					Result:    result,
+				})
+			}
+		case <-ticker.C:
+			slog.Debug("simulation in progress", "received", received)
+		}
+	}
+}
+
+// submitPartition iterates a slice of principals against pre-filtered action/resource pairs,
+// building batches and submitting them to the pool
+func (s *Simulator) submitPartition(
+	fps []*entities.FrozenPrincipal,
+	filtered []actionResources,
+	opts Options,
+	finished chan simOut,
+	wg *sync.WaitGroup,
+	ctx context.Context,
+) {
+	batch := simBatch{
+		Jobs:     make([]simIn, 0, s.Pool.BatchSize()),
+		Finished: finished,
+		Wg:       wg,
+		Ctx:      ctx,
+	}
 
 	for _, p := range fps {
-		for _, a := range fas {
-			for _, r := range frs {
-				// Skip invalid combinations
-				if !a.Targets(r.Arn) {
-					continue
-				}
-
-				job := simIn{
-					AuthContext{
-						Action:     a,
+		for _, ar := range filtered {
+			for _, r := range ar.resources {
+				batch.Jobs = append(batch.Jobs, simIn{
+					AuthContext: AuthContext{
+						Action:     ar.action,
 						Principal:  p,
 						Resource:   r,
 						Properties: opts.Context,
 					},
-					opts,
-				}
-				batch.Jobs = append(batch.Jobs, job)
-				submitted++
+					Options: opts,
+				})
 
 				if len(batch.Jobs) == s.Pool.BatchSize() {
+					wg.Add(1)
 					s.Pool.Submit(batch)
-					batch = simBatch{Jobs: []simIn{}, Finished: finished, Done: &done, Sent: &sent}
+					batch = simBatch{
+						Jobs:     make([]simIn, 0, s.Pool.BatchSize()),
+						Finished: finished,
+						Wg:       wg,
+						Ctx:      ctx,
+					}
 				}
 			}
 		}
 	}
 
-	// leftovers
 	if len(batch.Jobs) > 0 {
+		wg.Add(1)
 		s.Pool.Submit(batch)
 	}
-
-	slog.Debug("submitted work",
-		"sim_id", simId,
-		"submitted", submitted)
-
-	var matrix []AccessTuple
-	var received int32
-
-	for {
-		select {
-		case job := <-finished:
-			received++
-			if job.Error != nil {
-				return nil, fmt.Errorf("simulation error: %w", job.Error)
-			}
-
-			if job.Result.IsAllowed {
-				matrix = append(matrix, AccessTuple{
-					Principal: job.Result.Principal,
-					Action:    job.Result.Action,
-					Resource:  job.Result.Resource,
-					Result:    job.Result})
-			}
-		case <-time.After(time.Second * 1):
-			slog.Debug("simulation in progress",
-				"done", done.Load(),
-				"sent", sent.Load(),
-				"received", received,
-				"out_of", submitted)
-		}
-
-		// Exit when all jobs are processed AND all sent results are received
-		if done.Load() >= submitted && received >= sent.Load() {
-			break
-		}
-	}
-
-	close(finished)
-	return matrix, nil
 }

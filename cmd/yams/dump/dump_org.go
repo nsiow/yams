@@ -505,7 +505,7 @@ func makeAccount(
 
 	return &awsconfig.Account{
 		ConfigItem: awsconfig.ConfigItem{
-			Type:      "Yams::Organizations::Account",
+			Type:      awsconfig.CONST_TYPE_YAMS_ORGANIZATIONS_ACCOUNT,
 			AccountId: node,
 			Region:    "global",
 			Arn:       *summary.Account.Arn,
@@ -542,7 +542,7 @@ func describeScps(
 
 		s := awsconfig.SCP{
 			ConfigItem: awsconfig.ConfigItem{
-				Type:      "Yams::Organizations::ServiceControlPolicy",
+				Type:      awsconfig.CONST_TYPE_YAMS_ORGANIZATIONS_SCP,
 				Name:      *rawPolicy.Policy.PolicySummary.Name,
 				Arn:       *rawPolicy.Policy.PolicySummary.Arn,
 				Region:    "global",
@@ -581,7 +581,7 @@ func describeRcps(
 
 		s := awsconfig.SCP{
 			ConfigItem: awsconfig.ConfigItem{
-				Type:      "Yams::Organizations::ResourceControlPolicy",
+				Type:      awsconfig.CONST_TYPE_YAMS_ORGANIZATIONS_RCP,
 				Name:      *rawPolicy.Policy.PolicySummary.Name,
 				Arn:       *rawPolicy.Policy.PolicySummary.Arn,
 				Region:    "global",

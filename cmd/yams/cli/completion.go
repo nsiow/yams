@@ -10,7 +10,7 @@ _yams() {
     local cur prev words cword
     _init_completion || return
 
-    local commands="status server dump sim principals resources actions accounts policies version completion"
+    local commands="status server dump sim audit principals resources actions accounts policies version completion"
 
     if [[ ${cword} -eq 1 ]]; then
         COMPREPLY=($(compgen -W "${commands}" -- "${cur}"))
@@ -34,6 +34,9 @@ _yams() {
         sim)
             COMPREPLY=($(compgen -W "-s --server -p --principal -a --action -r --resource -c --context -o --overlay -x --exact -e --explain -t --trace" -- "${cur}"))
             ;;
+        audit)
+            COMPREPLY=($(compgen -W "-s --source -f --config -o --out -c --context --overlay" -- "${cur}"))
+            ;;
         principals|resources|actions|accounts|policies)
             COMPREPLY=($(compgen -W "-s --server -q --query -k --key -f --freeze --format" -- "${cur}"))
             ;;
@@ -55,6 +58,7 @@ _yams() {
         'server:Start the yams API server'
         'dump:Export AWS organization or config data'
         'sim:Simulate IAM permission checks'
+        'audit:Generate access summary CSV'
         'principals:List or search IAM principals'
         'resources:List or search AWS resources'
         'actions:List or search IAM actions'
@@ -105,6 +109,14 @@ _yams() {
                         '(-x --exact)'{-x,--exact}'[Disable fuzzy matching]' \
                         '(-e --explain)'{-e,--explain}'[Show explanation]' \
                         '(-t --trace)'{-t,--trace}'[Show trace]'
+                    ;;
+                audit)
+                    _arguments \
+                        '*'{-s,--source}'[Data source]:source:_files' \
+                        '(-f --config)'{-f,--config}'[Audit config file]:config:_files' \
+                        '(-o --out)'{-o,--out}'[Output destination]:destination:_files' \
+                        '*'{-c,--context}'[Context key=value]:context:' \
+                        '*--overlay[Overlay file]:file:_files'
                     ;;
                 principals|resources|actions|accounts|policies)
                     _arguments \

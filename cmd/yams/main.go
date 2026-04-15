@@ -3,6 +3,7 @@ package main
 import (
 	"log/slog"
 
+	"github.com/nsiow/yams/cmd/yams/audit"
 	"github.com/nsiow/yams/cmd/yams/cli"
 	"github.com/nsiow/yams/cmd/yams/dump"
 	"github.com/nsiow/yams/cmd/yams/inventory"
@@ -39,6 +40,8 @@ func main() {
 		server.Run(flags)
 	case cli.RUN_MODE_SIM:
 		sim.Run(flags)
+	case cli.RUN_MODE_AUDIT:
+		audit.Run(flags)
 	default:
 		cli.Fail("unknown mode: %s", flags.Mode)
 	}

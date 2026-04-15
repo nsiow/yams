@@ -60,23 +60,26 @@ func TestIsStrictCall(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i AuthContext) (bool, error) {
 		subj := newSubject(i, TestingSimulationOptions)
-		return isStrictCall(subj), nil
+		return isStrictCall(&subj), nil
 	})
 }
 
-func TestSameAccountExplicitPrincipalCase(t *testing.T) {
+func TestResourceAccessGrantsPrincipal(t *testing.T) {
 	tests := []testlib.TestCase[AuthContext, bool]{
+		// Direct grants (should return true)
 		{
-			Name: "same_account_explicit_principal",
+			Name: "grant_explicit_arn",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Type: "AWS::IAM::Role",
-					Arn:  "arn:aws:iam::55555:role/MyRole",
+					Type:      "AWS::IAM::Role",
+					Arn:       "arn:aws:iam::55555:role/MyRole",
+					AccountId: "55555",
 				},
 				Resource: &entities.FrozenResource{
-					Arn:  "arn:aws:s3:::nsiow-test",
-					Type: "AWS::S3::Bucket",
+					Arn:       "arn:aws:s3:::nsiow-test",
+					Type:      "AWS::S3::Bucket",
+					AccountId: "55555",
 					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
@@ -84,9 +87,8 @@ func TestSameAccountExplicitPrincipalCase(t *testing.T) {
 								Principal: policy.Principal{
 									AWS: policy.Value{"arn:aws:iam::55555:role/MyRole"},
 								},
-								Effect:   "Allow",
-								Action:   []string{"s3:listbucket"},
-								Resource: []string{"arn:aws:s3:::nsiow-test"},
+								Effect: "Allow",
+								Action: []string{"s3:listbucket"},
 							},
 						},
 					},
@@ -95,26 +97,114 @@ func TestSameAccountExplicitPrincipalCase(t *testing.T) {
 			Want: true,
 		},
 		{
-			Name: "same_account_explicit_principal_unrelated_actions",
+			Name: "grant_principal_star_in_aws",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Type: "AWS::IAM::Role",
-					Arn:  "arn:aws:iam::55555:role/MyRole",
+					Type:      "AWS::IAM::Role",
+					Arn:       "arn:aws:iam::55555:role/MyRole",
+					AccountId: "55555",
 				},
 				Resource: &entities.FrozenResource{
-					Arn:  "arn:aws:s3:::nsiow-test",
-					Type: "AWS::S3::Bucket",
+					Arn:       "arn:aws:s3:::nsiow-test",
+					Type:      "AWS::S3::Bucket",
+					AccountId: "55555",
 					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
 								Sid: "test_statement",
 								Principal: policy.Principal{
-									AWS: policy.Value{"arn:aws:iam::55555:role/MyRole"},
+									AWS: policy.Value{"*"},
 								},
-								Effect:   "Allow",
-								Action:   []string{"s3:getbucketpolicy"},
-								Resource: []string{"arn:aws:s3:::nsiow-test"},
+								Effect: "Allow",
+								Action: []string{"s3:listbucket"},
+							},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "grant_principal_all",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Type:      "AWS::IAM::Role",
+					Arn:       "arn:aws:iam::55555:role/MyRole",
+					AccountId: "55555",
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::nsiow-test",
+					Type:      "AWS::S3::Bucket",
+					AccountId: "55555",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Sid:       "test_statement",
+								Principal: policy.Principal{All: true},
+								Effect:    "Allow",
+								Action:    []string{"s3:listbucket"},
+							},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "grant_mixed_delegation_and_arn",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Type:      "AWS::IAM::Role",
+					Arn:       "arn:aws:iam::55555:role/MyRole",
+					AccountId: "55555",
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::nsiow-test",
+					Type:      "AWS::S3::Bucket",
+					AccountId: "55555",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Sid: "test_statement",
+								Principal: policy.Principal{
+									AWS: policy.Value{"55555", "arn:aws:iam::55555:role/MyRole"},
+								},
+								Effect: "Allow",
+								Action: []string{"s3:listbucket"},
+							},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+
+		// Delegated access (should return false)
+		{
+			Name: "delegated_account_id",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Type:      "AWS::IAM::Role",
+					Arn:       "arn:aws:iam::55555:role/MyRole",
+					AccountId: "55555",
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::nsiow-test",
+					Type:      "AWS::S3::Bucket",
+					AccountId: "55555",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Sid: "test_statement",
+								Principal: policy.Principal{
+									AWS: policy.Value{"55555"},
+								},
+								Effect: "Allow",
+								Action: []string{"s3:listbucket"},
 							},
 						},
 					},
@@ -123,16 +213,78 @@ func TestSameAccountExplicitPrincipalCase(t *testing.T) {
 			Want: false,
 		},
 		{
-			Name: "same_account_principal_star",
+			Name: "delegated_account_root",
 			Input: AuthContext{
 				Action: sar.MustLookupString("s3:listbucket"),
 				Principal: &entities.FrozenPrincipal{
-					Type: "AWS::IAM::Role",
-					Arn:  "arn:aws:iam::55555:role/MyRole",
+					Type:      "AWS::IAM::Role",
+					Arn:       "arn:aws:iam::55555:role/MyRole",
+					AccountId: "55555",
 				},
 				Resource: &entities.FrozenResource{
-					Arn:  "arn:aws:s3:::nsiow-test",
-					Type: "AWS::S3::Bucket",
+					Arn:       "arn:aws:s3:::nsiow-test",
+					Type:      "AWS::S3::Bucket",
+					AccountId: "55555",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Sid: "test_statement",
+								Principal: policy.Principal{
+									AWS: policy.Value{"arn:aws:iam::55555:root"},
+								},
+								Effect: "Allow",
+								Action: []string{"s3:listbucket"},
+							},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+
+		// Non-matching cases (should return false)
+		{
+			Name: "unrelated_action",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Type:      "AWS::IAM::Role",
+					Arn:       "arn:aws:iam::55555:role/MyRole",
+					AccountId: "55555",
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::nsiow-test",
+					Type:      "AWS::S3::Bucket",
+					AccountId: "55555",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Sid: "test_statement",
+								Principal: policy.Principal{
+									AWS: policy.Value{"arn:aws:iam::55555:role/MyRole"},
+								},
+								Effect: "Allow",
+								Action: []string{"s3:getbucketpolicy"},
+							},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "principal_star_unrelated_action",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Type:      "AWS::IAM::Role",
+					Arn:       "arn:aws:iam::55555:role/MyRole",
+					AccountId: "55555",
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::nsiow-test",
+					Type:      "AWS::S3::Bucket",
+					AccountId: "55555",
 					Policy: policy.Policy{
 						Statement: []policy.Statement{
 							{
@@ -140,9 +292,8 @@ func TestSameAccountExplicitPrincipalCase(t *testing.T) {
 								Principal: policy.Principal{
 									AWS: policy.Value{"*"},
 								},
-								Effect:   "Allow",
-								Action:   []string{"s3:getobject"},
-								Resource: []string{"arn:aws:s3:::nsiow-test"},
+								Effect: "Allow",
+								Action: []string{"s3:getobject"},
 							},
 						},
 					},
@@ -154,6 +305,6 @@ func TestSameAccountExplicitPrincipalCase(t *testing.T) {
 
 	testlib.RunTestSuite(t, tests, func(i AuthContext) (bool, error) {
 		subj := newSubject(i, TestingSimulationOptions)
-		return evalResourceAccessAllowsExplicitPrincipal(subj), nil
+		return evalResourceAccessGrantsPrincipal(&subj), nil
 	})
 }

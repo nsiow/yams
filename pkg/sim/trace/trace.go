@@ -25,24 +25,19 @@ func (t *Trace) curr() *Frame {
 	return t.stack[len(t.stack)-1]
 }
 
-// New creates and returns a new Trace with a root Frame initialized
+// New creates and returns a new Trace. The stack is lazily initialized on Enable() to avoid
+// allocations when tracing is disabled (the common case in batch simulation).
 func New() Trace {
-	root := Frame{
-		Header: "root",
-		Depth:  0,
-	}
-
-	t := Trace{
-		stack: []*Frame{
-			&root,
-		},
-	}
-	return t
+	return Trace{}
 }
 
-// Enable turns on recording for this Trace
+// Enable turns on recording for this Trace, initializing the stack if needed
 func (t *Trace) Enable() {
 	t.enabled = true
+	if t.stack == nil {
+		root := Frame{Header: "root", Depth: 0}
+		t.stack = []*Frame{&root}
+	}
 }
 
 // Disable turns off recording for this Trace
@@ -112,7 +107,7 @@ func (t *Trace) Denied(msg string, args ...any) {
 // for each emitted event
 func (t *Trace) Walk(w Walker) {
 	if len(t.stack) == 0 {
-		panic("trace somehow has empty stack")
+		return
 	}
 
 	walk(w, t.stack[0])

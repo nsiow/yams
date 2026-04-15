@@ -13,12 +13,10 @@ type subject struct {
 }
 
 // newSubject creates a new `subject` struct with the provided authorization context and options
-func newSubject(ac AuthContext, opts Options) *subject {
-	subj := &subject{
-		auth:  ac,
-		opts:  opts,
-		trc:   trace.New(),
-		extra: Extra{},
+func newSubject(ac AuthContext, opts Options) subject {
+	subj := subject{
+		auth: ac,
+		opts: opts,
 	}
 
 	if opts.EnableTracing {
