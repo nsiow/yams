@@ -96,14 +96,6 @@ export function Layout(): JSX.Element {
               <Badge color="green" size="xs" circle />
               <Text size="sm" c="white" ff="monospace" style={{ opacity: 0.9 }}>localhost:8888</Text>
             </Group>
-            <Badge
-              color="pink"
-              variant="filled"
-              style={{ cursor: 'pointer' }}
-              onClick={() => navigate('/preview')}
-            >
-              UI Preview
-            </Badge>
           </Group>
           <Group gap={4} align="center">
             <Menu shadow="md" width={150}>
