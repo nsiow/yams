@@ -173,7 +173,7 @@ export function HomePage(): JSX.Element {
             </Tooltip>
           </Group>
           <Stack align="flex-end" gap={4}>
-            <Skeleton visible={refreshing} w={90} h={26} radius="xl">
+            <Skeleton visible={refreshing} h={26} radius="xl">
               <StatusIndicator healthy={healthy ?? false} />
             </Skeleton>
             {lastChecked && (
@@ -216,7 +216,7 @@ export function HomePage(): JSX.Element {
                             Last updated: {formatTimestamp(src.updated)}
                           </Text>
                         </Stack>
-                        <Skeleton visible={refreshing} w={70} h={26} radius="xl">
+                        <Skeleton visible={refreshing} h={26} radius="xl">
                           <StatusIndicator
                             healthy={fresh}
                             label={fresh ? 'Fresh' : 'Stale'}
