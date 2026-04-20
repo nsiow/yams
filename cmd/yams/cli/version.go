@@ -12,6 +12,14 @@ var (
 	BuildDate = "unknown"
 )
 
+// DefaultServerAddress is the default -server address used by client subcommands
+// (status, sim, inventory, etc.). It can be overridden at build time via:
+//
+//	go build -ldflags "-X github.com/nsiow/yams/cmd/yams/cli.DefaultServerAddress=..."
+//
+// The YAMS_SERVER_ADDRESS env var still takes precedence at runtime.
+var DefaultServerAddress = ":8888"
+
 func PrintVersion() {
 	fmt.Printf("yams %s\n", Version)
 	fmt.Printf("  commit:  %s\n", GitCommit)

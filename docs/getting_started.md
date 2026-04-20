@@ -60,6 +60,9 @@ There are multiple ways to configure the **yams** CLI (in order of priority):
 1. **Environment variable**: `YAMS_SERVER_ADDRESS`
 2. **Config file**: `~/.config/yams/config.json`
 3. **Command-line flag**: `-s/--server` for individual invocations
+4. **Compile-time default**: downstream packagers can override the default
+   server address by passing `DEFAULT_SERVER_ADDRESS=<url>` to `make`, which
+   injects it via `-ldflags -X .../cli.DefaultServerAddress=...`.
 
 #### Config File
 

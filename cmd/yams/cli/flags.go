@@ -121,7 +121,7 @@ func Parse() (*Flags, error) {
 		fs := flag.NewFlagSet("status", flag.ExitOnError)
 
 		fs.StringVar(&opts.Server, "s", "", "alias for -server")
-		fs.StringVar(&opts.Server, "server", ":8888", "address of yams server to use for connection")
+		fs.StringVar(&opts.Server, "server", DefaultServerAddress, "address of yams server to use for connection")
 
 		fs.StringVar(&opts.Format, "format", "json", "output format: json or table")
 
@@ -201,7 +201,7 @@ func Parse() (*Flags, error) {
 			fs = flag.NewFlagSet(subcommand, flag.ExitOnError)
 
 			fs.StringVar(&opts.Server, "s", "", "alias for -server")
-			fs.StringVar(&opts.Server, "server", ":8888", "address of yams server to use for connection")
+			fs.StringVar(&opts.Server, "server", DefaultServerAddress, "address of yams server to use for connection")
 
 			fs.StringVar(&opts.Query, "q", "", "alias for -query")
 			fs.StringVar(&opts.Query, "query", "", "case-insensitive search term")
@@ -223,7 +223,7 @@ func Parse() (*Flags, error) {
 		fs := flag.NewFlagSet("sim", flag.ExitOnError)
 
 		fs.StringVar(&opts.Server, "s", "", "alias for -server")
-		fs.StringVar(&opts.Server, "server", ":8888", "address of yams server to use for connection")
+		fs.StringVar(&opts.Server, "server", DefaultServerAddress, "address of yams server to use for connection")
 
 		fs.StringVar(&opts.Principal, "p", "", "alias for -principal")
 		fs.StringVar(&opts.Principal, "principal", "", "ARN of the Principal to simulate")
@@ -287,7 +287,7 @@ func Parse() (*Flags, error) {
 
 	// Apply config file defaults (only if values weren't explicitly set)
 	if cfg := LoadConfig(); cfg != nil {
-		if opts.Server == "" || opts.Server == ":8888" {
+		if opts.Server == "" || opts.Server == DefaultServerAddress {
 			if cfg.Server != "" {
 				opts.Server = cfg.Server
 			}

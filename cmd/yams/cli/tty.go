@@ -8,7 +8,7 @@ import (
 
 // IsTTY returns true if the given file descriptor is a terminal
 func IsTTY(fd int) bool {
-	_, err := unix.IoctlGetTermios(fd, unix.TCGETS)
+	_, err := unix.IoctlGetTermios(fd, ttyGetTermios)
 	return err == nil
 }
 

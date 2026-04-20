@@ -21,6 +21,13 @@ LDFLAGS    += -X 'github.com/nsiow/yams/cmd/yams/cli.GitCommit=$(GIT_COMMIT)'
 LDFLAGS    += -X 'github.com/nsiow/yams/cmd/yams/cli.BuildDate=$(BUILD_DATE)'
 LDFLAGS    += -X 'github.com/nsiow/yams/pkg/loaders/awsconfig.OrgPrefix=$(ORG_PREFIX)'
 
+# Optional: bake a default server address into client subcommands.
+# Downstream packagers can set this; YAMS_SERVER_ADDRESS env var still wins at runtime.
+DEFAULT_SERVER_ADDRESS ?=
+ifneq ($(DEFAULT_SERVER_ADDRESS),)
+LDFLAGS    += -X 'github.com/nsiow/yams/cmd/yams/cli.DefaultServerAddress=$(DEFAULT_SERVER_ADDRESS)'
+endif
+
 .PHONY: build
 build:
 	go build ./...
