@@ -231,7 +231,8 @@ func (s *DynamoDBStore) Delete(ctx context.Context, id string) error {
 // List returns summaries of all overlays, optionally filtered by a search query.
 func (s *DynamoDBStore) List(ctx context.Context, query string) ([]entities.OverlaySummary, error) {
 	query = strings.ToLower(query)
-	var summaries []entities.OverlaySummary
+	// Non-nil so the JSON API serializes an empty store as [] rather than null.
+	summaries := []entities.OverlaySummary{}
 	var lastKey map[string]types.AttributeValue
 
 	for {

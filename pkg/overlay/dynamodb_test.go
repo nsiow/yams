@@ -274,6 +274,36 @@ func TestDynamoDBStore_List(t *testing.T) {
 	}
 }
 
+func TestDynamoDBStore_List_EmptyIsNotNil(t *testing.T) {
+	// Ensure List returns a non-nil slice when no overlays exist; the JSON API
+	// otherwise serializes it as `null`, which breaks UI consumers that call
+	// list.sort / list.filter directly on the response.
+	client := newMockClient()
+	store := NewDynamoDBStoreWithClient(client, "test-table")
+	ctx := context.Background()
+
+	summaries, err := store.List(ctx, "")
+	if err != nil {
+		t.Fatalf("List on empty store failed: %v", err)
+	}
+	if summaries == nil {
+		t.Fatal("List returned a nil slice on empty store; expected []entities.OverlaySummary{}")
+	}
+	if len(summaries) != 0 {
+		t.Errorf("expected 0 summaries, got %d", len(summaries))
+	}
+
+	// Query miss on a non-empty store should also be non-nil.
+	_ = store.Create(ctx, entities.NewOverlay("alpha"))
+	summaries, err = store.List(ctx, "no-such-overlay")
+	if err != nil {
+		t.Fatalf("List with non-matching query failed: %v", err)
+	}
+	if summaries == nil {
+		t.Fatal("List returned a nil slice for a query that matched nothing")
+	}
+}
+
 func TestDynamoDBStore_Exists(t *testing.T) {
 	client := newMockClient()
 	store := NewDynamoDBStoreWithClient(client, "test-table")
