@@ -9,7 +9,8 @@ import type { Action } from '../../../lib/api';
 import {
   isResourceCreationAction,
   getDefaultArnForAction,
-  PLACEHOLDER_ACCOUNT_ID,
+  setAccountSegment,
+  WILDCARD_ACCOUNT,
 } from './resource-creation';
 
 export interface ArnEditorProps {
@@ -61,7 +62,7 @@ export function ArnEditor({
       return;
     }
 
-    const effectiveAccountId = accountId || PLACEHOLDER_ACCOUNT_ID;
+    const effectiveAccountId = accountId || WILDCARD_ACCOUNT;
     const defaultArn = getDefaultArnForAction(actionDetails, effectiveAccountId);
 
     if (defaultArn) {
@@ -70,16 +71,16 @@ export function ArnEditor({
     }
   }, [actionDetails, accountId, initialized, onChange]);
 
-  // Update ARN with new account ID when it changes (but keep user edits)
+  // Update ARN with new account ID when it changes (but keep user edits). We only swap the
+  // account segment itself so we don't clobber any unrelated `*` in the resource portion.
   useEffect(() => {
     if (!actionDetails || !value || !accountId) {
       return;
     }
 
-    // Only update if the current value still has the placeholder account
-    if (value.includes(PLACEHOLDER_ACCOUNT_ID)) {
-      const updatedArn = value.replace(PLACEHOLDER_ACCOUNT_ID, accountId);
-      onChange(updatedArn);
+    const parts = value.split(':');
+    if (parts.length >= 5 && parts[4] === WILDCARD_ACCOUNT) {
+      onChange(setAccountSegment(value, accountId));
     }
   }, [accountId, actionDetails, value, onChange]);
 

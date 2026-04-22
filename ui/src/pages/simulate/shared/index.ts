@@ -31,7 +31,8 @@ export {
   findPrimaryResource,
   formatArnWithDefaults,
   getDefaultArnForAction,
-  PLACEHOLDER_ACCOUNT_ID,
+  setAccountSegment,
+  WILDCARD_ACCOUNT,
 } from './resource-creation';
 export { ArnEditor } from './arn-editor';
 export type { ArnEditorProps } from './arn-editor';

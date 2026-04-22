@@ -83,8 +83,19 @@ export function findPrimaryResource(action: Action): ActionResource | null {
   return resources[0];
 }
 
-// Default placeholder account ID for when no principal is selected
-export const PLACEHOLDER_ACCOUNT_ID = '000000000000';
+// Default account placeholder when no principal is selected. The server treats `*` in the
+// account segment as "any account" and substitutes the caller's account at sim time, so this
+// is the correct default for which-principals.
+export const WILDCARD_ACCOUNT = '*';
+
+// Replace the account segment (parts[4]) of an ARN with acct. Returns the original string
+// if it doesn't have at least 5 colon-separated segments.
+export function setAccountSegment(arn: string, acct: string): string {
+  const parts = arn.split(':');
+  if (parts.length < 5) return arn;
+  parts[4] = acct;
+  return parts.join(':');
+}
 
 // Format an ARN template with sensible defaults
 // Replaces wildcards (*) in the ARN format with placeholder values
@@ -116,7 +127,7 @@ export function formatArnWithDefaults(
 
   // Replace account (parts[4]) - only if it's a wildcard
   if (parts[4] === '*') {
-    parts[4] = accountId || PLACEHOLDER_ACCOUNT_ID;
+    parts[4] = accountId || WILDCARD_ACCOUNT;
   }
 
   // Replace resource wildcards (parts[5] and beyond)
