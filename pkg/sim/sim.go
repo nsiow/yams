@@ -16,22 +16,57 @@ import (
 	"github.com/nsiow/yams/pkg/entities"
 )
 
-// placeholderAccountId is used for placeholder resources that don't exist yet (Create*/RunInstances)
-const placeholderAccountId = "000000000000"
+// placeholderWildcardAccount marks a placeholder resource whose target account is not
+// pinned. At simulation time the account segment is filled in with the principal's account
+// so each principal tests against a resource in their own account. A pinned account (e.g.
+// arn:aws:iam::88888:role/x) keeps that value and enforces same-account via the normal
+// evalIsSameAccount path.
+const placeholderWildcardAccount = "*"
 
 // isCreateAction returns true for actions that target resources which don't exist yet
 func isCreateAction(a *types.Action) bool {
 	return strings.HasPrefix(a.Name, "Create") || a.Name == "RunInstances"
 }
 
-// newPlaceholderResource builds a minimal FrozenResource for Create*/RunInstances targets that
-// don't exist yet
-func newPlaceholderResource(arn string) *entities.FrozenResource {
-	return &entities.FrozenResource{
-		AccountId:   placeholderAccountId,
-		Arn:         arn,
-		ArnSegments: entities.SplitArn(arn),
+// newPlaceholderResource builds a minimal FrozenResource for Create*/RunInstances targets.
+// If the ARN has an explicit account segment, it's used as-is. Missing or wildcard account
+// segments defer to per-principal substitution via specializeForPrincipal.
+func newPlaceholderResource(resArn string) *entities.FrozenResource {
+	acct := arn.Account(resArn)
+	if acct == "" {
+		acct = placeholderWildcardAccount
 	}
+	return &entities.FrozenResource{
+		AccountId:   acct,
+		Arn:         resArn,
+		ArnSegments: entities.SplitArn(resArn),
+	}
+}
+
+// specializeForPrincipal returns a copy of the resource with wildcard-account placeholders
+// rewritten to use the principal's account. For resources whose account is already pinned,
+// or non-placeholder resources, the input is returned unchanged.
+func specializeForPrincipal(r *entities.FrozenResource, p *entities.FrozenPrincipal) *entities.FrozenResource {
+	if r == nil || p == nil || r.AccountId != placeholderWildcardAccount {
+		return r
+	}
+	newArn := rewriteAccountSegment(r.Arn, p.AccountId)
+	return &entities.FrozenResource{
+		AccountId:   p.AccountId,
+		Arn:         newArn,
+		ArnSegments: entities.SplitArn(newArn),
+	}
+}
+
+// rewriteAccountSegment returns arnStr with the account segment (5th component) replaced by
+// acct. ARNs with fewer than 5 segments are returned unchanged.
+func rewriteAccountSegment(arnStr, acct string) string {
+	parts := strings.SplitN(arnStr, ":", 6)
+	if len(parts) < 5 {
+		return arnStr
+	}
+	parts[4] = acct
+	return strings.Join(parts, ":")
 }
 
 // allActionsAreCreate returns true if every action in the slice is a create-type action
@@ -235,7 +270,7 @@ func (s *Simulator) SimulateByArnWithOptions(
 	if ac.Action.HasTargets() {
 		_, ok := s.Universe.Resource(resourceArn)
 		if !ok && isCreateAction(ac.Action) {
-			ac.Resource = newPlaceholderResource(resourceArn)
+			ac.Resource = specializeForPrincipal(newPlaceholderResource(resourceArn), ac.Principal)
 		} else {
 			fr, err := s.resolveResource(resourceArn, opts)
 			if err != nil {
@@ -604,7 +639,7 @@ func (s *Simulator) submitPartition(
 					AuthContext: AuthContext{
 						Action:     ar.action,
 						Principal:  p,
-						Resource:   r,
+						Resource:   specializeForPrincipal(r, p),
 						Properties: opts.Context,
 					},
 					Options: opts,

@@ -7,13 +7,14 @@ import (
 // evalFunction is the blueprint of a function that allows us to evaluate a single statement
 type evalFunction func(*subject, *policy.Statement) bool
 
-// evalIsSameAccount determines whether or not the provided Principal + Resource exist within the
-// same AWS account. Create*/RunInstances actions always return true because the target resource
-// doesn't exist yet — cross-account restrictions don't apply.
+// evalIsSameAccount determines whether or not the provided Principal + Resource exist within
+// the same AWS account. For Create*/RunInstances placeholders, the resource's AccountId is
+// either pinned from the target ARN (same-account enforced) or already substituted with the
+// principal's account via specializeForPrincipal (will always match), so plain equality is
+// sufficient here.
 func evalIsSameAccount(s *subject) bool {
 	return s.auth.Resource == nil ||
-		s.auth.Principal.AccountId == s.auth.Resource.AccountId ||
-		(s.auth.Action != nil && isCreateAction(s.auth.Action))
+		s.auth.Principal.AccountId == s.auth.Resource.AccountId
 }
 
 // evalOverallAccess calculates both Principal + Resource access and performs both same-account

@@ -628,7 +628,7 @@ func TestRealWorldData(t *testing.T) {
 			Input: in{
 				p: "arn:aws:iam::777583092761:role/CoralRole",
 				a: "sqs:createqueue",
-				r: "arn:aws:sqs:us-east-1:777583092761/YamsQueue",
+				r: "arn:aws:sqs:us-east-1:777583092761:YamsQueue",
 				c: map[string]string{
 					"aws:RequestTag/Emergency": "true",
 				},
@@ -639,7 +639,7 @@ func TestRealWorldData(t *testing.T) {
 			Input: in{
 				p: "arn:aws:iam::777583092761:role/CoralRole",
 				a: "sqs:createqueue",
-				r: "arn:aws:sqs:us-east-1:777583092761/YamsQueue",
+				r: "arn:aws:sqs:us-east-1:777583092761:YamsQueue",
 			},
 			Want: false,
 		},

@@ -3,6 +3,7 @@ package sim
 import (
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
@@ -10,6 +11,66 @@ import (
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/policy"
 )
+
+func TestNewPlaceholderResource(t *testing.T) {
+	tests := []struct {
+		name     string
+		arn      string
+		wantAcct string
+	}{
+		{"explicit_account", "arn:aws:iam::88888:role/MyRole", "88888"},
+		{"wildcard_account", "arn:aws:iam::*:role/MyRole", "*"},
+		{"missing_account_s3", "arn:aws:s3:::mybucket", "*"},
+		{"short_arn", "*", "*"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := newPlaceholderResource(tc.arn)
+			if r.AccountId != tc.wantAcct {
+				t.Fatalf("AccountId: want %q, got %q", tc.wantAcct, r.AccountId)
+			}
+			if r.Arn != tc.arn {
+				t.Fatalf("Arn: want %q, got %q", tc.arn, r.Arn)
+			}
+		})
+	}
+}
+
+func TestSpecializeForPrincipal(t *testing.T) {
+	p := &entities.FrozenPrincipal{AccountId: "88888"}
+
+	// Wildcard account: substituted with principal's account.
+	wild := &entities.FrozenResource{
+		AccountId:   "*",
+		Arn:         "arn:aws:iam::*:role/MyRole",
+		ArnSegments: entities.SplitArn("arn:aws:iam::*:role/MyRole"),
+	}
+	got := specializeForPrincipal(wild, p)
+	if got.AccountId != "88888" {
+		t.Fatalf("wildcard: AccountId want 88888, got %q", got.AccountId)
+	}
+	if got.Arn != "arn:aws:iam::88888:role/MyRole" {
+		t.Fatalf("wildcard: Arn want arn:aws:iam::88888:role/MyRole, got %q", got.Arn)
+	}
+
+	// Explicit account: returned unchanged.
+	explicit := &entities.FrozenResource{
+		AccountId:   "11111",
+		Arn:         "arn:aws:iam::11111:role/MyRole",
+		ArnSegments: entities.SplitArn("arn:aws:iam::11111:role/MyRole"),
+	}
+	if specializeForPrincipal(explicit, p) != explicit {
+		t.Fatal("explicit: expected same pointer returned")
+	}
+
+	// Nil inputs: returned unchanged.
+	if specializeForPrincipal(nil, p) != nil {
+		t.Fatal("nil resource: expected nil")
+	}
+	if specializeForPrincipal(wild, nil) != wild {
+		t.Fatal("nil principal: expected same pointer returned")
+	}
+}
 
 func TestExpandResources(t *testing.T) {
 	sim, err := NewSimulator()
@@ -400,6 +461,59 @@ func TestWhichPrincipals(t *testing.T) {
 			ShouldErr: true,
 		},
 		{
+			// An explicit account in the placeholder ARN scopes the Create to that account;
+			// only principals in 88888 are returned.
+			Name: "create_explicit_account_scopes_to_that_account",
+			Input: input{
+				uv:       CrossAccountCreateTestUniverse,
+				action:   "iam:createrole",
+				resource: "arn:aws:iam::88888:role/NewRole",
+			},
+			Want: []string{
+				"arn:aws:iam::88888:role/creator",
+			},
+		},
+		{
+			// A wildcard in the account segment means "any account" — the placeholder's account is
+			// substituted with each principal's account at sim time, so every permitted principal
+			// passes the same-account check.
+			Name: "create_wildcard_account_returns_all_permitted",
+			Input: input{
+				uv:       CrossAccountCreateTestUniverse,
+				action:   "iam:createrole",
+				resource: "arn:aws:iam::*:role/NewRole",
+			},
+			Want: []string{
+				"arn:aws:iam::11111:role/creator",
+				"arn:aws:iam::88888:role/creator",
+			},
+		},
+		{
+			// S3 bucket ARNs have no account segment; treat same as wildcard.
+			Name: "create_empty_account_s3_bucket_returns_all_permitted",
+			Input: input{
+				uv:       CrossAccountCreateTestUniverse,
+				action:   "s3:createbucket",
+				resource: "arn:aws:s3:::any-bucket",
+			},
+			Want: []string{
+				"arn:aws:iam::11111:role/creator",
+				"arn:aws:iam::88888:role/creator",
+			},
+		},
+		{
+			// RunInstances uses the same Create heuristic; explicit account scopes same-account.
+			Name: "runinstances_explicit_account_scopes_to_that_account",
+			Input: input{
+				uv:       CrossAccountCreateTestUniverse,
+				action:   "ec2:runinstances",
+				resource: "arn:aws:ec2:us-east-1:11111:instance/i-new",
+			},
+			Want: []string{
+				"arn:aws:iam::11111:role/creator",
+			},
+		},
+		{
 			Name: "forced_failure",
 			Input: input{
 				uv:       SimpleTestUniverse_1,
@@ -423,6 +537,8 @@ func TestWhichPrincipals(t *testing.T) {
 			return nil, err
 		}
 
+		// sort for deterministic comparison; goroutine scheduling can shuffle order
+		sort.Strings(results)
 		return results, nil
 	})
 }
@@ -623,6 +739,55 @@ var CreateActionTestUniverse = entities.NewBuilder().
 						{
 							Effect:   policy.EFFECT_ALLOW,
 							Action:   []string{"sqs:createqueue", "sqs:sendmessage"},
+							Resource: []string{"*"},
+						},
+					},
+				},
+			},
+		},
+	).
+	Build()
+
+// CrossAccountCreateTestUniverse has principals in two accounts (88888 and 11111) each with
+// iam:CreateRole + s3:CreateBucket + ec2:RunInstances on *. Used to verify that Create
+// placeholders with an explicit account scope results to that account, while wildcard /
+// account-less ARNs return all permitted principals.
+var CrossAccountCreateTestUniverse = entities.NewBuilder().
+	WithPrincipals(
+		entities.Principal{
+			Arn:       "arn:aws:iam::88888:role/creator",
+			Type:      "AWS::IAM::Role",
+			AccountId: "88888",
+			InlinePolicies: []policy.Policy{
+				{
+					Statement: []policy.Statement{
+						{
+							Effect: policy.EFFECT_ALLOW,
+							Action: []string{
+								"iam:createrole",
+								"s3:createbucket",
+								"ec2:runinstances",
+							},
+							Resource: []string{"*"},
+						},
+					},
+				},
+			},
+		},
+		entities.Principal{
+			Arn:       "arn:aws:iam::11111:role/creator",
+			Type:      "AWS::IAM::Role",
+			AccountId: "11111",
+			InlinePolicies: []policy.Policy{
+				{
+					Statement: []policy.Statement{
+						{
+							Effect: policy.EFFECT_ALLOW,
+							Action: []string{
+								"iam:createrole",
+								"s3:createbucket",
+								"ec2:runinstances",
+							},
 							Resource: []string{"*"},
 						},
 					},
@@ -843,6 +1008,76 @@ func TestSimulateByArn_CreateAction(t *testing.T) {
 
 	if !res.IsAllowed {
 		t.Fatal("expected allow for create action with non-existent resource")
+	}
+}
+
+// TestSimulateByArn_CreateAction_CrossAccount verifies a principal cannot create a resource
+// in a different account even when its identity policy permits the action.
+func TestSimulateByArn_CreateAction_CrossAccount(t *testing.T) {
+	uv := entities.NewBuilder().
+		WithPrincipals(
+			entities.Principal{
+				Arn:       "arn:aws:iam::88888:role/role1",
+				Type:      "AWS::IAM::Role",
+				AccountId: "88888",
+				InlinePolicies: []policy.Policy{
+					{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"iam:createrole"},
+								Resource: []string{"*"},
+							},
+						},
+					},
+				},
+			},
+		).
+		Build()
+
+	sim, _ := NewSimulator()
+	sim.Universe = uv
+
+	// Principal in 88888 attempting to create a role in 11111 — should deny.
+	res, err := sim.SimulateByArnWithOptions(
+		"arn:aws:iam::88888:role/role1",
+		"iam:createrole",
+		"arn:aws:iam::11111:role/NewRole",
+		Options{},
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.IsAllowed {
+		t.Fatal("expected deny for x-account create action")
+	}
+
+	// Same principal, same-account target — should allow.
+	res, err = sim.SimulateByArnWithOptions(
+		"arn:aws:iam::88888:role/role1",
+		"iam:createrole",
+		"arn:aws:iam::88888:role/NewRole",
+		Options{},
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !res.IsAllowed {
+		t.Fatal("expected allow for same-account create action")
+	}
+
+	// Wildcard account — substituted with principal's account, should allow.
+	res, err = sim.SimulateByArnWithOptions(
+		"arn:aws:iam::88888:role/role1",
+		"iam:createrole",
+		"arn:aws:iam::*:role/NewRole",
+		Options{},
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !res.IsAllowed {
+		t.Fatal("expected allow for wildcard-account create action")
 	}
 }
 
