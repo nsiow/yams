@@ -31,6 +31,8 @@ import {
   FilterBar,
   ListSkeleton,
   DetailSkeleton,
+  useHashAnchor,
+  highlightStyle,
 } from '../../components';
 
 import '@mantine/code-highlight/styles.css';
@@ -65,9 +67,10 @@ export function PrincipalsPage(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [principalArns, setPrincipalArns] = useState<string[]>([]);
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
-  const [selectedArn, setSelectedArn] = useState<string | null>(arnFromUrl || null);
+  const [selectedArn, setSelectedArn] = useState<string | null>(null);
   const [selectedPrincipal, setSelectedPrincipal] = useState<Principal | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const hashAnchor = useHashAnchor(!!selectedPrincipal);
 
   // Initialize filters from URL params
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -158,17 +161,22 @@ export function PrincipalsPage(): JSX.Element {
   }, []);
 
   const handleSelectPrincipal = (arn: string): void => {
-    setSelectedArn(arn);
-    fetchPrincipalDetail(arn);
     navigate(`/search/principals/${arn}?${searchParams.toString()}`, { replace: true });
   };
 
+  // Drive detail load off the URL; the click handler only navigates. This
+  // also makes direct URL loads (refresh, bookmark) fetch on mount — the
+  // prior selectedArn-guarded effect never fired when the initial state
+  // already matched the URL param.
   useEffect(() => {
-    if (arnFromUrl && arnFromUrl !== selectedArn) {
+    if (arnFromUrl) {
       setSelectedArn(arnFromUrl);
       fetchPrincipalDetail(arnFromUrl);
+    } else {
+      setSelectedArn(null);
+      setSelectedPrincipal(null);
     }
-  }, [arnFromUrl, fetchPrincipalDetail, selectedArn]);
+  }, [arnFromUrl, fetchPrincipalDetail]);
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 20;
@@ -405,14 +413,19 @@ export function PrincipalsPage(): JSX.Element {
                   )}
 
                   {selectedPrincipal.PermissionsBoundary && (
-                    <CollapsibleCard title="Permission Boundary">
-                      <Group gap="xs">
-                        <Anchor component={Link} to={`/search/policies/${selectedPrincipal.PermissionsBoundary}`} size="sm" ff="monospace" style={{ flex: 1 }}>
-                          {selectedPrincipal.PermissionsBoundary}
-                        </Anchor>
-                        <CopyButton value={selectedPrincipal.PermissionsBoundary} />
-                      </Group>
-                    </CollapsibleCard>
+                    <Box
+                      id="permission-boundary"
+                      style={highlightStyle(hashAnchor === 'permission-boundary')}
+                    >
+                      <CollapsibleCard title="Permission Boundary">
+                        <Group gap="xs">
+                          <Anchor component={Link} to={`/search/policies/${selectedPrincipal.PermissionsBoundary}`} size="sm" ff="monospace" style={{ flex: 1 }}>
+                            {selectedPrincipal.PermissionsBoundary}
+                          </Anchor>
+                          <CopyButton value={selectedPrincipal.PermissionsBoundary} />
+                        </Group>
+                      </CollapsibleCard>
+                    </Box>
                   )}
 
                   {selectedPrincipal.InlinePolicies && selectedPrincipal.InlinePolicies.length > 0 && (
@@ -421,8 +434,14 @@ export function PrincipalsPage(): JSX.Element {
                         {selectedPrincipal.InlinePolicies.map((policy, index) => {
                           const { _Name, ...policyWithoutName } = policy;
                           const displayName = _Name || policy.Id || `Policy ${index + 1}`;
+                          const anchorId = `inline-policy-${displayName}`;
                           return (
-                            <Box key={index}>
+                            <Box
+                              key={index}
+                              id={anchorId}
+                              p="xs"
+                              style={highlightStyle(hashAnchor === anchorId)}
+                            >
                               <Text size="sm" fw={600} mb="xs">{displayName}</Text>
                               <CodeHighlight code={JSON.stringify(policyWithoutName, null, 2)} language="json" withCopyButton />
                             </Box>

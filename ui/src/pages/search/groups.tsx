@@ -30,6 +30,8 @@ import {
   FilterBar,
   ListSkeleton,
   DetailSkeleton,
+  useHashAnchor,
+  highlightStyle,
 } from '../../components';
 
 import '@mantine/code-highlight/styles.css';
@@ -61,9 +63,10 @@ export function GroupsPage(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [groupArns, setGroupArns] = useState<string[]>([]);
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
-  const [selectedArn, setSelectedArn] = useState<string | null>(arnFromUrl || null);
+  const [selectedArn, setSelectedArn] = useState<string | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<GroupEntity | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const hashAnchor = useHashAnchor(!!selectedGroup);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -149,17 +152,19 @@ export function GroupsPage(): JSX.Element {
   }, []);
 
   const handleSelectGroup = (arn: string): void => {
-    setSelectedArn(arn);
-    fetchGroupDetail(arn);
     navigate(`/search/groups/${arn}?${searchParams.toString()}`, { replace: true });
   };
 
+  // Drive detail load off the URL; click handler only navigates.
   useEffect(() => {
-    if (arnFromUrl && arnFromUrl !== selectedArn) {
+    if (arnFromUrl) {
       setSelectedArn(arnFromUrl);
       fetchGroupDetail(arnFromUrl);
+    } else {
+      setSelectedArn(null);
+      setSelectedGroup(null);
     }
-  }, [arnFromUrl, fetchGroupDetail, selectedArn]);
+  }, [arnFromUrl, fetchGroupDetail]);
 
   const [page, setPage] = useState(1);
   const itemsPerPage = 20;
@@ -349,8 +354,14 @@ export function GroupsPage(): JSX.Element {
                         {selectedGroup.InlinePolicies.map((policy, index) => {
                           const { _Name, ...policyWithoutName } = policy;
                           const displayName = _Name || policy.Id || `Policy ${index + 1}`;
+                          const anchorId = `inline-policy-${displayName}`;
                           return (
-                            <Box key={index}>
+                            <Box
+                              key={index}
+                              id={anchorId}
+                              p="xs"
+                              style={highlightStyle(hashAnchor === anchorId)}
+                            >
                               <Text size="sm" fw={600} mb="xs">{displayName}</Text>
                               <CodeHighlight code={JSON.stringify(policyWithoutName, null, 2)} language="json" withCopyButton />
                             </Box>

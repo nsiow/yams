@@ -543,7 +543,13 @@ export function OverlayEditorPage(): JSX.Element {
   const [hasChanges, setHasChanges] = useState(false);
   const [existingOverlays, setExistingOverlays] = useState<OverlaySummary[]>([]);
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
-  const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
+  // When deep-linked to /overlays/:id/edit, treat the URL id as the selected
+  // existing overlay so the Select Existing Overlay pane shows it and Save
+  // Overlay operates on it. Staying null here would leave the selector empty
+  // even though we've loaded the overlay into state.
+  const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(
+    isNew ? null : (id ?? null)
+  );
   const [confirmedNewName, setConfirmedNewName] = useState<string>('');
 
   // Selected entity state

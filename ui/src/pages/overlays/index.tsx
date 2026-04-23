@@ -101,7 +101,9 @@ export function OverlaysPage(): JSX.Element {
   // Delete confirmation modal
   const [deleteModalOpened, { open: openDeleteModal, close: closeDeleteModal }] = useDisclosure(false);
   const [deleting, setDeleting] = useState(false);
-  const [overlayToDelete, setOverlayToDelete] = useState<OverlaySummary | null>(null);
+  // Only id + name are needed for the delete modal; keep the type narrow so
+  // both OverlaySummary (list rows) and OverlayData (detail pane) fit.
+  const [overlayToDelete, setOverlayToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Search
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -384,7 +386,10 @@ export function OverlaysPage(): JSX.Element {
                         variant="light"
                         color="red"
                         size="lg"
-                        onClick={openDeleteModal}
+                        onClick={() => {
+                          setOverlayToDelete(selectedOverlay);
+                          openDeleteModal();
+                        }}
                         title="Delete overlay"
                       >
                         <IconTrash size={18} />

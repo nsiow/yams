@@ -5,3 +5,4 @@ export { EmptyState } from './empty-state';
 export { ExportButton } from './export-button';
 export { FilterBar } from './filter-bar';
 export { ListSkeleton, DetailSkeleton } from './list-skeleton';
+export { useHashAnchor, highlightStyle } from './use-hash-anchor';

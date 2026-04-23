@@ -362,12 +362,15 @@ describe('YamsClient', () => {
       );
     });
 
-    it('encodes ARNs properly', async () => {
+    it('encodes ARNs per-segment, preserving slashes', async () => {
       mockJsonResponse({ Arn: 'arn:aws:iam::123:role/path/to/role' });
 
       await client.getPrincipal('arn:aws:iam::123:role/path/to/role');
+      // Slashes must stay unencoded so front proxies (e.g. Apache with the
+      // default AllowEncodedSlashes Off) don't 404 before the backend sees
+      // the request. Colons are still encoded.
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining(encodeURIComponent('arn:aws:iam::123:role/path/to/role')),
+        'http://localhost:8888/api/v1/principals/arn%3Aaws%3Aiam%3A%3A123%3Arole/path/to/role',
         expect.any(Object)
       );
     });

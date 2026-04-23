@@ -31,6 +31,8 @@ import {
   FilterBar,
   ListSkeleton,
   DetailSkeleton,
+  useHashAnchor,
+  highlightStyle,
 } from '../../components';
 
 import '@mantine/code-highlight/styles.css';
@@ -101,9 +103,10 @@ export function ResourcesPage(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [resourceArns, setResourceArns] = useState<string[]>([]);
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
-  const [selectedArn, setSelectedArn] = useState<string | null>(arnFromUrl || null);
+  const [selectedArn, setSelectedArn] = useState<string | null>(null);
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const hashAnchor = useHashAnchor(!!selectedResource);
 
   // Initialize filters from URL params
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -217,18 +220,20 @@ export function ResourcesPage(): JSX.Element {
   }, []);
 
   const handleSelectResource = (arn: string): void => {
-    setSelectedArn(arn);
-    fetchResourceDetail(arn);
     navigate(`/search/resources/${arn}?${searchParams.toString()}`, { replace: true });
   };
 
-  // Load resource from URL on mount or when URL changes
+  // Drive detail load off the URL; click handler only navigates. Fires on
+  // direct URL loads too (refresh, bookmark).
   useEffect(() => {
-    if (arnFromUrl && arnFromUrl !== selectedArn) {
+    if (arnFromUrl) {
       setSelectedArn(arnFromUrl);
       fetchResourceDetail(arnFromUrl);
+    } else {
+      setSelectedArn(null);
+      setSelectedResource(null);
     }
-  }, [arnFromUrl, fetchResourceDetail, selectedArn]);
+  }, [arnFromUrl, fetchResourceDetail]);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -451,13 +456,18 @@ export function ResourcesPage(): JSX.Element {
                   )}
 
                   {selectedResource.Policy && selectedResource.Policy.Statement && selectedResource.Policy.Statement.length > 0 && (
-                    <CollapsibleCard title="Resource Policy">
-                      <CodeHighlight
-                        code={JSON.stringify(selectedResource.Policy, null, 2)}
-                        language="json"
-                        withCopyButton
-                      />
-                    </CollapsibleCard>
+                    <Box
+                      id="resource-policy"
+                      style={highlightStyle(hashAnchor === 'resource-policy')}
+                    >
+                      <CollapsibleCard title="Resource Policy">
+                        <CodeHighlight
+                          code={JSON.stringify(selectedResource.Policy, null, 2)}
+                          language="json"
+                          withCopyButton
+                        />
+                      </CollapsibleCard>
+                    </Box>
                   )}
                 </Stack>
               </ScrollArea>

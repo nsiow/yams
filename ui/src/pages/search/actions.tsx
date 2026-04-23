@@ -58,7 +58,7 @@ export function ActionsPage(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionKeys, setActionKeys] = useState<string[]>([]);
-  const [selectedKey, setSelectedKey] = useState<string | null>(keyFromUrl || null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<Action | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -154,18 +154,19 @@ export function ActionsPage(): JSX.Element {
   }, []);
 
   const handleSelectAction = (key: string): void => {
-    setSelectedKey(key);
-    fetchActionDetail(key);
     navigate(`/search/actions/${key}?${searchParams.toString()}`, { replace: true });
   };
 
-  // Load action from URL on mount or when URL changes
+  // Drive detail load off the URL; click handler only navigates.
   useEffect(() => {
-    if (keyFromUrl && keyFromUrl !== selectedKey) {
+    if (keyFromUrl) {
       setSelectedKey(keyFromUrl);
       fetchActionDetail(keyFromUrl);
+    } else {
+      setSelectedKey(null);
+      setSelectedAction(null);
     }
-  }, [keyFromUrl, fetchActionDetail, selectedKey]);
+  }, [keyFromUrl, fetchActionDetail]);
 
   // Pagination
   const [page, setPage] = useState(1);

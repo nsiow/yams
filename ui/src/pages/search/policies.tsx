@@ -103,7 +103,7 @@ export function PoliciesPage(): JSX.Element {
   const [policyArns, setPolicyArns] = useState<string[]>([]);
   const [policyNameMap, setPolicyNameMap] = useState<Record<string, string>>({});
   const [accountNames, setAccountNames] = useState<Record<string, string>>({});
-  const [selectedArn, setSelectedArn] = useState<string | null>(arnFromUrl || null);
+  const [selectedArn, setSelectedArn] = useState<string | null>(null);
   const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -218,18 +218,19 @@ export function PoliciesPage(): JSX.Element {
   }, []);
 
   const handleSelectPolicy = (arn: string): void => {
-    setSelectedArn(arn);
-    fetchPolicyDetail(arn);
     navigate(`/search/policies/${arn}?${searchParams.toString()}`, { replace: true });
   };
 
-  // Load policy from URL on mount or when URL changes
+  // Drive detail load off the URL; click handler only navigates.
   useEffect(() => {
-    if (arnFromUrl && arnFromUrl !== selectedArn) {
+    if (arnFromUrl) {
       setSelectedArn(arnFromUrl);
       fetchPolicyDetail(arnFromUrl);
+    } else {
+      setSelectedArn(null);
+      setSelectedPolicy(null);
     }
-  }, [arnFromUrl, fetchPolicyDetail, selectedArn]);
+  }, [arnFromUrl, fetchPolicyDetail]);
 
   // Pagination
   const [page, setPage] = useState(1);

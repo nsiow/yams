@@ -44,7 +44,7 @@ export function AccountsPage(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<AccountListItem[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(idFromUrl || null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -109,18 +109,19 @@ export function AccountsPage(): JSX.Element {
   }, []);
 
   const handleSelectAccount = (id: string): void => {
-    setSelectedId(id);
-    fetchAccountDetail(id);
     navigate(`/search/accounts/${id}?${searchParams.toString()}`, { replace: true });
   };
 
-  // Load account from URL on mount or when URL changes
+  // Drive detail load off the URL; click handler only navigates.
   useEffect(() => {
-    if (idFromUrl && idFromUrl !== selectedId) {
+    if (idFromUrl) {
       setSelectedId(idFromUrl);
       fetchAccountDetail(idFromUrl);
+    } else {
+      setSelectedId(null);
+      setSelectedAccount(null);
     }
-  }, [idFromUrl, fetchAccountDetail, selectedId]);
+  }, [idFromUrl, fetchAccountDetail]);
 
   // Pagination
   const [page, setPage] = useState(1);

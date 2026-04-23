@@ -57,22 +57,37 @@ function extractService(arn: string): string | null {
 interface TraceNode {
   text: string;
   depth: number;
+  groupArn: string | null;
   children: TraceNode[];
   isExpanded?: boolean;
 }
 
-// Parse trace lines into a tree structure based on indentation
+// Parse trace lines into a tree structure based on indentation. Also tracks
+// which group (if any) each line is nested under — used by the link builder
+// to point "inline group policy: NAME" references at the right group.
 function parseTraceToTree(trace: string[]): TraceNode[] {
   const root: TraceNode[] = [];
   const stack: { node: TraceNode; depth: number }[] = [];
+  const groupStack: { depth: number; arn: string }[] = [];
 
   for (const line of trace) {
     const trimmed = line.trimStart();
     const depth = line.length - trimmed.length;
 
+    // Pop any group frames whose depth has been exited.
+    while (groupStack.length > 0 && groupStack[groupStack.length - 1].depth >= depth) {
+      groupStack.pop();
+    }
+
+    const groupBegin = /^begin: evaluating (?:inline|attached) policies for group: (\S+)/.exec(trimmed);
+    if (groupBegin) {
+      groupStack.push({ depth, arn: groupBegin[1] });
+    }
+
     const node: TraceNode = {
       text: trimmed,
       depth,
+      groupArn: groupStack.length > 0 ? groupStack[groupStack.length - 1].arn : null,
       children: [],
       isExpanded: depth < 4,
     };
@@ -94,7 +109,7 @@ function parseTraceToTree(trace: string[]): TraceNode[] {
 }
 
 // Highlight keywords in explanation text
-function highlightExplanation(text: string): JSX.Element {
+function highlightExplanation(text: string, ctx: LinkCtx): JSX.Element {
   // Decision badges - these get rendered as Badge components
   const decisions = [
     { pattern: /\[implicit deny\]/gi, color: 'red', label: 'IMPLICIT DENY' },
@@ -140,7 +155,7 @@ function highlightExplanation(text: string): JSX.Element {
   }
 
   if (filtered.length === 0) {
-    return <Text size="sm">{text}</Text>;
+    return <Text size="sm">{linkifyTraceText(text, ctx)}</Text>;
   }
 
   const parts: JSX.Element[] = [];
@@ -149,7 +164,11 @@ function highlightExplanation(text: string): JSX.Element {
   for (let i = 0; i < filtered.length; i++) {
     const h = filtered[i];
     if (h.start > lastEnd) {
-      parts.push(<span key={`text-${i}`}>{text.slice(lastEnd, h.start)}</span>);
+      parts.push(
+        <span key={`text-${i}`}>
+          {linkifyTraceText(text.slice(lastEnd, h.start), ctx)}
+        </span>
+      );
     }
     if (h.badge) {
       parts.push(
@@ -168,58 +187,187 @@ function highlightExplanation(text: string): JSX.Element {
   }
 
   if (lastEnd < text.length) {
-    parts.push(<span key="text-end">{text.slice(lastEnd)}</span>);
+    parts.push(
+      <span key="text-end">
+        {linkifyTraceText(text.slice(lastEnd), ctx)}
+      </span>
+    );
   }
 
   return <Text size="sm">{parts}</Text>;
 }
 
-// Linkify policy ARNs in trace text
-function linkifyPolicyArns(text: string): JSX.Element {
-  // Match policy ARNs: arn:aws:iam::account:policy/name or arn:aws:organizations::account:policy/type/id
-  const arnPattern = /arn:aws:(iam|organizations)::[^:\s]+:policy\/[^\s,)]+/g;
-  const matches: { start: number; end: number; arn: string }[] = [];
+// Context used to resolve policy references in the trace/explain into links.
+interface LinkCtx {
+  principalArn?: string;
+  resourceArn?: string;
+  groupArn?: string | null;
+}
 
-  let match;
-  while ((match = arnPattern.exec(text)) !== null) {
-    matches.push({ start: match.index, end: match.index + match[0].length, arn: match[0] });
+interface LinkMatch {
+  start: number;
+  end: number;
+  label: string;
+  to: string | null;
+  priority: number;
+}
+
+// Linkify policy references in a trace or explain line. Handles managed-policy
+// ARNs, inline principal/group policies (by name + anchor), SCP/RCP (by name
+// via the policy search), and standalone "resource policy" references.
+function linkifyTraceText(text: string, ctx: LinkCtx): JSX.Element {
+  const matches: LinkMatch[] = [];
+
+  const pushAll = (re: RegExp, priority: number, make: (m: RegExpExecArray) => { label: string; to: string | null }): void => {
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const { label, to } = make(m);
+      // Default the link coverage to the full match; the `label` sub-range is
+      // what becomes the anchor text. Anchor over the full match start:end so
+      // the whole phrase is clickable when applicable.
+      matches.push({ start: m.index, end: m.index + m[0].length, label, to, priority });
+    }
+  };
+
+  // 1. Managed policy ARNs (IAM / Organizations). Highest priority.
+  pushAll(
+    /arn:aws:(iam|organizations)::[^:\s]+:policy\/[^\s,)]+/g,
+    1,
+    (m) => ({ label: m[0], to: `/search/policies/${m[0]}` }),
+  );
+
+  // 2. Group ARN as the target of "for group: ARN".
+  pushAll(
+    /for group: (arn:aws:iam::[^:\s]+:group\/[^\s,)]+)/g,
+    2,
+    (m) => ({ label: m[1], to: `/search/groups/${m[1]}` }),
+  );
+
+  // 3. Inline principal policy name → principal detail + anchor.
+  if (ctx.principalArn) {
+    const principal = ctx.principalArn;
+    pushAll(
+      /\binline principal polic(?:y|ies): ([A-Za-z0-9_\-+=.,@/]+)/g,
+      3,
+      (m) => ({
+        label: m[1],
+        to: `/search/principals/${principal}#inline-policy-${m[1]}`,
+      }),
+    );
+  }
+
+  // 4. Inline group policy name → group detail + anchor (group from context).
+  if (ctx.groupArn) {
+    const group = ctx.groupArn;
+    pushAll(
+      /\binline group polic(?:y|ies): ([A-Za-z0-9_\-+=.,@/]+)/g,
+      3,
+      (m) => ({
+        label: m[1],
+        to: `/search/groups/${group}#inline-policy-${m[1]}`,
+      }),
+    );
+  }
+
+  // 5. SCP / RCP by name → policy search.
+  pushAll(
+    /\b(?:service control|resource control) polic(?:y|ies): ([A-Za-z0-9_\-+=.,@/]+)/g,
+    4,
+    (m) => ({
+      label: m[1],
+      to: `/search/policies?q=${encodeURIComponent(m[1])}`,
+    }),
+  );
+
+  // 6. Permission boundary (bare) → principal detail + anchor.
+  if (ctx.principalArn) {
+    const principal = ctx.principalArn;
+    pushAll(
+      /\bpermission boundary\b(?! polic)/g,
+      5,
+      () => ({
+        label: 'permission boundary',
+        to: `/search/principals/${principal}#permission-boundary`,
+      }),
+    );
+  }
+
+  // 7. Bare "resource policy" / "resource policies" → resource detail + anchor.
+  if (ctx.resourceArn) {
+    const resource = ctx.resourceArn;
+    pushAll(
+      /\bresource polic(?:y|ies)\b/g,
+      6,
+      (m) => ({
+        label: m[0],
+        to: `/search/resources/${resource}#resource-policy`,
+      }),
+    );
   }
 
   if (matches.length === 0) {
     return <>{text}</>;
   }
 
+  // Sort by start; break ties with priority (lower wins). Drop overlaps.
+  matches.sort((a, b) => (a.start - b.start) || (a.priority - b.priority));
+  const kept: LinkMatch[] = [];
+  for (const m of matches) {
+    if (kept.length === 0 || m.start >= kept[kept.length - 1].end) {
+      kept.push(m);
+    }
+  }
+
   const parts: JSX.Element[] = [];
   let lastEnd = 0;
-
-  for (let i = 0; i < matches.length; i++) {
-    const m = matches[i];
+  kept.forEach((m, i) => {
     if (m.start > lastEnd) {
-      parts.push(<span key={`text-${i}`}>{text.slice(lastEnd, m.start)}</span>);
+      parts.push(<span key={`t-${i}`}>{text.slice(lastEnd, m.start)}</span>);
     }
-    parts.push(
-      <Anchor
-        key={`arn-${i}`}
-        component={Link}
-        to={`/search/policies?q=${encodeURIComponent(m.arn)}`}
-        size="xs"
-        ff="monospace"
-      >
-        {m.arn}
-      </Anchor>
-    );
+    // Render the whole matched phrase as a link with the match text. For
+    // group-ARN matches we include the "for group: " prefix as plain text so
+    // only the ARN itself is clickable.
+    const matchText = text.slice(m.start, m.end);
+    const labelIdx = matchText.indexOf(m.label);
+    if (m.to && labelIdx >= 0 && labelIdx + m.label.length <= matchText.length) {
+      if (labelIdx > 0) {
+        parts.push(<span key={`pre-${i}`}>{matchText.slice(0, labelIdx)}</span>);
+      }
+      parts.push(
+        <Anchor
+          key={`lnk-${i}`}
+          component={Link}
+          to={m.to}
+          size="xs"
+          ff="monospace"
+        >
+          {m.label}
+        </Anchor>
+      );
+      if (labelIdx + m.label.length < matchText.length) {
+        parts.push(<span key={`post-${i}`}>{matchText.slice(labelIdx + m.label.length)}</span>);
+      }
+    } else {
+      parts.push(<span key={`t-${i}-fb`}>{matchText}</span>);
+    }
     lastEnd = m.end;
-  }
-
+  });
   if (lastEnd < text.length) {
-    parts.push(<span key="text-end">{text.slice(lastEnd)}</span>);
+    parts.push(<span key="t-end">{text.slice(lastEnd)}</span>);
   }
-
   return <>{parts}</>;
 }
 
 // Recursive trace tree node component
-function TraceTreeNode({ node, level = 0 }: { node: TraceNode; level?: number }): JSX.Element {
+function TraceTreeNode({
+  node,
+  ctx,
+  level = 0,
+}: {
+  node: TraceNode;
+  ctx: LinkCtx;
+  level?: number;
+}): JSX.Element {
   const [expanded, setExpanded] = useState(node.isExpanded ?? true);
   const hasChildren = node.children.length > 0;
 
@@ -233,6 +381,8 @@ function TraceTreeNode({ node, level = 0 }: { node: TraceNode; level?: number })
   if (isDeny) textColor = 'red';
   else if (isAllow) textColor = 'green';
   else if (isMatch) textColor = 'teal';
+
+  const nodeCtx: LinkCtx = { ...ctx, groupArn: node.groupArn };
 
   return (
     <Box>
@@ -255,14 +405,14 @@ function TraceTreeNode({ node, level = 0 }: { node: TraceNode; level?: number })
           fw={isBegin || isEnd ? 500 : undefined}
           style={{ opacity: isEnd ? 0.6 : 1 }}
         >
-          {linkifyPolicyArns(node.text)}
+          {linkifyTraceText(node.text, nodeCtx)}
         </Text>
       </Group>
       {hasChildren && (
         <Collapse in={expanded}>
           <Box pl="md" style={{ borderLeft: '1px solid var(--mantine-color-gray-3)' }}>
             {node.children.map((child, idx) => (
-              <TraceTreeNode key={idx} node={child} level={level + 1} />
+              <TraceTreeNode key={idx} node={child} ctx={ctx} level={level + 1} />
             ))}
           </Box>
         </Collapse>
@@ -1323,7 +1473,12 @@ export function AccessCheckPage(): JSX.Element {
                 <Title order={4} mb="md">Explanation</Title>
                 <Stack gap="xs">
                   {result.explain.map((line, idx) => (
-                    <Box key={idx}>{highlightExplanation(line)}</Box>
+                    <Box key={idx}>
+                      {highlightExplanation(line, {
+                        principalArn: result.principal,
+                        resourceArn: result.resource,
+                      })}
+                    </Box>
                   ))}
                 </Stack>
               </Card>
@@ -1339,7 +1494,14 @@ export function AccessCheckPage(): JSX.Element {
                   style={{ borderRadius: 'var(--mantine-radius-sm)', overflow: 'auto', maxHeight: '500px' }}
                 >
                   {traceTree.map((node, idx) => (
-                    <TraceTreeNode key={idx} node={node} />
+                    <TraceTreeNode
+                      key={idx}
+                      node={node}
+                      ctx={{
+                        principalArn: result.principal,
+                        resourceArn: result.resource,
+                      }}
+                    />
                   ))}
                 </Box>
               </Card>

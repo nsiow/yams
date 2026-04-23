@@ -45,6 +45,15 @@ function getDefaultBaseUrl(): string {
   return '';
 }
 
+// Encode a value for embedding in a URL path segment, preserving "/" so
+// it reaches the backend as a real path separator. Front proxies (Apache
+// with the default AllowEncodedSlashes Off) 404 on %2F before the request
+// reaches the Go server; Go's http.ServeMux {...} wildcard accepts either
+// form, so preserving "/" is safe.
+function encodePath(value: string): string {
+  return value.split('/').map(encodeURIComponent).join('/');
+}
+
 const DEFAULT_CONFIG: YamsClientConfig = {
   baseUrl: getDefaultBaseUrl(),
 };
@@ -109,11 +118,11 @@ export class YamsClient {
   }
 
   async getAction(key: string): Promise<Action> {
-    return this.fetch<Action>(`/actions/${encodeURIComponent(key)}`);
+    return this.fetch<Action>(`/actions/${encodePath(key)}`);
   }
 
   async searchActions(query: string): Promise<string[]> {
-    return this.fetch<string[]>(`/actions/search/${encodeURIComponent(query)}`);
+    return this.fetch<string[]>(`/actions/search/${encodePath(query)}`);
   }
 
   // Principals
@@ -123,12 +132,12 @@ export class YamsClient {
   }
 
   async getPrincipal(arn: string): Promise<Principal> {
-    return this.fetch<Principal>(`/principals/${encodeURIComponent(arn)}`);
+    return this.fetch<Principal>(`/principals/${encodePath(arn)}`);
   }
 
   async searchPrincipals(query: string): Promise<string[]> {
     return this.fetch<string[]>(
-      `/principals/search/${encodeURIComponent(query)}`
+      `/principals/search/${encodePath(query)}`
     );
   }
 
@@ -139,11 +148,11 @@ export class YamsClient {
   }
 
   async getResource(arn: string): Promise<Resource> {
-    return this.fetch<Resource>(`/resources/${encodeURIComponent(arn)}`);
+    return this.fetch<Resource>(`/resources/${encodePath(arn)}`);
   }
 
   async searchResources(query: string, action?: string): Promise<string[]> {
-    let url = `/resources/search/${encodeURIComponent(query)}`;
+    let url = `/resources/search/${encodePath(query)}`;
     if (action) {
       url += `?action=${encodeURIComponent(action)}`;
     }
@@ -157,12 +166,12 @@ export class YamsClient {
   }
 
   async getPolicy(arn: string): Promise<Policy> {
-    return this.fetch<Policy>(`/policies/${encodeURIComponent(arn)}`);
+    return this.fetch<Policy>(`/policies/${encodePath(arn)}`);
   }
 
   async searchPolicies(query: string): Promise<string[]> {
     return this.fetch<string[]>(
-      `/policies/search/${encodeURIComponent(query)}`
+      `/policies/search/${encodePath(query)}`
     );
   }
 
@@ -173,12 +182,12 @@ export class YamsClient {
   }
 
   async getAccount(id: string): Promise<Account> {
-    return this.fetch<Account>(`/accounts/${encodeURIComponent(id)}`);
+    return this.fetch<Account>(`/accounts/${encodePath(id)}`);
   }
 
   async searchAccounts(query: string): Promise<string[]> {
     return this.fetch<string[]>(
-      `/accounts/search/${encodeURIComponent(query)}`
+      `/accounts/search/${encodePath(query)}`
     );
   }
 
@@ -189,12 +198,12 @@ export class YamsClient {
   }
 
   async getGroup(arn: string): Promise<Group> {
-    return this.fetch<Group>(`/groups/${encodeURIComponent(arn)}`);
+    return this.fetch<Group>(`/groups/${encodePath(arn)}`);
   }
 
   async searchGroups(query: string): Promise<string[]> {
     return this.fetch<string[]>(
-      `/groups/search/${encodeURIComponent(query)}`
+      `/groups/search/${encodePath(query)}`
     );
   }
 
@@ -269,7 +278,7 @@ export class YamsClient {
   }
 
   async getOverlay(id: string): Promise<OverlayData> {
-    return this.fetch<OverlayData>(`/overlays/${encodeURIComponent(id)}`);
+    return this.fetch<OverlayData>(`/overlays/${encodePath(id)}`);
   }
 
   async createOverlay(request: CreateOverlayRequest): Promise<OverlayData> {
@@ -283,14 +292,14 @@ export class YamsClient {
     id: string,
     request: UpdateOverlayRequest
   ): Promise<OverlayData> {
-    return this.fetch<OverlayData>(`/overlays/${encodeURIComponent(id)}`, {
+    return this.fetch<OverlayData>(`/overlays/${encodePath(id)}`, {
       method: 'PUT',
       body: JSON.stringify(request),
     });
   }
 
   async deleteOverlay(id: string): Promise<void> {
-    await this.fetch<void>(`/overlays/${encodeURIComponent(id)}`, {
+    await this.fetch<void>(`/overlays/${encodePath(id)}`, {
       method: 'DELETE',
     });
   }

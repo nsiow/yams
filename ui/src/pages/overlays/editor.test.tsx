@@ -145,9 +145,10 @@ describe('OverlayEditorPage', () => {
         expect(yamsApi.getOverlay).toHaveBeenCalledWith('overlay-1');
       });
 
-      // Should show the overlay name in breadcrumbs
+      // Should show the overlay name in breadcrumbs AND in the Select
+      // Existing Overlay pill (deep-link edit pre-selects the URL overlay).
       await waitFor(() => {
-        expect(screen.getByText('Test Overlay')).toBeInTheDocument();
+        expect(screen.getAllByText('Test Overlay').length).toBeGreaterThan(0);
       });
     });
 
