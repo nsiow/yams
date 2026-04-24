@@ -59,13 +59,13 @@ func TestMod_ForAllValues_EmptyMultiKey(t *testing.T) {
 	}
 }
 
-func TestMod_ForAnyValues_EmptyMultiKey(t *testing.T) {
-	// Test ForAnyValues when MultiKey returns empty but ConditionKey has value
+func TestMod_ForAnyValue_EmptyMultiKey(t *testing.T) {
+	// Test ForAnyValue when MultiKey returns empty but ConditionKey has value
 	baseFunc := func(s *subject, left string, right policy.Value) bool {
 		return left == "expected"
 	}
 
-	modFunc := Mod_ForAnyValues(baseFunc)
+	modFunc := Mod_ForAnyValue(baseFunc)
 
 	// Create an auth context with single value but no multi-value
 	ac := AuthContext{
@@ -76,7 +76,7 @@ func TestMod_ForAnyValues_EmptyMultiKey(t *testing.T) {
 
 	result := modFunc(subj, "testkey", policy.Value{"expected"})
 	if !result {
-		t.Fatal("Mod_ForAnyValues should use single value when multi-key is empty")
+		t.Fatal("Mod_ForAnyValue should use single value when multi-key is empty")
 	}
 }
 
@@ -111,7 +111,7 @@ func TestMod_ForAllValues_AllMatch(t *testing.T) {
 	}
 }
 
-func TestMod_ForAnyValues_AnyMatch(t *testing.T) {
+func TestMod_ForAnyValue_AnyMatch(t *testing.T) {
 	baseFunc := func(s *subject, left string, right policy.Value) bool {
 		for _, v := range right {
 			if left == v {
@@ -121,7 +121,7 @@ func TestMod_ForAnyValues_AnyMatch(t *testing.T) {
 		return false
 	}
 
-	modFunc := Mod_ForAnyValues(baseFunc)
+	modFunc := Mod_ForAnyValue(baseFunc)
 
 	ac := AuthContext{
 		MultiValueProperties: NewBagFromMap(map[string][]string{"testkey": {"a", "b"}}),
@@ -132,12 +132,12 @@ func TestMod_ForAnyValues_AnyMatch(t *testing.T) {
 	// Any value matches
 	result := modFunc(subj, "testkey", policy.Value{"a", "z"})
 	if !result {
-		t.Fatal("Mod_ForAnyValues should return true when any value matches")
+		t.Fatal("Mod_ForAnyValue should return true when any value matches")
 	}
 
 	// No values match
 	result = modFunc(subj, "testkey", policy.Value{"x", "y", "z"})
 	if result {
-		t.Fatal("Mod_ForAnyValues should return false when no values match")
+		t.Fatal("Mod_ForAnyValue should return false when no values match")
 	}
 }

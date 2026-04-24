@@ -2193,7 +2193,7 @@ func TestForAllValues(t *testing.T) {
 	})
 }
 
-func TestForAnyValues(t *testing.T) {
+func TestForAnyValue(t *testing.T) {
 	tests := []testlib.TestCase[input, bool]{
 		{
 			Name: "simple_equals",
@@ -2207,7 +2207,7 @@ func TestForAnyValues(t *testing.T) {
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
-						"ForAnyValues:StringEquals": {
+						"ForAnyValue:StringEquals": {
 							"aws:TagKeys": []string{"foo", "bar", "baz"},
 						},
 					},
@@ -2227,7 +2227,7 @@ func TestForAnyValues(t *testing.T) {
 				},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
-						"ForAnyValues:StringEquals": {
+						"ForAnyValue:StringEquals": {
 							"aws:TagKeys": []string{"foo", "bar", "baz"},
 						},
 					},
@@ -2241,7 +2241,7 @@ func TestForAnyValues(t *testing.T) {
 				ac: AuthContext{},
 				stmt: policy.Statement{
 					Condition: policy.ConditionBlock{
-						"ForAnyValues:StringEquals": {
+						"ForAnyValue:StringEquals": {
 							"aws:SomeKey": []string{"foo"},
 						},
 					},

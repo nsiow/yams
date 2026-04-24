@@ -404,9 +404,9 @@ func Mod_ForAllValues(f CondInner) CondOuter {
 	}
 }
 
-// Mod_ForAnyValues defines a Condition modifier targeting match-any logic for multivalued
+// Mod_ForAnyValue defines a Condition modifier targeting match-any logic for multivalued
 // conditions
-func Mod_ForAnyValues(f CondInner) CondOuter {
+func Mod_ForAnyValue(f CondInner) CondOuter {
 	return func(s *subject, key string, right policy.Value) bool {
 		lefts := s.auth.MultiKey(key, s.opts)
 
@@ -593,9 +593,9 @@ func resolveConditionEvaluatorUncached(op string) (CondOuter, bool) {
 	if strings.HasPrefix(op, "ForAllValues:") {
 		lift = Mod_ForAllValues
 		op = strings.TrimPrefix(op, "ForAllValues:")
-	} else if strings.HasPrefix(op, "ForAnyValues:") {
-		lift = Mod_ForAnyValues
-		op = strings.TrimPrefix(op, "ForAnyValues:")
+	} else if strings.HasPrefix(op, "ForAnyValue:") {
+		lift = Mod_ForAnyValue
+		op = strings.TrimPrefix(op, "ForAnyValue:")
 	} else {
 		lift = Mod_ForSingleValue
 	}
