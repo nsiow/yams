@@ -2121,6 +2121,70 @@ func TestIfExists(t *testing.T) {
 			},
 			Want: true,
 		},
+		{
+			Name: "for_any_value_if_exists_missing",
+			Input: input{
+				ac: AuthContext{},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ForAnyValue:StringEqualsIfExists": {
+							"aws:TagKeys": []string{"foo"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "for_any_value_if_exists_present_match",
+			Input: input{
+				ac: AuthContext{
+					MultiValueProperties: NewBagFromMap(map[string][]string{
+						"aws:TagKeys": {"foo", "bar"},
+					}),
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ForAnyValue:StringEqualsIfExists": {
+							"aws:TagKeys": []string{"foo"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "for_any_value_if_exists_present_no_match",
+			Input: input{
+				ac: AuthContext{
+					MultiValueProperties: NewBagFromMap(map[string][]string{
+						"aws:TagKeys": {"foo", "bar"},
+					}),
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ForAnyValue:StringEqualsIfExists": {
+							"aws:TagKeys": []string{"qux"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "for_all_values_if_exists_missing",
+			Input: input{
+				ac: AuthContext{},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ForAllValues:StringEqualsIfExists": {
+							"aws:TagKeys": []string{"foo"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {

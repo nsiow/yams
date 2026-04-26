@@ -67,9 +67,11 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.StringNotEquals: Mod_ResolveVariables(
-		Mod_Not(
-			Cond_MatchAny(
-				Cond_StringEquals,
+		Mod_MustExist(
+			Mod_Not(
+				Cond_MatchAny(
+					Cond_StringEquals,
+				),
 			),
 		),
 	),
@@ -81,10 +83,12 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.StringNotEqualsIgnoreCase: Mod_ResolveVariables(
-		Mod_Not(
-			Cond_MatchAny(
-				Mod_IgnoreCase(
-					Cond_StringEquals,
+		Mod_MustExist(
+			Mod_Not(
+				Cond_MatchAny(
+					Mod_IgnoreCase(
+						Cond_StringEquals,
+					),
 				),
 			),
 		),
@@ -95,9 +99,29 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.StringNotLike: Mod_ResolveVariables(
-		Mod_Not(
-			Cond_MatchAny(
+		Mod_MustExist(
+			Mod_Not(
+				Cond_MatchAny(
+					Cond_StringLike,
+				),
+			),
+		),
+	),
+	condition.StringLikeIgnoreCase: Mod_ResolveVariables(
+		Cond_MatchAny(
+			Mod_IgnoreCase(
 				Cond_StringLike,
+			),
+		),
+	),
+	condition.StringNotLikeIgnoreCase: Mod_ResolveVariables(
+		Mod_MustExist(
+			Mod_Not(
+				Cond_MatchAny(
+					Mod_IgnoreCase(
+						Cond_StringLike,
+					),
+				),
 			),
 		),
 	),
@@ -111,10 +135,12 @@ var ConditionOperatorMap = map[string]CondInner{
 			Cond_NumericEquals,
 		),
 	),
-	condition.NumericNotEquals: Mod_Not(
-		Cond_MatchAny(
-			Mod_Number(
-				Cond_NumericEquals,
+	condition.NumericNotEquals: Mod_MustExist(
+		Mod_Not(
+			Cond_MatchAny(
+				Mod_Number(
+					Cond_NumericEquals,
+				),
 			),
 		),
 	),
@@ -148,10 +174,12 @@ var ConditionOperatorMap = map[string]CondInner{
 			Cond_NumericEquals,
 		),
 	),
-	condition.DateNotEquals: Mod_Not(
-		Cond_MatchAny(
-			Mod_Date(
-				Cond_NumericEquals,
+	condition.DateNotEquals: Mod_MustExist(
+		Mod_Not(
+			Cond_MatchAny(
+				Mod_Date(
+					Cond_NumericEquals,
+				),
 			),
 		),
 	),
@@ -209,10 +237,12 @@ var ConditionOperatorMap = map[string]CondInner{
 			Cond_IpAddress,
 		),
 	),
-	condition.NotIpAddress: Mod_Not(
-		Cond_MatchAny(
-			Mod_Network(
-				Cond_IpAddress,
+	condition.NotIpAddress: Mod_MustExist(
+		Mod_Not(
+			Cond_MatchAny(
+				Mod_Network(
+					Cond_IpAddress,
+				),
 			),
 		),
 	),
@@ -227,9 +257,11 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.ArnNotEquals: Mod_ResolveVariables(
-		Mod_Not(
-			Cond_MatchAny(
-				Cond_ArnLike,
+		Mod_MustExist(
+			Mod_Not(
+				Cond_MatchAny(
+					Cond_ArnLike,
+				),
 			),
 		),
 	),
@@ -239,9 +271,11 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.ArnNotLike: Mod_ResolveVariables(
-		Mod_Not(
-			Cond_MatchAny(
-				Cond_ArnLike,
+		Mod_MustExist(
+			Mod_Not(
+				Cond_MatchAny(
+					Cond_ArnLike,
+				),
 			),
 		),
 	),
@@ -350,13 +384,17 @@ func Mod_Not(f CondInner) CondInner {
 	}
 }
 
-// Mod_ResolveVariables resolves and replaces all IAM variables within the provided values
+// Mod_ResolveVariables resolves and replaces all IAM variables within the provided values.
+// Substitution is performed against a copy so the underlying policy data is never mutated;
+// otherwise a request-context-dependent value would be baked into the policy and reused on
+// subsequent evaluations.
 func Mod_ResolveVariables(f CondInner) CondInner {
 	return func(s *subject, left string, right policy.Value) bool {
-		for i := range right {
-			right[i] = s.auth.Substitute(right[i], s.opts)
+		substituted := make(policy.Value, len(right))
+		for i, v := range right {
+			substituted[i] = s.auth.Substitute(v, s.opts)
 		}
-		return f(s, left, right)
+		return f(s, left, substituted)
 	}
 }
 
@@ -371,14 +409,15 @@ func Mod_MustExist(f CondInner) CondInner {
 	}
 }
 
-// Mod_IfExists defines a Condition modifier which returns true if the key is not found
-func Mod_IfExists(f CondInner) CondInner {
-	return func(s *subject, left string, right policy.Value) bool {
-		if left == "" {
+// Mod_IfExists wraps a CondOuter so that the condition evaluates to true when the
+// referenced key is not present in the request context. Applied after the CondLift
+// so it works uniformly for ForSingleValue, ForAnyValue, and ForAllValues.
+func Mod_IfExists(f CondOuter) CondOuter {
+	return func(s *subject, key string, right policy.Value) bool {
+		if s.auth.ConditionKey(key, s.opts) == "" && len(s.auth.MultiKey(key, s.opts)) == 0 {
 			return true
 		}
-
-		return f(s, left, right)
+		return f(s, key, right)
 	}
 }
 
@@ -538,7 +577,9 @@ func Mod_Binary(f func(*subject, string, string) bool) Compare {
 	}
 }
 
-// Mod_Network converts the incoming strings into IP addresses/nets, allowing network expressions
+// Mod_Network converts the incoming strings into IP addresses/nets, allowing network expressions.
+// AWS accepts the policy-side value as either CIDR (e.g. 10.0.0.0/8) or a bare address
+// (e.g. 192.0.2.1, treated as a host route).
 func Mod_Network(f func(*subject, netip.Addr, netip.Prefix) bool) Compare {
 	return func(s *subject, left, right string) bool {
 		addr, err := netip.ParseAddr(left)
@@ -547,7 +588,7 @@ func Mod_Network(f func(*subject, netip.Addr, netip.Prefix) bool) Compare {
 			return false
 		}
 
-		network, err := netip.ParsePrefix(right)
+		network, err := parseIPPrefix(right)
 		if err != nil {
 			s.trc.Log("error converting %s to IP: %v", right, err)
 			return false
@@ -555,6 +596,18 @@ func Mod_Network(f func(*subject, netip.Addr, netip.Prefix) bool) Compare {
 
 		return f(s, addr, network)
 	}
+}
+
+// parseIPPrefix parses an IP prefix, falling back to a host route for bare addresses.
+func parseIPPrefix(s string) (netip.Prefix, error) {
+	if p, err := netip.ParsePrefix(s); err == nil {
+		return p, nil
+	}
+	addr, err := netip.ParseAddr(s)
+	if err != nil {
+		return netip.Prefix{}, err
+	}
+	return netip.PrefixFrom(addr, addr.BitLen()), nil
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -600,10 +653,11 @@ func resolveConditionEvaluatorUncached(op string) (CondOuter, bool) {
 		lift = Mod_ForSingleValue
 	}
 
-	// Handle function modifiers
-	mods := []CondMod{}
+	// Handle the IfExists suffix at the outer layer so it covers single- and
+	// multi-value lifts uniformly (the Null operator does not accept IfExists).
+	ifExists := false
 	if strings.HasSuffix(op, "IfExists") && !strings.HasPrefix(op, "Null") {
-		mods = append(mods, Mod_IfExists)
+		ifExists = true
 		op = strings.TrimSuffix(op, "IfExists")
 	}
 
@@ -613,11 +667,11 @@ func resolveConditionEvaluatorUncached(op string) (CondOuter, bool) {
 		return nil, false
 	}
 
-	// Apply modifiers
-	for _, mod := range mods {
-		f = mod(f)
+	outer := lift(f)
+	if ifExists {
+		outer = Mod_IfExists(outer)
 	}
 
 	_ = originalOp // Avoid unused variable warning
-	return lift(f), true
+	return outer, true
 }
