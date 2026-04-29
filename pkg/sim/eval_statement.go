@@ -2,6 +2,7 @@ package sim
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/nsiow/yams/pkg/policy"
 	"github.com/nsiow/yams/pkg/sim/gate"
@@ -226,18 +227,21 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
 		return _gate.Apply(slices.Contains(resources, "*"))
 	}
 
-	// Use pre-split segments if available, otherwise fall back to regular matching
+	// Use pre-split segments if available, otherwise fall back to regular matching.
+	// IAM variables in the Resource element are substituted before matching:
+	// https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html
 	arnSegments := s.auth.Resource.ArnSegments
 	for _, r := range resources {
+		pattern := s.auth.Substitute(r, s.opts)
 		var match bool
 		if len(arnSegments) > 0 {
-			match = wildcard.MatchSegmentsPreSplit(r, arnSegments)
+			match = wildcard.MatchSegmentsPreSplit(pattern, arnSegments)
 		} else {
-			match = wildcard.MatchSegments(r, s.auth.Resource.Arn)
+			match = wildcard.MatchSegments(pattern, s.auth.Resource.Arn)
 		}
 		if match {
 			if trc {
-				s.trc.Log("match: %s and %s", r, s.auth.Resource.Arn)
+				s.trc.Log("match: %s and %s", pattern, s.auth.Resource.Arn)
 			}
 			return _gate.Apply(true)
 		}
@@ -280,8 +284,20 @@ func evalStatementMatchesCondition(s *subject, stmt *policy.Statement) bool {
 	return true
 }
 
-// isAccountRootMatch handles the unique delegation for account roots in IAM policies
+// isAccountRootMatch handles the unique delegation for account roots in IAM policies.
+// Accepts the bare account ID and the canonical arn:<partition>:iam::<id>:root form for
+// any AWS partition (aws, aws-cn, aws-us-gov, ...).
 func isAccountRootMatch(pattern string, principalAccountId string) bool {
-	return pattern == principalAccountId ||
-		pattern == "arn:aws:iam::"+principalAccountId+":root"
+	if pattern == principalAccountId {
+		return true
+	}
+	parts := strings.Split(pattern, ":")
+	if len(parts) != 6 {
+		return false
+	}
+	return parts[0] == "arn" &&
+		parts[2] == "iam" &&
+		parts[3] == "" &&
+		parts[4] == principalAccountId &&
+		parts[5] == "root"
 }

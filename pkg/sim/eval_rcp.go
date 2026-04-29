@@ -34,10 +34,20 @@ func evalRCP(s *subject) Decision {
 
 	decision := Decision{}
 
-	// Missing resource or empty RCP = allowed; otherwise we have to evaluate
+	// Missing resource or empty RCP = allowed; otherwise we have to evaluate. Inspect every
+	// node, not just the first, so an account-level RCP isn't skipped when the root has none.
+	hasAnyRCP := false
+	if s.auth.Resource != nil {
+		for _, node := range s.auth.Resource.Account.OrgNodes {
+			if len(node.RCPs) > 0 {
+				hasAnyRCP = true
+				break
+			}
+		}
+	}
 	if s.auth.Resource == nil ||
 		len(s.auth.Resource.Account.OrgNodes) == 0 ||
-		len(s.auth.Resource.Account.OrgNodes[0].RCPs) == 0 {
+		!hasAnyRCP {
 		if trc {
 			s.trc.Log("skipping RCPs: none found")
 		}

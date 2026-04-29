@@ -225,29 +225,12 @@ func MatchArn(pattern, value string) bool {
 		return false
 	}
 
-	// Leader should be the same
-	if patternSegments[0] != valueSegments[0] {
-		return false
-	}
-
-	// Partition should be the same
-	if patternSegments[1] != valueSegments[1] {
-		return false
-	}
-
-	// Service should be the same
-	if patternSegments[2] != valueSegments[2] {
-		return false
-	}
-
-	// Region can be wildcarded
-	if !MatchString(patternSegments[3], valueSegments[3]) {
-		return false
-	}
-
-	// Account should be the same
-	if patternSegments[4] != valueSegments[4] {
-		return false
+	// All six ARN components support wildcards per AWS:
+	// https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html#Conditions_ARN
+	for i := range 5 {
+		if !MatchString(patternSegments[i], valueSegments[i]) {
+			return false
+		}
 	}
 
 	patternPath := patternSegments[5]

@@ -15,9 +15,16 @@ func evalSCP(s *subject) Decision {
 
 	decision := Decision{}
 
-	// Empty SCP = allowed; otherwise we have to evaluate
-	if len(s.auth.Principal.Account.OrgNodes) == 0 ||
-		len(s.auth.Principal.Account.OrgNodes[0].SCPs) == 0 {
+	// Empty SCP = allowed; otherwise we have to evaluate. Inspect every node, not just
+	// the first, so an account-level SCP isn't skipped when the root has none.
+	hasAnySCP := false
+	for _, node := range s.auth.Principal.Account.OrgNodes {
+		if len(node.SCPs) > 0 {
+			hasAnySCP = true
+			break
+		}
+	}
+	if len(s.auth.Principal.Account.OrgNodes) == 0 || !hasAnySCP {
 		if trc {
 			s.trc.Log("skipping SCPs: none found")
 		}
@@ -39,6 +46,7 @@ func evalSCP(s *subject) Decision {
 
 			localDecision := evalPolicy(s, scp.Policy,
 				evalStatementMatchesAction,
+				evalStatementMatchesPrincipal,
 				evalStatementMatchesResource,
 				evalStatementMatchesCondition)
 			if trc && localDecision.DeniedExplicit() {

@@ -383,7 +383,7 @@ func TestMatchArn(t *testing.T) {
 				pattern: "*:aws:sqs:us-east-1:88888:somequeue",
 				value:   "arn:aws:sqs:us-east-1:88888:somequeue",
 			},
-			Want: false,
+			Want: true,
 		},
 		{
 			// AWS docs: each of the six colon-delimited components can include wildcards.
