@@ -277,6 +277,46 @@ func TestOverallAccess_XAccount(t *testing.T) {
 			},
 			Want: false,
 		},
+		{
+			// account-root delegation should be recognized in non-aws partitions
+			// (aws-cn, aws-us-gov), not just the default aws partition.
+			Name: "x_account_allow_and_allow_aws_cn_partition",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Arn:       "arn:aws-cn:iam::99999:role/myrole",
+					AccountId: "99999",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws-cn:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws-cn:s3:::mybucket",
+					AccountId: "11111",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect: policy.EFFECT_ALLOW,
+								Principal: policy.Principal{
+									AWS: []string{"arn:aws-cn:iam::99999:root"},
+								},
+								Action:   []string{"s3:listbucket"},
+								Resource: []string{"arn:aws-cn:s3:::mybucket"},
+							},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) (bool, error) {
@@ -1068,6 +1108,235 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 				},
 			},
 			Want: false,
+		},
+		{
+			// resource-grants-principal short-circuit must verify the policy's Resource
+			// block actually targets the requested resource. A bucketA policy that grants
+			// access to bucketB should not let the principal reach bucketA without an
+			// identity policy.
+			Name: "resource_grants_principal_wrong_resource",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::bucketA",
+					AccountId: "88888",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect: policy.EFFECT_ALLOW,
+								Principal: policy.Principal{
+									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+								},
+								Action:   []string{"s3:listbucket"},
+								Resource: []string{"arn:aws:s3:::bucketB"},
+							},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			// SCPs may use NotPrincipal to exempt specific principals from a deny.
+			// https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps_syntax.html
+			Name: "scp_not_principal_exempts",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Arn:       "arn:aws:iam::88888:role/exempt-role",
+					AccountId: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+					Account: entities.FrozenAccount{
+						OrgNodes: []entities.FrozenOrgNode{
+							{
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_ALLOW,
+													Action:   []string{"*"},
+													Resource: []string{"*"},
+												},
+											},
+										},
+									},
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect: policy.EFFECT_DENY,
+													NotPrincipal: policy.Principal{
+														AWS: []string{
+															"arn:aws:iam::88888:role/exempt-role",
+														},
+													},
+													Action:   []string{"s3:*"},
+													Resource: []string{"*"},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+				},
+			},
+			Want: true,
+		},
+		{
+			// SCP early-return must inspect every node, not just OrgNodes[0]. A deny SCP
+			// at the account level should still apply when the root has no SCPs of its own.
+			Name: "scp_deny_at_account_when_root_empty",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+					Account: entities.FrozenAccount{
+						OrgNodes: []entities.FrozenOrgNode{
+							{Name: "Root", Type: "ROOT"},
+							{
+								Name: "Account",
+								Type: "ACCOUNT",
+								SCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_DENY,
+													Action:   []string{"s3:*"},
+													Resource: []string{"*"},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+				},
+			},
+			Want: false,
+		},
+		{
+			// Same shape of bug as above, but for RCPs on the resource side.
+			Name: "rcp_deny_at_account_when_root_empty",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"s3:listbucket"},
+									Resource: []string{"arn:aws:s3:::mybucket"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Type:      "AWS::S3::Bucket",
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+					Account: entities.FrozenAccount{
+						OrgNodes: []entities.FrozenOrgNode{
+							{Name: "Root", Type: "ROOT"},
+							{
+								Name: "Account",
+								Type: "ACCOUNT",
+								RCPs: []entities.ManagedPolicy{
+									{
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_DENY,
+													Action:   []string{"s3:*"},
+													Resource: []string{"*"},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			// IAM variables in the Resource element should be substituted before matching.
+			// https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html
+			Name: "resource_arn_variable_substituted",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:getobject"),
+				Principal: &entities.FrozenPrincipal{
+					Arn:       "arn:aws:iam::88888:user/alice",
+					AccountId: "88888",
+					Type:      "AWS::IAM::User",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect: policy.EFFECT_ALLOW,
+									Action: []string{"s3:GetObject"},
+									Resource: []string{
+										"arn:aws:s3:::mybucket/${aws:username}/*",
+									},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn:         "arn:aws:s3:::mybucket/alice/myfile",
+					AccountId:   "88888",
+					ArnSegments: entities.SplitArn("arn:aws:s3:::mybucket/alice/myfile"),
+				},
+				Properties: NewBagFromMap(map[string]string{
+					"aws:username": "alice",
+				}),
+			},
+			Want: true,
 		},
 	}
 

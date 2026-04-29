@@ -1971,6 +1971,26 @@ func TestArnLike(t *testing.T) {
 			},
 			Want: false,
 		},
+		{
+			// AWS docs: ArnLike supports wildcards in any of the six ARN segments,
+			// including the account segment.
+			Name: "match_account_wildcard",
+			Input: input{
+				ac: AuthContext{
+					Properties: NewBagFromMap(map[string]string{
+						"aws:SourceArn": "arn:aws:sns:us-east-1:88888:mytopic",
+					}),
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"ArnLike": {
+							"aws:SourceArn": []string{"arn:aws:sns:us-east-1:*:mytopic"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) (bool, error) {

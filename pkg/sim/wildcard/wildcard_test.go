@@ -386,18 +386,20 @@ func TestMatchArn(t *testing.T) {
 			Want: false,
 		},
 		{
+			// AWS docs: each of the six colon-delimited components can include wildcards.
+			// https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html#Conditions_ARN
 			Input: input{
 				pattern: "arn:*:sqs:us-east-1:88888:somequeue",
 				value:   "arn:aws:sqs:us-east-1:88888:somequeue",
 			},
-			Want: false,
+			Want: true,
 		},
 		{
 			Input: input{
 				pattern: "arn:aws:*:us-east-1:88888:somequeue",
 				value:   "arn:aws:sqs:us-east-1:88888:somequeue",
 			},
-			Want: false,
+			Want: true,
 		},
 		{
 			Input: input{
@@ -418,7 +420,7 @@ func TestMatchArn(t *testing.T) {
 				pattern: "arn:aws:sqs:us-east-1:*:somequeue",
 				value:   "arn:aws:sqs:us-east-1:88888:somequeue",
 			},
-			Want: false,
+			Want: true,
 		},
 		{
 			Input: input{
