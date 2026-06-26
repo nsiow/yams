@@ -6,6 +6,7 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
+	"github.com/nsiow/yams/pkg/loaders/awsconfig"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -107,6 +108,36 @@ func TestResourceAccess(t *testing.T) {
 				},
 			},
 			Want: Decision{allow: true, deny: true},
+		},
+		{
+			Name: "deny_notprincipal_with_permissions_boundary",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Type:      awsconfig.CONST_TYPE_AWS_IAM_ROLE,
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					PermissionBoundary: entities.ManagedPolicy{
+						Arn: "arn:aws:iam::88888:policy/boundary",
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn: "arn:aws:s3:::mybucket",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect: policy.EFFECT_DENY,
+								Action: []string{"s3:listbucket"},
+								NotPrincipal: policy.Principal{
+									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+								},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+							},
+						},
+					},
+				},
+			},
+			Want: Decision{deny: true},
 		},
 	}
 

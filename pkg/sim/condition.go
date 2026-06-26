@@ -67,11 +67,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.StringNotEquals: Mod_ResolveVariables(
-		Mod_MustExist(
-			Mod_Not(
-				Cond_MatchAny(
-					Cond_StringEquals,
-				),
+		Mod_Not(
+			Cond_MatchAny(
+				Cond_StringEquals,
 			),
 		),
 	),
@@ -83,12 +81,10 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.StringNotEqualsIgnoreCase: Mod_ResolveVariables(
-		Mod_MustExist(
-			Mod_Not(
-				Cond_MatchAny(
-					Mod_IgnoreCase(
-						Cond_StringEquals,
-					),
+		Mod_Not(
+			Cond_MatchAny(
+				Mod_IgnoreCase(
+					Cond_StringEquals,
 				),
 			),
 		),
@@ -99,11 +95,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.StringNotLike: Mod_ResolveVariables(
-		Mod_MustExist(
-			Mod_Not(
-				Cond_MatchAny(
-					Cond_StringLike,
-				),
+		Mod_Not(
+			Cond_MatchAny(
+				Cond_StringLike,
 			),
 		),
 	),
@@ -115,12 +109,10 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.StringNotLikeIgnoreCase: Mod_ResolveVariables(
-		Mod_MustExist(
-			Mod_Not(
-				Cond_MatchAny(
-					Mod_IgnoreCase(
-						Cond_StringLike,
-					),
+		Mod_Not(
+			Cond_MatchAny(
+				Mod_IgnoreCase(
+					Cond_StringLike,
 				),
 			),
 		),
@@ -135,12 +127,10 @@ var ConditionOperatorMap = map[string]CondInner{
 			Cond_NumericEquals,
 		),
 	),
-	condition.NumericNotEquals: Mod_MustExist(
-		Mod_Not(
-			Cond_MatchAny(
-				Mod_Number(
-					Cond_NumericEquals,
-				),
+	condition.NumericNotEquals: Mod_Not(
+		Cond_MatchAny(
+			Mod_Number(
+				Cond_NumericEquals,
 			),
 		),
 	),
@@ -174,12 +164,10 @@ var ConditionOperatorMap = map[string]CondInner{
 			Cond_NumericEquals,
 		),
 	),
-	condition.DateNotEquals: Mod_MustExist(
-		Mod_Not(
-			Cond_MatchAny(
-				Mod_Date(
-					Cond_NumericEquals,
-				),
+	condition.DateNotEquals: Mod_Not(
+		Cond_MatchAny(
+			Mod_Date(
+				Cond_NumericEquals,
 			),
 		),
 	),
@@ -237,12 +225,10 @@ var ConditionOperatorMap = map[string]CondInner{
 			Cond_IpAddress,
 		),
 	),
-	condition.NotIpAddress: Mod_MustExist(
-		Mod_Not(
-			Cond_MatchAny(
-				Mod_Network(
-					Cond_IpAddress,
-				),
+	condition.NotIpAddress: Mod_Not(
+		Cond_MatchAny(
+			Mod_Network(
+				Cond_IpAddress,
 			),
 		),
 	),
@@ -257,11 +243,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.ArnNotEquals: Mod_ResolveVariables(
-		Mod_MustExist(
-			Mod_Not(
-				Cond_MatchAny(
-					Cond_ArnLike,
-				),
+		Mod_Not(
+			Cond_MatchAny(
+				Cond_ArnLike,
 			),
 		),
 	),
@@ -271,11 +255,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.ArnNotLike: Mod_ResolveVariables(
-		Mod_MustExist(
-			Mod_Not(
-				Cond_MatchAny(
-					Cond_ArnLike,
-				),
+		Mod_Not(
+			Cond_MatchAny(
+				Cond_ArnLike,
 			),
 		),
 	),

@@ -7,8 +7,7 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
-// Negated operators must NOT match when the key is absent from the request context.
-// Per AWS docs, callers must opt into "missing-as-true" behavior with the IfExists variant.
+// Negated operators match when the key is absent from the request context.
 func TestNegatedOperators_MissingKey(t *testing.T) {
 	tests := []testlib.TestCase[input, bool]{
 		{
@@ -21,7 +20,7 @@ func TestNegatedOperators_MissingKey(t *testing.T) {
 					},
 				},
 			},
-			Want: false,
+			Want: true,
 		},
 		{
 			Name: "string_not_equals_ignore_case",
@@ -33,7 +32,7 @@ func TestNegatedOperators_MissingKey(t *testing.T) {
 					},
 				},
 			},
-			Want: false,
+			Want: true,
 		},
 		{
 			Name: "string_not_like",
@@ -45,7 +44,7 @@ func TestNegatedOperators_MissingKey(t *testing.T) {
 					},
 				},
 			},
-			Want: false,
+			Want: true,
 		},
 		{
 			Name: "numeric_not_equals",
@@ -57,7 +56,7 @@ func TestNegatedOperators_MissingKey(t *testing.T) {
 					},
 				},
 			},
-			Want: false,
+			Want: true,
 		},
 		{
 			Name: "date_not_equals",
@@ -69,7 +68,7 @@ func TestNegatedOperators_MissingKey(t *testing.T) {
 					},
 				},
 			},
-			Want: false,
+			Want: true,
 		},
 		{
 			Name: "not_ip_address",
@@ -81,7 +80,7 @@ func TestNegatedOperators_MissingKey(t *testing.T) {
 					},
 				},
 			},
-			Want: false,
+			Want: true,
 		},
 		{
 			Name: "arn_not_equals",
@@ -93,7 +92,7 @@ func TestNegatedOperators_MissingKey(t *testing.T) {
 					},
 				},
 			},
-			Want: false,
+			Want: true,
 		},
 		{
 			Name: "arn_not_like",
@@ -105,9 +104,9 @@ func TestNegatedOperators_MissingKey(t *testing.T) {
 					},
 				},
 			},
-			Want: false,
+			Want: true,
 		},
-		// IfExists opts in to "missing-as-true" behavior.
+		// IfExists retains the same missing-key behavior for negated operators.
 		{
 			Name: "string_not_equals_if_exists_missing",
 			Input: input{

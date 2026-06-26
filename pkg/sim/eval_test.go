@@ -6,6 +6,7 @@ import (
 	"github.com/nsiow/yams/internal/testlib"
 	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
+	"github.com/nsiow/yams/pkg/loaders/awsconfig"
 	"github.com/nsiow/yams/pkg/policy"
 )
 
@@ -559,6 +560,86 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 								Resource: []string{"arn:aws:s3:::mybucket"},
 								Principal: policy.Principal{
 									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "same_account_resource_access_role_boundary_implicit_deny",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Type:      awsconfig.CONST_TYPE_AWS_IAM_ROLE,
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					PermissionBoundary: entities.ManagedPolicy{
+						Arn: "arn:aws:iam::88888:policy/boundary",
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"ec2:*"},
+									Resource: []string{"*"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:listbucket"},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+								Principal: policy.Principal{
+									AWS: []string{"arn:aws:iam::88888:role/myrole"},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "same_account_resource_access_user_boundary_implicit_deny",
+			Input: AuthContext{
+				Action: sar.MustLookupString("s3:listbucket"),
+				Principal: &entities.FrozenPrincipal{
+					Type:      awsconfig.CONST_TYPE_AWS_IAM_USER,
+					Arn:       "arn:aws:iam::88888:user/myuser",
+					AccountId: "88888",
+					PermissionBoundary: entities.ManagedPolicy{
+						Arn: "arn:aws:iam::88888:policy/boundary",
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"ec2:*"},
+									Resource: []string{"*"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:s3:::mybucket",
+					AccountId: "88888",
+					Policy: policy.Policy{
+						Statement: []policy.Statement{
+							{
+								Effect:   policy.EFFECT_ALLOW,
+								Action:   []string{"s3:listbucket"},
+								Resource: []string{"arn:aws:s3:::mybucket"},
+								Principal: policy.Principal{
+									AWS: []string{"arn:aws:iam::88888:user/myuser"},
 								},
 							},
 						},

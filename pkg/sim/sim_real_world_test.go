@@ -526,7 +526,7 @@ func TestRealWorldData(t *testing.T) {
 			Want: true,
 		},
 		{
-			// Bucket policy directly grants PandaRole s3:PutObject, so boundary is bypassed
+			// Bucket policy grants the PandaRole ARN, but the role boundary still applies
 			Input: in{
 				p: "arn:aws:iam::213308312933:role/PandaRole",
 				a: "s3:putobject",
@@ -535,7 +535,7 @@ func TestRealWorldData(t *testing.T) {
 					"aws:CurrentTime": "2023-01-01T00:00:00Z",
 				},
 			},
-			Want: true,
+			Want: false,
 		},
 		{
 			Input: in{
@@ -885,14 +885,14 @@ func TestRealWorldData(t *testing.T) {
 			Want: false,
 		},
 
-		// KMS: BeigeRole (acct0) - key policy directly names BeigeRole
+		// KMS: BeigeRole (acct0) - key policy directly names BeigeRole, but boundary still applies
 		{
 			Input: in{
 				p: "arn:aws:iam::777583092761:role/BeigeRole",
 				a: "kms:decrypt",
 				r: "arn:aws:kms:us-east-1:777583092761:key/04379ae8-3ab9-4c17-bc9f-55c53dca02f0",
 			},
-			Want: true,
+			Want: false,
 		},
 		{
 			Input: in{
@@ -900,7 +900,7 @@ func TestRealWorldData(t *testing.T) {
 				a: "kms:describekey",
 				r: "arn:aws:kms:us-east-1:777583092761:key/04379ae8-3ab9-4c17-bc9f-55c53dca02f0",
 			},
-			Want: true,
+			Want: false,
 		},
 		{
 			Input: in{
