@@ -3,7 +3,6 @@ package sim
 import (
 	"fmt"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -53,12 +52,29 @@ var TIME_FORMATS = []string{
 }
 
 // VariableExpansionRegex defines the variable to use for expanding policy variables
-var VariableExpansionRegex = regexp.MustCompile(`\${([a-zA-Z0-9]+:\S+?)}`)
+var VariableExpansionRegex = regexp.MustCompile(`\${([^}]+)}`)
 
 // ConditionKey retrieves the value for the requested key from the AuthContext.
 // Key lookups are case-insensitive for the key name portion; tag keys (after '/') remain
 // case-sensitive per AWS behavior.
 func (ac *AuthContext) ConditionKey(key string, opts Options) string {
+	value, _ := ac.conditionKey(key, opts)
+	return value
+}
+
+func (ac *AuthContext) HasConditionKey(key string, opts Options) bool {
+	_, ok := ac.conditionKey(key, opts)
+	return ok
+}
+
+func (ac *AuthContext) HasAnyKey(key string, opts Options) bool {
+	if ac.HasConditionKey(key, opts) {
+		return true
+	}
+	return ac.HasMultiKey(key, opts)
+}
+
+func (ac *AuthContext) conditionKey(key string, opts Options) (string, bool) {
 
 	// ---------------------------------------------------------------------------------------------
 	// Allow manual overrides
@@ -66,7 +82,7 @@ func (ac *AuthContext) ConditionKey(key string, opts Options) string {
 
 	value, ok := ac.Properties.Check(key)
 	if ok && ac.supportsKey(key) {
-		return value
+		return value, true
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -110,50 +126,52 @@ func (ac *AuthContext) ConditionKey(key string, opts Options) string {
 		condkey.Username,
 		condkey.ViaAwsService,
 		condkey.VpcSourceIp:
-		return ac.Properties.Get(key)
+		value, ok := ac.Properties.Check(key)
+		return value, ok
 
-	// ---------------------------------------------------------------------------------------------
-	// Global keys; special handling
+		// ---------------------------------------------------------------------------------------------
+		// Global keys; special handling
 	// ---------------------------------------------------------------------------------------------
 
 	case condkey.PrincipalArn:
 		if ac.Principal == nil {
-			return EMPTY
+			return EMPTY, false
 		}
-		return ac.Principal.Arn
+		return ac.Principal.Arn, true
 	case condkey.PrincipalAccount:
 		if ac.Principal == nil {
-			return EMPTY
+			return EMPTY, false
 		}
-		return ac.Principal.AccountId
+		return ac.Principal.AccountId, true
 	case condkey.PrincipalIsAwsService:
-		return "false" // we do not support simulation for AWS services
+		return "false", true // we do not support simulation for AWS services
 	case condkey.PrincipalServiceName:
-		return EMPTY // we do not support simulation for AWS services
+		return EMPTY, false // we do not support simulation for AWS services
 	case condkey.PrincipalType:
 		if ac.Principal == nil {
-			return EMPTY
+			return EMPTY, false
 		}
-		return ac.principalType()
+		value := ac.principalType()
+		return value, value != EMPTY
 	case condkey.ResourceAccount:
 		if ac.Resource == nil {
-			return EMPTY
+			return EMPTY, false
 		}
-		return ac.Resource.AccountId
+		return ac.Resource.AccountId, true
 	case condkey.CurrentTime:
-		return ac.now().UTC().Format(DEFAULT_TIME_FORMAT)
+		return ac.now().UTC().Format(DEFAULT_TIME_FORMAT), true
 	case condkey.EpochTime:
-		return strconv.FormatInt(ac.now().Unix(), 10)
+		return strconv.FormatInt(ac.now().Unix(), 10), true
 	case condkey.PrincipalOrgId:
 		if ac.Principal == nil {
-			return EMPTY
+			return EMPTY, false
 		}
-		return ac.Principal.Account.OrgId
+		return ac.Principal.Account.OrgId, ac.Principal.Account.OrgId != EMPTY
 	case condkey.ResourceOrgId:
 		if ac.Resource == nil {
-			return EMPTY
+			return EMPTY, false
 		}
-		return ac.Resource.Account.OrgId
+		return ac.Resource.Account.OrgId, ac.Resource.Account.OrgId != EMPTY
 
 	// ---------------------------------------------------------------------------------------------
 	// Global key prefixes; special handling
@@ -161,9 +179,9 @@ func (ac *AuthContext) ConditionKey(key string, opts Options) string {
 
 	case condkey.PrincipalTagPrefix:
 		if ac.Principal == nil {
-			return EMPTY
+			return EMPTY, false
 		}
-		return ac.extractTag(key, ac.Principal.Tags)
+		return ac.extractTagValue(key, ac.Principal.Tags)
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -171,8 +189,8 @@ func (ac *AuthContext) ConditionKey(key string, opts Options) string {
 	// ---------------------------------------------------------------------------------------------
 
 	// If it's not a global condition key, then we need to check the authorization reference
-	if !opts.SkipServiceAuthorizationValidation && !ac.supportsKey(normalizedPrefix) {
-		return EMPTY
+	if !opts.SkipServiceAuthorizationValidation && !ac.supportsKey(normalizedKey) {
+		return EMPTY, false
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -181,23 +199,58 @@ func (ac *AuthContext) ConditionKey(key string, opts Options) string {
 
 	switch normalizedPrefix {
 	case condkey.RequestTagPrefix:
-		return ac.Properties.Get(key)
+		value, ok := ac.Properties.Check(key)
+		return value, ok
 	case condkey.ResourceTagPrefix:
 		if ac.Resource == nil {
-			return EMPTY
+			return EMPTY, false
 		}
-		return ac.extractTag(key, ac.Resource.Tags)
+		return ac.extractTagValue(key, ac.Resource.Tags)
+	}
+
+	if strings.HasSuffix(normalizedPrefix, ":resourceaccount") && ac.Resource != nil {
+		return ac.Resource.AccountId, true
+	}
+
+	if isServiceResourceTagKey(normalizedPrefix) {
+		if ac.Resource == nil {
+			return EMPTY, false
+		}
+		return ac.extractTagValue(key, ac.Resource.Tags)
+	}
+
+	if isServiceRequestTagKey(normalizedPrefix) {
+		if value, ok := ac.Properties.Check(key); ok {
+			return value, true
+		}
+		if strings.Contains(key, "/") {
+			_, tagKey, _ := strings.Cut(key, "/")
+			value, ok := ac.Properties.Check(condkey.RequestTagPrefix + "/" + tagKey)
+			return value, ok
+		}
+		return EMPTY, false
 	}
 
 	// ---------------------------------------------------------------------------------------------
 	// Local keys; default handling
 	// ---------------------------------------------------------------------------------------------
 
-	return ac.Properties.Get(key)
+	value, ok = ac.Properties.Check(key)
+	return value, ok
 }
 
 // MultiKey retrieves the values for the requested key from the AuthContext
 func (ac *AuthContext) MultiKey(key string, opts Options) []string {
+	values, _ := ac.multiKey(key, opts)
+	return values
+}
+
+func (ac *AuthContext) HasMultiKey(key string, opts Options) bool {
+	_, ok := ac.multiKey(key, opts)
+	return ok
+}
+
+func (ac *AuthContext) multiKey(key string, opts Options) ([]string, bool) {
 
 	normalizedKey := normalizeKey(key)
 	normalizedPrefix := keyPrefix(normalizedKey)
@@ -214,43 +267,74 @@ func (ac *AuthContext) MultiKey(key string, opts Options) []string {
 		break
 	case condkey.PrincipalOrgPaths:
 		if ac.Principal == nil {
-			return nil
+			return nil, false
 		}
-		return ac.Principal.Account.OrgPaths
+		return ac.Principal.Account.OrgPaths, len(ac.Principal.Account.OrgPaths) > 0
 	case condkey.ResourceOrgPaths:
 		if ac.Resource == nil {
-			return nil
+			return nil, false
 		}
-		return ac.Resource.Account.OrgPaths
+		return ac.Resource.Account.OrgPaths, len(ac.Resource.Account.OrgPaths) > 0
 	}
 
 	// ---------------------------------------------------------------------------------------------
 	// SAR check
 	// ---------------------------------------------------------------------------------------------
 
-	if !opts.SkipServiceAuthorizationValidation && !ac.supportsKey(normalizedPrefix) {
-		return nil
+	if !opts.SkipServiceAuthorizationValidation && !ac.supportsKey(normalizedKey) {
+		return nil, false
 	}
 
 	// ---------------------------------------------------------------------------------------------
 	// Local keys; default handling
 	// ---------------------------------------------------------------------------------------------
 
-	return ac.MultiValueProperties.Get(key)
+	values, ok := ac.MultiValueProperties.Check(key)
+	return values, ok
 }
 
 // Substitute resolves and replaces all IAM variables within the provided values
 func (ac *AuthContext) Substitute(value string, opts Options) string {
+	return ac.SubstituteWithVersion(value, opts, "2012-10-17")
+}
+
+func (ac *AuthContext) SubstituteWithVersion(value string, opts Options, version string) string {
+	if version != "" && version != "2012-10-17" {
+		return value
+	}
+
 	matches := VariableExpansionRegex.FindAllStringSubmatch(value, -1)
 	for _, match := range matches {
 
 		placeholder := match[0]
-		variable := match[1]
-		resolved := ac.ConditionKey(variable, opts)
+		variable, fallback, hasFallback := parsePolicyVariable(match[1])
+		resolved, ok := ac.conditionKey(variable, opts)
+		if !ok {
+			if !hasFallback {
+				continue
+			}
+			resolved = fallback
+		}
 		value = strings.ReplaceAll(value, placeholder, resolved)
 	}
 
 	return value
+}
+
+func parsePolicyVariable(expr string) (string, string, bool) {
+	switch expr {
+	case "*", "?", "$":
+		return expr, expr, true
+	}
+
+	variable, fallback, ok := strings.Cut(expr, ",")
+	if !ok {
+		return strings.TrimSpace(expr), "", false
+	}
+
+	fallback = strings.TrimSpace(fallback)
+	fallback = strings.Trim(fallback, `"'`)
+	return strings.TrimSpace(variable), fallback, true
 }
 
 // Validate checks that the given AuthContext is valid and ready for simulation
@@ -319,22 +403,38 @@ func keyPrefix(key string) string {
 	return key
 }
 
+func isServiceResourceTagKey(key string) bool {
+	return strings.HasSuffix(key, ":resourcetag") ||
+		key == "s3:existingobjecttag" ||
+		key == "s3:buckettag"
+}
+
+func isServiceRequestTagKey(key string) bool {
+	return strings.HasSuffix(key, ":requesttag") ||
+		key == "s3:requestobjecttag"
+}
+
 // extractTag defines how to get the value of the requested tag
 // TODO(nsiow) figure out if slashes are allowed in tag keys
 func (ac *AuthContext) extractTag(key string, tags []entities.Tag) string {
+	value, _ := ac.extractTagValue(key, tags)
+	return value
+}
+
+func (ac *AuthContext) extractTagValue(key string, tags []entities.Tag) (string, bool) {
 	i := strings.IndexByte(key, '/')
-	if i < 0 {
-		return ""
+	if i < 0 || i == len(key)-1 {
+		return EMPTY, false
 	}
 	tagKey := key[i+1:]
 
 	for _, tag := range tags {
 		if tag.Key == tagKey {
-			return tag.Value
+			return tag.Value, true
 		}
 	}
 
-	return EMPTY
+	return EMPTY, false
 }
 
 // principalType determines the type of the Principal for use with the aws:PrincipalType key
@@ -352,7 +452,8 @@ func (ac *AuthContext) principalType() string {
 // supportsKey consults the SAR package to determine whether or not the requested key is supported
 // for the simulated API call
 func (ac *AuthContext) supportsKey(key string) bool {
-	normalizedPrefix := keyPrefix(key)
+	normalizedKey := normalizeKey(key)
+	normalizedPrefix := keyPrefix(normalizedKey)
 
 	// First, check for global condition keys
 	if condkey.IsGlobalConditionKey(normalizedPrefix) {
@@ -360,8 +461,13 @@ func (ac *AuthContext) supportsKey(key string) bool {
 	}
 
 	// Second, check if action supports key directly
-	if ac.Action == nil || slices.Contains(ac.Action.ActionConditionKeys, normalizedPrefix) {
+	if ac.Action == nil {
 		return true
+	}
+	for _, conditionKey := range ac.Action.ActionConditionKeys {
+		if conditionKeyMatches(normalizedKey, normalizedPrefix, conditionKey) {
+			return true
+		}
 	}
 
 	// Otherwise check for each matched resource
@@ -377,11 +483,27 @@ func (ac *AuthContext) supportsKey(key string) bool {
 			} else {
 				match = wildcard.MatchSegments(format, ac.Resource.Arn)
 			}
-			if match && slices.Contains(resource.ConditionKeys, normalizedPrefix) {
-				return true
+			if match {
+				for _, conditionKey := range resource.ConditionKeys {
+					if conditionKeyMatches(normalizedKey, normalizedPrefix, conditionKey) {
+						return true
+					}
+				}
 			}
 		}
 	}
 
 	return false
+}
+
+func conditionKeyMatches(key, prefix, supported string) bool {
+	supported = normalizeKey(supported)
+	if key == supported || prefix == supported {
+		return true
+	}
+	if keyPrefix(supported) != prefix {
+		return false
+	}
+	return strings.Contains(supported, "<key>") ||
+		strings.Contains(supported, "${tagkey}")
 }

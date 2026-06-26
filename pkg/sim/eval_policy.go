@@ -12,6 +12,15 @@ func evalPolicy(s *subject, policy policy.Policy, funcs ...evalFunction) Decisio
 		defer s.trc.Pop()
 	}
 
+	previousVersion := s.policyVersion
+	s.policyVersion = policy.Version
+	if s.policyVersion == "" {
+		s.policyVersion = "2008-10-17"
+	}
+	defer func() {
+		s.policyVersion = previousVersion
+	}()
+
 	decision := Decision{}
 
 	for i, stmt := range policy.Statement {

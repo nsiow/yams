@@ -73,6 +73,7 @@ func TestOverallAccess_XAccount(t *testing.T) {
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
+							Version: "2012-10-17",
 							Statement: []policy.Statement{
 								{
 									Effect:   policy.EFFECT_ALLOW,
@@ -398,6 +399,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 				},
 				Resource: &entities.FrozenResource{
 					Arn:       "arn:aws:iam::88888:role/yourrole",
+					Type:      "AWS::IAM::Role",
 					AccountId: "88888",
 					Policy: policy.Policy{
 						Statement: []policy.Statement{
@@ -436,8 +438,36 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 				},
 				Resource: &entities.FrozenResource{
 					Arn:       "arn:aws:iam::88888:role/yourrole",
+					Type:      "AWS::IAM::Role",
 					AccountId: "88888",
 					// No trust policy - resource doesn't allow
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "same_account_sts_role_action_requires_resource_policy",
+			Input: AuthContext{
+				Action: sar.MustLookupString("sts:assumerolewithsaml"),
+				Principal: &entities.FrozenPrincipal{
+					Arn:       "arn:aws:iam::88888:role/myrole",
+					AccountId: "88888",
+					InlinePolicies: []policy.Policy{
+						{
+							Statement: []policy.Statement{
+								{
+									Effect:   policy.EFFECT_ALLOW,
+									Action:   []string{"sts:AssumeRoleWithSAML"},
+									Resource: []string{"*"},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn:       "arn:aws:iam::88888:role/yourrole",
+					Type:      "AWS::IAM::Role",
+					AccountId: "88888",
 				},
 			},
 			Want: false,
@@ -451,6 +481,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					AccountId: "88888",
 					InlinePolicies: []policy.Policy{
 						{
+							Version: "2012-10-17",
 							Statement: []policy.Statement{
 								{
 									Effect:   policy.EFFECT_DENY,
@@ -1396,6 +1427,7 @@ func TestOverallAccess_SameAccount(t *testing.T) {
 					Type:      "AWS::IAM::User",
 					InlinePolicies: []policy.Policy{
 						{
+							Version: "2012-10-17",
 							Statement: []policy.Statement{
 								{
 									Effect: policy.EFFECT_ALLOW,

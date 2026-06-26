@@ -47,6 +47,30 @@ func TestNegatedOperators_MissingKey(t *testing.T) {
 			Want: true,
 		},
 		{
+			Name: "string_like_star_missing",
+			Input: input{
+				ac: AuthContext{},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringLike": {"aws:Missing": []string{"*"}},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
+			Name: "string_not_like_star_missing",
+			Input: input{
+				ac: AuthContext{},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringNotLike": {"aws:Missing": []string{"*"}},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
 			Name: "numeric_not_equals",
 			Input: input{
 				ac: AuthContext{},

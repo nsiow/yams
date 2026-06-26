@@ -279,6 +279,74 @@ func TestSCP(t *testing.T) {
 			},
 			Want: Decision{deny: true},
 		},
+		{
+			Name: "scp_management_account_principal_exempt",
+			Input: AuthContext{
+				Principal: &entities.FrozenPrincipal{
+					AccountId: "99999",
+					Account: entities.FrozenAccount{
+						OrgNodes: []entities.FrozenOrgNode{
+							{
+								SCPs: []entities.ManagedPolicy{
+									{
+										AccountId: "99999",
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_DENY,
+													Action:   []string{"*"},
+													Resource: []string{"*"},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
+			},
+			Want: Decision{allow: true},
+		},
+		{
+			Name: "scp_service_linked_role_exempt",
+			Input: AuthContext{
+				Principal: &entities.FrozenPrincipal{
+					Type:      "AWS::IAM::Role",
+					Arn:       "arn:aws:iam::55555:role/aws-service-role/s3.amazonaws.com/AWSServiceRoleForS3",
+					AccountId: "55555",
+					Account: entities.FrozenAccount{
+						OrgNodes: []entities.FrozenOrgNode{
+							{
+								SCPs: []entities.ManagedPolicy{
+									{
+										AccountId: "99999",
+										Policy: policy.Policy{
+											Statement: []policy.Statement{
+												{
+													Effect:   policy.EFFECT_DENY,
+													Action:   []string{"*"},
+													Resource: []string{"*"},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Resource: &entities.FrozenResource{
+					Arn: "arn:aws:s3:::mybucket",
+				},
+				Action: sar.MustLookupString("s3:ListBucket"),
+			},
+			Want: Decision{allow: true},
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(ac AuthContext) (Decision, error) {

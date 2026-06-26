@@ -93,6 +93,13 @@ func TestWildcard(t *testing.T) {
 		},
 		{
 			Input: input{
+				pattern: "arn:*:autoscaling:*:*:autoScalingGroup:*:autoScalingGroupName/*",
+				value:   "arn:aws:autoscaling:us-east-1:55555:autoScalingGroup:abc:autoScalingGroupName/my-asg",
+			},
+			Want: true,
+		},
+		{
+			Input: input{
 				pattern: "arn:aws:sns:us-east-?:123*:*-in-the-*",
 				value:   "arn:aws:sns:us-east-1:12345:right-in-the-middle",
 			},
@@ -455,7 +462,7 @@ func TestMatchArn(t *testing.T) {
 				pattern: "arn:aws:iam::88888:*/somerole",
 				value:   "arn:aws:iam::88888:role/somerole",
 			},
-			Want: false,
+			Want: true,
 		},
 	}
 

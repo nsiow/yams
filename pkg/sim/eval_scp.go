@@ -32,6 +32,14 @@ func evalSCP(s *subject) Decision {
 		return decision
 	}
 
+	if principalIsServiceLinkedRole(s) || principalIsInManagementAccount(s) {
+		if trc {
+			s.trc.Log("skipping SCPs: exempt principal")
+		}
+		decision.Add(policy.EFFECT_ALLOW)
+		return decision
+	}
+
 	// Iterate through layers of SCP, only continuing if we get an allow result through each layer
 	for _, node := range s.auth.Principal.Account.OrgNodes {
 		if trc {

@@ -46,14 +46,15 @@ func runSim(opts *cli.Flags) {
 	cli.PostReq(
 		cli.ApiUrl(opts.Server, "sim"),
 		v1.SimInput{
-			Principal: opts.Principal,
-			Action:    opts.Action,
-			Resource:  opts.Resource,
-			Context:   opts.Context,
-			Fuzzy:     !opts.Exact,
-			Explain:   opts.Explain,
-			Trace:     opts.Trace,
-			Overlay:   opts.Overlay,
+			Principal:         opts.Principal,
+			Action:            opts.Action,
+			Resource:          opts.Resource,
+			Context:           opts.Context,
+			MultiValueContext: opts.MultiContext,
+			Fuzzy:             !opts.Exact,
+			Explain:           opts.Explain,
+			Trace:             opts.Trace,
+			Overlay:           opts.Overlay,
 		},
 	)
 }
@@ -62,11 +63,12 @@ func runWhichPrincipals(opts *cli.Flags) {
 	cli.PostReq(
 		cli.ApiUrl(opts.Server, "sim", "whichPrincipals"),
 		v1.WhichPrincipalsInput{
-			Action:   opts.Action,
-			Resource: opts.Resource,
-			Context:  opts.Context,
-			Overlay:  opts.Overlay,
-			Fuzzy:    !opts.Exact,
+			Action:            opts.Action,
+			Resource:          opts.Resource,
+			Context:           opts.Context,
+			MultiValueContext: opts.MultiContext,
+			Overlay:           opts.Overlay,
+			Fuzzy:             !opts.Exact,
 		},
 	)
 }
@@ -75,11 +77,12 @@ func runWhichActions(opts *cli.Flags) {
 	cli.PostReq(
 		cli.ApiUrl(opts.Server, "sim", "whichActions"),
 		v1.WhichActionsInput{
-			Principal: opts.Principal,
-			Resource:  opts.Resource,
-			Context:   opts.Context,
-			Overlay:   opts.Overlay,
-			Fuzzy:     !opts.Exact,
+			Principal:         opts.Principal,
+			Resource:          opts.Resource,
+			Context:           opts.Context,
+			MultiValueContext: opts.MultiContext,
+			Overlay:           opts.Overlay,
+			Fuzzy:             !opts.Exact,
 		},
 	)
 }
@@ -88,12 +91,12 @@ func runWhichResources(opts *cli.Flags) {
 	cli.PostReq(
 		cli.ApiUrl(opts.Server, "sim", "whichResources"),
 		v1.WhichResourcesInput{
-			Principal: opts.Principal,
-			Action:    opts.Action,
-			Context:   opts.Context,
-			Overlay:   opts.Overlay,
-			Fuzzy:     !opts.Exact,
+			Principal:         opts.Principal,
+			Action:            opts.Action,
+			Context:           opts.Context,
+			MultiValueContext: opts.MultiContext,
+			Overlay:           opts.Overlay,
+			Fuzzy:             !opts.Exact,
 		},
 	)
 }
-

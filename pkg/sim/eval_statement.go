@@ -232,7 +232,7 @@ func evalStatementMatchesResource(s *subject, stmt *policy.Statement) bool {
 	// https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html
 	arnSegments := s.auth.Resource.ArnSegments
 	for _, r := range resources {
-		pattern := s.auth.Substitute(r, s.opts)
+		pattern := s.auth.SubstituteWithVersion(r, s.opts, s.policyVersion)
 		var match bool
 		if len(arnSegments) > 0 {
 			match = wildcard.MatchSegmentsPreSplit(pattern, arnSegments)

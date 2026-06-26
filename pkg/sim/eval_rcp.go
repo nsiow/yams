@@ -6,21 +6,43 @@ import (
 	"github.com/nsiow/yams/pkg/policy"
 )
 
+var rcpSupportedServices = map[string]bool{
+	"aoss":              true,
+	"appconfig":         true,
+	"appstream":         true,
+	"autoscaling":       true,
+	"codebuild":         true,
+	"codecommit":        true,
+	"cognito-identity":  true,
+	"cognito-idp":       true,
+	"cognito-sync":      true,
+	"comprehend":        true,
+	"comprehendmedical": true,
+	"dax":               true,
+	"dynamodb":          true,
+	"ecr":               true,
+	"health":            true,
+	"kinesisvideo":      true,
+	"kms":               true,
+	"logs":              true,
+	"s3":                true,
+	"secretsmanager":    true,
+	"signin":            true,
+	"sqs":               true,
+	"sts":               true,
+	"support":           true,
+	"textract":          true,
+	"transcribe":        true,
+	"translate":         true,
+}
+
 // supportsRCPs determines whether or not the provided auth context has support for RCPs based on:
 // https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps.html#rcp-supported-services
 func supportsRCPs(s *subject) bool {
-	switch s.auth.Resource.Type {
-	case
-		"AWS::S3::Bucket",
-		"AWS::S3::Object",
-		"AWS::SQS::Queue",
-		"AWS::KMS::Key":
-		return true // support RCPs for all operations
-	case "AWS::IAM::Role":
-		return strings.EqualFold(s.auth.Action.ShortName(), "sts:assumerole") // depends on the API call
-	}
-
-	return false
+	return s.auth.Action != nil &&
+		s.auth.Resource != nil &&
+		rcpSupportedServices[s.auth.Action.Service] &&
+		s.auth.Action.Targets(s.auth.Resource.Arn)
 }
 
 // evalRCP assesses the resource control policies of the Resource to determine whether or not it
@@ -50,6 +72,14 @@ func evalRCP(s *subject) Decision {
 		!hasAnyRCP {
 		if trc {
 			s.trc.Log("skipping RCPs: none found")
+		}
+		decision.Add(policy.EFFECT_ALLOW)
+		return decision
+	}
+
+	if principalIsServiceLinkedRole(s) || resourceIsInManagementAccount(s) || rcpActionIsExempt(s) {
+		if trc {
+			s.trc.Log("skipping RCPs: exempt principal, resource, or action")
 		}
 		decision.Add(policy.EFFECT_ALLOW)
 		return decision
@@ -109,4 +139,8 @@ func evalRCP(s *subject) Decision {
 	}
 
 	return decision
+}
+
+func rcpActionIsExempt(s *subject) bool {
+	return s.auth.Action != nil && strings.EqualFold(s.auth.Action.ShortName(), "kms:retiregrant")
 }

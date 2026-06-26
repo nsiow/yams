@@ -71,6 +71,7 @@ type Flags struct {
 	Action       string
 	Resource     string
 	Context      MapString
+	MultiContext MapStringList
 	Explain      bool
 	Trace        bool
 	OverlayFiles MultiString
@@ -236,6 +237,7 @@ func Parse() (*Flags, error) {
 
 		fs.Var(&opts.Context, "c", "alias for -context")
 		fs.Var(&opts.Context, "context", "Additional request-context property for simulation")
+		fs.Var(&opts.MultiContext, "multi-context", "Additional multivalue request-context property for simulation")
 
 		fs.Var(&opts.OverlayFiles, "o", "alias for -overlay")
 		fs.Var(&opts.OverlayFiles, "overlay", "Entity definition file for overrides")
@@ -268,6 +270,7 @@ func Parse() (*Flags, error) {
 
 		fs.Var(&opts.Context, "c", "alias for -context")
 		fs.Var(&opts.Context, "context", "additional request-context key=value pairs")
+		fs.Var(&opts.MultiContext, "multi-context", "additional multivalue request-context key=value pairs")
 
 		fs.Var(&opts.OverlayFiles, "overlay", "entity definition file for overrides")
 

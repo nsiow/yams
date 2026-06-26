@@ -68,6 +68,9 @@ func Run(opts *cli.Flags) {
 	if len(opts.Context) > 0 {
 		simOpts = append(simOpts, sim.WithAdditionalProperties(opts.Context))
 	}
+	if len(opts.MultiContext) > 0 {
+		simOpts = append(simOpts, sim.WithAdditionalMultiValueProperties(opts.MultiContext))
+	}
 	sopts := sim.NewOptions(simOpts...)
 
 	if len(opts.OverlayFiles) > 0 {

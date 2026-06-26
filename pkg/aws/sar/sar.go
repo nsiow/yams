@@ -52,16 +52,24 @@ func Lookup(service, action string) (*types.Action, bool) {
 
 // LookupString allows for querying a specific api call based on the "service:action" shorthand
 func LookupString(serviceAction string) (*types.Action, bool) {
-	// normalize different delimiters
-	serviceAction = strings.Replace(serviceAction, ".", ":", 1)
-	serviceAction = strings.Replace(serviceAction, "-", ":", 1)
-
-	components := strings.Split(serviceAction, ":")
-	if len(components) != 2 {
-		return nil, false
+	if service, action, ok := strings.Cut(serviceAction, ":"); ok {
+		return Lookup(service, action)
 	}
 
-	return Lookup(components[0], components[1])
+	if service, action, ok := strings.Cut(serviceAction, "."); ok {
+		return Lookup(service, action)
+	}
+
+	for i := range serviceAction {
+		if serviceAction[i] != '-' {
+			continue
+		}
+		if action, ok := Lookup(serviceAction[:i], serviceAction[i+1:]); ok {
+			return action, true
+		}
+	}
+
+	return nil, false
 }
 
 // MustLookupString allows for querying a specific api call based on the "service:action" with

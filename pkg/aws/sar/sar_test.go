@@ -97,6 +97,16 @@ func TestLookupStringInvalid(t *testing.T) {
 	})
 }
 
+func TestLookupStringHyphenatedService(t *testing.T) {
+	action, exists := LookupString("s3-object-lambda:GetObject")
+	if !exists {
+		t.Fatal("expected s3-object-lambda:GetObject to resolve")
+	}
+	if action.Service != "s3-object-lambda" || action.Name != "GetObject" {
+		t.Fatalf("unexpected action: %s", action.ShortName())
+	}
+}
+
 func TestMustLookupString(t *testing.T) {
 	tests := []testlib.TestCase[string, bool]{
 		{

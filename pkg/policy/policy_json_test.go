@@ -237,6 +237,73 @@ func TestPolicyGrammar(t *testing.T) {
 			`,
 			ShouldErr: true,
 		},
+		{
+			Name: "invalid_numeric_action",
+			Input: `
+				{
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Action": 0,
+							"Resource": "*"
+						}
+					]
+				}
+			`,
+			ShouldErr: true,
+		},
+		{
+			Name: "invalid_numeric_resource",
+			Input: `
+				{
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Action": "*",
+							"Resource": [0]
+						}
+					]
+				}
+			`,
+			ShouldErr: true,
+		},
+		{
+			Name: "valid_numeric_condition",
+			Input: `
+				{
+					"Version": "2012-10-17",
+					"Statement": [
+						{
+							"Effect": "Allow",
+							"Action": "*",
+							"Resource": "*",
+							"Condition": {
+								"NumericLessThan": {
+									"aws:MultiFactorAuthAge": 100
+								}
+							}
+						}
+					]
+				}
+			`,
+			Want: Policy{
+				Version: "2012-10-17",
+				Statement: []Statement{
+					{
+						Effect:   "Allow",
+						Action:   []string{"*"},
+						Resource: []string{"*"},
+						Condition: ConditionBlock{
+							"NumericLessThan": ConditionValues{
+								"aws:MultiFactorAuthAge": []string{"100"},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(s string) (Policy, error) {

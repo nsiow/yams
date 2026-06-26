@@ -2,6 +2,8 @@ package sim
 
 import (
 	"strings"
+
+	"github.com/nsiow/yams/pkg/loaders/awsconfig"
 )
 
 // isStrictCall returns whether the specified API is one that requires both Principal + Resource
@@ -15,8 +17,10 @@ func isStrictCall(s *subject) bool {
 		return false
 	}
 
-	// sts assume-role case
-	if strings.EqualFold("sts:assumerole", s.auth.Action.ShortName()) {
+	// STS calls that target IAM roles require the role trust policy.
+	if strings.EqualFold("sts", s.auth.Action.Service) &&
+		strings.EqualFold(awsconfig.CONST_TYPE_AWS_IAM_ROLE, s.auth.Resource.Type) &&
+		s.auth.Action.Targets(s.auth.Resource.Arn) {
 		return true
 	}
 

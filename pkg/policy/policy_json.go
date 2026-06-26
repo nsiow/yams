@@ -1,7 +1,9 @@
 package policy
 
 import (
+	stdjson "encoding/json"
 	"fmt"
+	"strings"
 
 	json "github.com/bytedance/sonic"
 )
@@ -88,6 +90,38 @@ func (e *Effect) UnmarshalJSON(data []byte) error {
 	}
 }
 
+// UnmarshalJSON instructs how to create Statement fields from raw bytes
+func (s *Statement) UnmarshalJSON(data []byte) error {
+	if err := validateStatementValues(data); err != nil {
+		return err
+	}
+
+	type alias Statement
+	var a alias
+	err := json.Unmarshal(data, &a)
+	if err != nil {
+		return fmt.Errorf("unable to parse:\nstatement = %s\nerror = %v", data, err)
+	}
+
+	*s = Statement(a)
+	return nil
+}
+
+func validateStatementValues(data []byte) error {
+	var raw map[string]stdjson.RawMessage
+	if err := stdjson.Unmarshal(data, &raw); err != nil {
+		return nil
+	}
+
+	for _, field := range []string{"Action", "NotAction", "Resource", "NotResource"} {
+		value, ok := raw[field]
+		if ok && !valueIsString(value) {
+			return fmt.Errorf("statement value for %s must be string or []string", field)
+		}
+	}
+	return nil
+}
+
 // MarshalJSON instructs how to convert Principal fields to raw bytes
 func (p *Principal) MarshalJSON() ([]byte, error) {
 	if p.All {
@@ -107,6 +141,10 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	if err := validatePrincipalValues(data); err != nil {
+		return err
+	}
+
 	type alias Principal
 	a := alias(*p)
 	err := json.Unmarshal(data, &a)
@@ -119,6 +157,41 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 	p.Service = a.Service
 	p.CanonicalUser = a.CanonicalUser
 	return nil
+}
+
+func validatePrincipalValues(data []byte) error {
+	var raw map[string]stdjson.RawMessage
+	if err := stdjson.Unmarshal(data, &raw); err != nil {
+		return nil
+	}
+
+	for key, value := range raw {
+		if !valueIsString(value) {
+			return fmt.Errorf("principal value for %s must be string or []string", key)
+		}
+	}
+	return nil
+}
+
+func valueIsString(data []byte) bool {
+	trimmed := strings.TrimSpace(string(data))
+	if strings.HasPrefix(trimmed, `"`) {
+		return true
+	}
+	if !strings.HasPrefix(trimmed, "[") {
+		return false
+	}
+
+	var raw []stdjson.RawMessage
+	if err := stdjson.Unmarshal(data, &raw); err != nil {
+		return false
+	}
+	for _, item := range raw {
+		if !strings.HasPrefix(strings.TrimSpace(string(item)), `"`) {
+			return false
+		}
+	}
+	return true
 }
 
 // IsZero is used for marshaling to indicate when the field should be omitted

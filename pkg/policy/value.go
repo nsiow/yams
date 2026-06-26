@@ -1,8 +1,10 @@
 package policy
 
 import (
+	stdjson "encoding/json"
 	"fmt"
 	"slices"
+	"strings"
 
 	json "github.com/bytedance/sonic"
 )
@@ -28,51 +30,86 @@ func (v Value) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON instructs how to create Value fields from raw bytes
 // TODO(nsiow) break up this function
 func (v *Value) UnmarshalJSON(data []byte) error {
-	// We should have either a string (""), an array ([]), or null (null); anything shorter is invalid
-	if len(data) < 2 {
+	if len(data) == 0 {
+		return fmt.Errorf("value too short: %s", data)
+	}
+	data = []byte(strings.TrimSpace(string(data)))
+	if len(data) == 0 {
 		return fmt.Errorf("value too short: %s", data)
 	}
 
-	// Check for null case
-	if len(data) == 4 && string(data) == "null" {
-		*v = []string{}
-		return nil
+	value, ok, err := parseScalarValue(data)
+	if err != nil {
+		return err
 	}
-
-	// Check for true/false
-	if len(data) == 4 && string(data) == "true" {
-		*v = []string{"true"}
-		return nil
-	}
-	if len(data) == 5 && string(data) == "false" {
-		*v = []string{"false"}
+	if ok {
+		if value == "" && strings.TrimSpace(string(data)) == "null" {
+			*v = []string{}
+		} else {
+			*v = []string{value}
+		}
 		return nil
 	}
 
 	switch {
-	// Handle single-value case
-	case data[0] == '"':
-		var s string
-		err := json.Unmarshal(data, &s)
-		if err != nil {
-			return fmt.Errorf("error in single-value clause of Value:\nerror=%s\ndata=%v", err, data)
-		}
-		a := []string{s}
-		*v = a
-		return nil
 	// Handle multi-value case
 	case data[0] == '[':
-		var a []string
-		err := json.Unmarshal(data, &a)
+		var raw []stdjson.RawMessage
+		err := stdjson.Unmarshal(data, &raw)
 		if err != nil {
 			return fmt.Errorf("error in multi-value clause of Value:\nerror=%s\ndata=%v", err, data)
+		}
+		a := make([]string, len(raw))
+		for i, item := range raw {
+			value, ok, err := parseScalarValue(item)
+			if err != nil {
+				return err
+			}
+			if !ok || strings.TrimSpace(string(item)) == "null" {
+				return fmt.Errorf("array values should be string, number, or bool:\ndata=%s", item)
+			}
+			a[i] = value
 		}
 		*v = a
 		return nil
 	// Anything else is an error
 	default:
-		return fmt.Errorf("should be string or []string, but received invalid input:\ndata=%s", data)
+		return fmt.Errorf("should be string, number, bool, or []value, but received invalid input:\ndata=%s", data)
 	}
+}
+
+func parseScalarValue(data []byte) (string, bool, error) {
+	trimmed := strings.TrimSpace(string(data))
+
+	// Check for null case
+	if trimmed == "null" {
+		return "", true, nil
+	}
+
+	// Check for true/false
+	if trimmed == "true" {
+		return "true", true, nil
+	}
+	if trimmed == "false" {
+		return "false", true, nil
+	}
+
+	// Handle single-value case
+	if strings.HasPrefix(trimmed, `"`) {
+		var s string
+		err := json.Unmarshal([]byte(trimmed), &s)
+		if err != nil {
+			return "", false, fmt.Errorf("error in single-value clause of Value:\nerror=%s\ndata=%v", err, data)
+		}
+		return s, true, nil
+	}
+
+	if stdjson.Valid([]byte(trimmed)) && len(trimmed) > 0 &&
+		((trimmed[0] >= '0' && trimmed[0] <= '9') || trimmed[0] == '-') {
+		return trimmed, true, nil
+	}
+
+	return "", false, nil
 }
 
 // Count returns the number of strings represented in the Value
