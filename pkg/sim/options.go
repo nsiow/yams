@@ -19,6 +19,9 @@ type Options struct {
 	// context
 	Context Bag[string]
 
+	// MultiValueContext specifies additional multivalue request context keys
+	MultiValueContext Bag[[]string]
+
 	// Overlays allows one to specify a special "overlay" Universe in which entity lookup takes place
 	// over the primary simulation Universe
 	Overlay *entities.Universe
@@ -82,6 +85,13 @@ func WithOverlay(overlays *entities.Universe) OptionF {
 func WithAdditionalProperties(props map[string]string) OptionF {
 	return func(opt *Options) {
 		opt.Context = NewBagFromMap(props)
+	}
+}
+
+// WithAdditionalMultiValueProperties adds multivalue properties to the request context
+func WithAdditionalMultiValueProperties(props map[string][]string) OptionF {
+	return func(opt *Options) {
+		opt.MultiValueContext = NewBagFromMap(props)
 	}
 }
 

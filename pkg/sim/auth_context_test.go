@@ -804,7 +804,7 @@ func TestSubstitute(t *testing.T) {
 				str: "${aws:SomeStringKey}",
 				ac:  AuthContext{},
 			},
-			Want: EMPTY,
+			Want: "${aws:SomeStringKey}",
 		},
 		{
 			Name: "invalid_key",
@@ -812,7 +812,23 @@ func TestSubstitute(t *testing.T) {
 				str: "${aws:SomeStringKey}",
 				ac:  AuthContext{},
 			},
-			Want: EMPTY,
+			Want: "${aws:SomeStringKey}",
+		},
+		{
+			Name: "default_value",
+			Input: input{
+				str: "${aws:SomeStringKey, 'fallback'}",
+				ac:  AuthContext{},
+			},
+			Want: "fallback",
+		},
+		{
+			Name: "static_values",
+			Input: input{
+				str: "${*}${?}${$}",
+				ac:  AuthContext{},
+			},
+			Want: "*?$",
 		},
 	}
 
@@ -972,6 +988,40 @@ func TestSARValidation(t *testing.T) {
 				key: "aws:ResourceTag/Foo",
 			},
 			Want: "Bar", // aws:resourcetag now supported for S3 objects
+		},
+		{
+			Name: "s3_existing_object_tag",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("s3:getobject"),
+					Resource: &entities.FrozenResource{
+						Arn:         "arn:aws:s3:::MyBucket/foo.txt",
+						ArnSegments: entities.SplitArn("arn:aws:s3:::MyBucket/foo.txt"),
+						Tags: []entities.Tag{
+							{
+								Key:   "Project",
+								Value: "Yams",
+							},
+						},
+					},
+				},
+				key: "s3:ExistingObjectTag/Project",
+			},
+			Want: "Yams",
+		},
+		{
+			Name: "s3_resource_account",
+			Input: input{
+				ac: AuthContext{
+					Action: sar.MustLookupString("s3:getobject"),
+					Resource: &entities.FrozenResource{
+						Arn:       "arn:aws:s3:::MyBucket/foo.txt",
+						AccountId: "55555",
+					},
+				},
+				key: "s3:ResourceAccount",
+			},
+			Want: "55555",
 		},
 		{
 			Name: "yet_another_invalid_resource_condition",

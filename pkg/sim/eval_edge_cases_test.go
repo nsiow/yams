@@ -28,7 +28,10 @@ func TestIsStrictCall(t *testing.T) {
 			Input: AuthContext{
 				Action:    sar.MustLookupString("sts:assumerole"),
 				Principal: &entities.FrozenPrincipal{},
-				Resource:  &entities.FrozenResource{},
+				Resource: &entities.FrozenResource{
+					Arn:  "arn:aws:iam::88888:role/somerole",
+					Type: "AWS::IAM::Role",
+				},
 			},
 			Want: true,
 		},

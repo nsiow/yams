@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/bytedance/sonic"
 	json "github.com/bytedance/sonic"
 	"github.com/bytedance/sonic/ast"
 	"github.com/nsiow/yams/pkg/entities"
@@ -38,7 +37,7 @@ func (l *Loader) LoadJson(reader io.Reader) error {
 	}
 
 	// Parse as AST for efficient array iteration
-	root, err := sonic.Get(data)
+	root, err := json.Get(data)
 	if err != nil {
 		return fmt.Errorf("unable to parse JSON: %w", err)
 	}

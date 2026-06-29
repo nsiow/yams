@@ -10,6 +10,8 @@ type subject struct {
 	opts  Options
 	trc   trace.Trace
 	extra Extra
+
+	policyVersion string
 }
 
 // newSubject creates a new `subject` struct with the provided authorization context and options

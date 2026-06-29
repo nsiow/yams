@@ -15,10 +15,11 @@ import (
 // -------------------------------------------------------------------------------------------------
 
 type SimInput struct {
-	Principal string            `json:"principal"`
-	Action    string            `json:"action"`
-	Resource  string            `json:"resource"`
-	Context   map[string]string `json:"context"`
+	Principal         string              `json:"principal"`
+	Action            string              `json:"action"`
+	Resource          string              `json:"resource"`
+	Context           map[string]string   `json:"context"`
+	MultiValueContext map[string][]string `json:"multiValueContext"`
 
 	Fuzzy   bool    `json:"fuzzy"`
 	Explain bool    `json:"explain"`
@@ -60,7 +61,10 @@ func (api *API) SimRun(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// construct options
-	opts := sim.NewOptions(sim.WithAdditionalProperties(input.Context))
+	opts := sim.NewOptions(
+		sim.WithAdditionalProperties(input.Context),
+		sim.WithAdditionalMultiValueProperties(input.MultiValueContext),
+	)
 	opts.EnableTracing = input.Explain || input.Trace
 	opts.Overlay = input.Overlay.Universe()
 	opts.EnableFuzzyMatchArn = input.Fuzzy

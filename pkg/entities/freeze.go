@@ -11,7 +11,7 @@ import (
 // SplitArn splits an ARN into its colon-separated segments for efficient wildcard matching.
 // This is done once at freeze time to avoid repeated allocations during simulation.
 func SplitArn(arn string) []string {
-	return strings.Split(arn, ":")
+	return strings.SplitN(arn, ":", 6)
 }
 
 // -------------------------------------------------------------------------------------------------

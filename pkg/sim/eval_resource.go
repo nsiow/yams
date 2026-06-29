@@ -1,5 +1,12 @@
 package sim
 
+import (
+	"strings"
+
+	"github.com/nsiow/yams/pkg/loaders/awsconfig"
+	"github.com/nsiow/yams/pkg/policy"
+)
+
 // evalResourceAccess calculates the Resource-side access with regard to the specified Principal
 func evalResourceAccess(s *subject) Decision {
 	trc := s.trc.Enabled()
@@ -19,7 +26,7 @@ func evalResourceAccess(s *subject) Decision {
 	decision := evalPolicy(s, s.auth.Resource.Policy,
 		evalStatementMatchesAction,
 		evalStatementMatchesResource,
-		evalStatementMatchesPrincipal,
+		evalResourceStatementMatchesPrincipal,
 		evalStatementMatchesCondition,
 	)
 
@@ -28,4 +35,35 @@ func evalResourceAccess(s *subject) Decision {
 	s.extra.ResourceGrantsPrincipalAccess = evalResourceAccessGrantsPrincipal(s)
 
 	return decision
+}
+
+func evalResourceStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
+	if evalResourceDenyNotPrincipalMatchesBoundary(s, stmt) {
+		return true
+	}
+	return evalStatementMatchesPrincipal(s, stmt)
+}
+
+func evalResourceDenyNotPrincipalMatchesBoundary(s *subject, stmt *policy.Statement) bool {
+	return stmt.Effect == policy.EFFECT_DENY &&
+		(stmt.NotPrincipal.All || !stmt.NotPrincipal.Empty()) &&
+		evalPrincipalHasPermissionsBoundary(s) &&
+		evalPrincipalIsIAMUserOrRole(s)
+}
+
+func evalResourceGrantRequiresBoundary(s *subject) bool {
+	return s.auth.Principal != nil &&
+		strings.EqualFold(s.auth.Principal.Type, awsconfig.CONST_TYPE_AWS_IAM_ROLE)
+}
+
+func evalPrincipalHasPermissionsBoundary(s *subject) bool {
+	return s.auth.Principal != nil && s.auth.Principal.PermissionBoundary.Arn != ""
+}
+
+func evalPrincipalIsIAMUserOrRole(s *subject) bool {
+	if s.auth.Principal == nil {
+		return false
+	}
+	return strings.EqualFold(s.auth.Principal.Type, awsconfig.CONST_TYPE_AWS_IAM_USER) ||
+		strings.EqualFold(s.auth.Principal.Type, awsconfig.CONST_TYPE_AWS_IAM_ROLE)
 }

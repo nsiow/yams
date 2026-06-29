@@ -14,9 +14,10 @@ import (
 // -------------------------------------------------------------------------------------------------
 
 type WhichPrincipalsInput struct {
-	Action   string            `json:"action"`
-	Resource string            `json:"resource"`
-	Context  map[string]string `json:"context"`
+	Action            string              `json:"action"`
+	Resource          string              `json:"resource"`
+	Context           map[string]string   `json:"context"`
+	MultiValueContext map[string][]string `json:"multiValueContext"`
 
 	Overlay Overlay `json:"overlay"`
 
@@ -43,7 +44,10 @@ func (api *API) WhichPrincipals(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	opts := sim.NewOptions(sim.WithAdditionalProperties(input.Context))
+	opts := sim.NewOptions(
+		sim.WithAdditionalProperties(input.Context),
+		sim.WithAdditionalMultiValueProperties(input.MultiValueContext),
+	)
 	opts.Overlay = input.Overlay.Universe()
 	opts.EnableFuzzyMatchArn = input.Fuzzy
 

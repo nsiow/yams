@@ -574,6 +574,51 @@ func TestWhichActions(t *testing.T) {
 			},
 			ShouldErr: true,
 		},
+		{
+			Name: "cross_service_target_action",
+			Input: input{
+				uv: func() *entities.Universe {
+					uv := entities.NewUniverse()
+					uv.PutPrincipal(entities.Principal{
+						Type:      "AWS::IAM::Role",
+						Arn:       "arn:aws:iam::88888:role/caller",
+						AccountId: "88888",
+						InlinePolicies: []policy.Policy{
+							{
+								Statement: []policy.Statement{
+									{
+										Effect:   policy.EFFECT_ALLOW,
+										Action:   []string{"sts:AssumeRole"},
+										Resource: []string{"arn:aws:iam::88888:role/target"},
+									},
+								},
+							},
+						},
+					})
+					uv.PutResource(entities.Resource{
+						Type:      "AWS::IAM::Role",
+						Arn:       "arn:aws:iam::88888:role/target",
+						AccountId: "88888",
+						Policy: policy.Policy{
+							Statement: []policy.Statement{
+								{
+									Effect: policy.EFFECT_ALLOW,
+									Principal: policy.Principal{
+										AWS: []string{"arn:aws:iam::88888:role/caller"},
+									},
+									Action:   []string{"sts:AssumeRole"},
+									Resource: []string{"*"},
+								},
+							},
+						},
+					})
+					return uv
+				}(),
+				principal: "arn:aws:iam::88888:role/caller",
+				resource:  "arn:aws:iam::88888:role/target",
+			},
+			Want: []string{"sts:AssumeRole"},
+		},
 	}
 
 	testlib.RunTestSuite(t, tests, func(i input) ([]string, error) {

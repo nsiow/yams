@@ -92,6 +92,24 @@ func TestStringEquals(t *testing.T) {
 			Want: true,
 		},
 		{
+			Name: "decimal_match",
+			Input: input{
+				ac: AuthContext{
+					Properties: NewBagFromMap(map[string]string{
+						"s3:TlsVersion": "1.1",
+					}),
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"NumericLessThan": {
+							"s3:TlsVersion": []string{"1.2"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
 			Name: "simple_nomatch",
 			Input: input{
 				ac: AuthContext{
@@ -2142,6 +2160,24 @@ func TestIfExists(t *testing.T) {
 			Want: true,
 		},
 		{
+			Name: "string_equals_if_exists_present_empty",
+			Input: input{
+				ac: AuthContext{
+					Properties: NewBagFromMap(map[string]string{
+						"aws:SomeContextKey": "",
+					}),
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"StringEqualsIfExists": {
+							"aws:SomeContextKey": []string{"foo"},
+						},
+					},
+				},
+			},
+			Want: false,
+		},
+		{
 			Name: "for_any_value_if_exists_missing",
 			Input: input{
 				ac: AuthContext{},
@@ -2385,6 +2421,24 @@ func TestNull(t *testing.T) {
 				ac: AuthContext{
 					Properties: NewBagFromMap(map[string]string{
 						"aws:TokenIssueTime": "2024-01-01T00:00:00Z",
+					}),
+				},
+				stmt: policy.Statement{
+					Condition: policy.ConditionBlock{
+						"Null": {
+							"aws:TokenIssueTime": []string{"false"},
+						},
+					},
+				},
+			},
+			Want: true,
+		},
+		{
+			Name: "key_present_empty_want_present",
+			Input: input{
+				ac: AuthContext{
+					Properties: NewBagFromMap(map[string]string{
+						"aws:TokenIssueTime": "",
 					}),
 				},
 				stmt: policy.Statement{

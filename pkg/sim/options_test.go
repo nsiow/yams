@@ -60,6 +60,23 @@ func TestOptions(t *testing.T) {
 		},
 		{
 			Input: []OptionF{
+				WithAdditionalMultiValueProperties(
+					map[string][]string{
+						"aws:TagKeys": {"foo", "bar"},
+					},
+				),
+			},
+			Want: Options{
+				DefaultS3Key: "*",
+				MultiValueContext: NewBagFromMap(
+					map[string][]string{
+						"aws:TagKeys": {"foo", "bar"},
+					},
+				),
+			},
+		},
+		{
+			Input: []OptionF{
 				WithDefaultS3Key("something else"),
 			},
 			Want: Options{

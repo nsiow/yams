@@ -61,9 +61,9 @@ func TestUnmarshal(t *testing.T) {
 		{Input: `{"S": true}`, Want: Value{"true"}},
 		{Input: `{"S": false}`, Want: Value{"false"}},
 		{Input: `{"S": "\""}`, Want: Value{`"`}},
-		{Input: `{"S": [0]}`, ShouldErr: true},
-		{Input: `{"S": 0}`, ShouldErr: true},
-		{Input: `{"S": 1000}`, ShouldErr: true},
+		{Input: `{"S": [0, 1.2]}`, Want: Value{"0", "1.2"}},
+		{Input: `{"S": 0}`, Want: Value{"0"}},
+		{Input: `{"S": 1000}`, Want: Value{"1000"}},
 		{Input: `{"S": true`, ShouldErr: true},
 	}
 
@@ -101,9 +101,15 @@ func TestValue_UnmarshalJSON_ErrorPaths(t *testing.T) {
 	// Test error path in multi-value clause (line 66-67)
 	// An array that starts with [ but contains invalid elements
 	var v2 Value
-	err = v2.UnmarshalJSON([]byte(`[1, 2, 3]`))
+	err = v2.UnmarshalJSON([]byte(`[{}]`))
 	if err == nil {
 		t.Fatal("expected error for invalid array elements but got nil")
+	}
+
+	var v3 Value
+	err = v3.UnmarshalJSON([]byte(`   `))
+	if err == nil {
+		t.Fatal("expected error for empty input but got nil")
 	}
 }
 

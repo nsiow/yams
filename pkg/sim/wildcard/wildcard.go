@@ -20,33 +20,19 @@ func MatchSegments(pattern, value string) bool {
 		return false
 	}
 
-	// Iterate both strings segment by segment without allocating
-	for {
-		pi := strings.IndexByte(pattern, ':')
-		vi := strings.IndexByte(value, ':')
-
-		// Both must have a boundary or both must be at the final segment
-		if (pi < 0) != (vi < 0) {
-			return false
-		}
-
-		var pSeg, vSeg string
-		if pi < 0 {
-			pSeg, vSeg = pattern, value
-		} else {
-			pSeg, vSeg = pattern[:pi], value[:vi]
-		}
-
-		if !MatchString(pSeg, vSeg) {
-			return false
-		}
-
-		if pi < 0 {
-			return true
-		}
-		pattern = pattern[pi+1:]
-		value = value[vi+1:]
+	patternSegments := splitSegments(pattern)
+	valueSegments := splitSegments(value)
+	if len(patternSegments) != len(valueSegments) {
+		return false
 	}
+
+	for i, pSeg := range patternSegments {
+		if !MatchString(pSeg, valueSegments[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // MatchSegmentsPreSplit is an optimized version of MatchSegments that accepts pre-split
@@ -59,31 +45,25 @@ func MatchSegmentsPreSplit(pattern string, valueSegments []string) bool {
 		return false
 	}
 
-	// Iterate pattern segments by index, compare against pre-split value segments
-	idx := 0
-	for {
-		pi := strings.IndexByte(pattern, ':')
-
-		var pSeg string
-		if pi < 0 {
-			pSeg = pattern
-		} else {
-			pSeg = pattern[:pi]
-		}
-
-		if idx >= len(valueSegments) {
-			return false
-		}
-		if !MatchString(pSeg, valueSegments[idx]) {
-			return false
-		}
-		idx++
-
-		if pi < 0 {
-			return idx == len(valueSegments)
-		}
-		pattern = pattern[pi+1:]
+	patternSegments := splitSegments(pattern)
+	if len(patternSegments) != len(valueSegments) {
+		return false
 	}
+
+	for i, pSeg := range patternSegments {
+		if !MatchString(pSeg, valueSegments[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func splitSegments(value string) []string {
+	if strings.HasPrefix(value, "arn:") {
+		return strings.SplitN(value, ":", 6)
+	}
+	return strings.Split(value, ":")
 }
 
 // MatchString handles the comparison of a single segment of an AWS value
@@ -236,22 +216,6 @@ func MatchArn(pattern, value string) bool {
 	patternPath := patternSegments[5]
 	valuePath := valueSegments[5]
 
-	// Resource type should be the same
-	patternType, newPattern, patternFound := strings.Cut(patternPath, "/")
-	valueType, newValue, valueFound := strings.Cut(valuePath, "/")
-	switch {
-	case patternFound && valueFound:
-		if patternType != valueType {
-			return false
-		}
-		patternPath = newPattern
-		valuePath = newValue
-	case !patternFound && !valueFound:
-		break
-	case patternFound != valueFound:
-		return false
-	}
-
 	return MatchString(patternPath, valuePath)
 }
 
@@ -279,9 +243,9 @@ func matchViaRegex(pattern, value string) bool {
 	for i < len(pattern) {
 		switch pattern[i] {
 		case '*':
-			buf.WriteString(`[^:]*`)
+			buf.WriteString(`.*`)
 		case '?':
-			buf.WriteString(`[^:]`)
+			buf.WriteByte('.')
 		default:
 			// Find the extent of the literal portion
 			j := i

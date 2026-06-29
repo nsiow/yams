@@ -252,6 +252,7 @@ func (s *Simulator) SimulateByArnWithOptions(
 	var err error
 	ac := AuthContext{}
 	ac.Properties = opts.Context
+	ac.MultiValueProperties = opts.MultiValueContext
 
 	if resolvedAction, ok := sar.LookupString(action); !ok {
 		return nil, fmt.Errorf("unable to resolve action '%s'", action)
@@ -304,8 +305,7 @@ func (s *Simulator) WhichPrincipals(action, resource string, opts Options) ([]st
 }
 
 func (s *Simulator) WhichActions(principal, resource string, opts Options) ([]string, error) {
-	svc := arn.Service(resource)
-	actions := sar.ActionsByService(svc)
+	actions := actionsForResource(resource)
 
 	matrix, err := s.Product(
 		[]string{principal},
@@ -324,6 +324,32 @@ func (s *Simulator) WhichActions(principal, resource string, opts Options) ([]st
 		}
 	}
 	return allowed, nil
+}
+
+func actionsForResource(resource string) []types.Action {
+	svc := arn.Service(resource)
+	seen := map[string]bool{}
+	actions := []types.Action{}
+
+	add := func(action types.Action) {
+		key := action.ShortName()
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+		actions = append(actions, action)
+	}
+
+	for _, action := range sar.ActionsByService(svc) {
+		add(action)
+	}
+	for _, action := range sar.AllActions() {
+		if action.Targets(resource) {
+			add(action)
+		}
+	}
+
+	return actions
 }
 
 func (s *Simulator) WhichResources(principal, action string, opts Options) ([]string, error) {
@@ -637,10 +663,11 @@ func (s *Simulator) submitPartition(
 			for _, r := range ar.resources {
 				batch.Jobs = append(batch.Jobs, simIn{
 					AuthContext: AuthContext{
-						Action:     ar.action,
-						Principal:  p,
-						Resource:   specializeForPrincipal(r, p),
-						Properties: opts.Context,
+						Action:               ar.action,
+						Principal:            p,
+						Resource:             specializeForPrincipal(r, p),
+						Properties:           opts.Context,
+						MultiValueProperties: opts.MultiValueContext,
 					},
 					Options: opts,
 				})

@@ -84,7 +84,7 @@ func TestStringNotLikeIgnoreCase(t *testing.T) {
 			Want: false,
 		},
 		{
-			Name: "missing_returns_false",
+			Name: "missing_returns_true",
 			Input: input{
 				ac: AuthContext{},
 				stmt: policy.Statement{
@@ -93,7 +93,7 @@ func TestStringNotLikeIgnoreCase(t *testing.T) {
 					},
 				},
 			},
-			Want: false,
+			Want: true,
 		},
 	}
 

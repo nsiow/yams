@@ -67,11 +67,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.StringNotEquals: Mod_ResolveVariables(
-		Mod_MustExist(
-			Mod_Not(
-				Cond_MatchAny(
-					Cond_StringEquals,
-				),
+		Mod_Not(
+			Cond_MatchAny(
+				Cond_StringEquals,
 			),
 		),
 	),
@@ -83,12 +81,10 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.StringNotEqualsIgnoreCase: Mod_ResolveVariables(
-		Mod_MustExist(
-			Mod_Not(
-				Cond_MatchAny(
-					Mod_IgnoreCase(
-						Cond_StringEquals,
-					),
+		Mod_Not(
+			Cond_MatchAny(
+				Mod_IgnoreCase(
+					Cond_StringEquals,
 				),
 			),
 		),
@@ -99,11 +95,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.StringNotLike: Mod_ResolveVariables(
-		Mod_MustExist(
-			Mod_Not(
-				Cond_MatchAny(
-					Cond_StringLike,
-				),
+		Mod_Not(
+			Cond_MatchAny(
+				Cond_StringLike,
 			),
 		),
 	),
@@ -115,12 +109,10 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.StringNotLikeIgnoreCase: Mod_ResolveVariables(
-		Mod_MustExist(
-			Mod_Not(
-				Cond_MatchAny(
-					Mod_IgnoreCase(
-						Cond_StringLike,
-					),
+		Mod_Not(
+			Cond_MatchAny(
+				Mod_IgnoreCase(
+					Cond_StringLike,
 				),
 			),
 		),
@@ -135,12 +127,10 @@ var ConditionOperatorMap = map[string]CondInner{
 			Cond_NumericEquals,
 		),
 	),
-	condition.NumericNotEquals: Mod_MustExist(
-		Mod_Not(
-			Cond_MatchAny(
-				Mod_Number(
-					Cond_NumericEquals,
-				),
+	condition.NumericNotEquals: Mod_Not(
+		Cond_MatchAny(
+			Mod_Number(
+				Cond_NumericEquals,
 			),
 		),
 	),
@@ -171,36 +161,34 @@ var ConditionOperatorMap = map[string]CondInner{
 
 	condition.DateEquals: Cond_MatchAny(
 		Mod_Date(
-			Cond_NumericEquals,
+			Cond_DateEquals,
 		),
 	),
-	condition.DateNotEquals: Mod_MustExist(
-		Mod_Not(
-			Cond_MatchAny(
-				Mod_Date(
-					Cond_NumericEquals,
-				),
+	condition.DateNotEquals: Mod_Not(
+		Cond_MatchAny(
+			Mod_Date(
+				Cond_DateEquals,
 			),
 		),
 	),
 	condition.DateLessThan: Cond_MatchAny(
 		Mod_Date(
-			Cond_NumericLessThan,
+			Cond_DateLessThan,
 		),
 	),
 	condition.DateLessThanEquals: Cond_MatchAny(
 		Mod_Date(
-			Cond_NumericLessThanEquals,
+			Cond_DateLessThanEquals,
 		),
 	),
 	condition.DateGreaterThan: Cond_MatchAny(
 		Mod_Date(
-			Cond_NumericGreaterThan,
+			Cond_DateGreaterThan,
 		),
 	),
 	condition.DateGreaterThanEquals: Cond_MatchAny(
 		Mod_Date(
-			Cond_NumericGreaterThanEquals,
+			Cond_DateGreaterThanEquals,
 		),
 	),
 
@@ -237,12 +225,10 @@ var ConditionOperatorMap = map[string]CondInner{
 			Cond_IpAddress,
 		),
 	),
-	condition.NotIpAddress: Mod_MustExist(
-		Mod_Not(
-			Cond_MatchAny(
-				Mod_Network(
-					Cond_IpAddress,
-				),
+	condition.NotIpAddress: Mod_Not(
+		Cond_MatchAny(
+			Mod_Network(
+				Cond_IpAddress,
 			),
 		),
 	),
@@ -257,11 +243,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.ArnNotEquals: Mod_ResolveVariables(
-		Mod_MustExist(
-			Mod_Not(
-				Cond_MatchAny(
-					Cond_ArnLike,
-				),
+		Mod_Not(
+			Cond_MatchAny(
+				Cond_ArnLike,
 			),
 		),
 	),
@@ -271,11 +255,9 @@ var ConditionOperatorMap = map[string]CondInner{
 		),
 	),
 	condition.ArnNotLike: Mod_ResolveVariables(
-		Mod_MustExist(
-			Mod_Not(
-				Cond_MatchAny(
-					Cond_ArnLike,
-				),
+		Mod_Not(
+			Cond_MatchAny(
+				Cond_ArnLike,
 			),
 		),
 	),
@@ -318,27 +300,47 @@ func Cond_StringLike(s *subject, left, right string) bool {
 }
 
 // Cond_NumericEquals defines the `NumericEquals` condition function
-func Cond_NumericEquals(s *subject, left, right int) bool {
+func Cond_NumericEquals(s *subject, left, right float64) bool {
 	return left == right
 }
 
 // Cond_NumericLessThan defines the `NumericLessThan` condition function
-func Cond_NumericLessThan(s *subject, left, right int) bool {
+func Cond_NumericLessThan(s *subject, left, right float64) bool {
 	return left < right
 }
 
 // Cond_NumericLessThanEquals defines the `NumericLessThanEquals` condition function
-func Cond_NumericLessThanEquals(s *subject, left, right int) bool {
+func Cond_NumericLessThanEquals(s *subject, left, right float64) bool {
 	return left <= right
 }
 
 // Cond_NumericGreaterThan defines the `NumericGreaterThan` condition function
-func Cond_NumericGreaterThan(s *subject, left, right int) bool {
+func Cond_NumericGreaterThan(s *subject, left, right float64) bool {
 	return left > right
 }
 
 // Cond_NumericGreaterThanEquals defines the `NumericGreaterThanEquals` condition function
-func Cond_NumericGreaterThanEquals(s *subject, left, right int) bool {
+func Cond_NumericGreaterThanEquals(s *subject, left, right float64) bool {
+	return left >= right
+}
+
+func Cond_DateEquals(s *subject, left, right int) bool {
+	return left == right
+}
+
+func Cond_DateLessThan(s *subject, left, right int) bool {
+	return left < right
+}
+
+func Cond_DateLessThanEquals(s *subject, left, right int) bool {
+	return left <= right
+}
+
+func Cond_DateGreaterThan(s *subject, left, right int) bool {
+	return left > right
+}
+
+func Cond_DateGreaterThanEquals(s *subject, left, right int) bool {
 	return left >= right
 }
 
@@ -373,6 +375,19 @@ func Cond_Null(s *subject, left string, right policy.Value) bool {
 	return false
 }
 
+func Cond_NullKey(s *subject, key string, right policy.Value) bool {
+	keyIsAbsent := !s.auth.HasAnyKey(key, s.opts)
+
+	for _, v := range right {
+		wantAbsent := strings.EqualFold(v, "true")
+		if keyIsAbsent == wantAbsent {
+			return true
+		}
+	}
+
+	return false
+}
+
 // -------------------------------------------------------------------------------------------------
 // Condition modifiers
 // -------------------------------------------------------------------------------------------------
@@ -392,7 +407,7 @@ func Mod_ResolveVariables(f CondInner) CondInner {
 	return func(s *subject, left string, right policy.Value) bool {
 		substituted := make(policy.Value, len(right))
 		for i, v := range right {
-			substituted[i] = s.auth.Substitute(v, s.opts)
+			substituted[i] = s.auth.SubstituteWithVersion(v, s.opts, s.policyVersion)
 		}
 		return f(s, left, substituted)
 	}
@@ -414,7 +429,25 @@ func Mod_MustExist(f CondInner) CondInner {
 // so it works uniformly for ForSingleValue, ForAnyValue, and ForAllValues.
 func Mod_IfExists(f CondOuter) CondOuter {
 	return func(s *subject, key string, right policy.Value) bool {
-		if s.auth.ConditionKey(key, s.opts) == "" && len(s.auth.MultiKey(key, s.opts)) == 0 {
+		if !s.auth.HasAnyKey(key, s.opts) {
+			return true
+		}
+		return f(s, key, right)
+	}
+}
+
+func Mod_MissingKeyFails(f CondOuter) CondOuter {
+	return func(s *subject, key string, right policy.Value) bool {
+		if !s.auth.HasAnyKey(key, s.opts) {
+			return false
+		}
+		return f(s, key, right)
+	}
+}
+
+func Mod_MissingKeyMatches(f CondOuter) CondOuter {
+	return func(s *subject, key string, right policy.Value) bool {
+		if !s.auth.HasAnyKey(key, s.opts) {
 			return true
 		}
 		return f(s, key, right)
@@ -428,8 +461,8 @@ func Mod_ForAllValues(f CondInner) CondOuter {
 		lefts := s.auth.MultiKey(key, s.opts)
 
 		if len(lefts) == 0 {
-			if singleValue := s.auth.ConditionKey(key, s.opts); singleValue != "" {
-				lefts = []string{singleValue}
+			if s.auth.HasConditionKey(key, s.opts) {
+				lefts = []string{s.auth.ConditionKey(key, s.opts)}
 			}
 		}
 
@@ -450,8 +483,8 @@ func Mod_ForAnyValue(f CondInner) CondOuter {
 		lefts := s.auth.MultiKey(key, s.opts)
 
 		if len(lefts) == 0 {
-			if singleValue := s.auth.ConditionKey(key, s.opts); singleValue != "" {
-				lefts = []string{singleValue}
+			if s.auth.HasConditionKey(key, s.opts) {
+				lefts = []string{s.auth.ConditionKey(key, s.opts)}
 			}
 		}
 
@@ -482,15 +515,15 @@ func Mod_IgnoreCase(f Compare) Compare {
 }
 
 // Mod_Number converts the string inputs to numbers, allowing numerical comparisons
-func Mod_Number(f func(*subject, int, int) bool) Compare {
+func Mod_Number(f func(*subject, float64, float64) bool) Compare {
 	return func(s *subject, left, right string) bool {
-		nLeft, err := strconv.Atoi(left)
+		nLeft, err := strconv.ParseFloat(left, 64)
 		if err != nil {
 			s.trc.Log("error converting %s to number: %v", left, err)
 			return false
 		}
 
-		nRight, err := strconv.Atoi(right)
+		nRight, err := strconv.ParseFloat(right, 64)
 		if err != nil {
 			s.trc.Log("error converting %s to number: %v", right, err)
 			return false
@@ -643,11 +676,14 @@ func resolveConditionEvaluatorUncached(op string) (CondOuter, bool) {
 
 	// Determine the condition lift
 	var lift CondLift
+	liftName := "single"
 	if strings.HasPrefix(op, "ForAllValues:") {
 		lift = Mod_ForAllValues
+		liftName = "all"
 		op = strings.TrimPrefix(op, "ForAllValues:")
 	} else if strings.HasPrefix(op, "ForAnyValue:") {
 		lift = Mod_ForAnyValue
+		liftName = "any"
 		op = strings.TrimPrefix(op, "ForAnyValue:")
 	} else {
 		lift = Mod_ForSingleValue
@@ -661,6 +697,10 @@ func resolveConditionEvaluatorUncached(op string) (CondOuter, bool) {
 		op = strings.TrimSuffix(op, "IfExists")
 	}
 
+	if op == condition.Null {
+		return Cond_NullKey, true
+	}
+
 	// Attempt to look up function
 	f, exists := ConditionOperatorMap[op]
 	if !exists {
@@ -670,8 +710,29 @@ func resolveConditionEvaluatorUncached(op string) (CondOuter, bool) {
 	outer := lift(f)
 	if ifExists {
 		outer = Mod_IfExists(outer)
+	} else if isNegatedConditionOperator(op) {
+		outer = Mod_MissingKeyMatches(outer)
+	} else if liftName != "all" {
+		outer = Mod_MissingKeyFails(outer)
 	}
 
 	_ = originalOp // Avoid unused variable warning
 	return outer, true
+}
+
+func isNegatedConditionOperator(op string) bool {
+	switch op {
+	case condition.StringNotEquals,
+		condition.StringNotEqualsIgnoreCase,
+		condition.StringNotLike,
+		condition.StringNotLikeIgnoreCase,
+		condition.NumericNotEquals,
+		condition.DateNotEquals,
+		condition.NotIpAddress,
+		condition.ArnNotEquals,
+		condition.ArnNotLike:
+		return true
+	default:
+		return false
+	}
 }

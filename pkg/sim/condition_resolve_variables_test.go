@@ -44,3 +44,33 @@ func TestResolveVariables_DoesNotMutatePolicy(t *testing.T) {
 		t.Fatal("second eval (bob) should match; substitution likely cached from prior eval")
 	}
 }
+
+func TestResolveVariables_RequiresPolicyVersion(t *testing.T) {
+	pol := policy.Policy{
+		Statement: []policy.Statement{
+			{
+				Effect: policy.EFFECT_ALLOW,
+				Condition: policy.ConditionBlock{
+					"StringEquals": {"aws:Foo": []string{"${aws:username}"}},
+				},
+			},
+		},
+	}
+
+	subj := newSubject(AuthContext{
+		Properties: NewBagFromMap(map[string]string{
+			"aws:username": "alice",
+			"aws:Foo":      "alice",
+		}),
+	}, TestingSimulationOptions)
+	decision := evalPolicy(&subj, pol, evalStatementMatchesCondition)
+	if decision.Allowed() {
+		t.Fatal("policy without version should not expand variables")
+	}
+
+	pol.Version = "2012-10-17"
+	decision = evalPolicy(&subj, pol, evalStatementMatchesCondition)
+	if !decision.Allowed() {
+		t.Fatal("policy with current version should expand variables")
+	}
+}
