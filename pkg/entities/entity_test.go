@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/nsiow/yams/pkg/policy"
@@ -171,7 +172,7 @@ func TestResource_SubResource(t *testing.T) {
 		Policy:    policy.Policy{},
 	}
 
-	// Test S3 bucket subresource
+	// Without ABAC, tags do not flow from bucket to object
 	sub, err := bucket.SubResource("mykey/file.txt")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -187,7 +188,18 @@ func TestResource_SubResource(t *testing.T) {
 		t.Fatalf("unexpected account: %s", sub.AccountId)
 	}
 	if sub.Tags != nil {
-		t.Fatal("tags should not propagate to subresource")
+		t.Fatal("tags should not propagate when ABAC is disabled")
+	}
+
+	// With ABAC, bucket tags flow to the object
+	abacBucket := bucket
+	abacBucket.AbacEnabled = true
+	abacSub, err := abacBucket.SubResource("mykey/file.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !reflect.DeepEqual(abacSub.Tags, abacBucket.Tags) {
+		t.Fatalf("expected tags %v to propagate, got %v", abacBucket.Tags, abacSub.Tags)
 	}
 
 	// Test unsupported resource type

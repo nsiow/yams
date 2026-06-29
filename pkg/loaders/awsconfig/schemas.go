@@ -241,18 +241,22 @@ type S3Bucket struct {
 		BucketPolicy struct {
 			PolicyText EncodedPolicy `json:"policyText"`
 		}
+		AbacStatus struct {
+			Status string `json:"status"`
+		} `json:"AbacStatus"`
 	} `json:"supplementaryConfiguration"`
 }
 
 func (c *S3Bucket) asResource() entities.Resource {
 	return entities.Resource{
-		Type:      c.Type,
-		Name:      c.Name,
-		AccountId: c.AccountId,
-		Region:    c.Region,
-		Arn:       c.Arn,
-		Tags:      c.Tags,
-		Policy:    policy.Policy(c.SupplementaryConfiguration.BucketPolicy.PolicyText),
+		Type:        c.Type,
+		Name:        c.Name,
+		AccountId:   c.AccountId,
+		Region:      c.Region,
+		Arn:         c.Arn,
+		Tags:        c.Tags,
+		Policy:      policy.Policy(c.SupplementaryConfiguration.BucketPolicy.PolicyText),
+		AbacEnabled: c.SupplementaryConfiguration.AbacStatus.Status == "Enabled",
 	}
 }
 

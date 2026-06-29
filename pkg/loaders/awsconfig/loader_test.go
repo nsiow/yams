@@ -419,6 +419,46 @@ func TestLoad(t *testing.T) {
 				Build(),
 		},
 		{
+			Name:  "bucket_valid_abac",
+			Input: `../../../testdata/config-loading/bucket_valid_abac.json`,
+			Want: entities.NewBuilder().
+				WithResources(
+					entities.Resource{
+						Type:      "AWS::S3::Bucket",
+						AccountId: "000000000000",
+						Arn:       "arn:aws:s3:::abacbucket",
+						Tags: []entities.Tag{
+							{
+								Key:   "env",
+								Value: "prod",
+							},
+						},
+						Policy: policy.Policy{
+							Version: "2012-10-17",
+							Statement: policy.StatementBlock{
+								policy.Statement{
+									Sid:    "AllowGetObject",
+									Effect: "Allow",
+									Principal: policy.Principal{
+										AWS: policy.Value{
+											"arn:aws:iam::000000000000:role/nsiow",
+										},
+									},
+									Action: policy.Value{
+										"s3:GetObject",
+									},
+									Resource: policy.Value{
+										"arn:aws:s3:::abacbucket/*",
+									},
+								},
+							},
+						},
+						AbacEnabled: true,
+					},
+				).
+				Build(),
+		},
+		{
 			Name:  "table_valid",
 			Input: `../../../testdata/config-loading/table_valid.json`,
 			Want: entities.NewBuilder().

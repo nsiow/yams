@@ -32,6 +32,10 @@ type Resource struct {
 
 	// Policy refers to the resource policy associated with the Resource
 	Policy policy.Policy
+
+	// AbacEnabled is true for S3 buckets with ABAC enabled; when set, the
+	// bucket's tags flow to derived subresources (objects).
+	AbacEnabled bool `json:",omitempty"`
 }
 
 func (r *Resource) Key() string {
@@ -56,15 +60,19 @@ func (r *Resource) Service() (string, error) {
 func (r *Resource) SubResource(subpath string) (*Resource, error) {
 	switch r.Type {
 	case "AWS::S3::Bucket":
-		return &Resource{
+		sub := &Resource{
 			uv:        r.uv,
 			Arn:       strings.TrimRight(r.Arn, "/") + "/" + strings.TrimLeft(subpath, "/"),
 			Type:      "AWS::S3::Bucket::Object",
 			AccountId: r.AccountId,
 			Region:    r.Region,
 			Policy:    r.Policy,
-			Tags:      nil, // tags do not propagate automatically
-		}, nil
+		}
+		// Tags only flow from bucket to object when ABAC is enabled on the bucket
+		if r.AbacEnabled {
+			sub.Tags = r.Tags
+		}
+		return sub, nil
 	default:
 		return nil, fmt.Errorf("do not know how to create sub-resource for: %s", r.Type)
 	}
