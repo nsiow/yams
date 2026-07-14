@@ -135,24 +135,13 @@ export function ContextEditor({
   );
 }
 
-// Helper to build context object from key-value pairs, with optional shared context merged in.
-// Shared vars are included first, then user vars override on key conflict.
+// Helper to build context object from user-provided key-value pairs.
+// Shared context is displayed by the UI but applied by the server.
 export function buildContext(
   contextVars: ContextVariable[],
-  sharedVars?: ContextVariable[],
 ): Record<string, string> | undefined {
   const result: Record<string, string> = {};
 
-  // Shared vars first
-  if (sharedVars) {
-    for (const cv of sharedVars) {
-      const k = cv.key.trim();
-      const v = cv.value.trim();
-      if (k && v) result[k] = v;
-    }
-  }
-
-  // User vars override
   for (const cv of contextVars) {
     const k = cv.key.trim();
     const v = cv.value.trim();

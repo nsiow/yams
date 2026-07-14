@@ -129,6 +129,7 @@ export interface SimulationRequest {
   action: string;
   resource: string;
   context?: Record<string, string>;
+  disableSharedContext?: boolean;
   fuzzy?: boolean;
   explain?: boolean;
   trace?: boolean;
@@ -156,6 +157,7 @@ export interface WhichPrincipalsRequest {
   action: string;
   resource?: string;
   context?: Record<string, string>;
+  disableSharedContext?: boolean;
   overlay?: SimulationOverlay;
   fuzzy?: boolean;
 }
@@ -164,6 +166,7 @@ export interface WhichResourcesRequest {
   principal: string;
   action?: string;
   context?: Record<string, string>;
+  disableSharedContext?: boolean;
   overlay?: SimulationOverlay;
   fuzzy?: boolean;
 }
@@ -172,6 +175,7 @@ export interface WhichActionsRequest {
   principal: string;
   resource: string;
   context?: Record<string, string>;
+  disableSharedContext?: boolean;
   overlay?: SimulationOverlay;
   fuzzy?: boolean;
 }

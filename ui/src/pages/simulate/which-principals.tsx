@@ -132,8 +132,6 @@ export function WhichPrincipalsPage(): JSX.Element {
   // Use refs for context vars to avoid triggering effect
   const contextVarsRef = useRef(contextVars);
   contextVarsRef.current = contextVars;
-  const sharedContextRef = useRef(sharedContextVars);
-  sharedContextRef.current = sharedContextVars;
 
   // Check if current action is a resource creation action
   const isCreationAction = useMemo(() => {
@@ -163,7 +161,7 @@ export function WhichPrincipalsPage(): JSX.Element {
 
     try {
       const overlay = buildCombinedOverlay(selectedOverlayIds, loadedOverlays);
-      const context = buildContext(contextVarsRef.current, sharedContextRef.current);
+      const context = buildContext(contextVarsRef.current);
 
       const response = await yamsApi.whichPrincipals({
         action: selectedAction,
@@ -233,7 +231,7 @@ export function WhichPrincipalsPage(): JSX.Element {
 
     try {
       const overlay = buildCombinedOverlay(selectedOverlayIds, loadedOverlays);
-      const context = buildContext(contextVarsRef.current, sharedContextRef.current);
+      const context = buildContext(contextVarsRef.current);
 
       const response = await yamsApi.simulate({
         principal,

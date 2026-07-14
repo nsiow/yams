@@ -32,7 +32,7 @@ _yams() {
             fi
             ;;
         sim)
-            COMPREPLY=($(compgen -W "-s --server -p --principal -a --action -r --resource -c --context -o --overlay -x --exact -e --explain -t --trace" -- "${cur}"))
+            COMPREPLY=($(compgen -W "-s --server -p --principal -a --action -r --resource -c --context -o --overlay -x --exact --disable-shared-context -e --explain -t --trace" -- "${cur}"))
             ;;
         audit)
             COMPREPLY=($(compgen -W "-s --source -f --config -o --out -c --context --overlay" -- "${cur}"))
@@ -107,6 +107,7 @@ _yams() {
                         '*'{-c,--context}'[Context key=value]:context:' \
                         '*'{-o,--overlay}'[Overlay file]:file:_files' \
                         '(-x --exact)'{-x,--exact}'[Disable fuzzy matching]' \
+                        '--disable-shared-context[Disable server shared request context]' \
                         '(-e --explain)'{-e,--explain}'[Show explanation]' \
                         '(-t --trace)'{-t,--trace}'[Show trace]'
                     ;;

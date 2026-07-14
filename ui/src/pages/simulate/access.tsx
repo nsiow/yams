@@ -950,21 +950,11 @@ export function AccessCheckPage(): JSX.Element {
   const contextVarsRef = useRef(contextVars);
   contextVarsRef.current = contextVars;
 
-  // Build context object from key-value pairs, merging shared context
-  const sharedContextRef = useRef(sharedContextVars);
-  sharedContextRef.current = sharedContextVars;
-
+  // Build context object from user-provided key-value pairs.
+  // Shared context is displayed by the UI but applied by the server.
   const buildContext = (): Record<string, string> | undefined => {
     const result: Record<string, string> = {};
 
-    // Shared vars first
-    for (const cv of sharedContextRef.current) {
-      const k = cv.key.trim();
-      const v = cv.value.trim();
-      if (k && v) result[k] = v;
-    }
-
-    // User vars override
     for (const cv of contextVarsRef.current) {
       const k = cv.key.trim();
       const v = cv.value.trim();

@@ -345,6 +345,12 @@ curl ${YAMS_SERVER_ADDRESS}/api/v1/accounts/search/213
 ### Basic Simulation
 
 `POST /api/v1/sim`
+
+If the server was started with shared request context, those values are included in simulation
+requests by default for this endpoint and the extended simulation endpoints below. Request body
+`context` values override shared values on key conflicts. Set `"disableSharedContext": true` to run
+a simulation without server shared context.
+
 ```shell
 curl -X POST ${YAMS_SERVER_ADDRESS}/api/v1/sim -d '{
   "principal": "arn:aws:iam::777583092761:role/RedRole",

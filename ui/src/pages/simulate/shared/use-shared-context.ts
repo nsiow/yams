@@ -3,18 +3,11 @@ import { useEffect, useState } from 'react';
 import { yamsApi } from '../../../lib/api';
 import type { ContextVariable } from './context-editor';
 
-const SHARED_CONTEXT_KEY = 'yams.enable_shared_request_context';
-
-// Fetches shared context from the server if the user has opted in via localStorage.
+// Fetches shared context from the server for display alongside user-provided context.
 export function useSharedContext(): ContextVariable[] {
   const [sharedVars, setSharedVars] = useState<ContextVariable[]>([]);
 
   useEffect(() => {
-    if (localStorage.getItem(SHARED_CONTEXT_KEY) !== 'true') {
-      setSharedVars([]);
-      return;
-    }
-
     yamsApi.sharedContext()
       .then((ctx) => {
         setSharedVars(
