@@ -130,8 +130,6 @@ export function WhichResourcesPage(): JSX.Element {
   // Use refs for context vars to avoid triggering effect
   const contextVarsRef = useRef(contextVars);
   contextVarsRef.current = contextVars;
-  const sharedContextRef = useRef(sharedContextVars);
-  sharedContextRef.current = sharedContextVars;
 
   // Search functions
   const searchPrincipals = useCallback((query: string) => yamsApi.searchPrincipals(query), []);
@@ -150,7 +148,7 @@ export function WhichResourcesPage(): JSX.Element {
 
     try {
       const overlay = buildCombinedOverlay(selectedOverlayIds, loadedOverlays);
-      const context = buildContext(contextVarsRef.current, sharedContextRef.current);
+      const context = buildContext(contextVarsRef.current);
 
       const response = await yamsApi.whichResources({
         principal: selectedPrincipal,
@@ -220,7 +218,7 @@ export function WhichResourcesPage(): JSX.Element {
 
     try {
       const overlay = buildCombinedOverlay(selectedOverlayIds, loadedOverlays);
-      const context = buildContext(contextVarsRef.current, sharedContextRef.current);
+      const context = buildContext(contextVarsRef.current);
 
       const response = await yamsApi.simulate({
         principal: selectedPrincipal!,

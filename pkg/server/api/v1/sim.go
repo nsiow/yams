@@ -15,11 +15,12 @@ import (
 // -------------------------------------------------------------------------------------------------
 
 type SimInput struct {
-	Principal         string              `json:"principal"`
-	Action            string              `json:"action"`
-	Resource          string              `json:"resource"`
-	Context           map[string]string   `json:"context"`
-	MultiValueContext map[string][]string `json:"multiValueContext"`
+	Principal            string              `json:"principal"`
+	Action               string              `json:"action"`
+	Resource             string              `json:"resource"`
+	Context              map[string]string   `json:"context"`
+	MultiValueContext    map[string][]string `json:"multiValueContext"`
+	DisableSharedContext bool                `json:"disableSharedContext"`
 
 	Fuzzy   bool    `json:"fuzzy"`
 	Explain bool    `json:"explain"`
@@ -61,8 +62,9 @@ func (api *API) SimRun(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// construct options
+	requestContext := api.requestContext(input.Context, input.DisableSharedContext)
 	opts := sim.NewOptions(
-		sim.WithAdditionalProperties(input.Context),
+		sim.WithAdditionalProperties(requestContext),
 		sim.WithAdditionalMultiValueProperties(input.MultiValueContext),
 	)
 	opts.EnableTracing = input.Explain || input.Trace
@@ -101,7 +103,7 @@ func (api *API) SimRun(w http.ResponseWriter, req *http.Request) {
 		"principal", input.Principal,
 		"action", input.Action,
 		"resource", input.Resource,
-		"context", input.Context,
+		"context", requestContext,
 		"result", out.Result)
 	httputil.WriteJsonResponse(w, req, out)
 }

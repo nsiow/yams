@@ -17,6 +17,10 @@ yams sim -p ... -a ... -r ... -c aws:SourceIp=10.0.0.1 -c aws:UserAgent=MyApp
 yams sim -p ... -a ... -r ... -c '{"aws:SourceIp": "10.0.0.1", "aws:UserAgent": "MyApp"}'
 ```
 
+When the server is started with shared request context via `yams server --context`, those values are
+included in all simulation operations by default. Request-specific context wins on key conflicts.
+Use `yams sim --disable-shared-context` to run a simulation without server shared context.
+
 ### Basic Simulation
 
 The most straightforward type of simulation is for a single request, providing all aspects of

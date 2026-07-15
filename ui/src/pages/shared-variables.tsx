@@ -1,8 +1,6 @@
 // ui/src/pages/shared-variables.tsx
 import { useEffect, useState } from 'react';
 import {
-  Anchor,
-  Badge,
   Box,
   Card,
   Group,
@@ -12,16 +10,12 @@ import {
   Text,
   Title,
 } from '@mantine/core';
-import { Link } from 'react-router-dom';
 import { yamsApi } from '../lib/api';
-
-const SHARED_CONTEXT_KEY = 'yams.enable_shared_request_context';
 
 export function SharedVariablesPage(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
-  const enabled = localStorage.getItem(SHARED_CONTEXT_KEY) === 'true';
 
   useEffect(() => {
     yamsApi.sharedContext()
@@ -44,24 +38,9 @@ export function SharedVariablesPage(): JSX.Element {
           <Title order={3} mb={4}>Shared Variables</Title>
           <Text size="sm" c="dimmed">
             Request context variables configured by the server operator via <Text component="span" ff="monospace" fw={500}>-c</Text> flags.
-            When enabled, these are automatically included in all simulation panes.
+            These are included in simulation requests by default.
           </Text>
         </Box>
-
-        {/* Feature status */}
-        <Card withBorder p="lg">
-          <Group justify="space-between" align="center">
-            <Group gap="xs" align="center">
-              <Badge color={enabled ? 'green' : 'red'} size="xs" circle />
-              <Text size="sm" fw={500}>
-                Shared request context is {enabled ? 'enabled' : 'disabled'}
-              </Text>
-            </Group>
-            <Anchor component={Link} to="/config" size="sm">
-              {enabled ? 'Manage in Config' : 'Enable in Config'}
-            </Anchor>
-          </Group>
-        </Card>
 
         {/* Variables table */}
         <Card withBorder p="lg">

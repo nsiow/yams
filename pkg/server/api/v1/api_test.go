@@ -730,7 +730,6 @@ func TestGet_WithFreeze(t *testing.T) {
 	}
 }
 
-
 func TestSimRun_Allow(t *testing.T) {
 	api := newTestAPIWithData(t)
 
@@ -906,3 +905,195 @@ func TestWhichResources_ServerError(t *testing.T) {
 	}
 }
 
+func TestAPI_SharedContextAppliedToSimulationOperations(t *testing.T) {
+	api, principalArn, resourceArn := newTestAPIWithContextCondition(t)
+	api.SharedContext = map[string]string{"aws:SourceIp": "10.1.2.3"}
+
+	t.Run("sim run", func(t *testing.T) {
+		run := func(input SimInput) SimOutput {
+			body, _ := json.Marshal(input)
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/api/v1/sim", bytes.NewReader(body))
+
+			api.SimRun(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("SimRun() status = %d, want %d, body = %s", w.Code, http.StatusOK, w.Body.String())
+			}
+
+			var out SimOutput
+			if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
+				t.Fatalf("SimRun() invalid JSON: %v", err)
+			}
+			return out
+		}
+
+		baseInput := SimInput{
+			Principal: principalArn,
+			Action:    "s3:ListBucket",
+			Resource:  resourceArn,
+		}
+
+		if got := run(baseInput).Result; got != "ALLOW" {
+			t.Fatalf("SimRun() with shared context result = %s, want ALLOW", got)
+		}
+
+		disabledInput := baseInput
+		disabledInput.DisableSharedContext = true
+		if got := run(disabledInput).Result; got != "DENY" {
+			t.Fatalf("SimRun() with disabled shared context result = %s, want DENY", got)
+		}
+
+		overrideInput := baseInput
+		overrideInput.Context = map[string]string{"aws:SourceIp": "192.0.2.1"}
+		if got := run(overrideInput).Result; got != "DENY" {
+			t.Fatalf("SimRun() with request context override result = %s, want DENY", got)
+		}
+	})
+
+	t.Run("which principals", func(t *testing.T) {
+		run := func(input WhichPrincipalsInput) []string {
+			body, _ := json.Marshal(input)
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/api/v1/sim/whichPrincipals", bytes.NewReader(body))
+
+			api.WhichPrincipals(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("WhichPrincipals() status = %d, want %d, body = %s", w.Code, http.StatusOK, w.Body.String())
+			}
+
+			var out []string
+			if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
+				t.Fatalf("WhichPrincipals() invalid JSON: %v", err)
+			}
+			return out
+		}
+
+		baseInput := WhichPrincipalsInput{
+			Action:   "s3:ListBucket",
+			Resource: resourceArn,
+		}
+
+		if got := run(baseInput); !containsString(got, principalArn) {
+			t.Fatalf("WhichPrincipals() with shared context = %v, want %s", got, principalArn)
+		}
+
+		disabledInput := baseInput
+		disabledInput.DisableSharedContext = true
+		if got := run(disabledInput); containsString(got, principalArn) {
+			t.Fatalf("WhichPrincipals() with disabled shared context = %v, want no %s", got, principalArn)
+		}
+	})
+
+	t.Run("which actions", func(t *testing.T) {
+		run := func(input WhichActionsInput) []string {
+			body, _ := json.Marshal(input)
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/api/v1/sim/whichActions", bytes.NewReader(body))
+
+			api.WhichActions(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("WhichActions() status = %d, want %d, body = %s", w.Code, http.StatusOK, w.Body.String())
+			}
+
+			var out []string
+			if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
+				t.Fatalf("WhichActions() invalid JSON: %v", err)
+			}
+			return out
+		}
+
+		baseInput := WhichActionsInput{
+			Principal: principalArn,
+			Resource:  resourceArn,
+		}
+
+		if got := run(baseInput); !containsString(got, "s3:ListBucket") {
+			t.Fatalf("WhichActions() with shared context = %v, want s3:ListBucket", got)
+		}
+
+		disabledInput := baseInput
+		disabledInput.DisableSharedContext = true
+		if got := run(disabledInput); containsString(got, "s3:ListBucket") {
+			t.Fatalf("WhichActions() with disabled shared context = %v, want no s3:ListBucket", got)
+		}
+	})
+
+	t.Run("which resources", func(t *testing.T) {
+		run := func(input WhichResourcesInput) []string {
+			body, _ := json.Marshal(input)
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/api/v1/sim/whichResources", bytes.NewReader(body))
+
+			api.WhichResources(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("WhichResources() status = %d, want %d, body = %s", w.Code, http.StatusOK, w.Body.String())
+			}
+
+			var out []string
+			if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
+				t.Fatalf("WhichResources() invalid JSON: %v", err)
+			}
+			return out
+		}
+
+		baseInput := WhichResourcesInput{
+			Principal: principalArn,
+			Action:    "s3:ListBucket",
+		}
+
+		if got := run(baseInput); !containsString(got, resourceArn) {
+			t.Fatalf("WhichResources() with shared context = %v, want %s", got, resourceArn)
+		}
+
+		disabledInput := baseInput
+		disabledInput.DisableSharedContext = true
+		if got := run(disabledInput); containsString(got, resourceArn) {
+			t.Fatalf("WhichResources() with disabled shared context = %v, want no %s", got, resourceArn)
+		}
+	})
+}
+
+func newTestAPIWithContextCondition(t *testing.T) (*API, string, string) {
+	t.Helper()
+
+	api := newTestAPI(t)
+	principalArn := "arn:aws:iam::123456789012:user/contextuser"
+	resourceArn := "arn:aws:s3:::context-bucket"
+
+	api.Simulator.Universe.PutPrincipal(entities.Principal{
+		Arn:       principalArn,
+		AccountId: "123456789012",
+		InlinePolicies: []policy.Policy{
+			{
+				Statement: []policy.Statement{
+					{
+						Effect:   policy.EFFECT_ALLOW,
+						Action:   policy.NewValue("s3:ListBucket"),
+						Resource: policy.NewValue(resourceArn),
+						Condition: policy.ConditionBlock{
+							"IpAddress": policy.ConditionValues{
+								"aws:SourceIp": policy.NewValue("10.0.0.0/8"),
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	api.Simulator.Universe.PutResource(entities.Resource{
+		Arn:       resourceArn,
+		Type:      "AWS::S3::Bucket",
+		AccountId: "123456789012",
+	})
+
+	return api, principalArn, resourceArn
+}
+
+func containsString(items []string, want string) bool {
+	for _, item := range items {
+		if item == want {
+			return true
+		}
+	}
+	return false
+}

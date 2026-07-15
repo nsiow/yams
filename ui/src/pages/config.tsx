@@ -1,26 +1,13 @@
 // ui/src/pages/config.tsx
-import { useState } from 'react';
 import {
   Box,
   Card,
   Stack,
-  Switch,
   Text,
   Title,
 } from '@mantine/core';
 
-const SHARED_CONTEXT_KEY = 'yams.enable_shared_request_context';
-
 export function ConfigPage(): JSX.Element {
-  const [enabled, setEnabled] = useState<boolean>(
-    () => localStorage.getItem(SHARED_CONTEXT_KEY) === 'true'
-  );
-
-  const handleToggle = (checked: boolean): void => {
-    setEnabled(checked);
-    localStorage.setItem(SHARED_CONTEXT_KEY, String(checked));
-  };
-
   return (
     <Box p="md">
       <Stack gap="lg">
@@ -33,12 +20,10 @@ export function ConfigPage(): JSX.Element {
 
         <Card withBorder p="lg">
           <Title order={5} mb="md">Shared Request Context</Title>
-          <Switch
-            label="Enable shared request context"
-            description="When enabled, context key-value pairs configured by the server operator are automatically included in all simulation panes. User-defined context variables take precedence on key conflicts."
-            checked={enabled}
-            onChange={(e) => handleToggle(e.currentTarget.checked)}
-          />
+          <Text size="sm" c="dimmed">
+            Server-configured request context is included in simulation requests by default.
+            Request-specific context values take precedence on key conflicts.
+          </Text>
         </Card>
       </Stack>
     </Box>

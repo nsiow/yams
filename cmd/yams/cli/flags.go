@@ -67,16 +67,17 @@ type Flags struct {
 	Config string
 
 	// sim
-	Principal    string
-	Action       string
-	Resource     string
-	Context      MapString
-	MultiContext MapStringList
-	Explain      bool
-	Trace        bool
-	OverlayFiles MultiString
-	Overlay      v1.Overlay
-	Exact        bool
+	Principal            string
+	Action               string
+	Resource             string
+	Context              MapString
+	MultiContext         MapStringList
+	Explain              bool
+	Trace                bool
+	OverlayFiles         MultiString
+	Overlay              v1.Overlay
+	Exact                bool
+	DisableSharedContext bool
 
 	// multiple
 	Server    string
@@ -244,6 +245,9 @@ func Parse() (*Flags, error) {
 
 		fs.BoolVar(&opts.Exact, "x", false, "alias for -exact")
 		fs.BoolVar(&opts.Exact, "exact", false, "disable fuzzy-matching for ARNs")
+
+		fs.BoolVar(&opts.DisableSharedContext, "disable-shared-context", false,
+			"disable server shared request context for simulation")
 
 		fs.BoolVar(&opts.Explain, "e", false, "alias for -explain")
 		fs.BoolVar(&opts.Explain, "explain", false,

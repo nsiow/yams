@@ -15,6 +15,7 @@ vi.mock('../../lib/api', () => ({
     searchResources: vi.fn(),
     whichPrincipals: vi.fn(),
     simulate: vi.fn(),
+    sharedContext: vi.fn(),
     listOverlays: vi.fn(),
     getOverlay: vi.fn(),
   },
@@ -40,6 +41,7 @@ describe('WhichPrincipalsPage', () => {
     vi.mocked(yamsApi.accountNames).mockResolvedValue(mockAccountNames);
     vi.mocked(yamsApi.resourceAccounts).mockResolvedValue(mockResourceAccounts);
     vi.mocked(yamsApi.actionAccessLevels).mockResolvedValue(mockActionAccessLevels);
+    vi.mocked(yamsApi.sharedContext).mockResolvedValue({});
     vi.mocked(yamsApi.listOverlays).mockResolvedValue([]);
   });
 

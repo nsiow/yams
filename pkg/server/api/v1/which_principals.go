@@ -14,10 +14,11 @@ import (
 // -------------------------------------------------------------------------------------------------
 
 type WhichPrincipalsInput struct {
-	Action            string              `json:"action"`
-	Resource          string              `json:"resource"`
-	Context           map[string]string   `json:"context"`
-	MultiValueContext map[string][]string `json:"multiValueContext"`
+	Action               string              `json:"action"`
+	Resource             string              `json:"resource"`
+	Context              map[string]string   `json:"context"`
+	MultiValueContext    map[string][]string `json:"multiValueContext"`
+	DisableSharedContext bool                `json:"disableSharedContext"`
 
 	Overlay Overlay `json:"overlay"`
 
@@ -44,8 +45,9 @@ func (api *API) WhichPrincipals(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	requestContext := api.requestContext(input.Context, input.DisableSharedContext)
 	opts := sim.NewOptions(
-		sim.WithAdditionalProperties(input.Context),
+		sim.WithAdditionalProperties(requestContext),
 		sim.WithAdditionalMultiValueProperties(input.MultiValueContext),
 	)
 	opts.Overlay = input.Overlay.Universe()
