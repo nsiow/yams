@@ -35,7 +35,9 @@ _yams() {
             COMPREPLY=($(compgen -W "-s --server -p --principal -a --action -r --resource -c --context -o --overlay -x --exact --disable-shared-context -e --explain -t --trace" -- "${cur}"))
             ;;
         audit)
-            COMPREPLY=($(compgen -W "-s --source -f --config -o --out -c --context --overlay" -- "${cur}"))
+            local audit_flags="-s --source -f --config -o --out --format --resource-batch-size"
+            audit_flags+=" -c --context --overlay"
+            COMPREPLY=($(compgen -W "${audit_flags}" -- "${cur}"))
             ;;
         principals|resources|actions|accounts|policies)
             COMPREPLY=($(compgen -W "-s --server -q --query -k --key -f --freeze --format" -- "${cur}"))
@@ -58,7 +60,7 @@ _yams() {
         'server:Start the yams API server'
         'dump:Export AWS organization or config data'
         'sim:Simulate IAM permission checks'
-        'audit:Generate access summary CSV'
+        'audit:Generate an access audit'
         'principals:List or search IAM principals'
         'resources:List or search AWS resources'
         'actions:List or search IAM actions'
@@ -116,6 +118,8 @@ _yams() {
                         '*'{-s,--source}'[Data source]:source:_files' \
                         '(-f --config)'{-f,--config}'[Audit config file]:config:_files' \
                         '(-o --out)'{-o,--out}'[Output destination]:destination:_files' \
+                        '--format[Output format]:format:(csv grouped-csv grouped-jsonl)' \
+                        '--resource-batch-size[Resources per grouped batch]:count:' \
                         '*'{-c,--context}'[Context key=value]:context:' \
                         '*--overlay[Overlay file]:file:_files'
                     ;;

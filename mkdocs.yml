@@ -23,5 +23,6 @@ nav:
   - Generating Data: generating_data.md
   - Inventory: inventory.md
   - Simulation: simulation.md
+  - Audit: audit.md
   - Deployment: deployment.md
   - API Reference: api.md
