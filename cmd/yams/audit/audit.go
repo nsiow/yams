@@ -9,19 +9,46 @@ import (
 	"os"
 	"runtime/debug"
 	"runtime/pprof"
+	"sort"
 	"strings"
 
 	"github.com/nsiow/yams/cmd/yams/cli"
 	"github.com/nsiow/yams/internal/smartrw"
+	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/server"
 	"github.com/nsiow/yams/pkg/sim"
 )
 
-// ConfigEntry defines a resource type and the actions to audit against it
+const (
+	formatCSV          = "csv"
+	formatGroupedCSV   = "grouped-csv"
+	formatGroupedJSONL = "grouped-jsonl"
+)
+
+// ActionGroup maps a set of concrete AWS actions to a logical access group.
+type ActionGroup struct {
+	Name    string   `json:"name"`
+	Actions []string `json:"actions"`
+}
+
+// ConfigEntry defines a resource type and either actions or logical action groups to audit.
 type ConfigEntry struct {
-	ResourceType string   `json:"resource_type"`
-	Actions      []string `json:"actions"`
+	ResourceType string        `json:"resource_type"`
+	Actions      []string      `json:"actions,omitempty"`
+	ActionGroups []ActionGroup `json:"action_groups,omitempty"`
+}
+
+func (e ConfigEntry) allActions() []string {
+	if len(e.Actions) > 0 {
+		return e.Actions
+	}
+
+	var actions []string
+	for _, group := range e.ActionGroups {
+		actions = append(actions, group.Actions...)
+	}
+	return actions
 }
 
 // Run executes the audit subcommand
@@ -57,6 +84,9 @@ func Run(opts *cli.Flags) {
 	if err != nil {
 		cli.Fail("error loading config: %v", err)
 	}
+	if err := validateOutputOptions(opts, config); err != nil {
+		cli.Fail("error validating audit output: %v", err)
+	}
 
 	simulator, err := buildSimulator(opts.Sources)
 	if err != nil {
@@ -83,6 +113,9 @@ func Run(opts *cli.Flags) {
 
 	// Pre-freeze all principals once (reused across all config entries)
 	allPrincipalArns := simulator.Universe.PrincipalArns()
+	if opts.Format != formatCSV {
+		sort.Strings(allPrincipalArns)
+	}
 	slog.Info("freezing principals", "count", len(allPrincipalArns))
 
 	frozenPrincipals, err := simulator.FreezePrincipals(allPrincipalArns, sopts)
@@ -95,29 +128,67 @@ func Run(opts *cli.Flags) {
 	if err != nil {
 		cli.Fail("error opening output: %v", err)
 	}
-	defer w.Close()
-
-	cw := csv.NewWriter(w)
-	defer cw.Flush()
-
-	if err := cw.Write([]string{"resource", "action", "principal"}); err != nil {
-		cli.Fail("error writing CSV header: %v", err)
-	}
 
 	slog.Info("audit starting",
 		"principals", len(frozenPrincipals),
-		"entries", len(config))
+		"entries", len(config),
+		"format", opts.Format)
 
-	var totalRows int
+	if opts.Format == formatCSV {
+		cw := csv.NewWriter(w)
+		if err := cw.Write([]string{"resource", "action", "principal"}); err != nil {
+			cli.Fail("error writing CSV header: %v", err)
+		}
+
+		var totalRows int
+		for i, entry := range config {
+			entry.Actions = entry.allActions()
+			n, err := processEntry(simulator, frozenPrincipals, entry, sopts, cw)
+			if err != nil {
+				cli.Fail("error processing entry %d (%s): %v", i, entry.ResourceType, err)
+			}
+			totalRows += n
+		}
+		cw.Flush()
+		if err := cw.Error(); err != nil {
+			cli.Fail("error flushing CSV output: %v", err)
+		}
+		if err := w.Close(); err != nil {
+			cli.Fail("error closing audit output: %v", err)
+		}
+		slog.Info("audit complete", "rows", totalRows)
+		return
+	}
+
+	gw, err := newGroupedWriter(opts.Format, w)
+	if err != nil {
+		cli.Fail("error creating grouped output writer: %v", err)
+	}
+
+	var totalGroups, totalRelationships int
 	for i, entry := range config {
-		n, err := processEntry(simulator, frozenPrincipals, entry, sopts, cw)
+		groups, relationships, err := processGroupedEntry(
+			simulator,
+			frozenPrincipals,
+			entry,
+			sopts,
+			opts.ResourceBatchSize,
+			gw,
+		)
 		if err != nil {
 			cli.Fail("error processing entry %d (%s): %v", i, entry.ResourceType, err)
 		}
-		totalRows += n
+		totalGroups += groups
+		totalRelationships += relationships
+	}
+	if err := gw.Flush(); err != nil {
+		cli.Fail("error flushing grouped output: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		cli.Fail("error closing audit output: %v", err)
 	}
 
-	slog.Info("audit complete", "rows", totalRows)
+	slog.Info("audit complete", "groups", totalGroups, "relationships", totalRelationships)
 }
 
 // loadConfig reads and parses the audit config JSON file
@@ -138,16 +209,123 @@ func loadConfig(path string) ([]ConfigEntry, error) {
 		return nil, fmt.Errorf("unable to parse config: %w", err)
 	}
 
-	for i, entry := range config {
+	for i := range config {
+		entry := &config[i]
 		if entry.ResourceType == "" {
 			return nil, fmt.Errorf("entry %d: missing resource_type", i)
 		}
-		if len(entry.Actions) == 0 {
-			return nil, fmt.Errorf("entry %d (%s): missing actions", i, entry.ResourceType)
+		if (len(entry.Actions) == 0) == (len(entry.ActionGroups) == 0) {
+			return nil, fmt.Errorf(
+				"entry %d (%s): must supply exactly one of actions or action_groups",
+				i,
+				entry.ResourceType,
+			)
+		}
+
+		if len(entry.Actions) > 0 {
+			for j, action := range entry.Actions {
+				canonical, err := canonicalAction(action)
+				if err != nil {
+					return nil, fmt.Errorf("entry %d (%s): %w", i, entry.ResourceType, err)
+				}
+				entry.Actions[j] = canonical
+			}
+			continue
+		}
+
+		groupNames := make(map[string]struct{})
+		actionNames := make(map[string]string)
+		for j := range entry.ActionGroups {
+			group := &entry.ActionGroups[j]
+			if group.Name == "" {
+				return nil, fmt.Errorf(
+					"entry %d (%s): action group %d is missing name",
+					i,
+					entry.ResourceType,
+					j,
+				)
+			}
+			if len(group.Actions) == 0 {
+				return nil, fmt.Errorf(
+					"entry %d (%s): action group %q is missing actions",
+					i,
+					entry.ResourceType,
+					group.Name,
+				)
+			}
+			if _, ok := groupNames[group.Name]; ok {
+				return nil, fmt.Errorf(
+					"entry %d (%s): duplicate action group %q",
+					i,
+					entry.ResourceType,
+					group.Name,
+				)
+			}
+			groupNames[group.Name] = struct{}{}
+
+			for k, action := range group.Actions {
+				canonical, err := canonicalAction(action)
+				if err != nil {
+					return nil, fmt.Errorf("entry %d (%s): %w", i, entry.ResourceType, err)
+				}
+				if previousGroup, ok := actionNames[canonical]; ok {
+					if previousGroup == group.Name {
+						return nil, fmt.Errorf(
+							"entry %d (%s): duplicate action %q in action group %q",
+							i,
+							entry.ResourceType,
+							canonical,
+							group.Name,
+						)
+					}
+					return nil, fmt.Errorf(
+						"entry %d (%s): action %q belongs to both %q and %q",
+						i,
+						entry.ResourceType,
+						canonical,
+						previousGroup,
+						group.Name,
+					)
+				}
+				actionNames[canonical] = group.Name
+				group.Actions[k] = canonical
+			}
 		}
 	}
 
 	return config, nil
+}
+
+func canonicalAction(action string) (string, error) {
+	resolved, ok := sar.LookupString(action)
+	if !ok {
+		return "", fmt.Errorf("unknown action %q", action)
+	}
+	return resolved.ShortName(), nil
+}
+
+func validateOutputOptions(opts *cli.Flags, config []ConfigEntry) error {
+	switch opts.Format {
+	case formatCSV:
+		return nil
+	case formatGroupedCSV, formatGroupedJSONL:
+		if opts.ResourceBatchSize <= 0 {
+			return fmt.Errorf("resource-batch-size must be greater than zero")
+		}
+		for i, entry := range config {
+			if len(entry.ActionGroups) == 0 {
+				return fmt.Errorf(
+					"entry %d (%s): %s output requires action_groups",
+					i,
+					entry.ResourceType,
+					opts.Format,
+				)
+			}
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported format %q", opts.Format)
+	}
 }
 
 // buildSimulator creates a Simulator with data loaded from the specified sources

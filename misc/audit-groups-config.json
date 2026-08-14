@@ -1,0 +1,54 @@
+[
+  {
+    "resource_type": "AWS::S3::Bucket",
+    "action_groups": [
+      {
+        "name": "READ",
+        "actions": ["s3:GetObject"]
+      },
+      {
+        "name": "WRITE",
+        "actions": ["s3:PutObject", "s3:DeleteObject"]
+      }
+    ]
+  },
+  {
+    "resource_type": "AWS::SQS::Queue",
+    "action_groups": [
+      {
+        "name": "READ",
+        "actions": ["sqs:ReceiveMessage"]
+      },
+      {
+        "name": "WRITE",
+        "actions": ["sqs:SendMessage", "sqs:DeleteMessage"]
+      }
+    ]
+  },
+  {
+    "resource_type": "AWS::SNS::Topic",
+    "action_groups": [
+      {
+        "name": "READ",
+        "actions": ["sns:Subscribe"]
+      },
+      {
+        "name": "WRITE",
+        "actions": ["sns:Publish"]
+      }
+    ]
+  },
+  {
+    "resource_type": "AWS::DynamoDB::Table",
+    "action_groups": [
+      {
+        "name": "READ",
+        "actions": ["dynamodb:GetItem", "dynamodb:Query"]
+      },
+      {
+        "name": "WRITE",
+        "actions": ["dynamodb:PutItem", "dynamodb:DeleteItem"]
+      }
+    ]
+  }
+]

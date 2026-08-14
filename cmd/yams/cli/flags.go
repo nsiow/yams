@@ -64,7 +64,8 @@ type Flags struct {
 	Format string
 
 	// audit
-	Config string
+	Config            string
+	ResourceBatchSize int
 
 	// sim
 	Principal            string
@@ -270,7 +271,11 @@ func Parse() (*Flags, error) {
 		fs.StringVar(&opts.Config, "config", "", "path to audit config JSON file")
 
 		fs.StringVar(&opts.Out, "o", "", "alias for -out")
-		fs.StringVar(&opts.Out, "out", "", "destination for CSV output")
+		fs.StringVar(&opts.Out, "out", "", "destination for audit output")
+		fs.StringVar(&opts.Format, "format", "csv",
+			"output format: csv, grouped-csv, or grouped-jsonl")
+		fs.IntVar(&opts.ResourceBatchSize, "resource-batch-size", 256,
+			"number of resources to aggregate per batch for grouped output")
 
 		fs.Var(&opts.Context, "c", "alias for -context")
 		fs.Var(&opts.Context, "context", "additional request-context key=value pairs")
