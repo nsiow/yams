@@ -14,6 +14,7 @@ import (
 
 	"github.com/nsiow/yams/cmd/yams/cli"
 	"github.com/nsiow/yams/internal/smartrw"
+	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/server"
 	"github.com/nsiow/yams/pkg/sim"
@@ -208,7 +209,8 @@ func loadConfig(path string) ([]ConfigEntry, error) {
 		return nil, fmt.Errorf("unable to parse config: %w", err)
 	}
 
-	for i, entry := range config {
+	for i := range config {
+		entry := &config[i]
 		if entry.ResourceType == "" {
 			return nil, fmt.Errorf("entry %d: missing resource_type", i)
 		}
@@ -220,9 +222,21 @@ func loadConfig(path string) ([]ConfigEntry, error) {
 			)
 		}
 
+		if len(entry.Actions) > 0 {
+			for j, action := range entry.Actions {
+				canonical, err := canonicalAction(action)
+				if err != nil {
+					return nil, fmt.Errorf("entry %d (%s): %w", i, entry.ResourceType, err)
+				}
+				entry.Actions[j] = canonical
+			}
+			continue
+		}
+
 		groupNames := make(map[string]struct{})
 		actionNames := make(map[string]string)
-		for j, group := range entry.ActionGroups {
+		for j := range entry.ActionGroups {
+			group := &entry.ActionGroups[j]
 			if group.Name == "" {
 				return nil, fmt.Errorf(
 					"entry %d (%s): action group %d is missing name",
@@ -249,24 +263,45 @@ func loadConfig(path string) ([]ConfigEntry, error) {
 			}
 			groupNames[group.Name] = struct{}{}
 
-			for _, action := range group.Actions {
-				actionKey := strings.ToLower(action)
-				if previousGroup, ok := actionNames[actionKey]; ok {
+			for k, action := range group.Actions {
+				canonical, err := canonicalAction(action)
+				if err != nil {
+					return nil, fmt.Errorf("entry %d (%s): %w", i, entry.ResourceType, err)
+				}
+				if previousGroup, ok := actionNames[canonical]; ok {
+					if previousGroup == group.Name {
+						return nil, fmt.Errorf(
+							"entry %d (%s): duplicate action %q in action group %q",
+							i,
+							entry.ResourceType,
+							canonical,
+							group.Name,
+						)
+					}
 					return nil, fmt.Errorf(
 						"entry %d (%s): action %q belongs to both %q and %q",
 						i,
 						entry.ResourceType,
-						action,
+						canonical,
 						previousGroup,
 						group.Name,
 					)
 				}
-				actionNames[actionKey] = group.Name
+				actionNames[canonical] = group.Name
+				group.Actions[k] = canonical
 			}
 		}
 	}
 
 	return config, nil
+}
+
+func canonicalAction(action string) (string, error) {
+	resolved, ok := sar.LookupString(action)
+	if !ok {
+		return "", fmt.Errorf("unknown action %q", action)
+	}
+	return resolved.ShortName(), nil
 }
 
 func validateOutputOptions(opts *cli.Flags, config []ConfigEntry) error {

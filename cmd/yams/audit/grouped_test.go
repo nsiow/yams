@@ -3,6 +3,7 @@ package audit
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -94,6 +95,83 @@ func TestProcessGroupedEntry(t *testing.T) {
 			{Name: "WRITE", Actions: []string{"sqs:SendMessage"}},
 		},
 	}
+	want := []capturedGroup{
+		{resource: queueA, group: "READ", principals: []string{readPrincipalArn}},
+		{resource: queueA, group: "WRITE", principals: []string{writePrincipalArn}},
+		{resource: queueB, group: "READ", principals: []string{}},
+		{resource: queueB, group: "WRITE", principals: []string{}},
+	}
+	for _, batchSize := range []int{1, 256} {
+		t.Run(fmt.Sprintf("batch_size_%d", batchSize), func(t *testing.T) {
+			writer := &capturingGroupedWriter{}
+			groups, relationships, err := processGroupedEntry(
+				simulator,
+				frozenPrincipals,
+				entry,
+				opts,
+				batchSize,
+				writer,
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if groups != 4 || relationships != 2 {
+				t.Fatalf(
+					"got groups=%d relationships=%d, want groups=4 relationships=2",
+					groups,
+					relationships,
+				)
+			}
+			if !reflect.DeepEqual(writer.groups, want) {
+				t.Fatalf("unexpected groups:\n got: %#v\nwant: %#v", writer.groups, want)
+			}
+		})
+	}
+}
+
+func TestProcessGroupedEntryCollapsesS3Resources(t *testing.T) {
+	const accountID = "111111111111"
+	principalArn := "arn:aws:iam::" + accountID + ":role/reader"
+	bucketArn := "arn:aws:s3:::example-bucket"
+
+	principal := entities.Principal{
+		Type:      "AWS::IAM::Role",
+		AccountId: accountID,
+		Arn:       principalArn,
+		InlinePolicies: []policy.Policy{{
+			Statement: []policy.Statement{{
+				Effect:   policy.EFFECT_ALLOW,
+				Action:   []string{"s3:GetObject", "s3:ListBucket"},
+				Resource: []string{bucketArn, bucketArn + "/*"},
+			}},
+		}},
+	}
+
+	simulator, err := sim.NewSimulator()
+	if err != nil {
+		t.Fatal(err)
+	}
+	simulator.Universe = entities.NewBuilder().
+		WithPrincipals(principal).
+		WithResources(entities.Resource{
+			Type:      "AWS::S3::Bucket",
+			AccountId: accountID,
+			Arn:       bucketArn,
+		}).
+		Build()
+
+	opts := sim.NewOptions()
+	frozenPrincipals, err := simulator.FreezePrincipals([]string{principalArn}, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry := ConfigEntry{
+		ResourceType: "AWS::S3::Bucket",
+		ActionGroups: []ActionGroup{{
+			Name:    "READ",
+			Actions: []string{"s3:GetObject", "s3:ListBucket"},
+		}},
+	}
 	writer := &capturingGroupedWriter{}
 
 	groups, relationships, err := processGroupedEntry(
@@ -107,18 +185,35 @@ func TestProcessGroupedEntry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if groups != 4 || relationships != 2 {
-		t.Fatalf("got groups=%d relationships=%d, want groups=4 relationships=2", groups, relationships)
+	if groups != 1 || relationships != 1 {
+		t.Fatalf("got groups=%d relationships=%d, want groups=1 relationships=1", groups, relationships)
 	}
-
-	want := []capturedGroup{
-		{resource: queueA, group: "READ", principals: []string{readPrincipalArn}},
-		{resource: queueA, group: "WRITE", principals: []string{writePrincipalArn}},
-		{resource: queueB, group: "READ", principals: []string{}},
-		{resource: queueB, group: "WRITE", principals: []string{}},
-	}
+	want := []capturedGroup{{
+		resource:   bucketArn,
+		group:      "READ",
+		principals: []string{principalArn},
+	}}
 	if !reflect.DeepEqual(writer.groups, want) {
 		t.Fatalf("unexpected groups:\n got: %#v\nwant: %#v", writer.groups, want)
+	}
+}
+
+func TestPrincipalsFromBitsAcrossWords(t *testing.T) {
+	frozenPrincipals := make([]*entities.FrozenPrincipal, 66)
+	for i := range frozenPrincipals {
+		frozenPrincipals[i] = &entities.FrozenPrincipal{
+			Arn: fmt.Sprintf("arn:aws:iam::111111111111:role/principal-%02d", i),
+		}
+	}
+
+	got := principalsFromBits([]uint64{1 << 63, 0b11}, frozenPrincipals)
+	want := []string{
+		frozenPrincipals[63].Arn,
+		frozenPrincipals[64].Arn,
+		frozenPrincipals[65].Arn,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected principals:\n got: %#v\nwant: %#v", got, want)
 	}
 }
 

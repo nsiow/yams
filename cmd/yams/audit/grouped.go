@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"sort"
 
-	"github.com/nsiow/yams/pkg/aws/sar"
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/sim"
 )
@@ -45,11 +44,7 @@ func processGroupedEntry(
 	actionGroups := make(map[string]int)
 	for groupIndex, group := range entry.ActionGroups {
 		for _, action := range group.Actions {
-			resolved, ok := sar.LookupString(action)
-			if !ok {
-				return 0, 0, fmt.Errorf("unknown action %q", action)
-			}
-			actionGroups[resolved.ShortName()] = groupIndex
+			actionGroups[action] = groupIndex
 		}
 	}
 

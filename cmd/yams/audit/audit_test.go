@@ -3,6 +3,7 @@ package audit
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -53,14 +54,39 @@ func TestLoadConfig(t *testing.T) {
 			wantErr: "duplicate action group",
 		},
 		{
-			name: "duplicate action case insensitive",
+			name: "duplicate action canonical alias",
 			config: `[
 				{"resource_type":"AWS::SQS::Queue","action_groups":[
 					{"name":"READ","actions":["sqs:ReceiveMessage"]},
-					{"name":"WRITE","actions":["SQS:receivemessage"]}
+					{"name":"WRITE","actions":["SQS.receivemessage"]}
 				]}
 			]`,
 			wantErr: "belongs to both",
+		},
+		{
+			name: "duplicate action in group",
+			config: `[
+				{"resource_type":"AWS::SQS::Queue","action_groups":[
+					{"name":"READ","actions":["sqs:ReceiveMessage","SQS.receivemessage"]}
+				]}
+			]`,
+			wantErr: "duplicate action",
+		},
+		{
+			name: "unknown legacy action",
+			config: `[
+				{"resource_type":"AWS::SQS::Queue","actions":["sqs:NotAnAction"]}
+			]`,
+			wantErr: "unknown action",
+		},
+		{
+			name: "unknown grouped action",
+			config: `[
+				{"resource_type":"AWS::SQS::Queue","action_groups":[
+					{"name":"READ","actions":["sqs:NotAnAction"]}
+				]}
+			]`,
+			wantErr: "unknown action",
 		},
 		{
 			name: "missing group name",
@@ -100,6 +126,37 @@ func TestLoadConfig(t *testing.T) {
 				t.Fatalf("wanted error containing %q, got %v", tc.wantErr, err)
 			}
 		})
+	}
+}
+
+func TestLoadConfigCanonicalizesActions(t *testing.T) {
+	config := `[
+		{"resource_type":"AWS::SQS::Queue","actions":["SQS.receivemessage"]},
+		{"resource_type":"AWS::SNS::Topic","action_groups":[
+			{"name":"WRITE","actions":["SNS-PUBLISH"]}
+		]}
+	]`
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(config), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := loadConfig(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []ConfigEntry{
+		{
+			ResourceType: "AWS::SQS::Queue",
+			Actions:      []string{"sqs:ReceiveMessage"},
+		},
+		{
+			ResourceType: "AWS::SNS::Topic",
+			ActionGroups: []ActionGroup{{Name: "WRITE", Actions: []string{"sns:Publish"}}},
+		},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected config:\n got: %#v\nwant: %#v", got, want)
 	}
 }
 
