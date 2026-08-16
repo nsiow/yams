@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/nsiow/yams/internal/common"
@@ -91,8 +92,7 @@ func NewSimulator() (*Simulator, error) {
 	s := Simulator{}
 	s.Universe = entities.NewUniverse()
 	s.Universe.LoadBasePolicies()
-	s.Pool = NewPool(context.TODO(), &s)
-	s.Pool.Start()
+	s.Pool = NewPool(context.Background(), &s)
 
 	return &s, nil
 }
@@ -422,21 +422,34 @@ type AccessTuple struct {
 	Result    *SimResult
 }
 
-// Product is a mostly-helper function (that can be used directly!) which calculates the Cartesian
-// product of the provided simulation identifiers, while also filtering out any combinations that
-// are not allowed.
+// IndexedAccess identifies an allowed product result by its input slice indexes.
+type IndexedAccess struct {
+	PrincipalIndex int
+	ActionIndex    int
+	ResourceIndex  int
+}
+
+func resolveActions(actions []string) ([]*types.Action, error) {
+	resolved := make([]*types.Action, 0, len(actions))
+	for _, action := range actions {
+		value, ok := sar.LookupString(action)
+		if !ok {
+			return nil, fmt.Errorf("unknown action %q", action)
+		}
+		resolved = append(resolved, value)
+	}
+	return resolved, nil
+}
+
+// Product returns the allowed combinations in the Cartesian product of the supplied identifiers.
 func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, error) {
 	simId := rand.Text()
 	slog.Debug("calculating product",
 		"sim_id", simId)
 
-	var fas []*types.Action
-	for _, a := range as {
-		fa, ok := sar.LookupString(a)
-		if !ok {
-			return nil, fmt.Errorf("unknown action: %s", a)
-		}
-		fas = append(fas, fa)
+	fas, err := resolveActions(as)
+	if err != nil {
+		return nil, err
 	}
 
 	fps, err := s.FreezePrincipals(ps, opts)
@@ -452,7 +465,7 @@ func (s *Simulator) Product(ps, as, rs []string, opts Options) ([]AccessTuple, e
 	slog.Debug("froze entities",
 		"sim_id", simId)
 
-	return s.runProduct(fps, fas, frs, opts)
+	return s.collectProduct(fps, fas, frs, opts)
 }
 
 // FreezePrincipals resolves and freezes all the provided principal ARNs. This allows callers to
@@ -492,8 +505,8 @@ func (s *Simulator) freezeResources(arns []string, opts Options, allowPlaceholde
 	return frs, nil
 }
 
-// ProductFrozenStreaming runs the cartesian product simulation with pre-frozen entities and streams
-// allowed results to the onResult callback instead of collecting them in memory
+// ProductFrozenStreaming runs a Cartesian product simulation with pre-frozen entities and passes
+// allowed results to onResult instead of collecting them in memory.
 func (s *Simulator) ProductFrozenStreaming(
 	fps []*entities.FrozenPrincipal,
 	actions []string,
@@ -501,193 +514,331 @@ func (s *Simulator) ProductFrozenStreaming(
 	opts Options,
 	onResult func(AccessTuple),
 ) error {
-	var fas []*types.Action
-	for _, a := range actions {
-		fa, ok := sar.LookupString(a)
-		if !ok {
-			return fmt.Errorf("unknown action: %s", a)
-		}
-		fas = append(fas, fa)
+	fas, err := resolveActions(actions)
+	if err != nil {
+		return err
 	}
 
-	var simErr error
-	s.streamProduct(fps, fas, frs, opts, onResult, func(err error) {
-		simErr = err
-	})
-	return simErr
+	return s.streamProduct(fps, fas, frs, opts, onResult)
 }
 
-// runProduct submits simulation work to the pool and collects allowed results
-func (s *Simulator) runProduct(
+// ProductFrozenIndexed runs a Cartesian product simulation and reports allowed combinations by
+// their indexes in the supplied slices. The callback may run concurrently. Principal indexes that
+// share a 64-index block are processed by the same goroutine, so callbacks can update a bitset
+// indexed by PrincipalIndex without synchronization. The first callback error stops the simulation.
+func (s *Simulator) ProductFrozenIndexed(
+	ctx context.Context,
+	fps []*entities.FrozenPrincipal,
+	actions []string,
+	frs []*entities.FrozenResource,
+	opts Options,
+	onResult func(IndexedAccess) error,
+) error {
+	fas, err := resolveActions(actions)
+	if err != nil {
+		return err
+	}
+
+	filtered := precomputeTargets(fas, frs)
+	chunkSize := indexedPrincipalChunkSize(len(fps), s.Pool.NumWorkers())
+	callbacks := productCallbacks{}
+	if onResult != nil {
+		callbacks.onAllowed = func(_ int, access IndexedAccess) error {
+			return onResult(access)
+		}
+	}
+	return s.runProduct(ctx, fps, filtered, opts, chunkSize, callbacks)
+}
+
+// collectProduct adapts the streaming product to the original collection API.
+func (s *Simulator) collectProduct(
 	fps []*entities.FrozenPrincipal,
 	fas []*types.Action,
 	frs []*entities.FrozenResource,
 	opts Options,
 ) ([]AccessTuple, error) {
 	var matrix []AccessTuple
-	var collectErr error
-
-	s.streamProduct(fps, fas, frs, opts, func(t AccessTuple) {
+	err := s.streamProduct(fps, fas, frs, opts, func(t AccessTuple) {
 		matrix = append(matrix, t)
-	}, func(err error) {
-		collectErr = err
 	})
 
-	return matrix, collectErr
+	return matrix, err
 }
 
-// actionResources pairs an action with the pre-filtered resources it can target, computed once
-// before the principal loop to avoid redundant Targets() calls per principal
+type targetedResource struct {
+	index    int
+	resource *entities.FrozenResource
+}
+
+// actionResources pairs an action with the pre-filtered resources it can target.
 type actionResources struct {
+	index     int
 	action    *types.Action
-	resources []*entities.FrozenResource
+	resources []targetedResource
 }
 
 // precomputeTargets builds a filtered mapping of actions to their targeted resources. This moves
-// the Targets() wildcard matching from O(principals × actions × resources) to O(actions × resources).
+// target matching from O(principals x actions x resources) to O(actions x resources).
 func precomputeTargets(fas []*types.Action, frs []*entities.FrozenResource) []actionResources {
 	result := make([]actionResources, 0, len(fas))
-	for _, a := range fas {
-		var matching []*entities.FrozenResource
-		for _, r := range frs {
+	for actionIndex, a := range fas {
+		var matching []targetedResource
+		for resourceIndex, r := range frs {
 			if a.Targets(r.Arn) {
-				matching = append(matching, r)
+				matching = append(matching, targetedResource{
+					index:    resourceIndex,
+					resource: r,
+				})
 			}
 		}
 		if len(matching) > 0 {
-			result = append(result, actionResources{action: a, resources: matching})
+			result = append(result, actionResources{
+				index:     actionIndex,
+				action:    a,
+				resources: matching,
+			})
 		}
 	}
 	return result
 }
 
-// streamProduct is the core simulation engine. It partitions principals across multiple submission
-// goroutines to keep workers saturated. A context is used to cancel in-flight work on error.
+type accessIndexes struct {
+	principal int
+	action    int
+	resource  int
+}
+
+type productCallbacks struct {
+	onAllowed func(workerIndex int, access IndexedAccess) error
+	onDone    func(workerIndex int)
+}
+
+const streamedResultBatchSize = 256
+
+// streamProduct adapts the concurrent indexed engine to the original serialized callback API.
 func (s *Simulator) streamProduct(
 	fps []*entities.FrozenPrincipal,
 	fas []*types.Action,
 	frs []*entities.FrozenResource,
 	opts Options,
 	onResult func(AccessTuple),
-	onError func(error),
-) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	finished := make(chan simOut, s.Pool.NumWorkers()*s.Pool.BatchSize())
-	var wg sync.WaitGroup
-
-	// Pre-compute which resources each action targets to avoid repeated Targets() calls
+) error {
 	filtered := precomputeTargets(fas, frs)
+	chunkSize := s.principalChunkSize(filtered)
+	resultBatches := make(chan []accessIndexes, s.Pool.NumWorkers())
+	simulationDone := make(chan error, 1)
+	workerResults := make([][]accessIndexes, s.Pool.NumWorkers())
 
-	// Partition principals across multiple submission goroutines to avoid a single-threaded
-	// submission bottleneck
-	numSubmitters := s.Pool.NumWorkers()
-	if numSubmitters > len(fps) {
-		numSubmitters = len(fps)
-	}
-	if numSubmitters < 1 {
-		numSubmitters = 1
-	}
-
-	// Coordinator goroutine: waits for all submitters then closes the channel
 	go func() {
-		var submitters sync.WaitGroup
-		submitters.Add(numSubmitters)
+		defer close(resultBatches)
+		simulationDone <- s.runProduct(
+			context.Background(),
+			fps,
+			filtered,
+			opts,
+			chunkSize,
+			productCallbacks{
+				onAllowed: func(workerIndex int, access IndexedAccess) error {
+					batch := append(workerResults[workerIndex], accessIndexes{
+						principal: access.PrincipalIndex,
+						action:    access.ActionIndex,
+						resource:  access.ResourceIndex,
+					})
+					if len(batch) < streamedResultBatchSize {
+						workerResults[workerIndex] = batch
+						return nil
+					}
 
-		for i := range numSubmitters {
-			start := i * len(fps) / numSubmitters
-			end := (i + 1) * len(fps) / numSubmitters
-
-			go func(principals []*entities.FrozenPrincipal) {
-				defer submitters.Done()
-				s.submitPartition(principals, filtered, opts, finished, &wg, ctx)
-			}(fps[start:end])
-		}
-
-		submitters.Wait()
-		wg.Wait()
-		close(finished)
+					resultBatches <- batch
+					workerResults[workerIndex] = nil
+					return nil
+				},
+				onDone: func(workerIndex int) {
+					if len(workerResults[workerIndex]) == 0 {
+						return
+					}
+					resultBatches <- workerResults[workerIndex]
+				},
+			},
+		)
 	}()
 
-	// Consume results until all batches are processed and the channel is closed
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	var received int64
-
-	for {
-		select {
-		case job, ok := <-finished:
-			if !ok {
-				return
+	for batch := range resultBatches {
+		results := make([]SimResult, len(batch))
+		for i, access := range batch {
+			principal := fps[access.principal]
+			action := fas[access.action]
+			resource := specializeForPrincipal(frs[access.resource], principal)
+			result := &results[i]
+			*result = SimResult{
+				Principal: principal.Arn,
+				Action:    action.ShortName(),
+				Resource:  resource.Arn,
+				IsAllowed: true,
 			}
-			received++
-			if job.Error != nil {
-				onError(fmt.Errorf("simulation error: %w", job.Error))
-				return
-			}
-			if job.Result.IsAllowed {
-				result := &job.Result
-				onResult(AccessTuple{
-					Principal: result.Principal,
-					Action:    result.Action,
-					Resource:  result.Resource,
-					Result:    result,
-				})
-			}
-		case <-ticker.C:
-			slog.Debug("simulation in progress", "received", received)
+			onResult(AccessTuple{
+				Principal: result.Principal,
+				Action:    result.Action,
+				Resource:  result.Resource,
+				Result:    result,
+			})
 		}
 	}
+
+	return <-simulationDone
 }
 
-// submitPartition iterates a slice of principals against pre-filtered action/resource pairs,
-// building batches and submitting them to the pool
-func (s *Simulator) submitPartition(
+func (s *Simulator) principalChunkSize(filtered []actionResources) int {
+	targetsPerPrincipal := 0
+	for _, action := range filtered {
+		targetsPerPrincipal += len(action.resources)
+	}
+	if targetsPerPrincipal == 0 {
+		return 1
+	}
+	return max(1, s.Pool.BatchSize()/targetsPerPrincipal)
+}
+
+// indexedPrincipalChunkSize keeps large aggregations on cache-line-sized principal word ranges.
+// Smaller products use narrower word-aligned ranges so they can still occupy all workers.
+func indexedPrincipalChunkSize(principalCount, workerCount int) int {
+	const (
+		principalsPerWord = 64
+		cacheLineWords    = 8
+	)
+
+	wordCount := (principalCount + principalsPerWord - 1) / principalsPerWord
+	if wordCount == 0 || workerCount < 1 {
+		return principalsPerWord
+	}
+	wordsPerChunk := min(cacheLineWords, max(1, wordCount/workerCount))
+	return wordsPerChunk * principalsPerWord
+}
+
+// runProduct is the Cartesian product engine. Workers dynamically claim contiguous principal
+// ranges, and each principal is evaluated by only one worker.
+func (s *Simulator) runProduct(
+	ctx context.Context,
 	fps []*entities.FrozenPrincipal,
 	filtered []actionResources,
 	opts Options,
-	finished chan simOut,
-	wg *sync.WaitGroup,
-	ctx context.Context,
-) {
-	batch := simBatch{
-		Jobs:     make([]simIn, 0, s.Pool.BatchSize()),
-		Finished: finished,
-		Wg:       wg,
-		Ctx:      ctx,
+	chunkSize int,
+	callbacks productCallbacks,
+) error {
+	if opts.ForceFailure {
+		return fmt.Errorf("error due to forced-failure option")
+	}
+	if len(fps) == 0 || len(filtered) == 0 {
+		return nil
+	}
+	runCtx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+	if s.Pool.Ctx != nil {
+		if err := context.Cause(s.Pool.Ctx); err != nil {
+			cancel(err)
+		}
+		stopPoolCancel := context.AfterFunc(s.Pool.Ctx, func() {
+			cancel(context.Cause(s.Pool.Ctx))
+		})
+		defer stopPoolCancel()
+	}
+	if err := context.Cause(runCtx); err != nil {
+		return err
 	}
 
-	for _, p := range fps {
-		for _, ar := range filtered {
-			for _, r := range ar.resources {
-				batch.Jobs = append(batch.Jobs, simIn{
-					AuthContext: AuthContext{
-						Action:               ar.action,
-						Principal:            p,
-						Resource:             specializeForPrincipal(r, p),
-						Properties:           opts.Context,
-						MultiValueProperties: opts.MultiValueContext,
-					},
-					Options: opts,
-				})
+	chunkSize = max(1, chunkSize)
+	chunkCount := (len(fps) + chunkSize - 1) / chunkSize
+	workerCount := min(s.Pool.NumWorkers(), chunkCount)
+	logProgress := slog.Default().Enabled(runCtx, slog.LevelDebug)
 
-				if len(batch.Jobs) == s.Pool.BatchSize() {
-					wg.Add(1)
-					s.Pool.Submit(batch)
-					batch = simBatch{
-						Jobs:     make([]simIn, 0, s.Pool.BatchSize()),
-						Finished: finished,
-						Wg:       wg,
-						Ctx:      ctx,
+	var nextPrincipal atomic.Uint64
+	var processedPrincipals atomic.Uint64
+
+	var workers sync.WaitGroup
+	workers.Add(workerCount)
+	for workerIndex := range workerCount {
+		go func() {
+			defer workers.Done()
+			defer func() {
+				if callbacks.onDone != nil {
+					callbacks.onDone(workerIndex)
+				}
+			}()
+
+			subj := newSubject(AuthContext{
+				Properties:           opts.Context,
+				MultiValueProperties: opts.MultiValueContext,
+			}, opts)
+
+			for {
+				start := int(nextPrincipal.Add(uint64(chunkSize)) - uint64(chunkSize))
+				if start >= len(fps) {
+					return
+				}
+				end := min(start+chunkSize, len(fps))
+
+				for principalIndex := start; principalIndex < end; principalIndex++ {
+					if runCtx.Err() != nil {
+						return
+					}
+					principal := fps[principalIndex]
+					subj.auth.Principal = principal
+
+					for _, action := range filtered {
+						subj.auth.Action = action.action
+						for _, target := range action.resources {
+							if opts.EnableTracing {
+								subj = newSubject(subj.auth, opts)
+							}
+							subj.auth.Resource = specializeForPrincipal(target.resource, principal)
+							subj.extra = Extra{}
+							subj.policyVersion = ""
+
+							if !evalOverallAccess(&subj).IsAllowed || callbacks.onAllowed == nil {
+								continue
+							}
+							if err := callbacks.onAllowed(workerIndex, IndexedAccess{
+								PrincipalIndex: principalIndex,
+								ActionIndex:    action.index,
+								ResourceIndex:  target.index,
+							}); err != nil {
+								cancel(err)
+								return
+							}
+						}
 					}
 				}
+				if logProgress {
+					processedPrincipals.Add(uint64(end - start))
+				}
 			}
-		}
+		}()
 	}
 
-	if len(batch.Jobs) > 0 {
-		wg.Add(1)
-		s.Pool.Submit(batch)
+	if !logProgress {
+		workers.Wait()
+		return context.Cause(runCtx)
+	}
+
+	workersDone := make(chan struct{})
+	go func() {
+		workers.Wait()
+		close(workersDone)
+	}()
+
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-workersDone:
+			return context.Cause(runCtx)
+		case <-ticker.C:
+			slog.Debug("simulation in progress",
+				"processed_principals", processedPrincipals.Load(),
+				"total_principals", len(fps))
+		case <-runCtx.Done():
+			<-workersDone
+			return context.Cause(runCtx)
+		}
 	}
 }

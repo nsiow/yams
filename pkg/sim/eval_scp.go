@@ -18,7 +18,8 @@ func evalSCP(s *subject) Decision {
 	// Empty SCP = allowed; otherwise we have to evaluate. Inspect every node, not just
 	// the first, so an account-level SCP isn't skipped when the root has none.
 	hasAnySCP := false
-	for _, node := range s.auth.Principal.Account.OrgNodes {
+	for nodeIndex := range s.auth.Principal.Account.OrgNodes {
+		node := &s.auth.Principal.Account.OrgNodes[nodeIndex]
 		if len(node.SCPs) > 0 {
 			hasAnySCP = true
 			break
@@ -41,18 +42,20 @@ func evalSCP(s *subject) Decision {
 	}
 
 	// Iterate through layers of SCP, only continuing if we get an allow result through each layer
-	for _, node := range s.auth.Principal.Account.OrgNodes {
+	for nodeIndex := range s.auth.Principal.Account.OrgNodes {
+		node := &s.auth.Principal.Account.OrgNodes[nodeIndex]
 		if trc {
 			s.trc.Push("evaluating service control policies for node: %s of type %s", node.Name, node.Type)
 		}
 		layerDecision := Decision{}
 
-		for _, scp := range node.SCPs {
+		for scpIndex := range node.SCPs {
+			scp := &node.SCPs[scpIndex]
 			if trc {
 				s.trc.Push("evaluating service control policy: %s", scp.Name)
 			}
 
-			localDecision := evalPolicy(s, scp.Policy,
+			localDecision := evalPolicy(s, &scp.Policy,
 				evalStatementMatchesAction,
 				evalStatementMatchesPrincipal,
 				evalStatementMatchesResource,

@@ -60,7 +60,8 @@ func evalRCP(s *subject) Decision {
 	// node, not just the first, so an account-level RCP isn't skipped when the root has none.
 	hasAnyRCP := false
 	if s.auth.Resource != nil {
-		for _, node := range s.auth.Resource.Account.OrgNodes {
+		for nodeIndex := range s.auth.Resource.Account.OrgNodes {
+			node := &s.auth.Resource.Account.OrgNodes[nodeIndex]
 			if len(node.RCPs) > 0 {
 				hasAnyRCP = true
 				break
@@ -95,18 +96,20 @@ func evalRCP(s *subject) Decision {
 	}
 
 	// Iterate through layers of RCP, only continuing if we get an allow result through each layer
-	for _, node := range s.auth.Resource.Account.OrgNodes {
+	for nodeIndex := range s.auth.Resource.Account.OrgNodes {
+		node := &s.auth.Resource.Account.OrgNodes[nodeIndex]
 		if trc {
 			s.trc.Push("evaluating resource control policies for node: %s of type %s", node.Name, node.Type)
 		}
 		layerDecision := Decision{}
 
-		for _, rcp := range node.RCPs {
+		for rcpIndex := range node.RCPs {
+			rcp := &node.RCPs[rcpIndex]
 			if trc {
 				s.trc.Push("evaluating resource control policy: %s", rcp.Name)
 			}
 
-			localDecision := evalPolicy(s, rcp.Policy,
+			localDecision := evalPolicy(s, &rcp.Policy,
 				evalStatementMatchesAction,
 				evalStatementMatchesPrincipal,
 				evalStatementMatchesResource,

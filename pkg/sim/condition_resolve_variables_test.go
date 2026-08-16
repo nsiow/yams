@@ -63,13 +63,13 @@ func TestResolveVariables_RequiresPolicyVersion(t *testing.T) {
 			"aws:Foo":      "alice",
 		}),
 	}, TestingSimulationOptions)
-	decision := evalPolicy(&subj, pol, evalStatementMatchesCondition)
+	decision := evalPolicy(&subj, &pol, evalStatementMatchesCondition)
 	if decision.Allowed() {
 		t.Fatal("policy without version should not expand variables")
 	}
 
 	pol.Version = "2012-10-17"
-	decision = evalPolicy(&subj, pol, evalStatementMatchesCondition)
+	decision = evalPolicy(&subj, &pol, evalStatementMatchesCondition)
 	if !decision.Allowed() {
 		t.Fatal("policy with current version should expand variables")
 	}

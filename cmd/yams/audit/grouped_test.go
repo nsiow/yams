@@ -3,6 +3,7 @@ package audit
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -32,6 +33,18 @@ func (w *capturingGroupedWriter) WriteGroup(resource, group string, principals [
 }
 
 func (w *capturingGroupedWriter) Flush() error {
+	return nil
+}
+
+type failingGroupedWriter struct {
+	err error
+}
+
+func (w *failingGroupedWriter) WriteGroup(string, string, []string) error {
+	return w.err
+}
+
+func (w *failingGroupedWriter) Flush() error {
 	return nil
 }
 
@@ -195,6 +208,129 @@ func TestProcessGroupedEntryCollapsesS3Resources(t *testing.T) {
 	}}
 	if !reflect.DeepEqual(writer.groups, want) {
 		t.Fatalf("unexpected groups:\n got: %#v\nwant: %#v", writer.groups, want)
+	}
+}
+
+func TestProcessGroupedEntryReturnsWriterError(t *testing.T) {
+	const accountID = "111111111111"
+	principalArn := "arn:aws:iam::" + accountID + ":role/reader"
+	queueArn := "arn:aws:sqs:us-east-1:" + accountID + ":queue"
+	secondQueueArn := "arn:aws:sqs:us-east-1:" + accountID + ":second-queue"
+
+	simulator, err := sim.NewSimulator()
+	if err != nil {
+		t.Fatal(err)
+	}
+	simulator.Universe = entities.NewBuilder().
+		WithPrincipals(entities.Principal{
+			Type:      "AWS::IAM::Role",
+			AccountId: accountID,
+			Arn:       principalArn,
+		}).
+		WithResources(
+			entities.Resource{
+				Type:      "AWS::SQS::Queue",
+				AccountId: accountID,
+				Arn:       queueArn,
+			},
+			entities.Resource{
+				Type:      "AWS::SQS::Queue",
+				AccountId: accountID,
+				Arn:       secondQueueArn,
+			},
+		).
+		Build()
+
+	opts := sim.NewOptions()
+	frozenPrincipals, err := simulator.FreezePrincipals([]string{principalArn}, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantErr := errors.New("write failed")
+	_, _, err = processGroupedEntry(
+		simulator,
+		frozenPrincipals,
+		ConfigEntry{
+			ResourceType: "AWS::SQS::Queue",
+			ActionGroups: []ActionGroup{{
+				Name:    "READ",
+				Actions: []string{"sqs:ReceiveMessage"},
+			}},
+		},
+		opts,
+		1,
+		&failingGroupedWriter{err: wantErr},
+	)
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("got error %v, want %v", err, wantErr)
+	}
+}
+
+func TestProcessGroupedEntryAcrossPrincipalWords(t *testing.T) {
+	const (
+		accountID      = "111111111111"
+		principalCount = 130
+	)
+	queueArn := "arn:aws:sqs:us-east-1:" + accountID + ":queue"
+	principalArns := make([]string, principalCount)
+	principals := make([]entities.Principal, principalCount)
+	for i := range principals {
+		principalArns[i] = fmt.Sprintf("arn:aws:iam::%s:role/principal-%03d", accountID, i)
+		principals[i] = entities.Principal{
+			Type:      "AWS::IAM::Role",
+			AccountId: accountID,
+			Arn:       principalArns[i],
+			InlinePolicies: []policy.Policy{{
+				Statement: []policy.Statement{{
+					Effect:   policy.EFFECT_ALLOW,
+					Action:   []string{"sqs:ReceiveMessage"},
+					Resource: []string{queueArn},
+				}},
+			}},
+		}
+	}
+
+	simulator, err := sim.NewSimulator()
+	if err != nil {
+		t.Fatal(err)
+	}
+	simulator.Universe = entities.NewBuilder().
+		WithPrincipals(principals...).
+		WithResources(entities.Resource{
+			Type:      "AWS::SQS::Queue",
+			AccountId: accountID,
+			Arn:       queueArn,
+		}).
+		Build()
+	opts := sim.NewOptions()
+	frozenPrincipals, err := simulator.FreezePrincipals(principalArns, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	writer := &capturingGroupedWriter{}
+	groups, relationships, err := processGroupedEntry(
+		simulator,
+		frozenPrincipals,
+		ConfigEntry{
+			ResourceType: "AWS::SQS::Queue",
+			ActionGroups: []ActionGroup{{
+				Name:    "READ",
+				Actions: []string{"sqs:ReceiveMessage"},
+			}},
+		},
+		opts,
+		1,
+		writer,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if groups != 1 || relationships != principalCount {
+		t.Fatalf("got groups=%d relationships=%d", groups, relationships)
+	}
+	if len(writer.groups) != 1 || !reflect.DeepEqual(writer.groups[0].principals, principalArns) {
+		t.Fatal("principal aggregation was incomplete or out of order")
 	}
 }
 

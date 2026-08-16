@@ -14,7 +14,7 @@ func evalPermissionsBoundary(s *subject) Decision {
 	}
 
 	// Empty permissions boundary = allowed; otherwise we have to evaluate
-	boundary := s.auth.Principal.PermissionBoundary.Policy
+	boundary := &s.auth.Principal.PermissionBoundary.Policy
 	if boundary.Empty() {
 		if trc {
 			s.trc.Log("skipping permission boundary: none found")

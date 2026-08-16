@@ -1,9 +1,12 @@
 package sim
 
 import (
+	"context"
+	"errors"
 	"os"
 	"reflect"
 	"sort"
+	"sync"
 	"testing"
 
 	"github.com/nsiow/yams/internal/testlib"
@@ -1365,5 +1368,181 @@ func TestProductFrozenStreaming(t *testing.T) {
 		TestingSimulationOptions, func(r AccessTuple) {})
 	if err == nil {
 		t.Fatal("expected error for unknown action")
+	}
+}
+
+func TestProductFrozenIndexedMatchesIndividualSimulations(t *testing.T) {
+	simulator, err := NewSimulator()
+	if err != nil {
+		t.Fatal(err)
+	}
+	simulator.Universe = SimpleTestUniverse_1
+
+	principalArns := simulator.Universe.PrincipalArns()
+	sort.Strings(principalArns)
+	principals, err := simulator.FreezePrincipals(principalArns, TestingSimulationOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expanded, err := simulator.ExpandResources(
+		[]string{"arn:aws:s3:::bucket1"},
+		TestingSimulationOptions,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resources, err := simulator.FreezeResources(expanded, TestingSimulationOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actions := []string{"s3:ListBucket", "s3:GetObject"}
+
+	type accessIndex struct {
+		principal int
+		action    int
+		resource  int
+	}
+	got := make(map[accessIndex]struct{})
+	var gotMu sync.Mutex
+	err = simulator.ProductFrozenIndexed(
+		context.Background(),
+		principals,
+		actions,
+		resources,
+		TestingSimulationOptions,
+		func(access IndexedAccess) error {
+			gotMu.Lock()
+			got[accessIndex{
+				principal: access.PrincipalIndex,
+				action:    access.ActionIndex,
+				resource:  access.ResourceIndex,
+			}] = struct{}{}
+			gotMu.Unlock()
+			return nil
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := make(map[accessIndex]struct{})
+	for principalIndex, principal := range principals {
+		for actionIndex, actionName := range actions {
+			action := sar.MustLookupString(actionName)
+			for resourceIndex, resource := range resources {
+				if !action.Targets(resource.Arn) {
+					continue
+				}
+				result, err := simulator.SimulateWithOptions(AuthContext{
+					Principal:            principal,
+					Action:               action,
+					Resource:             resource,
+					Properties:           TestingSimulationOptions.Context,
+					MultiValueProperties: TestingSimulationOptions.MultiValueContext,
+				}, TestingSimulationOptions)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if result.IsAllowed {
+					want[accessIndex{
+						principal: principalIndex,
+						action:    actionIndex,
+						resource:  resourceIndex,
+					}] = struct{}{}
+				}
+			}
+		}
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("indexed product differs from individual simulations:\n got: %v\nwant: %v", got, want)
+	}
+}
+
+func TestProductFrozenIndexedStopsOnCallbackError(t *testing.T) {
+	simulator, err := NewSimulator()
+	if err != nil {
+		t.Fatal(err)
+	}
+	simulator.Universe = SimpleTestUniverse_1
+
+	principals, err := simulator.FreezePrincipals(
+		simulator.Universe.PrincipalArns(),
+		TestingSimulationOptions,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resources, err := simulator.FreezeResources(
+		[]string{"arn:aws:s3:::bucket1"},
+		TestingSimulationOptions,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantErr := errors.New("stop product")
+	err = simulator.ProductFrozenIndexed(
+		context.Background(),
+		principals,
+		[]string{"s3:ListBucket"},
+		resources,
+		TestingSimulationOptions,
+		func(IndexedAccess) error { return wantErr },
+	)
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("got error %v, want %v", err, wantErr)
+	}
+}
+
+func TestProductFrozenIndexedHonorsCanceledContext(t *testing.T) {
+	simulator, err := NewSimulator()
+	if err != nil {
+		t.Fatal(err)
+	}
+	simulator.Universe = SimpleTestUniverse_1
+
+	principals, err := simulator.FreezePrincipals(
+		simulator.Universe.PrincipalArns(),
+		TestingSimulationOptions,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resources, err := simulator.FreezeResources(
+		[]string{"arn:aws:s3:::bucket1"},
+		TestingSimulationOptions,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err = simulator.ProductFrozenIndexed(
+		ctx,
+		principals,
+		[]string{"s3:ListBucket"},
+		resources,
+		TestingSimulationOptions,
+		nil,
+	)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("got error %v, want context cancellation", err)
+	}
+
+	wantErr := errors.New("pool stopped")
+	poolCtx, cancelPool := context.WithCancelCause(context.Background())
+	cancelPool(wantErr)
+	simulator.Pool = NewPool(poolCtx, simulator)
+	err = simulator.ProductFrozenIndexed(
+		context.Background(),
+		principals,
+		[]string{"s3:ListBucket"},
+		resources,
+		TestingSimulationOptions,
+		nil,
+	)
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("got error %v, want pool cancellation cause %v", err, wantErr)
 	}
 }

@@ -51,7 +51,7 @@ func evalResourceAccessGrantsPrincipal(s *subject) bool {
 	}
 
 	if evalIsSameAccount(s) && !s.auth.Resource.Policy.Empty() {
-		subDecision := evalPolicy(s, s.auth.Resource.Policy,
+		subDecision := evalPolicy(s, &s.auth.Resource.Policy,
 			evalStatementMatchesAction,
 			evalStatementMatchesResource,
 			evalStatementMatchesPrincipal,

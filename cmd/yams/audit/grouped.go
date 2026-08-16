@@ -1,8 +1,10 @@
 package audit
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
+	"math/bits"
 	"sort"
 
 	"github.com/nsiow/yams/pkg/entities"
@@ -14,7 +16,39 @@ type groupedWriter interface {
 	Flush() error
 }
 
-// processGroupedEntry simulates one resource type in bounded batches and emits complete groups.
+const groupedBatchQueueSize = 1
+
+type groupedBatch struct {
+	resources  []string
+	membership []uint64
+	wordCount  int
+}
+
+type groupedWriteResult struct {
+	groups        int
+	relationships int
+	err           error
+}
+
+type groupedPlan struct {
+	actions        []string
+	groups         []ActionGroup
+	groupForAction []int
+}
+
+func newGroupedPlan(groups []ActionGroup) groupedPlan {
+	plan := groupedPlan{groups: groups}
+	for groupIndex, group := range groups {
+		for _, action := range group.Actions {
+			plan.actions = append(plan.actions, action)
+			plan.groupForAction = append(plan.groupForAction, groupIndex)
+		}
+	}
+	return plan
+}
+
+// processGroupedEntry simulates one resource type in bounded batches. A single writer consumes
+// completed batches in order while the next batch is simulated.
 func processGroupedEntry(
 	simulator *sim.Simulator,
 	frozenPrincipals []*entities.FrozenPrincipal,
@@ -36,144 +70,188 @@ func processGroupedEntry(
 		return 0, 0, nil
 	}
 
-	principalIndexes := make(map[string]int, len(frozenPrincipals))
-	for i, principal := range frozenPrincipals {
-		principalIndexes[principal.Arn] = i
-	}
-
-	actionGroups := make(map[string]int)
-	for groupIndex, group := range entry.ActionGroups {
-		for _, action := range group.Actions {
-			actionGroups[action] = groupIndex
-		}
-	}
+	plan := newGroupedPlan(entry.ActionGroups)
 
 	slog.Info("processing grouped entry",
 		"type", entry.ResourceType,
 		"resources", len(resourceArns),
-		"actions", len(entry.allActions()),
-		"groups", len(entry.ActionGroups),
+		"actions", len(plan.actions),
+		"groups", len(plan.groups),
 		"principals", len(frozenPrincipals),
 		"batch_size", batchSize)
 
-	var totalGroups, totalRelationships int
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(nil)
+	batches := make(chan groupedBatch, groupedBatchQueueSize)
+	writeDone := make(chan groupedWriteResult, 1)
+	go func() {
+		result := writeGroupedBatches(ctx, batches, frozenPrincipals, plan.groups, w)
+		if result.err != nil {
+			cancel(result.err)
+		}
+		writeDone <- result
+	}()
+
 	for start := 0; start < len(resourceArns); start += batchSize {
 		end := min(start+batchSize, len(resourceArns))
-		groups, relationships, err := processGroupedBatch(
+		batch, err := processGroupedBatch(
+			ctx,
 			simulator,
 			frozenPrincipals,
-			principalIndexes,
 			resourceArns[start:end],
-			entry,
-			actionGroups,
+			plan,
 			opts,
-			w,
 		)
 		if err != nil {
-			return 0, 0, err
+			cancel(err)
+			break
 		}
-		totalGroups += groups
-		totalRelationships += relationships
+
+		select {
+		case batches <- batch:
+		case <-ctx.Done():
+		}
+		if ctx.Err() != nil {
+			break
+		}
+	}
+	close(batches)
+	writeResult := <-writeDone
+
+	if writeResult.err != nil {
+		return 0, 0, writeResult.err
+	}
+	if err := context.Cause(ctx); err != nil {
+		return 0, 0, err
 	}
 
 	slog.Info("grouped entry complete",
 		"type", entry.ResourceType,
-		"groups", totalGroups,
-		"relationships", totalRelationships)
+		"groups", writeResult.groups,
+		"relationships", writeResult.relationships)
 
-	return totalGroups, totalRelationships, nil
+	return writeResult.groups, writeResult.relationships, nil
 }
 
 func processGroupedBatch(
+	ctx context.Context,
 	simulator *sim.Simulator,
 	frozenPrincipals []*entities.FrozenPrincipal,
-	principalIndexes map[string]int,
 	resourceArns []string,
-	entry ConfigEntry,
-	actionGroups map[string]int,
+	plan groupedPlan,
 	opts sim.Options,
-	w groupedWriter,
-) (int, int, error) {
+) (groupedBatch, error) {
 	expanded, err := simulator.ExpandResources(resourceArns, opts)
 	if err != nil {
-		return 0, 0, fmt.Errorf("unable to expand resources: %w", err)
+		return groupedBatch{}, fmt.Errorf("unable to expand resources: %w", err)
 	}
 
 	frozenResources, err := simulator.FreezeResources(expanded, opts)
 	if err != nil {
-		return 0, 0, fmt.Errorf("unable to freeze resources: %w", err)
+		return groupedBatch{}, fmt.Errorf("unable to freeze resources: %w", err)
 	}
 
-	resourceIndexes := make(map[string]int, len(resourceArns))
+	resourceIndexByARN := make(map[string]int, len(resourceArns))
 	for i, resource := range resourceArns {
-		resourceIndexes[resource] = i
+		resourceIndexByARN[resource] = i
+	}
+
+	batchResourceIndexes := make([]int, len(frozenResources))
+	for resourceIndex, resource := range frozenResources {
+		batchResourceIndex, ok := resourceIndexByARN[collapseS3Arn(resource.Arn)]
+		if !ok {
+			return groupedBatch{}, fmt.Errorf(
+				"expanded resource %q is not in the current batch",
+				resource.Arn,
+			)
+		}
+		batchResourceIndexes[resourceIndex] = batchResourceIndex
 	}
 
 	wordCount := (len(frozenPrincipals) + 63) / 64
-	membership := make([][][]uint64, len(resourceArns))
-	for resourceIndex := range membership {
-		membership[resourceIndex] = make([][]uint64, len(entry.ActionGroups))
-		for groupIndex := range membership[resourceIndex] {
-			membership[resourceIndex][groupIndex] = make([]uint64, wordCount)
-		}
-	}
+	membership := make([]uint64, len(resourceArns)*len(plan.groups)*wordCount)
 
-	var resultErr error
-	err = simulator.ProductFrozenStreaming(
+	err = simulator.ProductFrozenIndexed(
+		ctx,
 		frozenPrincipals,
-		entry.allActions(),
+		plan.actions,
 		frozenResources,
 		opts,
-		func(tuple sim.AccessTuple) {
-			if resultErr != nil {
-				return
-			}
-
-			groupIndex, ok := actionGroups[tuple.Action]
-			if !ok {
-				resultErr = fmt.Errorf("action %q is not mapped to a group", tuple.Action)
-				return
-			}
-			resourceIndex, ok := resourceIndexes[collapseS3Arn(tuple.Resource)]
-			if !ok {
-				resultErr = fmt.Errorf("result resource %q is not in the current batch", tuple.Resource)
-				return
-			}
-			principalIndex, ok := principalIndexes[tuple.Principal]
-			if !ok {
-				resultErr = fmt.Errorf("result principal %q is not frozen", tuple.Principal)
-				return
-			}
-
-			membership[resourceIndex][groupIndex][principalIndex/64] |= 1 << (principalIndex % 64)
+		func(access sim.IndexedAccess) error {
+			groupIndex := plan.groupForAction[access.ActionIndex]
+			resourceIndex := batchResourceIndexes[access.ResourceIndex]
+			offset := (resourceIndex*len(plan.groups)+groupIndex)*wordCount +
+				access.PrincipalIndex/64
+			membership[offset] |= 1 << (access.PrincipalIndex % 64)
+			return nil
 		},
 	)
 	if err != nil {
-		return 0, 0, fmt.Errorf("simulation error: %w", err)
-	}
-	if resultErr != nil {
-		return 0, 0, resultErr
+		return groupedBatch{}, fmt.Errorf("simulation error: %w", err)
 	}
 
-	var relationships int
-	for resourceIndex, resource := range resourceArns {
-		for groupIndex, group := range entry.ActionGroups {
-			principals := principalsFromBits(membership[resourceIndex][groupIndex], frozenPrincipals)
-			if err := w.WriteGroup(resource, group.Name, principals); err != nil {
-				return 0, 0, fmt.Errorf("unable to write group: %w", err)
-			}
-			relationships += len(principals)
-		}
-	}
-
-	return len(resourceArns) * len(entry.ActionGroups), relationships, nil
+	return groupedBatch{
+		resources:  resourceArns,
+		membership: membership,
+		wordCount:  wordCount,
+	}, nil
 }
 
-func principalsFromBits(bits []uint64, frozenPrincipals []*entities.FrozenPrincipal) []string {
-	principals := make([]string, 0)
-	for principalIndex, principal := range frozenPrincipals {
-		if bits[principalIndex/64]&(1<<(principalIndex%64)) != 0 {
-			principals = append(principals, principal.Arn)
+func writeGroupedBatches(
+	ctx context.Context,
+	batches <-chan groupedBatch,
+	frozenPrincipals []*entities.FrozenPrincipal,
+	groups []ActionGroup,
+	w groupedWriter,
+) groupedWriteResult {
+	var result groupedWriteResult
+	for {
+		select {
+		case <-ctx.Done():
+			return result
+		case batch, ok := <-batches:
+			if !ok {
+				return result
+			}
+
+			for resourceIndex, resource := range batch.resources {
+				for groupIndex, group := range groups {
+					start := (resourceIndex*len(groups) + groupIndex) * batch.wordCount
+					end := start + batch.wordCount
+					principals := principalsFromBits(
+						batch.membership[start:end],
+						frozenPrincipals,
+					)
+					if err := w.WriteGroup(resource, group.Name, principals); err != nil {
+						result.err = fmt.Errorf("unable to write group: %w", err)
+						return result
+					}
+					result.groups++
+					result.relationships += len(principals)
+				}
+			}
+		}
+	}
+}
+
+func principalsFromBits(
+	membership []uint64,
+	frozenPrincipals []*entities.FrozenPrincipal,
+) []string {
+	principalCount := 0
+	for _, word := range membership {
+		principalCount += bits.OnesCount64(word)
+	}
+
+	principals := make([]string, 0, principalCount)
+	for wordIndex, word := range membership {
+		for word != 0 {
+			bitIndex := bits.TrailingZeros64(word)
+			principalIndex := wordIndex*64 + bitIndex
+			if principalIndex < len(frozenPrincipals) {
+				principals = append(principals, frozenPrincipals[principalIndex].Arn)
+			}
+			word &= word - 1
 		}
 	}
 	return principals

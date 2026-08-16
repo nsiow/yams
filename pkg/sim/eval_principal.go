@@ -63,7 +63,8 @@ func evalPrincipalGroupPolicies(s *subject, groups []entities.FrozenGroup) Decis
 	}
 
 	decision := Decision{}
-	for _, group := range groups {
+	for groupIndex := range groups {
+		group := &groups[groupIndex]
 		if trc {
 			s.trc.Push("evaluating inline policies for group: %s", group.Arn)
 		}
@@ -88,7 +89,8 @@ func evalPrincipalGroupPolicies(s *subject, groups []entities.FrozenGroup) Decis
 func evalPrincipalHelperInline(s *subject, pType string, inline []policy.Policy) Decision {
 	trc := s.trc.Enabled()
 	decision := Decision{}
-	for i, pol := range inline {
+	for i := range inline {
+		pol := &inline[i]
 		if trc {
 			// Prefer Name (inline policy name) over Id (policy document id)
 			policyName := pol.Name
@@ -131,22 +133,23 @@ func evalPrincipalHelperInline(s *subject, pType string, inline []policy.Policy)
 func evalPrincipalHelperAttached(s *subject, pType string, att []entities.ManagedPolicy) Decision {
 	trc := s.trc.Enabled()
 	decision := Decision{}
-	for _, policy := range att {
+	for policyIndex := range att {
+		managedPolicy := &att[policyIndex]
 		if trc {
-			s.trc.Push("evaluating %s policy: %s", pType, policy.Arn)
+			s.trc.Push("evaluating %s policy: %s", pType, managedPolicy.Arn)
 		}
 
-		localDecision := evalPolicy(s, policy.Policy,
+		localDecision := evalPolicy(s, &managedPolicy.Policy,
 			evalStatementMatchesAction,
 			evalStatementMatchesResource,
 			evalStatementMatchesCondition)
 
 		if trc {
 			if localDecision.Allowed() {
-				s.trc.Allowed("allow in %s policy: %s", pType, policy.Arn)
+				s.trc.Allowed("allow in %s policy: %s", pType, managedPolicy.Arn)
 			}
 			if localDecision.DeniedExplicit() {
-				s.trc.Denied("explicit deny in %s policy: %s", pType, policy.Arn)
+				s.trc.Denied("explicit deny in %s policy: %s", pType, managedPolicy.Arn)
 			}
 			s.trc.Pop()
 		}

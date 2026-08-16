@@ -10,11 +10,11 @@ import (
 )
 
 // evalStatement computes whether the provided statements match the AuthContext
-func evalStatement(s *subject, stmt policy.Statement, funcs []evalFunction) Decision {
+func evalStatement(s *subject, stmt *policy.Statement, funcs []evalFunction) Decision {
 	decision := Decision{}
 
 	for _, f := range funcs {
-		if !f(s, &stmt) {
+		if !f(s, stmt) {
 			return decision
 		}
 	}

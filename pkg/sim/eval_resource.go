@@ -23,7 +23,7 @@ func evalResourceAccess(s *subject) Decision {
 	}
 
 	// Iterate over resource policy statements to evaluate access
-	decision := evalPolicy(s, s.auth.Resource.Policy,
+	decision := evalPolicy(s, &s.auth.Resource.Policy,
 		evalStatementMatchesAction,
 		evalStatementMatchesResource,
 		evalResourceStatementMatchesPrincipal,
