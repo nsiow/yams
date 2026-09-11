@@ -178,6 +178,12 @@ func TestValidateOutputOptions(t *testing.T) {
 		{"grouped csv", cli.Flags{Format: formatGroupedCSV, ResourceBatchSize: 1}, grouped, false},
 		{"grouped jsonl", cli.Flags{Format: formatGroupedJSONL, ResourceBatchSize: 1}, grouped, false},
 		{
+			"resource counts jsonl",
+			cli.Flags{Format: formatResourceCountsJSONL, ResourceBatchSize: 1},
+			grouped,
+			false,
+		},
+		{
 			"legacy config grouped output",
 			cli.Flags{Format: formatGroupedCSV, ResourceBatchSize: 1},
 			legacy,

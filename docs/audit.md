@@ -58,6 +58,17 @@ A principal belongs to a group when at least one action in that group is allowed
 allowed by multiple actions in a group appear once. Resources with no allowed principals are
 retained: grouped JSONL uses an empty array and grouped CSV uses an empty principal field.
 
+Use `--format resource-counts-jsonl` to emit one record per resource containing the number of
+distinct principals allowed by any configured action group:
+
+```json
+{"resource":"arn:aws:sqs:us-east-1:111111111111:example","principal_count":3}
+```
+
+This format unions the action-group membership bitsets before counting, so a principal belonging
+to multiple groups is counted once. It avoids materializing principal ARNs and is suitable when
+only aggregate exposure is needed.
+
 Grouped output is deterministic and uses bounded resource batches. Completed batches are written in
 order while the next batch is simulated. Adjust the default batch size of 1024 with
 `--resource-batch-size` to trade aggregation memory for simulation overhead.

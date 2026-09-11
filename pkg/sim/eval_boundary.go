@@ -30,7 +30,7 @@ func evalPermissionsBoundary(s *subject) Decision {
 	}
 
 	decision := evalPolicy(s, boundary,
-		evalStatementMatchesAction,
+		evalCachedStatementMatchesAction,
 		evalStatementMatchesResource,
 		evalStatementMatchesCondition,
 	)

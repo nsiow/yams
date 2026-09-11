@@ -114,11 +114,12 @@ _yams() {
                         '(-t --trace)'{-t,--trace}'[Show trace]'
                     ;;
                 audit)
+                    local audit_formats="csv grouped-csv grouped-jsonl resource-counts-jsonl"
                     _arguments \
                         '*'{-s,--source}'[Data source]:source:_files' \
                         '(-f --config)'{-f,--config}'[Audit config file]:config:_files' \
                         '(-o --out)'{-o,--out}'[Output destination]:destination:_files' \
-                        '--format[Output format]:format:(csv grouped-csv grouped-jsonl)' \
+                        "--format[Output format]:format:(${audit_formats})" \
                         '--resource-batch-size[Resources per grouped batch]:count:' \
                         '*'{-c,--context}'[Context key=value]:context:' \
                         '*--overlay[Overlay file]:file:_files'

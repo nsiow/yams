@@ -572,9 +572,11 @@ type targetedResource struct {
 
 // actionResources pairs an action with the pre-filtered resources it can target.
 type actionResources struct {
-	index     int
-	action    *types.Action
-	resources []targetedResource
+	index           int
+	action          *types.Action
+	resources       []targetedResource
+	sameAccountOnly map[string][]targetedResource
+	targetCount     int
 }
 
 // precomputeTargets builds a filtered mapping of actions to their targeted resources. This moves
@@ -582,21 +584,31 @@ type actionResources struct {
 func precomputeTargets(fas []*types.Action, frs []*entities.FrozenResource) []actionResources {
 	result := make([]actionResources, 0, len(fas))
 	for actionIndex, a := range fas {
-		var matching []targetedResource
-		for resourceIndex, r := range frs {
-			if a.Targets(r.Arn) {
-				matching = append(matching, targetedResource{
-					index:    resourceIndex,
-					resource: r,
-				})
-			}
+		matching := actionResources{
+			index:           actionIndex,
+			action:          a,
+			sameAccountOnly: make(map[string][]targetedResource),
 		}
-		if len(matching) > 0 {
-			result = append(result, actionResources{
-				index:     actionIndex,
-				action:    a,
-				resources: matching,
-			})
+		for resourceIndex, r := range frs {
+			if !a.Targets(r.Arn) {
+				continue
+			}
+			target := targetedResource{
+				index:    resourceIndex,
+				resource: r,
+			}
+			matching.targetCount++
+			if !resourceMayAllowCrossAccount(r) {
+				matching.sameAccountOnly[r.AccountId] = append(
+					matching.sameAccountOnly[r.AccountId],
+					target,
+				)
+				continue
+			}
+			matching.resources = append(matching.resources, target)
+		}
+		if matching.targetCount > 0 {
+			result = append(result, matching)
 		}
 	}
 	return result
@@ -691,7 +703,7 @@ func (s *Simulator) streamProduct(
 func (s *Simulator) principalChunkSize(filtered []actionResources) int {
 	targetsPerPrincipal := 0
 	for _, action := range filtered {
-		targetsPerPrincipal += len(action.resources)
+		targetsPerPrincipal += action.targetCount
 	}
 	if targetsPerPrincipal == 0 {
 		return 1
@@ -786,24 +798,30 @@ func (s *Simulator) runProduct(
 
 					for _, action := range filtered {
 						subj.auth.Action = action.action
-						for _, target := range action.resources {
-							if opts.EnableTracing {
-								subj = newSubject(subj.auth, opts)
+						for pass := range 2 {
+							targets := action.resources
+							if pass == 1 {
+								targets = action.sameAccountOnly[principal.AccountId]
 							}
-							subj.auth.Resource = specializeForPrincipal(target.resource, principal)
-							subj.extra = Extra{}
-							subj.policyVersion = ""
+							for _, target := range targets {
+								if opts.EnableTracing {
+									subj = newSubject(subj.auth, opts)
+								}
+								subj.auth.Resource = specializeForPrincipal(target.resource, principal)
+								subj.extra = Extra{}
+								subj.policyVersion = ""
 
-							if !evalOverallAccess(&subj).IsAllowed || callbacks.onAllowed == nil {
-								continue
-							}
-							if err := callbacks.onAllowed(workerIndex, IndexedAccess{
-								PrincipalIndex: principalIndex,
-								ActionIndex:    action.index,
-								ResourceIndex:  target.index,
-							}); err != nil {
-								cancel(err)
-								return
+								if !evalOverallAccess(&subj).IsAllowed || callbacks.onAllowed == nil {
+									continue
+								}
+								if err := callbacks.onAllowed(workerIndex, IndexedAccess{
+									PrincipalIndex: principalIndex,
+									ActionIndex:    action.index,
+									ResourceIndex:  target.index,
+								}); err != nil {
+									cancel(err)
+									return
+								}
 							}
 						}
 					}

@@ -6,17 +6,28 @@ import (
 	"log/slog"
 	"math/bits"
 	"sort"
+	"time"
 
 	"github.com/nsiow/yams/pkg/entities"
 	"github.com/nsiow/yams/pkg/sim"
 )
 
 type groupedWriter interface {
-	WriteGroup(resource, group string, principals []string) error
+	WriteResource(
+		resource string,
+		groups []groupMembership,
+		principals []*entities.FrozenPrincipal,
+	) (int, error)
 	Flush() error
 }
 
+type groupMembership struct {
+	name string
+	bits []uint64
+}
+
 const groupedBatchQueueSize = 1
+const groupedProgressInterval = 30 * time.Second
 
 type groupedBatch struct {
 	resources  []string
@@ -82,6 +93,8 @@ func processGroupedEntry(
 
 	ctx, cancel := context.WithCancelCause(context.Background())
 	defer cancel(nil)
+	started := time.Now()
+	lastProgress := started
 	batches := make(chan groupedBatch, groupedBatchQueueSize)
 	writeDone := make(chan groupedWriteResult, 1)
 	go func() {
@@ -113,6 +126,22 @@ func processGroupedEntry(
 		}
 		if ctx.Err() != nil {
 			break
+		}
+
+		now := time.Now()
+		if now.Sub(lastProgress) >= groupedProgressInterval {
+			elapsed := now.Sub(started)
+			resourcesPerSecond := float64(end) / elapsed.Seconds()
+			remaining := float64(len(resourceArns) - end)
+			eta := time.Duration(remaining/resourcesPerSecond) * time.Second
+			slog.Info("grouped entry progress",
+				"type", entry.ResourceType,
+				"resources_completed", end,
+				"resources_total", len(resourceArns),
+				"resources_per_second", resourcesPerSecond,
+				"elapsed", elapsed.Round(time.Second),
+				"eta", eta.Round(time.Second))
+			lastProgress = now
 		}
 	}
 	close(batches)
@@ -214,21 +243,27 @@ func writeGroupedBatches(
 				return result
 			}
 
+			memberships := make([]groupMembership, len(groups))
 			for resourceIndex, resource := range batch.resources {
 				for groupIndex, group := range groups {
 					start := (resourceIndex*len(groups) + groupIndex) * batch.wordCount
 					end := start + batch.wordCount
-					principals := principalsFromBits(
-						batch.membership[start:end],
-						frozenPrincipals,
-					)
-					if err := w.WriteGroup(resource, group.Name, principals); err != nil {
-						result.err = fmt.Errorf("unable to write group: %w", err)
-						return result
+					memberships[groupIndex] = groupMembership{
+						name: group.Name,
+						bits: batch.membership[start:end],
 					}
-					result.groups++
-					result.relationships += len(principals)
 				}
+				relationships, err := w.WriteResource(
+					resource,
+					memberships,
+					frozenPrincipals,
+				)
+				if err != nil {
+					result.err = fmt.Errorf("unable to write resource: %w", err)
+					return result
+				}
+				result.groups += len(groups)
+				result.relationships += relationships
 			}
 		}
 	}

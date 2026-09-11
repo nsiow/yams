@@ -56,7 +56,7 @@ func evalSCP(s *subject) Decision {
 			}
 
 			localDecision := evalPolicy(s, &scp.Policy,
-				evalStatementMatchesAction,
+				evalCachedStatementMatchesAction,
 				evalStatementMatchesPrincipal,
 				evalStatementMatchesResource,
 				evalStatementMatchesCondition)

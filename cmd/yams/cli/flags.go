@@ -273,7 +273,7 @@ func Parse() (*Flags, error) {
 		fs.StringVar(&opts.Out, "o", "", "alias for -out")
 		fs.StringVar(&opts.Out, "out", "", "destination for audit output")
 		fs.StringVar(&opts.Format, "format", "csv",
-			"output format: csv, grouped-csv, or grouped-jsonl")
+			"output format: csv, grouped-csv, grouped-jsonl, or resource-counts-jsonl")
 		fs.IntVar(&opts.ResourceBatchSize, "resource-batch-size", 1024,
 			"number of resources to aggregate per batch for grouped output")
 

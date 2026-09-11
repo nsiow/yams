@@ -72,6 +72,24 @@ func evalStatementMatchesAction(s *subject, stmt *policy.Statement) bool {
 	return _gate.Apply(false)
 }
 
+// evalCachedStatementMatchesAction reuses action matching while a worker evaluates the same
+// principal and action against a batch of resources.
+func evalCachedStatementMatchesAction(s *subject, stmt *policy.Statement) bool {
+	if s.trc.Enabled() {
+		return evalStatementMatchesAction(s, stmt)
+	}
+	if s.cachedAction != s.auth.Action {
+		clear(s.actionMatches)
+		s.cachedAction = s.auth.Action
+	}
+	if match, ok := s.actionMatches[stmt]; ok {
+		return match
+	}
+	match := evalStatementMatchesAction(s, stmt)
+	s.actionMatches[stmt] = match
+	return match
+}
+
 // evalStatementMatchesPrincipal computes whether the Statement matches the AuthContext's Principal
 func evalStatementMatchesPrincipal(s *subject, stmt *policy.Statement) bool {
 	trc := s.trc.Enabled()

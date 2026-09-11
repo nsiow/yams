@@ -1,7 +1,9 @@
 package audit
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/nsiow/yams/pkg/entities"
@@ -34,4 +36,45 @@ func BenchmarkPrincipalsFromBits(b *testing.B) {
 			}
 		})
 	}
+}
+
+func BenchmarkGroupedWriters(b *testing.B) {
+	const (
+		principalCount = 154_795
+		stride         = 32
+	)
+	frozenPrincipals := make([]*entities.FrozenPrincipal, principalCount)
+	membership := make([]uint64, (principalCount+63)/64)
+	for principalIndex := range frozenPrincipals {
+		frozenPrincipals[principalIndex] = &entities.FrozenPrincipal{
+			Arn: fmt.Sprintf("principal-%d", principalIndex),
+		}
+		if principalIndex%stride == 0 {
+			membership[principalIndex/64] |= 1 << (principalIndex % 64)
+		}
+	}
+	groups := []groupMembership{
+		{name: "READ", bits: membership},
+		{name: "WRITE", bits: membership},
+	}
+
+	b.Run("grouped_jsonl", func(b *testing.B) {
+		writer := &groupedJSONLWriter{w: json.NewEncoder(io.Discard)}
+		b.ReportAllocs()
+		for b.Loop() {
+			if _, err := writer.WriteResource("resource", groups, frozenPrincipals); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("resource_counts_jsonl", func(b *testing.B) {
+		writer := &resourceCountsJSONLWriter{w: json.NewEncoder(io.Discard)}
+		b.ReportAllocs()
+		for b.Loop() {
+			if _, err := writer.WriteResource("resource", groups, frozenPrincipals); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 }

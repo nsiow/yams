@@ -110,7 +110,7 @@ func evalRCP(s *subject) Decision {
 			}
 
 			localDecision := evalPolicy(s, &rcp.Policy,
-				evalStatementMatchesAction,
+				evalCachedStatementMatchesAction,
 				evalStatementMatchesPrincipal,
 				evalStatementMatchesResource,
 				evalStatementMatchesCondition,

@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	formatCSV          = "csv"
-	formatGroupedCSV   = "grouped-csv"
-	formatGroupedJSONL = "grouped-jsonl"
+	formatCSV                 = "csv"
+	formatGroupedCSV          = "grouped-csv"
+	formatGroupedJSONL        = "grouped-jsonl"
+	formatResourceCountsJSONL = "resource-counts-jsonl"
 )
 
 // ActionGroup maps a set of concrete AWS actions to a logical access group.
@@ -308,7 +309,7 @@ func validateOutputOptions(opts *cli.Flags, config []ConfigEntry) error {
 	switch opts.Format {
 	case formatCSV:
 		return nil
-	case formatGroupedCSV, formatGroupedJSONL:
+	case formatGroupedCSV, formatGroupedJSONL, formatResourceCountsJSONL:
 		if opts.ResourceBatchSize <= 0 {
 			return fmt.Errorf("resource-batch-size must be greater than zero")
 		}

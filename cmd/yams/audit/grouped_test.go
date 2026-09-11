@@ -23,13 +23,22 @@ type capturingGroupedWriter struct {
 	groups []capturedGroup
 }
 
-func (w *capturingGroupedWriter) WriteGroup(resource, group string, principals []string) error {
-	w.groups = append(w.groups, capturedGroup{
-		resource:   resource,
-		group:      group,
-		principals: principals,
-	})
-	return nil
+func (w *capturingGroupedWriter) WriteResource(
+	resource string,
+	groups []groupMembership,
+	principals []*entities.FrozenPrincipal,
+) (int, error) {
+	relationships := 0
+	for _, group := range groups {
+		groupPrincipals := principalsFromBits(group.bits, principals)
+		w.groups = append(w.groups, capturedGroup{
+			resource:   resource,
+			group:      group.name,
+			principals: groupPrincipals,
+		})
+		relationships += len(groupPrincipals)
+	}
+	return relationships, nil
 }
 
 func (w *capturingGroupedWriter) Flush() error {
@@ -40,8 +49,12 @@ type failingGroupedWriter struct {
 	err error
 }
 
-func (w *failingGroupedWriter) WriteGroup(string, string, []string) error {
-	return w.err
+func (w *failingGroupedWriter) WriteResource(
+	string,
+	[]groupMembership,
+	[]*entities.FrozenPrincipal,
+) (int, error) {
+	return 0, w.err
 }
 
 func (w *failingGroupedWriter) Flush() error {
@@ -359,10 +372,19 @@ func TestGroupedCSVWriter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := w.WriteGroup("resource-a", "READ", []string{"principal-a", "principal-b"}); err != nil {
+	principals := []*entities.FrozenPrincipal{{Arn: "principal-a"}, {Arn: "principal-b"}}
+	if _, err := w.WriteResource(
+		"resource-a",
+		[]groupMembership{{name: "READ", bits: []uint64{0b11}}},
+		principals,
+	); err != nil {
 		t.Fatal(err)
 	}
-	if err := w.WriteGroup("resource-b", "WRITE", nil); err != nil {
+	if _, err := w.WriteResource(
+		"resource-b",
+		[]groupMembership{{name: "WRITE", bits: []uint64{0}}},
+		principals,
+	); err != nil {
 		t.Fatal(err)
 	}
 	if err := w.Flush(); err != nil {
@@ -381,15 +403,47 @@ func TestGroupedCSVWriter(t *testing.T) {
 func TestGroupedJSONLWriter(t *testing.T) {
 	var output bytes.Buffer
 	w := &groupedJSONLWriter{w: json.NewEncoder(&output)}
-	if err := w.WriteGroup("resource-a", "READ", []string{"principal-a"}); err != nil {
+	principals := []*entities.FrozenPrincipal{{Arn: "principal-a"}}
+	if _, err := w.WriteResource(
+		"resource-a",
+		[]groupMembership{{name: "READ", bits: []uint64{1}}},
+		principals,
+	); err != nil {
 		t.Fatal(err)
 	}
-	if err := w.WriteGroup("resource-b", "WRITE", nil); err != nil {
+	if _, err := w.WriteResource(
+		"resource-b",
+		[]groupMembership{{name: "WRITE", bits: []uint64{0}}},
+		principals,
+	); err != nil {
 		t.Fatal(err)
 	}
 
 	want := "{\"resource\":\"resource-a\",\"group\":\"READ\",\"principals\":[\"principal-a\"]}\n" +
 		"{\"resource\":\"resource-b\",\"group\":\"WRITE\",\"principals\":[]}\n"
+	if output.String() != want {
+		t.Fatalf("unexpected JSONL:\n%s", output.String())
+	}
+}
+
+func TestResourceCountsJSONLWriter(t *testing.T) {
+	var output bytes.Buffer
+	w := &resourceCountsJSONLWriter{w: json.NewEncoder(&output)}
+	relationships, err := w.WriteResource(
+		"resource-a",
+		[]groupMembership{
+			{name: "READ", bits: []uint64{0b011}},
+			{name: "WRITE", bits: []uint64{0b110}},
+		},
+		nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if relationships != 4 {
+		t.Fatalf("got relationships=%d, want 4", relationships)
+	}
+	want := "{\"resource\":\"resource-a\",\"principal_count\":3}\n"
 	if output.String() != want {
 		t.Fatalf("unexpected JSONL:\n%s", output.String())
 	}

@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/bits"
+
+	"github.com/nsiow/yams/pkg/entities"
 )
 
 type groupedCSVWriter struct {
@@ -19,16 +22,28 @@ func newGroupedCSVWriter(w io.Writer) (*groupedCSVWriter, error) {
 	return &groupedCSVWriter{w: cw}, nil
 }
 
-func (w *groupedCSVWriter) WriteGroup(resource, group string, principals []string) error {
-	if len(principals) == 0 {
-		return w.w.Write([]string{resource, group, ""})
-	}
-	for _, principal := range principals {
-		if err := w.w.Write([]string{resource, group, principal}); err != nil {
-			return err
+func (w *groupedCSVWriter) WriteResource(
+	resource string,
+	groups []groupMembership,
+	principals []*entities.FrozenPrincipal,
+) (int, error) {
+	relationships := 0
+	for _, group := range groups {
+		groupPrincipals := principalsFromBits(group.bits, principals)
+		relationships += len(groupPrincipals)
+		if len(groupPrincipals) == 0 {
+			if err := w.w.Write([]string{resource, group.name, ""}); err != nil {
+				return 0, err
+			}
+			continue
+		}
+		for _, principal := range groupPrincipals {
+			if err := w.w.Write([]string{resource, group.name, principal}); err != nil {
+				return 0, err
+			}
 		}
 	}
-	return nil
+	return relationships, nil
 }
 
 func (w *groupedCSVWriter) Flush() error {
@@ -46,18 +61,77 @@ type groupedJSONLWriter struct {
 	w *json.Encoder
 }
 
-func (w *groupedJSONLWriter) WriteGroup(resource, group string, principals []string) error {
-	if principals == nil {
-		principals = []string{}
+func (w *groupedJSONLWriter) WriteResource(
+	resource string,
+	groups []groupMembership,
+	principals []*entities.FrozenPrincipal,
+) (int, error) {
+	relationships := 0
+	for _, group := range groups {
+		groupPrincipals := principalsFromBits(group.bits, principals)
+		relationships += len(groupPrincipals)
+		if groupPrincipals == nil {
+			groupPrincipals = []string{}
+		}
+		if err := w.w.Encode(groupedJSONLRecord{
+			Resource:   resource,
+			Group:      group.name,
+			Principals: groupPrincipals,
+		}); err != nil {
+			return 0, err
+		}
 	}
-	return w.w.Encode(groupedJSONLRecord{
-		Resource:   resource,
-		Group:      group,
-		Principals: principals,
-	})
+	return relationships, nil
 }
 
 func (w *groupedJSONLWriter) Flush() error {
+	return nil
+}
+
+type resourceCountJSONLRecord struct {
+	Resource       string `json:"resource"`
+	PrincipalCount int    `json:"principal_count"`
+}
+
+type resourceCountsJSONLWriter struct {
+	w     *json.Encoder
+	union []uint64
+}
+
+func (w *resourceCountsJSONLWriter) WriteResource(
+	resource string,
+	groups []groupMembership,
+	_ []*entities.FrozenPrincipal,
+) (int, error) {
+	wordCount := 0
+	if len(groups) > 0 {
+		wordCount = len(groups[0].bits)
+	}
+	if cap(w.union) < wordCount {
+		w.union = make([]uint64, wordCount)
+	} else {
+		w.union = w.union[:wordCount]
+		clear(w.union)
+	}
+
+	relationships := 0
+	for _, group := range groups {
+		for index, word := range group.bits {
+			relationships += bits.OnesCount64(word)
+			w.union[index] |= word
+		}
+	}
+	principalCount := 0
+	for _, word := range w.union {
+		principalCount += bits.OnesCount64(word)
+	}
+	return relationships, w.w.Encode(resourceCountJSONLRecord{
+		Resource:       resource,
+		PrincipalCount: principalCount,
+	})
+}
+
+func (w *resourceCountsJSONLWriter) Flush() error {
 	return nil
 }
 
@@ -67,6 +141,8 @@ func newGroupedWriter(format string, w io.Writer) (groupedWriter, error) {
 		return newGroupedCSVWriter(w)
 	case formatGroupedJSONL:
 		return &groupedJSONLWriter{w: json.NewEncoder(w)}, nil
+	case formatResourceCountsJSONL:
+		return &resourceCountsJSONLWriter{w: json.NewEncoder(w)}, nil
 	default:
 		return nil, fmt.Errorf("unsupported grouped format %q", format)
 	}

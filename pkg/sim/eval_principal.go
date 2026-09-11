@@ -101,7 +101,7 @@ func evalPrincipalHelperInline(s *subject, pType string, inline []policy.Policy)
 		}
 
 		localDecision := evalPolicy(s, pol,
-			evalStatementMatchesAction,
+			evalCachedStatementMatchesAction,
 			evalStatementMatchesResource,
 			evalStatementMatchesCondition)
 
@@ -140,7 +140,7 @@ func evalPrincipalHelperAttached(s *subject, pType string, att []entities.Manage
 		}
 
 		localDecision := evalPolicy(s, &managedPolicy.Policy,
-			evalStatementMatchesAction,
+			evalCachedStatementMatchesAction,
 			evalStatementMatchesResource,
 			evalStatementMatchesCondition)
 
